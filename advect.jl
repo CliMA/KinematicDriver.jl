@@ -46,6 +46,39 @@ z_init = [0.0, 740.0, 3260.0]
 qv_init = [0.016, 0.0138, 0.0024]
 theta_init = [279.9, 279.9, 312.66]
 
+# interpolate between the I.C. points
+function interpolate_z(z_init, q_init, z_interp)
+    # find the two spanning z points
+    for i=1:length(z_init)-1
+        if z_interp > z_init[i] && z_interp < z_init[i+1]
+            z1 = z_init[i]
+            i1 = i
+            z2 = z_init[i+1]
+            i2 = i+1
+            break
+        end
+        z1, z2 .= z_init[end]
+        i1, i2 .= length(z_init)
+    end
+
+    # do the linear interpolation
+    q1, q2 = q_init[i1], q_init[i2]
+    if z1 != z2
+        q_interp = q1 + (q2 - q1)/(z2 - z1)*(z_interp - z1)
+    else
+        q_interp = q1
+    end
+
+    return q_interp
+end
+
+print(Fields.coordinate_field(cs).z)
+qv_initz = z -> interpolate_z(z_init, qv_init, z) where {z <: FT}
+qv = qv_initz.(Fields.coordinate_field(cs).z)
+
+θ_initz = z -> interpolate_z(z_init, theta_init, z) where {z <: FT}
+θ = θ_initz.(Fields.coordinate_field(cs).z)
+
 
 # TRACER(S) that gets advected: theta and qt (up for negotiation)
 θ = sin.(Fields.coordinate_field(cs).z)
@@ -71,58 +104,48 @@ function tendency3!(dθ, θ, _, t)
     return @. dθ = -A(V, θ)
 end
 
-# interpolate between the I.C. points
-function interpolate_z(z_init, q_init, z_interp)
-    for i=1:length(z_init)
-
-    end
 
 
-    return @. q_interp = f_interp.(z_interp)
-end
+# # Solve the ODE operator
+# Δt = 0.001
+# prob3 = ODEProblem(tendency3!, θ, (0.0, 10.0))
+# sol3 = solve(
+#     prob3,
+#     SSPRK33(),
+#     dt = Δt,
+#     saveat = 10 * Δt,
+#     progress = true,
+#     progress_message = (dt, u, p, t) -> t,
+# );
+
+# ENV["GKSwstype"] = "nul"
+# using ClimaCorePlots, Plots
+# Plots.GRBackend()
+
+# dir = "advect"
+# path = joinpath(@__DIR__, "output", dir)
+# mkpath(path)
 
 
-@show tendency1!(similar(θ), θ, nothing, 0.0)
-# Solve the ODE operator
-Δt = 0.001
-prob3 = ODEProblem(tendency3!, θ, (0.0, 10.0))
-sol3 = solve(
-    prob3,
-    SSPRK33(),
-    dt = Δt,
-    saveat = 10 * Δt,
-    progress = true,
-    progress_message = (dt, u, p, t) -> t,
-);
+# anim = Plots.@animate for u in sol3.u
+#     Plots.plot(u, xlim = (-1, 1))
+# end
+# Plots.mp4(anim, joinpath(path, "C2C_advect.mp4"), fps = 10)
+# Plots.png(
+#     Plots.plot(sol3.u[end], xlim = (-1, 1)),
+#     joinpath(path, "sol3_advect_end.png"),
+# )
 
-ENV["GKSwstype"] = "nul"
-using ClimaCorePlots, Plots
-Plots.GRBackend()
+# function linkfig(figpath, alt = "")
+#     # buildkite-agent upload figpath
+#     # link figure in logs if we are running on CI
+#     if get(ENV, "BUILDKITE", "") == "true"
+#         artifact_url = "artifact://$figpath"
+#         print("\033]1338;url='$(artifact_url)';alt='$(alt)'\a\n")
+#     end
+# end
 
-dir = "advect"
-path = joinpath(@__DIR__, "output", dir)
-mkpath(path)
-
-
-anim = Plots.@animate for u in sol3.u
-    Plots.plot(u, xlim = (-1, 1))
-end
-Plots.mp4(anim, joinpath(path, "C2C_advect.mp4"), fps = 10)
-Plots.png(
-    Plots.plot(sol3.u[end], xlim = (-1, 1)),
-    joinpath(path, "sol3_advect_end.png"),
-)
-
-function linkfig(figpath, alt = "")
-    # buildkite-agent upload figpath
-    # link figure in logs if we are running on CI
-    if get(ENV, "BUILDKITE", "") == "true"
-        artifact_url = "artifact://$figpath"
-        print("\033]1338;url='$(artifact_url)';alt='$(alt)'\a\n")
-    end
-end
-
-linkfig(
-    relpath(joinpath(path, "advect_end.png"), joinpath(@__DIR__, "../..")),
-    "Advect End Simulation",
-)
+# linkfig(
+#     relpath(joinpath(path, "advect_end.png"), joinpath(@__DIR__, "../..")),
+#     "Advect End Simulation",
+# )
