@@ -43,6 +43,8 @@ face_space = Spaces.FaceFiniteDifferenceSpace(space)
 coord = Fields.coordinate_field(space)
 face_coord = Fields.coordinate_field(face_space)
 
+println(face_coord)
+
 # Define initial condition
 function init_1d_column(::Type{FT}, params, z) where {FT}
     # physics parameters
@@ -106,8 +108,8 @@ function advection_tendency!(dY, Y, _, t)
            top = Operators.Extrapolate(),
     )
 
-    @. dθ = -A_θ(w, θ)
-    @. dqv = -A_qv(w, qv)
+    @. dθ = -A_θ(w, θ) + fcc(w, θ)
+    @. dqv = -A_qv(w, qv) + fcc(w, qv)
     return dY
 end
 
@@ -115,8 +117,8 @@ end
 # function microphysics_tendency!(dθ, θ, _, t)
 
 # Solve the ODE operator
-Δt = 0.001
-problem = ODEProblem(advection_tendency!, Y, (0.0, 10.0))
+Δt = 10
+problem = ODEProblem(advection_tendency!, Y, (0.0, 3600.0))
 solver = solve(
     problem,
     SSPRK33(),
@@ -136,17 +138,17 @@ mkpath(path)
 
 z_centers = parent(Fields.coordinate_field(space))
 
-anim = Plots.@animate for u in solver.u
-    θ = parent(u.Yc.θ)
-    Plots.plot(θ, z_centers)
-end
-Plots.mp4(anim, joinpath(path, "KM_θ.mp4"), fps = 10)
+# anim = Plots.@animate for u in solver.u
+#     θ = parent(u.Yc.θ)
+#     Plots.plot(θ, z_centers)
+# end
+# Plots.mp4(anim, joinpath(path, "KM_θ.mp4"), fps = 10)
 
-anim = Plots.@animate for u in solver.u
-    qv = parent(u.Yc.qv)
-    Plots.plot(qv, z_centers)
-end
-Plots.mp4(anim, joinpath(path, "KM_qv.mp4"), fps = 10)
+# anim = Plots.@animate for u in solver.u
+#     qv = parent(u.Yc.qv)
+#     Plots.plot(qv, z_centers)
+# end
+# Plots.mp4(anim, joinpath(path, "KM_qv.mp4"), fps = 10)
 
 θ_end = parent(solver.u[end].Yc.θ)
 qv_end = parent(solver.u[end].Yc.qv)
