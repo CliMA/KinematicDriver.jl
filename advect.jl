@@ -30,6 +30,11 @@ z_min = FT(0)
 z_max = FT(3e3)
 n_elem = 128
 
+# Updraft momentum flux terms
+w1 = 2 # m/s * kg/m3
+t1 = 600 # s
+w_params = (w1 = w1, t1 = t1)
+
 domain = Domains.IntervalDomain(
     Geometry.ZPoint{FT}(z_min),
     Geometry.ZPoint{FT}(z_max),
@@ -42,8 +47,6 @@ face_space = Spaces.FaceFiniteDifferenceSpace(space)
 
 coord = Fields.coordinate_field(space)
 face_coord = Fields.coordinate_field(face_space)
-
-println(face_coord)
 
 # Define initial condition
 function init_1d_column(::Type{FT}, params, z) where {FT}
@@ -72,15 +75,17 @@ function init_1d_column(::Type{FT}, params, z) where {FT}
 end
 
 Yc = map(coord -> init_1d_column(FT, params, coord.z), coord)
-w = Geometry.WVector.(ones(FT, face_space)) #TODO - should be changing in time
+w = Geometry.WVector.(zeros(FT, face_space))
 Y = Fields.FieldVector(Yc = Yc, w = w)
 
 # Advection Equation: ∂ϕ/dt = -∂(vΦ)
-function advection_tendency!(dY, Y, _, t)
-
+function advection_tendency!(dY, Y, _, t, w_params)
     Yc = Y.Yc
+
     w = Y.w
-    # TODO @. w = Y.w * sin(t) ?
+    w1 = w_params.w1
+    t1 = w_params.t1
+    w = t < t1 ? w1 * sin.(π * t / t1) : 0
 
     dYc = dY.Yc
 
