@@ -146,7 +146,7 @@ anim = Plots.@animate for u in solver.u
     qv = parent(u.Yc.qv)
     Plots.plot(qv, z_centers)
 end
-Plots.mp4(anim, joinpath(path, "KM_θ.mp4"), fps = 10)
+Plots.mp4(anim, joinpath(path, "KM_qv.mp4"), fps = 10)
 
 θ_end = parent(solver.u[end].Yc.θ)
 qv_end = parent(solver.u[end].Yc.qv)
