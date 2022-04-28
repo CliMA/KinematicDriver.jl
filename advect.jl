@@ -27,7 +27,7 @@ params = AEPS()
 
 # Set up the computational domain
 z_min = FT(0)
-z_max = FT(2e3)
+z_max = FT(3e3)
 n_elem = 128
 
 domain = Domains.IntervalDomain(
@@ -99,12 +99,12 @@ function advection_tendency!(dY, Y, _, t)
         top = Operators.Extrapolate(),
     )
     A_θ = Operators.AdvectionC2C(
-          bottom = Operators.SetValue(279.9),   #TODO - boundary conditions!
+          bottom = Operators.Extrapolate(),   #TODO - boundary conditions!
           top = Operators.Extrapolate(),
     )
 
     A_qv = Operators.AdvectionC2C(
-           bottom = Operators.SetValue(0.016),   #TODO - boundary conditions!
+           bottom = Operators.Extrapolate(),   #TODO - boundary conditions!
            top = Operators.Extrapolate(),
     )
 
