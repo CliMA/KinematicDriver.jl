@@ -2,7 +2,7 @@ using Test
 
 using ClimaCorePlots, Plots
 
-include("../KiD.jl")
+include("../src/KiD.jl")
 
 const FT = Float64
 
