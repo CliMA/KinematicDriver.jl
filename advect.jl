@@ -78,6 +78,12 @@ Yc = map(coord -> init_1d_column(FT, params, coord.z), coord)
 w = Geometry.WVector.(zeros(FT, face_space))
 Y = Fields.FieldVector(Yc = Yc, w = w)
 
+# Thermodynamic states (TODO)
+# - solve for density and pressure as a function of z 
+function rhod(T,p,q)
+    return air_density(params, T, p, q)
+end
+
 # Advection Equation: ∂ϕ/dt = -∂(vΦ)
 function advection_tendency!(dY, Y, _, t, w_params)
     Yc = Y.Yc
@@ -113,7 +119,8 @@ function advection_tendency!(dY, Y, _, t, w_params)
            top = Operators.Extrapolate(),
     )
 
-    @. dθ = -A_θ(w, θ) + fcc(w, θ)
+    #@. dθ = -A_θ(w, θ) + fcc(w, θ)
+    @. dθ = 0.0
     @. dqv = -A_qv(w, qv) + fcc(w, qv)
     return dY
 end
