@@ -20,8 +20,8 @@ function init_1d_column(::Type{FT}, params, z) where {FT}
     qv = z < z_1 ? qv_0 + (qv_1 - qv_0)/(z_1 - z_0) * z : qv_1 + (qv_2 - qv_1)/(z_2 - z_1) * z
 
     # density, pressure, etc...
-    rhod0 = rhod(θ_0, p0, qv_0)
-    rho = rhod(θ, p0, qv)
-
+    rhod0 =  Thermodynamics.air_density(params, T, p, qv)
+    #ρ = rhod(θ,qv,rhod0)
     return(θ = θ, qv = qv)
+    #return(θ = θ, qv = qv, ρ = ρ(z))
 end

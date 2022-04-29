@@ -33,12 +33,12 @@ coord = Fields.coordinate_field(space)
 face_coord = Fields.coordinate_field(face_space)
 
 Yc = map(coord -> init_1d_column(FT, params, coord.z), coord)
-w = Geometry.WVector.(ones(FT, face_space)) #TODO - should be changing in time
+w = Geometry.WVector.(zeros(FT, face_space)) #TODO - should be changing in time
 Y = Fields.FieldVector(Yc = Yc, w = w)
 
 # Solve the ODE operator
 ODE_sys = (dY, Y, _, t) -> advection_tendency!(dY, Y, _, t, w_params)
-problem = ODEProblem(advection_tendency!, Y, (t_ini, t_end))
+problem = ODEProblem(ODE_sys, Y, (t_ini, t_end))
 solver = solve(
     problem,
     SSPRK33(),
