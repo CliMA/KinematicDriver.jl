@@ -1,39 +1,51 @@
+function zero_tendencies!(dY, Y, aux, t)
+    FT = eltype(Y.q_tot)
+    @. dY.q_tot = FT(0)
+end
+
+function precompute_aux!(dY, Y, aux, t)
+    FT = eltype(Y.q_tot)
+    ts = @. TD.PhaseEquil_ρθq(aux.params, aux.ρ, aux.θ_liq_ice, Y.q_tot)
+
+    @. aux.q_liq = TD.liquid_specific_humidity(aux.params, ts)
+    @. aux.q_ice = TD.ice_specific_humidity(aux.params, ts)
+    @. aux.T     = TD.air_temperature(aux.params, ts)
+
+end
+
 # Advection Equation: ∂ϕ/dt = -∂(vΦ)
-function advection_tendency!(dY, Y, _, t)
+function advection_tendency!(dY, Y, aux, t)
+    FT = eltype(Y.q_tot)
 
-    Yc = Y.Yc
-    w = Y.w
-    # TODO @. w = Y.w * sin(t) ?
-
-    dYc = dY.Yc
-
-    θ = Yc.θ
-    qv = Yc.qv
-
-    dθ = dYc.θ
-    dqv = dYc.qv
+    # TODO @. w = Y.w * f(t)
 
     fcc = Operators.FluxCorrectionC2C(
         bottom = Operators.Extrapolate(),
         top = Operators.Extrapolate(),
     )
-    fcf = Operators.FluxCorrectionF2F(
-        bottom = Operators.Extrapolate(),
-        top = Operators.Extrapolate(),
-    )
-    A_θ = Operators.AdvectionC2C(
-          bottom = Operators.SetValue(279.9),   #TODO - boundary conditions!
-          top = Operators.Extrapolate(),
-    )
 
-    A_qv = Operators.AdvectionC2C(
-           bottom = Operators.SetValue(0.016),   #TODO - boundary conditions!
+    A_qt = Operators.AdvectionC2C(
+           bottom = Operators.Extrapolate(),
            top = Operators.Extrapolate(),
     )
 
-    @. dθ = -A_θ(w, θ) + fcc(w, θ)
-    @. dqv = -A_qv(w, qv) + fcc(w, qv)
+    @. dY.q_tot = -A_qt(aux.w, Y.q_tot) + fcc(aux.w, Y.q_tot)
     return dY
 end
 
-#TODO - add microphysics tendency
+function sources_tendency!(dY, Y, aux, t)
+    FT = eltype(Y.q_tot)
+
+    return dY
+end
+
+function rhs!(dY, Y, aux, t)
+
+    zero_tendencies!(dY, Y, aux, t)
+
+    precompute_aux!(dY, Y, aux, t)
+
+    advection_tendency!(dY, Y, aux, t)
+
+    sources_tendency!(dY, Y, aux, t)
+end
