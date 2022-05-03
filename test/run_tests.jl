@@ -13,10 +13,15 @@ params = AEPS()
 # Set up the computational domain and time step
 z_min = FT(0)
 z_max = FT(2e3)
-n_elem = 128
-Δt = 10.0
+n_elem = 256
+Δt = 1.0
 t_ini = 0.0
-t_end = 10.0
+t_end = 10.0 * 60
+
+# Updraft momentum flux terms and initial conditions
+w1 = 2 # m/s * kg/m3
+t1 = 600 # s
+w_params = (w1 = w1, t1 = t1)
 
 domain = Domains.IntervalDomain(
     Geometry.ZPoint{FT}(z_min),
@@ -47,6 +52,7 @@ aux = Fields.FieldVector(;
     q_liq = init.q_liq,
     q_ice = init.q_ice,
     w = w,
+    w_params = w_params,
     params = params,
 )
 
@@ -96,4 +102,17 @@ Plots.png(
 Plots.png(
     Plots.plot(q_tot_end, z_centers),
     joinpath(path, "KM_qt_end.png"),
+)
+
+Plots.png(
+    Plots.plot(q_liq_end, z_centers),
+    joinpath(path, "KM_ql_end.png"),
+)
+Plots.png(
+    Plots.plot(q_ice_end, z_centers),
+    joinpath(path, "KM_qi_end.png"),
+)
+Plots.png(
+    Plots.plot(T_end, z_centers),
+    joinpath(path, "KM_T_end.png"),
 )

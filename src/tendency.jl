@@ -10,14 +10,13 @@ function precompute_aux!(dY, Y, aux, t)
     @. aux.q_liq = TD.liquid_specific_humidity(aux.params, ts)
     @. aux.q_ice = TD.ice_specific_humidity(aux.params, ts)
     @. aux.T     = TD.air_temperature(aux.params, ts)
-
+    aux.w        = Geometry.WVector.(ones(FT, face_space))
+    @. aux.w     = aux.w * aux.w_params.w1 * sin(pi * t / aux.w_params.t1)
 end
 
 # Advection Equation: ∂ϕ/dt = -∂(vΦ)
 function advection_tendency!(dY, Y, aux, t)
     FT = eltype(Y.q_tot)
-
-    # TODO @. w = Y.w * f(t)
 
     fcc = Operators.FluxCorrectionC2C(
         bottom = Operators.Extrapolate(),
@@ -29,14 +28,6 @@ function advection_tendency!(dY, Y, aux, t)
            top = Operators.Extrapolate(),
     )
 
-<<<<<<< HEAD
-    @. dθ = 0.0
-    @. dqv = -A_qv(w, qv) + fcc(w, qv)
-    return dY
-end
-
-#TODO - add microphysics tendency
-=======
     @. dY.q_tot = -A_qt(aux.w, Y.q_tot) + fcc(aux.w, Y.q_tot)
     return dY
 end
@@ -57,4 +48,3 @@ function rhs!(dY, Y, aux, t)
 
     sources_tendency!(dY, Y, aux, t)
 end
->>>>>>> b5c92ac36415e8fbe849cb749d3e4557ca3bd7d9

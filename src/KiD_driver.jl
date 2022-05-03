@@ -48,6 +48,7 @@ aux = Fields.FieldVector(;
     q_liq = init.q_liq,
     q_ice = init.q_ice,
     w = w,
+    w_params = w_params,
     params = params,
 )
 
