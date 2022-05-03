@@ -3,16 +3,16 @@ include("KiD.jl")
 const FT = Float64
 
 # Instantiate CliMA Parameters
-struct AEPS <: APS end
+struct AEPS <: CP.AbstractEarthParameterSet end
 params = AEPS()
 
 # Set up the computational domain and time step
 z_min = FT(0)
 z_max = FT(2e3)
-n_elem = 128
-Δt = 10.0
+n_elem = 256
+Δt = 1.0
 t_ini = 0.0
-t_end = 10.0
+t_end = 10.0 * 60
 
 domain = Domains.IntervalDomain(
     Geometry.ZPoint{FT}(z_min),
@@ -27,12 +27,27 @@ face_space = Spaces.FaceFiniteDifferenceSpace(space)
 coord = Fields.coordinate_field(space)
 face_coord = Fields.coordinate_field(face_space)
 
-Yc = map(coord -> init_1d_column(FT, params, coord.z), coord)
-w = Geometry.WVector.(ones(FT, face_space)) #TODO - should be changing in time
-Y = Fields.FieldVector(Yc = Yc, w = w)
+# solve the initial value problem for density profile
+ρ_profile = ρ_ivp(FT, params)
+# create the initial condition profiles
+init = map(coord -> init_1d_column(FT, params, ρ_profile, coord.z), coord)
+w = Geometry.WVector.(ones(FT, face_space))
+
+# initialoze state and aux
+# set initial condition
+Y = Fields.FieldVector(; q_tot = init.q_tot)
+aux = Fields.FieldVector(;
+    ρ = init.ρ,
+    θ_liq_ice = init.θ_liq_ice,
+    T = init.T,
+    q_liq = init.q_liq,
+    q_ice = init.q_ice,
+    w = w,
+    params = params,
+)
 
 # Solve the ODE operator
-problem = ODEProblem(advection_tendency!, Y, (t_ini, t_end))
+problem = ODEProblem(rhs!, Y, (t_ini, t_end), aux)
 solver = solve(
     problem,
     SSPRK33(),
@@ -54,25 +69,34 @@ mkpath(path)
 
 z_centers = parent(Fields.coordinate_field(space))
 
-# anim = Plots.@animate for u in solver.u
-#     θ = parent(u.Yc.θ)
-#     Plots.plot(θ, z_centers)
-# end
-# Plots.mp4(anim, joinpath(path, "KM_θ.mp4"), fps = 10)
+anim = Plots.@animate for u in solver.u
+    q_tot = parent(u.q_tot)
+    Plots.plot(q_tot, z_centers)
+end
+Plots.mp4(anim, joinpath(path, "KM_qt.mp4"), fps = 10)
 
-# anim = Plots.@animate for u in solver.u
-#     qv = parent(u.Yc.qv)
-#     Plots.plot(qv, z_centers)
-# end
-# Plots.mp4(anim, joinpath(path, "KM_qv.mp4"), fps = 10)
-
-θ_end = parent(solver.u[end].Yc.θ)
-qv_end = parent(solver.u[end].Yc.qv)
+θ_liq_ice_end = parent(aux.θ_liq_ice)
+T_end = parent(aux.T)
+q_liq_end = parent(aux.q_liq)
+q_ice_end = parent(aux.q_ice)
+q_tot_end = parent(solver.u[end].q_tot)
 Plots.png(
-    Plots.plot(θ_end, z_centers),
+    Plots.plot(θ_liq_ice_end, z_centers),
     joinpath(path, "KM_θ_end.png"),
 )
 Plots.png(
-    Plots.plot(qv_end, z_centers),
-    joinpath(path, "KM_qv_end.png"),
+    Plots.plot(q_tot_end, z_centers),
+    joinpath(path, "KM_qt_end.png"),
+)
+Plots.png(
+    Plots.plot(q_liq_end, z_centers),
+    joinpath(path, "KM_ql_end.png"),
+)
+Plots.png(
+    Plots.plot(q_ice_end, z_centers),
+    joinpath(path, "KM_qi_end.png"),
+)
+Plots.png(
+    Plots.plot(T_end, z_centers),
+    joinpath(path, "KM_T_end.png"),
 )
