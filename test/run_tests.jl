@@ -7,7 +7,7 @@ include("../src/KiD.jl")
 const FT = Float64
 
 # Instantiate CliMA Parameters
-struct AEPS <: APS end
+struct AEPS <: CP.AbstractEarthParameterSet end
 params = AEPS()
 
 # Set up the computational domain and time step
@@ -31,13 +31,27 @@ face_space = Spaces.FaceFiniteDifferenceSpace(space)
 coord = Fields.coordinate_field(space)
 face_coord = Fields.coordinate_field(face_space)
 
-Yc = map(coord -> init_1d_column(FT, params, coord.z), coord)
-w = Geometry.WVector.(zeros(FT, face_space)) #TODO - should be changing in time
-Y = Fields.FieldVector(Yc = Yc, w = w)
+# solve the initial value problem for density profile
+ρ_profile = ρ_ivp(FT, params)
+# create the initial condition profiles
+init = map(coord -> init_1d_column(FT, params, ρ_profile, coord.z), coord)
+w = Geometry.WVector.(ones(FT, face_space))
+
+# initialoze state and aux
+# set initial condition
+Y = Fields.FieldVector(; q_tot = init.q_tot)
+aux = Fields.FieldVector(;
+    ρ = init.ρ,
+    θ_liq_ice = init.θ_liq_ice,
+    T = init.T,
+    q_liq = init.q_liq,
+    q_ice = init.q_ice,
+    w = w,
+    params = params,
+)
 
 # Solve the ODE operator
-ODE_sys = (dY, Y, _, t) -> advection_tendency!(dY, Y, _, t, w_params)
-problem = ODEProblem(ODE_sys, Y, (t_ini, t_end))
+problem = ODEProblem(rhs!, Y, (t_ini, t_end), aux)
 solver = solve(
     problem,
     SSPRK33(),
@@ -48,17 +62,17 @@ solver = solve(
 );
 
 z_centers = parent(Fields.coordinate_field(space))
-θ_end = parent(solver.u[end].Yc.θ)
-qv_end = parent(solver.u[end].Yc.qv)
+θ_liq_ice_end = parent(aux.θ_liq_ice)
+q_tot_end = parent(solver.u[end].q_tot)
 
 # Placeholder for testing
 @testset "Test NaNs" begin
-    @test !any(isnan.(θ_end))
-    @test !any(isnan.(qv_end))
+    @test !any(isnan.(θ_liq_ice_end))
+    @test !any(isnan.(q_tot_end))
 end
 @testset "Test positive definite" begin
-    @test minimum(θ_end) > FT(0)
-    @test minimum(qv_end) > FT(0)
+    @test minimum(θ_liq_ice_end) > FT(0)
+    @test minimum(q_tot_end) > FT(0)
 end
 
 # Save some plots
@@ -70,22 +84,16 @@ path = joinpath(@__DIR__, "output", dir)
 mkpath(path)
 
 anim = Plots.@animate for u in solver.u
-    θ = parent(u.Yc.θ)
-    Plots.plot(θ, z_centers)
+    q_tot = parent(u.q_tot)
+    Plots.plot(q_tot, z_centers)
 end
-Plots.mp4(anim, joinpath(path, "KM_θ.mp4"), fps = 10)
-
-anim = Plots.@animate for u in solver.u
-    qv = parent(u.Yc.qv)
-    Plots.plot(qv, z_centers)
-end
-Plots.mp4(anim, joinpath(path, "KM_qv.mp4"), fps = 10)
+Plots.mp4(anim, joinpath(path, "KM_qt.mp4"), fps = 10)
 
 Plots.png(
-    Plots.plot(θ_end, z_centers),
+    Plots.plot(θ_liq_ice_end, z_centers),
     joinpath(path, "KM_θ_end.png"),
 )
 Plots.png(
-    Plots.plot(qv_end, z_centers),
-    joinpath(path, "KM_qv_end.png"),
+    Plots.plot(q_tot_end, z_centers),
+    joinpath(path, "KM_qt_end.png"),
 )
