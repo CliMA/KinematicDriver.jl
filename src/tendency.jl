@@ -10,8 +10,7 @@ function precompute_aux!(dY, Y, aux, t)
     @. aux.q_liq = TD.liquid_specific_humidity(aux.params, ts)
     @. aux.q_ice = TD.ice_specific_humidity(aux.params, ts)
     @. aux.T     = TD.air_temperature(aux.params, ts)
-    aux.w        = Geometry.WVector.(ones(FT, face_space))
-    @. aux.w     = aux.w * aux.w_params.w1 * sin(pi * t / aux.w_params.t1)
+    @. aux.w     = Geometry.WVector.(aux.w_params.w1 * sin(pi * t / aux.w_params.t1))
 end
 
 # Advection Equation: ∂ϕ/dt = -∂(vΦ)

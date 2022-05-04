@@ -40,7 +40,7 @@ face_coord = Fields.coordinate_field(face_space)
 ρ_profile = ρ_ivp(FT, params)
 # create the initial condition profiles
 init = map(coord -> init_1d_column(FT, params, ρ_profile, coord.z), coord)
-w = Geometry.WVector.(ones(FT, face_space))
+w = Geometry.WVector.(zeros(FT, face_space))
 
 # initialoze state and aux
 # set initial condition
