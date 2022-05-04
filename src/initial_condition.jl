@@ -26,7 +26,7 @@ function init_condition(::Type{FT}, params, z) where {FT}
     return(qv = qv, θ = θ, ρ_0 = ρ_0, z_0 = z_0, z_2 = z_2)
 end
 
-function dρ_dz!(ρ, params, z)
+function dρ_dz0!(ρ, params, z)
 
     FT = eltype(ρ)
 
@@ -47,7 +47,7 @@ function dρ_dz!(ρ, params, z)
     return g / T * ρ * (R_m / cp_m - 1) / R_m
 end
 
-function ρ_ivp(::Type{FT}, params) where {FT}
+function ρ_ivp0(::Type{FT}, params) where {FT}
 
     init_surface = init_condition(FT, params, 0.0)
 
@@ -56,7 +56,7 @@ function ρ_ivp(::Type{FT}, params) where {FT}
     z_max::FT = init_surface.z_2
 
     z_span = (z_0, z_max)
-    prob = ODEProblem(dρ_dz!, ρ_0, z_span, params)
+    prob = ODEProblem(dρ_dz0!, ρ_0, z_span, params)
     sol = solve(prob, Tsit5(), reltol=1e-8, abstol=1e-8)
 
     return sol
