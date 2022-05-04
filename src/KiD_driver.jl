@@ -14,6 +14,11 @@ n_elem = 256
 t_ini = 0.0
 t_end = 10.0 * 60
 
+# Updraft momentum flux terms and initial conditions
+w1 = 2 # m/s * kg/m3
+t1 = 600 # s
+w_params = (w1 = w1, t1 = t1)
+
 domain = Domains.IntervalDomain(
     Geometry.ZPoint{FT}(z_min),
     Geometry.ZPoint{FT}(z_max),
@@ -31,7 +36,7 @@ face_coord = Fields.coordinate_field(face_space)
 ρ_profile = ρ_ivp(FT, params)
 # create the initial condition profiles
 init = map(coord -> init_1d_column(FT, params, ρ_profile, coord.z), coord)
-w = Geometry.WVector.(ones(FT, face_space))
+w = Geometry.WVector.(zeros(FT, face_space))
 
 # initialoze state and aux
 # set initial condition
@@ -43,6 +48,7 @@ aux = Fields.FieldVector(;
     q_liq = init.q_liq,
     q_ice = init.q_ice,
     w = w,
+    w_params = w_params,
     params = params,
 )
 

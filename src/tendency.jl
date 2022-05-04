@@ -10,14 +10,12 @@ function precompute_aux!(dY, Y, aux, t)
     @. aux.q_liq = TD.liquid_specific_humidity(aux.params, ts)
     @. aux.q_ice = TD.ice_specific_humidity(aux.params, ts)
     @. aux.T     = TD.air_temperature(aux.params, ts)
-
+    @. aux.w     = Geometry.WVector.(aux.w_params.w1 * sin(pi * t / aux.w_params.t1))
 end
 
 # Advection Equation: ∂ϕ/dt = -∂(vΦ)
 function advection_tendency!(dY, Y, aux, t)
     FT = eltype(Y.q_tot)
-
-    # TODO @. w = Y.w * f(t)
 
     fcc = Operators.FluxCorrectionC2C(
         bottom = Operators.Extrapolate(),
