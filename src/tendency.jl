@@ -11,7 +11,7 @@ function precompute_aux!(dY, Y, aux, t)
     @. aux.q_liq = TD.liquid_specific_humidity(aux.params, ts)
     @. aux.q_ice = TD.ice_specific_humidity(aux.params, ts)
     @. aux.T     = TD.air_temperature(aux.params, ts)
-    @. aux.w     = Geometry.WVector.(aux.w_params.w1 * sin(pi * t / aux.w_params.t1))
+    @. aux.ρw     = Geometry.WVector.(aux.w_params.w1 * sin(pi * t / aux.w_params.t1))
 end
 
 # Advection Equation: ∂ϕ/dt = -∂(vΦ)
@@ -22,19 +22,12 @@ function advection_tendency!(dY, Y, aux, t)
         bottom = Operators.Extrapolate(),
         top = Operators.Extrapolate(),
     )
-
     If = Operators.InterpolateC2F()
     ∂ = Operators.DivergenceF2C(
-        bottom = Operators.Extrapolate(),
+        bottom = Operators.SetValue(Geometry.WVector(0.016)), # TODO: change to correct ρvw_0 b.c.
         top = Operators.Extrapolate(),
     )
-    #A_qt = Operators.AdvectionC2C(
-    #       bottom = Operators.Extrapolate(),
-    #       top = Operators.Extrapolate(),
-    #)
-
-    #@. dY.q_tot = -A_qt(aux.w, Y.q_tot) + fcc(aux.w, Y.q_tot)
-    @. dY.ρq_tot  += -(∂(aux.w * If(Y.ρq_tot))) + fcc(aux.w, Y.ρq_tot)
+    @. dY.ρq_tot  += -(∂(aux.ρw / If(aux.ρ) * If(Y.ρq_tot))) + fcc(aux.ρw / If(aux.ρ), Y.ρq_tot)
 
     #Spaces.weighted_dss!(dY.ρq_tot)
     return dY

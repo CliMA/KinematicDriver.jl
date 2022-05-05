@@ -36,7 +36,7 @@ face_coord = Fields.coordinate_field(face_space)
 ρ_profile = ρ_ivp(FT, params)
 # create the initial condition profiles
 init = map(coord -> init_1d_column(FT, params, ρ_profile, coord.z), coord)
-w = Geometry.WVector.(zeros(FT, face_space))
+ρw = Geometry.WVector.(zeros(FT, face_space))
 
 # initialoze state and aux
 # set initial condition
@@ -47,9 +47,10 @@ aux = Fields.FieldVector(;
     T = init.T,
     q_liq = init.q_liq,
     q_ice = init.q_ice,
-    w = w,
+    ρw = ρw,
     w_params = w_params,
     params = params,
+    q_surf = 0.016
 )
 
 # Solve the ODE operator
