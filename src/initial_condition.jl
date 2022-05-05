@@ -68,11 +68,12 @@ function init_1d_column(::Type{FT}, params, ρ_profile, z) where {FT}
     q_tot::FT = init_condition(FT, params, z).qv
 
     ρ::FT = ρ_profile(z)
+    ρq_tot::FT = ρ * q_tot
 
     ts = TD.PhaseEquil_ρθq(params, ρ, θ_liq_ice, q_tot)
     q_liq::FT = TD.liquid_specific_humidity(params, ts)
     q_ice::FT = TD.ice_specific_humidity(params, ts)
     T::FT     = TD.air_temperature(params, ts)
 
-    return(; q_tot, q_liq, q_ice, θ_liq_ice, T, ρ)
+    return(; ρq_tot, q_liq, q_ice, θ_liq_ice, T, ρ)
 end
