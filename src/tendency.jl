@@ -1,11 +1,12 @@
 function zero_tendencies!(dY, Y, aux, t)
-    FT = eltype(Y.q_tot)
-    @. dY.q_tot = FT(0)
+    FT = eltype(Y.ρq_tot)
+    @. dY.ρq_tot = FT(0)
 end
 
 function precompute_aux!(dY, Y, aux, t)
-    FT = eltype(Y.q_tot)
-    ts = @. TD.PhaseEquil_ρθq(aux.params, aux.ρ, aux.θ_liq_ice, Y.q_tot)
+    FT = eltype(Y.ρq_tot)
+
+    ts = @. TD.PhaseEquil_ρθq(aux.params, aux.ρ, aux.θ_liq_ice, Y.ρq_tot / aux.ρ)
 
     @. aux.q_liq = TD.liquid_specific_humidity(aux.params, ts)
     @. aux.q_ice = TD.ice_specific_humidity(aux.params, ts)
@@ -15,24 +16,32 @@ end
 
 # Advection Equation: ∂ϕ/dt = -∂(vΦ)
 function advection_tendency!(dY, Y, aux, t)
-    FT = eltype(Y.q_tot)
+    FT = eltype(Y.ρq_tot)
 
     fcc = Operators.FluxCorrectionC2C(
         bottom = Operators.Extrapolate(),
         top = Operators.Extrapolate(),
     )
 
-    A_qt = Operators.AdvectionC2C(
-           bottom = Operators.Extrapolate(),
-           top = Operators.Extrapolate(),
+    If = Operators.InterpolateC2F()
+    ∂ = Operators.DivergenceF2C(
+        bottom = Operators.Extrapolate(),
+        top = Operators.Extrapolate(),
     )
+    #A_qt = Operators.AdvectionC2C(
+    #       bottom = Operators.Extrapolate(),
+    #       top = Operators.Extrapolate(),
+    #)
 
-    @. dY.q_tot = -A_qt(aux.w, Y.q_tot) + fcc(aux.w, Y.q_tot)
+    #@. dY.q_tot = -A_qt(aux.w, Y.q_tot) + fcc(aux.w, Y.q_tot)
+    @. dY.ρq_tot  += -(∂(aux.w * If(Y.ρq_tot))) + fcc(aux.w, Y.ρq_tot)
+
+    #Spaces.weighted_dss!(dY.ρq_tot)
     return dY
 end
 
 function sources_tendency!(dY, Y, aux, t)
-    FT = eltype(Y.q_tot)
+    FT = eltype(Y.ρq_tot)
 
     return dY
 end
