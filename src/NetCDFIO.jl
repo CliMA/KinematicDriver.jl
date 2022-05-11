@@ -8,6 +8,8 @@ mutable struct NetCDFIO_Stats
 end
 
 function NetCDFIO_Stats(nc_filename, output_interval, z_faces, z_centers)
+    FT = Float64
+    
     # Initialize properties with valid type:
     tmp = tempname()
     root_grp = NC.Dataset(tmp, "c")
@@ -30,8 +32,8 @@ function NetCDFIO_Stats(nc_filename, output_interval, z_faces, z_centers)
         NC.defVar(profile_grp, "zc", z_centers, ("zc",))
         NC.defVar(profile_grp, "t", Float64, ("t",))
 
-        NC.defVar(profile_grp, "density", z_centers, ("zc",))      # TODO - not here
-        NC.defVar(profile_grp, "temperature", z_centers, ("zc",))  # TODO - not here
+        NC.defVar(profile_grp, "density", FT, ("zc","t"))      # TODO - not here
+        NC.defVar(profile_grp, "temperature", FT, ("zc","t"))  # TODO - not here
 
         reference_grp = NC.defGroup(root_grp, "reference")
         NC.defDim(reference_grp, "zf", length(z_faces))

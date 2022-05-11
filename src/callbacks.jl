@@ -21,8 +21,8 @@ function affect_io!(integrator)
     # TurbulenceConvection.io(sim) # #removeVarsHack
     write_simulation_time(Stats, t) # #removeVarsHack
 
-    #write_field(Stats, "density", ρ, "profiles")
-    #write_field(Stats, "temperature", T, "profiles")
+    write_field(Stats, "density", vec(ρ), "profiles")
+    write_field(Stats, "temperature", vec(T), "profiles")
 
     close_files(Stats)
 
