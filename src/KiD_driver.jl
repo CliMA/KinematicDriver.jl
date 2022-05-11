@@ -11,6 +11,7 @@ z_min = FT(0)
 z_max = FT(2e3)
 n_elem = 256
 Δt = 1.0
+Δt_output = 10 * Δt
 t_ini = 0.0
 t_end = 10.0 * 60
 
@@ -39,8 +40,12 @@ init = map(coord -> init_1d_column(FT, params, ρ_profile, coord.z), coord)
 ρw = Geometry.WVector.(zeros(FT, face_space))
 ρw0 = 0.0
 
-# initialoze state and aux
-# set initial condition
+# initialize the netcdf output Stats struct
+Stats = NetCDFIO_Stats("Output.nc", 1.0, vec(face_coord), vec(coord))
+# initialize the timestepping struct
+TS = TimeStepping(FT(Δt), FT(Δt_output), FT(t_end))
+
+# initialize state (Y) and aux, set initial condition
 Y = Fields.FieldVector(; ρq_tot = init.ρq_tot)
 aux = Fields.FieldVector(;
     ρ = init.ρ,
@@ -52,22 +57,28 @@ aux = Fields.FieldVector(;
     w_params = w_params,
     params = params,
     q_surf = 0.016,
-    ρw0 = ρw0
+    ρw0 = ρw0,
+    Stats = Stats,
+    TS = TS,
 )
 
+# Define callbacks for output
+callback_io = ODE.DiscreteCallback(condition_io, affect_io!; save_positions = (false, false))
+callbacks = ODE.CallbackSet(callback_io)
+
 # Solve the ODE operator
-problem = ODEProblem(rhs!, Y, (t_ini, t_end), aux)
-solver = solve(
+problem = ODE.ODEProblem(rhs!, Y, (t_ini, t_end), aux)
+solver = ODE.solve(
     problem,
-    SSPRK33(),
+    ODE.SSPRK33(),
     dt = Δt,
     saveat = 10 * Δt,
+    callback = callbacks,
     progress = true,
     progress_message = (dt, u, p, t) -> t,
 );
 
 # TODO - delete below once we have NetCDF output
-
 ENV["GKSwstype"] = "nul"
 using ClimaCorePlots, Plots
 Plots.GRBackend()

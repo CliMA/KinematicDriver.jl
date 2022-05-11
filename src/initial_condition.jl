@@ -56,8 +56,8 @@ function ρ_ivp(::Type{FT}, params) where {FT}
     z_max::FT = init_surface.z_2
 
     z_span = (z_0, z_max)
-    prob = ODEProblem(dρ_dz!, ρ_0, z_span, params)
-    sol = solve(prob, Tsit5(), reltol=1e-8, abstol=1e-8)
+    prob = ODE.ODEProblem(dρ_dz!, ρ_0, z_span, params)
+    sol = ODE.solve(prob, ODE.Tsit5(), reltol=1e-8, abstol=1e-8)
 
     return sol
 end
