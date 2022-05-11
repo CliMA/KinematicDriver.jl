@@ -11,6 +11,7 @@ z_min = FT(0)
 z_max = FT(2e3)
 n_elem = 256
 Δt = 1.0
+Δt_output = 10 * Δt
 t_ini = 0.0
 t_end = 10.0 * 60
 
@@ -42,7 +43,7 @@ init = map(coord -> init_1d_column(FT, params, ρ_profile, coord.z), coord)
 # initialize the netcdf output Stats struct
 Stats = NetCDFIO_Stats("Output.nc", 1.0, vec(face_coord), vec(coord))
 # initialize the timestepping struct
-TS = TimeStepping(FT(Δt), FT(10.0), FT(t_end))
+TS = TimeStepping(FT(Δt), FT(Δt_output), FT(t_end))
 
 # initialize state (Y) and aux, set initial condition
 Y = Fields.FieldVector(; ρq_tot = init.ρq_tot)
