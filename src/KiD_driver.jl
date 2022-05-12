@@ -3,8 +3,16 @@ include("KiD.jl")
 const FT = Float64
 
 # Instantiate CliMA Parameters
-struct AEPS <: CP.AbstractEarthParameterSet end
-params = AEPS()
+struct EarthParameterSet{NT} <: CP.AbstractEarthParameterSet
+    nt::NT
+end
+CP.Planet.MSLP(ps::EarthParameterSet) = ps.nt.MSLP
+nt = (;
+    MSLP = 100000.0,
+)
+params = EarthParameterSet(nt)
+
+print(CP.Planet.MSLP(params))
 
 # Set up the computational domain and time step
 z_min = FT(0)
