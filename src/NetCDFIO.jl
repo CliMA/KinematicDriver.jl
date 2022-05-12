@@ -1,3 +1,7 @@
+"""
+    NetCDF output
+"""
+
 mutable struct NetCDFIO_Stats
     root_grp::NC.NCDataset{Nothing}
     profiles_grp::NC.NCDataset{NC.NCDataset{Nothing}}
@@ -9,7 +13,7 @@ end
 
 function NetCDFIO_Stats(nc_filename, output_interval, z_faces, z_centers)
     FT = Float64
-    
+
     # Initialize properties with valid type:
     tmp = tempname()
     root_grp = NC.Dataset(tmp, "c")
@@ -32,12 +36,19 @@ function NetCDFIO_Stats(nc_filename, output_interval, z_faces, z_centers)
         NC.defVar(profile_grp, "zc", z_centers, ("zc",))
         NC.defVar(profile_grp, "t", Float64, ("t",))
 
-        NC.defVar(profile_grp, "density", FT, ("zc","t"))      # TODO - not here
-        NC.defVar(profile_grp, "temperature", FT, ("zc","t"))  # TODO - not here
-        NC.defVar(profile_grp, "theta_dry", FT, ("zc","t"))      # TODO - not here
-        NC.defVar(profile_grp, "pressure", FT, ("zc","t"))  # TODO - not here
-        NC.defVar(profile_grp, "q_liq", FT, ("zc","t"))  # TODO - not here
-        NC.defVar(profile_grp, "theta_ql", FT, ("zc","t"))  # TODO - not here
+        # TODO - define output variables based on the model that is being run?
+        NC.defVar(profile_grp, "density", FT, ("zc","t"))
+        NC.defVar(profile_grp, "temperature", FT, ("zc","t"))
+        NC.defVar(profile_grp, "pressure", FT, ("zc","t"))
+
+        NC.defVar(profile_grp, "theta_liq_ice", FT, ("zc","t"))
+        NC.defVar(profile_grp, "theta_dry", FT, ("zc","t"))
+
+        NC.defVar(profile_grp, "q_tot", FT, ("zc","t"))
+        NC.defVar(profile_grp, "q_liq", FT, ("zc","t"))
+        NC.defVar(profile_grp, "q_ice", FT, ("zc","t"))
+        NC.defVar(profile_grp, "q_rai", FT, ("zc","t"))
+        NC.defVar(profile_grp, "q_sno", FT, ("zc","t"))
 
         reference_grp = NC.defGroup(root_grp, "reference")
         NC.defDim(reference_grp, "zf", length(z_faces))
@@ -74,30 +85,6 @@ function close_files(self::NetCDFIO_Stats)
     close(self.root_grp)
 end
 
-#####
-##### Generic field
-#####
-
-function add_field(ds, var_name::String, dims, group)
-    profile_grp = ds.group[group]
-    new_var = NC.defVar(profile_grp, var_name, Float64, dims)
-    return nothing
-end
-
-#####
-##### Time-series data
-#####
-
-function add_ts(ds, var_name::String)
-    ts_grp = ds.group["timeseries"]
-    new_var = NC.defVar(ts_grp, var_name, Float64, ("t",))
-    return nothing
-end
-
-#####
-##### Performance critical IO
-#####
-
 function write_field(self::NetCDFIO_Stats, var_name::String, data::T, group) where {T <: AbstractArray{Float64, 1}}
     # Hack to avoid https://github.com/Alexander-Barth/NCDatasets.jl/issues/135
     @inbounds self.vars[group][var_name][:, end] = data
@@ -105,14 +92,6 @@ function write_field(self::NetCDFIO_Stats, var_name::String, data::T, group) whe
     # var = self.profiles_grp[var_name]
     # Not sure why `end` instead of `end+1`, but `end+1` produces garbage output
     # @inbounds var[end, :] = data :: T
-end
-
-function add_write_field(ds, var_name::String, data::T, group, dims) where {T <: AbstractArray{Float64, 1}}
-    grp = ds.group[group]
-    NC.defVar(grp, var_name, Float64, dims)
-    var = grp[var_name]
-    var .= data::T
-    return nothing
 end
 
 function write_ts(self::NetCDFIO_Stats, var_name::String, data::Float64)
@@ -131,4 +110,31 @@ function write_simulation_time(self::NetCDFIO_Stats, t::Float64)
     # # Write to timeseries group
     ts_t = self.ts_grp["t"]
     @inbounds ts_t[end + 1] = t::Float64
+end
+
+function KiD_output(aux, t::Float64)
+
+    # TODO: remove `vars` hack that avoids
+    # https://github.com/Alexander-Barth/NCDatasets.jl/issues/135
+    # opening/closing files every step should be okay. #removeVarsHack
+
+    UnPack.@unpack Stats, ρ, T, θ_dry, p, q_tot, q_liq, q_ice, q_rai, q_sno, θ_liq_ice = aux
+
+    open_files(Stats)
+
+    write_simulation_time(Stats, t)
+    write_field(Stats, "density", vec(ρ), "profiles")
+    write_field(Stats, "temperature", vec(T), "profiles")
+    write_field(Stats, "pressure", vec(p), "profiles")
+
+    write_field(Stats, "theta_liq_ice", vec(θ_liq_ice), "profiles")
+    write_field(Stats, "theta_dry", vec(θ_dry), "profiles")
+
+    write_field(Stats, "q_tot", vec(q_tot), "profiles")
+    write_field(Stats, "q_liq", vec(q_liq), "profiles")
+    write_field(Stats, "q_ice", vec(q_ice), "profiles")
+    write_field(Stats, "q_rai", vec(q_rai), "profiles")
+    write_field(Stats, "q_sno", vec(q_sno), "profiles")
+
+    close_files(Stats)
 end
