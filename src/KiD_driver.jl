@@ -49,6 +49,8 @@ Y = Fields.FieldVector(; ρq_tot = init.ρq_tot)
 aux = Fields.FieldVector(;
     ρ = init.ρ,
     θ_liq_ice = init.θ_liq_ice,
+    θ_d = init.θ_d,
+    P = init.P,
     T = init.T,
     q_liq = init.q_liq,
     q_ice = init.q_ice,
@@ -60,6 +62,19 @@ aux = Fields.FieldVector(;
     Stats = Stats,
     TS = TS,
 )
+UnPack.@unpack Stats, ρ, T, θ_d, P, q_liq, θ_liq_ice = aux
+open_files(Stats)
+
+write_simulation_time(Stats, 0.0) # #removeVarsHack
+
+write_field(Stats, "density", vec(ρ), "profiles")
+write_field(Stats, "temperature", vec(T), "profiles")
+write_field(Stats, "theta_dry", vec(θ_d), "profiles")
+write_field(Stats, "pressure", vec(P), "profiles")
+write_field(Stats, "q_liq", vec(q_liq), "profiles")
+write_field(Stats, "theta_ql", vec(θ_liq_ice), "profiles")
+
+close_files(Stats)
 
 # Define callbacks for output
 callback_io = ODE.DiscreteCallback(condition_io, affect_io!; save_positions = (false, false))

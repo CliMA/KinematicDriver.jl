@@ -34,6 +34,10 @@ function NetCDFIO_Stats(nc_filename, output_interval, z_faces, z_centers)
 
         NC.defVar(profile_grp, "density", FT, ("zc","t"))      # TODO - not here
         NC.defVar(profile_grp, "temperature", FT, ("zc","t"))  # TODO - not here
+        NC.defVar(profile_grp, "theta_dry", FT, ("zc","t"))      # TODO - not here
+        NC.defVar(profile_grp, "pressure", FT, ("zc","t"))  # TODO - not here
+        NC.defVar(profile_grp, "q_liq", FT, ("zc","t"))  # TODO - not here
+        NC.defVar(profile_grp, "theta_ql", FT, ("zc","t"))  # TODO - not here
 
         reference_grp = NC.defGroup(root_grp, "reference")
         NC.defDim(reference_grp, "zf", length(z_faces))
