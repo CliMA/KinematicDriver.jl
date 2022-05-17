@@ -1,6 +1,8 @@
 # Data files
 *.DS_Store
 *.nc
+*.pkl
+*.ipynb
 *.png
 *.json
 *.in
