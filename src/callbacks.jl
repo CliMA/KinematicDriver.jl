@@ -10,7 +10,7 @@ function condition_io(u, t, integrator)
 end
 
 function affect_io!(integrator)
-    UnPack.@unpack Stats, ρ, T = integrator.p
+    UnPack.@unpack Stats, ρ, T, θ_d, P, q_liq = integrator.p
     t = integrator.t
 
     open_files(Stats)
@@ -23,6 +23,10 @@ function affect_io!(integrator)
 
     write_field(Stats, "density", vec(ρ), "profiles")
     write_field(Stats, "temperature", vec(T), "profiles")
+    write_field(Stats, "theta_dry", vec(θ_d), "profiles")
+    write_field(Stats, "pressure", vec(P), "profiles")
+    write_field(Stats, "q_liq", vec(q_liq), "profiles")
+    write_field(Stats, "theta_ql", vec(θ_liq_ice), "profiles")
 
     close_files(Stats)
 

@@ -4,7 +4,7 @@ function init_condition(::Type{FT}, params, z) where {FT}
     z_0::FT = 0.0
     z_1::FT = 740.0
     z_2::FT = 3260.0
-    qv_0::FT = 0.016
+    qv_0::FT = 0.015
     qv_1::FT = 0.0138
     qv_2::FT = 0.0024
     θ_0::FT = 297.9
@@ -12,10 +12,38 @@ function init_condition(::Type{FT}, params, z) where {FT}
     θ_2::FT = 312.66
 
     # profile of water vapour specific humidity (TODO - or is it mixing ratio?)
-    qv::FT = z < z_1 ? qv_0 + (qv_1 - qv_0)/(z_1 - z_0) * z : qv_1 + (qv_2 - qv_1)/(z_2 - z_1) * z
+    qv::FT = z < z_1 ? qv_0 + (qv_1 - qv_0)/(z_1 - z_0) * (z - z_0) : qv_1 + (qv_2 - qv_1)/(z_2 - z_1) * (z - z_1)
 
     # profile of potential temperature
-    θ::FT = z < z_1 ? θ_0 : θ_1 + (θ_2 - θ_1)/(z_2 - z_1) * z
+    θ::FT = z < z_1 ? θ_0 : θ_1 + (θ_2 - θ_1)/(z_2 - z_1) * (z - z_1)
+
+    # density at the surface
+    p_0::FT = 100200.0
+    q_0 = TD.PhasePartition(qv_0, 0.0, 0.0)
+    T_0::FT = θ_0 * TD.exner_given_pressure(params, p_0,  q_0)
+    ρ_0::FT = TD.air_density(params, T_0, p_0, q_0)
+
+    return(qv = qv, θ = θ, ρ_0 = ρ_0, z_0 = z_0, z_2 = z_2)
+end
+
+# Define initial condition
+function init_condition_dry(::Type{FT}, params, z) where {FT}
+
+    z_0::FT = 0.0
+    z_1::FT = 740.0
+    z_2::FT = 3260.0
+    qv_0::FT = 0.0
+    qv_1::FT = 0.0
+    qv_2::FT = 0.0
+    θ_0::FT = 297.9
+    θ_1::FT = 297.9
+    θ_2::FT = 312.66
+
+    # profile of water vapour specific humidity (TODO - or is it mixing ratio?)
+    qv::FT = z < z_1 ? qv_0 + (qv_1 - qv_0)/(z_1 - z_0) * (z - z_0) : qv_1 + (qv_2 - qv_1)/(z_2 - z_1) * (z - z_1)
+
+    # profile of potential temperature
+    θ::FT = z < z_1 ? θ_0 : θ_1 + (θ_2 - θ_1)/(z_2 - z_1) * (z - z_1)
 
     # density at the surface
     p_0::FT = 100200.0
@@ -64,16 +92,19 @@ end
 
 function init_1d_column(::Type{FT}, params, ρ_profile, z) where {FT}
 
-    θ_liq_ice::FT = init_condition(FT, params, z).θ
     q_tot::FT = init_condition(FT, params, z).qv
+    θ_liq_ice::FT = init_condition(FT, params, z).θ 
 
     ρ::FT = ρ_profile(z)
     ρq_tot::FT = ρ * q_tot
 
     ts = TD.PhaseEquil_ρθq(params, ρ, θ_liq_ice, q_tot)
+
     q_liq::FT = TD.liquid_specific_humidity(params, ts)
     q_ice::FT = TD.ice_specific_humidity(params, ts)
     T::FT     = TD.air_temperature(params, ts)
+    θ_d::FT   = TD.dry_pottemp(params, ts)
+    P::FT     = TD.air_pressure(params, ts)
 
-    return(; ρq_tot, q_liq, q_ice, θ_liq_ice, T, ρ)
+    return(; ρq_tot, q_liq, q_ice, θ_liq_ice, T, ρ, θ_d, P)
 end
