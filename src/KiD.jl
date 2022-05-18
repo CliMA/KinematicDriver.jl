@@ -1,14 +1,4 @@
-import ClimaCore:
-    Fields,
-    Domains,
-    Topologies,
-    Meshes,
-    DataLayouts,
-    Operators,
-    Geometry,
-    Spaces
-
-import SurfaceFluxes
+import ClimaCore
 import Thermodynamics
 import CloudMicrophysics
 import CLIMAParameters
@@ -21,15 +11,14 @@ import Logging
 import TerminalLoggers
 Logging.global_logger(TerminalLoggers.TerminalLogger())
 
+const CC = ClimaCore
 const TD = Thermodynamics
 const CP = CLIMAParameters
 const NC = NCDatasets
 const ODE = OrdinaryDiffEq
 
-# Instantiate CliMA Parameters
-struct AEPS <: CP.AbstractEarthParameterSet end
-params = AEPS()
-
+include("EquationTypes.jl")
+include("Kid_model.jl")
 include("TimeStepping.jl")
 include("NetCDFIO.jl")
 include("callbacks.jl")
