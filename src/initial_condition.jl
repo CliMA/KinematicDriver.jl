@@ -1,4 +1,10 @@
-# Define initial condition
+"""
+   Initial condition computation
+"""
+
+"""
+   Initial profiles and surface values as defined by KiD setup
+"""
 function init_condition(::Type{FT}, params, z) where {FT}
 
     z_0::FT = 0.0
@@ -26,7 +32,9 @@ function init_condition(::Type{FT}, params, z) where {FT}
     return(qv = qv, θ = θ, ρ_0 = ρ_0, z_0 = z_0, z_2 = z_2)
 end
 
-# Define initial condition
+"""
+    TODO
+"""
 function init_condition_dry(::Type{FT}, params, z) where {FT}
 
     z_0::FT = 0.0
@@ -54,6 +62,10 @@ function init_condition_dry(::Type{FT}, params, z) where {FT}
     return(qv = qv, θ = θ, ρ_0 = ρ_0, z_0 = z_0, z_2 = z_2)
 end
 
+"""
+    Density derivative as a function of height (assuming no cloud condensate)
+    Needed to solve the initial value problem to create the density profile.
+"""
 function dρ_dz!(ρ, params, z)
 
     FT = eltype(ρ)
@@ -75,6 +87,9 @@ function dρ_dz!(ρ, params, z)
     return g / T * ρ * (R_m / cp_m - 1) / R_m
 end
 
+"""
+    Solve the initial value problem for the density profile
+"""
 function ρ_ivp(::Type{FT}, params) where {FT}
 
     init_surface = init_condition(FT, params, 0.0)
@@ -90,21 +105,33 @@ function ρ_ivp(::Type{FT}, params) where {FT}
     return sol
 end
 
+"""
+    Populate the remaining profiles based on the KiD initial condition
+    and the density profile
+"""
 function init_1d_column(::Type{FT}, params, ρ_profile, z) where {FT}
 
     q_tot::FT = init_condition(FT, params, z).qv
-    θ_liq_ice::FT = init_condition(FT, params, z).θ 
+    θ_liq_ice::FT = init_condition(FT, params, z).θ
 
     ρ::FT = ρ_profile(z)
-    ρq_tot::FT = ρ * q_tot
+    ρq_tot::FT = q_tot * ρ
 
     ts = TD.PhaseEquil_ρθq(params, ρ, θ_liq_ice, q_tot)
 
+    T::FT = TD.air_temperature(params, ts)
+    θ_dry::FT = TD.dry_pottemp(params, ts)
+    p::FT = TD.air_pressure(params, ts)
+
     q_liq::FT = TD.liquid_specific_humidity(params, ts)
     q_ice::FT = TD.ice_specific_humidity(params, ts)
-    T::FT     = TD.air_temperature(params, ts)
-    θ_d::FT   = TD.dry_pottemp(params, ts)
-    P::FT     = TD.air_pressure(params, ts)
+    ρq_liq::FT = q_liq * ρ
+    ρq_ice::FT = q_ice * ρ
 
-    return(; ρq_tot, q_liq, q_ice, θ_liq_ice, T, ρ, θ_d, P)
+    q_rai::FT = FT(0.0)
+    q_sno::FT = FT(0.0)
+    ρq_rai::FT = q_rai * ρ
+    ρq_sno::FT = q_sno * ρ
+
+    return(; ρ, T, p, θ_liq_ice, θ_dry, ρq_tot, ρq_liq, ρq_ice, ρq_rai, ρq_sno, q_tot, q_liq, q_ice, q_rai, q_sno)
 end
