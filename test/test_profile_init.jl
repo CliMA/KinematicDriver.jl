@@ -2,12 +2,12 @@
 """
 This should be turned into a test file
 """
+dry=false
 
 include("../src/KiD.jl")
 include("data_utils.jl")
 
 const FT = Float64
-dry=true
 
 # Instantiate CliMA Parameters
 struct EarthParameterSet{NT} <: CP.AbstractEarthParameterSet
@@ -69,5 +69,10 @@ p = parent(aux.p)
 q_liq = parent(aux.q_liq)
 
 KM_data = (; z_centers, q_vap, ρ, θ_dry, T, p, q_liq)
-plot_comparison(KM_data)
+if dry
+    sdm_case = "dry"
+else
+    sdm_case = "wet"
+end
+plot_comparison(KM_data, sdm_case=sdm_case, dir=sdm_case)
 
