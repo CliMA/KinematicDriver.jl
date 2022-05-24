@@ -25,10 +25,7 @@ end
    right hand side of the solved ODE. The rhs is assembled via dispatch
    based on the moisture and precipitation types.
 """
-function make_rhs_function(
-    moisture::AbstractMoistureStyle,
-    precipitation::AbstractPrecipitationStyle,
-)
+function make_rhs_function(moisture::AbstractMoistureStyle, precipitation::AbstractPrecipitationStyle)
     function rhs!(dY, Y, aux, t)
         zero_tendencies!(moisture, precipitation, dY, Y, aux, t)
         precompute_aux!(moisture, precipitation, dY, Y, aux, t)
@@ -44,40 +41,24 @@ end
     ODE solver state variables. The state is created via dispatching
     on different moisture and precipitation types
 """
-function initialise_state(
-    ::EquilibriumMoisture,
-    ::Union{NoPrecipitation, Precipitation0M},
-    initial_profiles,
-)
+function initialise_state(::EquilibriumMoisture, ::Union{NoPrecipitation, Precipitation0M}, initial_profiles)
     return CC.Fields.FieldVector(; ρq_tot = initial_profiles.ρq_tot)
 end
-function initialise_state(
-    ::NonEquilibriumMoisture,
-    ::Union{NoPrecipitation, Precipitation0M},
-    initial_profiles,
-)
+function initialise_state(::NonEquilibriumMoisture, ::Union{NoPrecipitation, Precipitation0M}, initial_profiles)
     return CC.Fields.FieldVector(;
         ρq_tot = initial_profiles.ρq_tot,
         ρq_liq = initial_profiles.ρq_liq,
         ρq_ice = initial_profiles.ρq_ice,
     )
 end
-function initialise_state(
-    ::EquilibriumMoisture,
-    ::Precipitation1M,
-    initial_profiles,
-)
+function initialise_state(::EquilibriumMoisture, ::Precipitation1M, initial_profiles)
     return CC.Fields.FieldVector(;
         ρq_tot = initial_profiles.ρq_tot,
         ρq_rai = initial_profiles.ρq_rai,
         ρq_sno = initial_profiles.ρq_sno,
     )
 end
-function initialise_state(
-    ::NonEquilibriumMoisture,
-    ::Precipitation1M,
-    initial_profiles,
-)
+function initialise_state(::NonEquilibriumMoisture, ::Precipitation1M, initial_profiles)
     return CC.Fields.FieldVector(;
         ρq_tot = initial_profiles.ρq_tot,
         ρq_liq = initial_profiles.ρq_liq,
@@ -92,16 +73,7 @@ end
    The auxiliary state is created as a ClimaCore FieldVector
    and passed to ODE solver via the `p` parameter of the ODEProblem.
 """
-function initialise_aux(
-    initial_profiles,
-    params,
-    w_params,
-    q_surf,
-    ρw0,
-    TS,
-    Stats,
-    face_space,
-)
+function initialise_aux(initial_profiles, params, w_params, q_surf, ρw0, TS, Stats, face_space)
     ρw = CC.Geometry.WVector.(zeros(FT, face_space))
 
     return CC.Fields.FieldVector(;
