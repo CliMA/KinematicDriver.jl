@@ -17,7 +17,7 @@ function plot_comparison(KM_data; sdm_case="dry", dir="dry")
         label="KM ρ_tot",
         xlabel="ρ [kg/m3]",
         ylabel="z [m]")
-    Plots.plot!(p2, sdm_data.rhod_sdm, sdm_data.z_sdm, label="SDM ρ_dry")
+    Plots.plot!(p2, sdm_data.rho_sdm, sdm_data.z_sdm, label="SDM ρ")
     
     p3 = Plots.plot(KM_data.θ_dry, z_centers, 
         label="KM",
@@ -101,6 +101,12 @@ function load_sdm_data(case="dry")
         80640.85694365,  79817.19546843,  79000.72920727,  78191.4028597 ,
         77389.16153251,  76593.95073643,  75805.71638293,  75024.40478097,
         74249.96263386,  73482.3370361 ]
+
+        Ra = 286.9
+        Rw = 461.5
+        x = qv_sdm ./ (1 .- qv_sdm)
+        rho_sdm = P_sdm / Ra ./ T_sdm .* (1 .+ x) .* (1 .+ x * Rw/Ra)
+
     elseif case=="dry"
         qv_sdm = [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
         0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]
@@ -138,7 +144,12 @@ function load_sdm_data(case="dry")
         82078.70410926,  81330.74165281,  80588.51149443,  79851.97518305,
         79121.09452364,  78395.83157525,  77676.14864902,  76962.00830621,
         76253.3733563 ,  75550.20685504]
+
+        Ra = 286.9
+        Rw = 461.5
+        x = qv_sdm ./ (1 .- qv_sdm)
+        rho_sdm = P_sdm / Ra ./ T_sdm .* (1 .+ x) .* (1 .+ x * Rw/Ra)
     end
 
-    return (; z_sdm, qv_sdm, rhod_sdm, thetad_sdm, T_sdm, P_sdm, ql_sdm)
+    return (; z_sdm, qv_sdm, rho_sdm, thetad_sdm, T_sdm, P_sdm, ql_sdm)
 end

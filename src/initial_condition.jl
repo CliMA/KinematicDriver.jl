@@ -32,7 +32,7 @@ function init_condition(::Type{FT}, params, z; dry = false) where {FT}
     # density at the surface
     p_0::FT = 100700.0
     q_0 = TD.PhasePartition(qv_0, 0.0, 0.0)
-    T_0::FT = θ_0 * TD.exner_given_pressure(params, p_0,  q_0)
+    T_0::FT = θ_0 * TD.exner_given_pressure(params, p_0,  q_0) # THIS IS THE PROBLEM: T_0 = theta_d_0 * exner
     ρ_0::FT = TD.air_density(params, T_0, p_0, q_0)
 
     return(qv = qv, θ = θ, ρ_0 = ρ_0, z_0 = z_0, z_2 = z_2)
