@@ -90,9 +90,12 @@ end
 """
     Solve the initial value problem for the density profile
 """
-function ρ_ivp(::Type{FT}, params) where {FT}
-
-    init_surface = init_condition(FT, params, 0.0)
+function ρ_ivp(::Type{FT}, params; dry=false) where {FT}
+    if dry
+        init_surface = init_condition(FT, params, 0.0)
+    else
+        init_surface = init_condition_dry(FT, params, 0.0)
+    end
 
     ρ_0::FT = init_surface.ρ_0
     z_0::FT = init_surface.z_0
@@ -109,10 +112,15 @@ end
     Populate the remaining profiles based on the KiD initial condition
     and the density profile
 """
-function init_1d_column(::Type{FT}, params, ρ_profile, z) where {FT}
+function init_1d_column(::Type{FT}, params, ρ_profile, z; dry=false) where {FT}
 
-    q_tot::FT = init_condition(FT, params, z).qv
-    θ_liq_ice::FT = init_condition(FT, params, z).θ
+    if dry
+        q_tot::FT = init_condition_dry(FT, params, z).qv
+        θ_liq_ice::FT = init_condition_dry(FT, params, z).θ
+    else
+        q_tot::FT = init_condition(FT, params, z).qv
+        θ_liq_ice::FT = init_condition(FT, params, z).θ
+    end
 
     ρ::FT = ρ_profile(z)
     ρq_tot::FT = q_tot * ρ
