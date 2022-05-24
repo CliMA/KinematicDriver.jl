@@ -18,18 +18,18 @@ function init_condition(::Type{FT}, params, z) where {FT}
     θ_2::FT = 312.66
 
     # profile of water vapour specific humidity (TODO - or is it mixing ratio?)
-    qv::FT = z < z_1 ? qv_0 + (qv_1 - qv_0)/(z_1 - z_0) * (z - z_0) : qv_1 + (qv_2 - qv_1)/(z_2 - z_1) * (z - z_1)
+    qv::FT = z < z_1 ? qv_0 + (qv_1 - qv_0) / (z_1 - z_0) * (z - z_0) : qv_1 + (qv_2 - qv_1) / (z_2 - z_1) * (z - z_1)
 
     # profile of potential temperature
-    θ::FT = z < z_1 ? θ_0 : θ_1 + (θ_2 - θ_1)/(z_2 - z_1) * (z - z_1)
+    θ::FT = z < z_1 ? θ_0 : θ_1 + (θ_2 - θ_1) / (z_2 - z_1) * (z - z_1)
 
     # density at the surface
     p_0::FT = 100200.0
     q_0 = TD.PhasePartition(qv_0, 0.0, 0.0)
-    T_0::FT = θ_0 * TD.exner_given_pressure(params, p_0,  q_0)
+    T_0::FT = θ_0 * TD.exner_given_pressure(params, p_0, q_0)
     ρ_0::FT = TD.air_density(params, T_0, p_0, q_0)
 
-    return(qv = qv, θ = θ, ρ_0 = ρ_0, z_0 = z_0, z_2 = z_2)
+    return (qv = qv, θ = θ, ρ_0 = ρ_0, z_0 = z_0, z_2 = z_2)
 end
 
 """
@@ -48,18 +48,18 @@ function init_condition_dry(::Type{FT}, params, z) where {FT}
     θ_2::FT = 312.66
 
     # profile of water vapour specific humidity (TODO - or is it mixing ratio?)
-    qv::FT = z < z_1 ? qv_0 + (qv_1 - qv_0)/(z_1 - z_0) * (z - z_0) : qv_1 + (qv_2 - qv_1)/(z_2 - z_1) * (z - z_1)
+    qv::FT = z < z_1 ? qv_0 + (qv_1 - qv_0) / (z_1 - z_0) * (z - z_0) : qv_1 + (qv_2 - qv_1) / (z_2 - z_1) * (z - z_1)
 
     # profile of potential temperature
-    θ::FT = z < z_1 ? θ_0 : θ_1 + (θ_2 - θ_1)/(z_2 - z_1) * (z - z_1)
+    θ::FT = z < z_1 ? θ_0 : θ_1 + (θ_2 - θ_1) / (z_2 - z_1) * (z - z_1)
 
     # density at the surface
     p_0::FT = 100200.0
     q_0 = TD.PhasePartition(qv_0, 0.0, 0.0)
-    T_0::FT = θ_0 * TD.exner_given_pressure(params, p_0,  q_0)
+    T_0::FT = θ_0 * TD.exner_given_pressure(params, p_0, q_0)
     ρ_0::FT = TD.air_density(params, T_0, p_0, q_0)
 
-    return(qv = qv, θ = θ, ρ_0 = ρ_0, z_0 = z_0, z_2 = z_2)
+    return (qv = qv, θ = θ, ρ_0 = ρ_0, z_0 = z_0, z_2 = z_2)
 end
 
 """
@@ -100,7 +100,7 @@ function ρ_ivp(::Type{FT}, params) where {FT}
 
     z_span = (z_0, z_max)
     prob = ODE.ODEProblem(dρ_dz!, ρ_0, z_span, params)
-    sol = ODE.solve(prob, ODE.Tsit5(), reltol=1e-8, abstol=1e-8)
+    sol = ODE.solve(prob, ODE.Tsit5(), reltol = 1e-8, abstol = 1e-8)
 
     return sol
 end
@@ -133,5 +133,5 @@ function init_1d_column(::Type{FT}, params, ρ_profile, z) where {FT}
     ρq_rai::FT = q_rai * ρ
     ρq_sno::FT = q_sno * ρ
 
-    return(; ρ, T, p, θ_liq_ice, θ_dry, ρq_tot, ρq_liq, ρq_ice, ρq_rai, ρq_sno, q_tot, q_liq, q_ice, q_rai, q_sno)
+    return (; ρ, T, p, θ_liq_ice, θ_dry, ρq_tot, ρq_liq, ρq_ice, ρq_rai, ρq_sno, q_tot, q_liq, q_ice, q_rai, q_sno)
 end

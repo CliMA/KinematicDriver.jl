@@ -37,18 +37,18 @@ function NetCDFIO_Stats(nc_filename, output_interval, z_faces, z_centers)
         NC.defVar(profile_grp, "t", Float64, ("t",))
 
         # TODO - define output variables based on the model that is being run?
-        NC.defVar(profile_grp, "density", FT, ("zc","t"))
-        NC.defVar(profile_grp, "temperature", FT, ("zc","t"))
-        NC.defVar(profile_grp, "pressure", FT, ("zc","t"))
+        NC.defVar(profile_grp, "density", FT, ("zc", "t"))
+        NC.defVar(profile_grp, "temperature", FT, ("zc", "t"))
+        NC.defVar(profile_grp, "pressure", FT, ("zc", "t"))
 
-        NC.defVar(profile_grp, "theta_liq_ice", FT, ("zc","t"))
-        NC.defVar(profile_grp, "theta_dry", FT, ("zc","t"))
+        NC.defVar(profile_grp, "theta_liq_ice", FT, ("zc", "t"))
+        NC.defVar(profile_grp, "theta_dry", FT, ("zc", "t"))
 
-        NC.defVar(profile_grp, "q_tot", FT, ("zc","t"))
-        NC.defVar(profile_grp, "q_liq", FT, ("zc","t"))
-        NC.defVar(profile_grp, "q_ice", FT, ("zc","t"))
-        NC.defVar(profile_grp, "q_rai", FT, ("zc","t"))
-        NC.defVar(profile_grp, "q_sno", FT, ("zc","t"))
+        NC.defVar(profile_grp, "q_tot", FT, ("zc", "t"))
+        NC.defVar(profile_grp, "q_liq", FT, ("zc", "t"))
+        NC.defVar(profile_grp, "q_ice", FT, ("zc", "t"))
+        NC.defVar(profile_grp, "q_rai", FT, ("zc", "t"))
+        NC.defVar(profile_grp, "q_sno", FT, ("zc", "t"))
 
         reference_grp = NC.defGroup(root_grp, "reference")
         NC.defDim(reference_grp, "zf", length(z_faces))

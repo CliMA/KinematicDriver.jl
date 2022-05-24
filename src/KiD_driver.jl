@@ -11,9 +11,7 @@ struct EarthParameterSet{NT} <: CP.AbstractEarthParameterSet
     nt::NT
 end
 CP.Planet.MSLP(ps::EarthParameterSet) = ps.nt.MSLP
-nt = (;
-    MSLP = 100000.0,
-)
+nt = (; MSLP = 100000.0)
 params = EarthParameterSet(nt)
 
 # Set up the computational domain and time step
@@ -103,27 +101,9 @@ q_liq_end = parent(aux.q_liq)
 q_ice_end = parent(aux.q_ice)
 ρq_tot_end = parent(solver.u[end].ρq_tot)
 
-Plots.png(
-    Plots.plot(θ_liq_ice_end, z_centers),
-    joinpath(path, "KM_θ_end.png"),
-)
-Plots.png(
-    Plots.plot(ρq_tot_end ./ ρ, z_centers),
-    joinpath(path, "KM_qt_end.png"),
-)
-Plots.png(
-    Plots.plot(q_liq_end, z_centers),
-    joinpath(path, "KM_ql_end.png"),
-)
-Plots.png(
-    Plots.plot(q_ice_end, z_centers),
-    joinpath(path, "KM_qi_end.png"),
-)
-Plots.png(
-    Plots.plot(T_end, z_centers),
-    joinpath(path, "KM_T_end.png"),
-)
-Plots.png(
-    Plots.plot(ρ, z_centers),
-    joinpath(path, "KM_ρ.png"),
-)
+Plots.png(Plots.plot(θ_liq_ice_end, z_centers), joinpath(path, "KM_θ_end.png"))
+Plots.png(Plots.plot(ρq_tot_end ./ ρ, z_centers), joinpath(path, "KM_qt_end.png"))
+Plots.png(Plots.plot(q_liq_end, z_centers), joinpath(path, "KM_ql_end.png"))
+Plots.png(Plots.plot(q_ice_end, z_centers), joinpath(path, "KM_qi_end.png"))
+Plots.png(Plots.plot(T_end, z_centers), joinpath(path, "KM_T_end.png"))
+Plots.png(Plots.plot(ρ, z_centers), joinpath(path, "KM_ρ.png"))
