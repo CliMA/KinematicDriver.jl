@@ -2,9 +2,26 @@
 This should be turned into a test file
 """
 
-include("KiD.jl")
+include("Kinematic1D.jl")
+
+import ClimaCore
+import Thermodynamics
+import CloudMicrophysics
+import CLIMAParameters
+
+import NCDatasets
+import OrdinaryDiffEq
+import UnPack
 
 const FT = Float64
+
+const CC = ClimaCore
+const TD = Thermodynamics
+const CP = CLIMAParameters
+const NC = NCDatasets
+const ODE = OrdinaryDiffEq
+
+const KID = Kinematic1D
 
 # Instantiate CliMA Parameters
 struct EarthParameterSet{NT} <: CP.AbstractEarthParameterSet
@@ -31,38 +48,38 @@ q_surf = 0.016
 ρw0 = 0.0
 
 # initialize the timestepping struct
-TS = TimeStepping(FT(Δt), FT(Δt_output), FT(t_end))
+TS = KID.TimeStepping(FT(Δt), FT(Δt_output), FT(t_end))
 
 # create the coordinates,
-space, face_space = make_function_space(z_min, z_max, n_elem)
+space, face_space = KID.make_function_space(FT, z_min, z_max, n_elem)
 
 coord = CC.Fields.coordinate_field(space)
 face_coord = CC.Fields.coordinate_field(face_space)
 
 # initialize the netcdf output Stats struct
-Stats = NetCDFIO_Stats("Output.nc", 1.0, vec(face_coord), vec(coord))
+Stats = KID.NetCDFIO_Stats("Output.nc", 1.0, vec(face_coord), vec(coord))
 
 # solve the initial value problem for density profile
-ρ_profile = ρ_ivp(FT, params)
+ρ_profile = KID.ρ_ivp(FT, params)
 # create the initial condition profiles
-init = map(coord -> init_1d_column(FT, params, ρ_profile, coord.z), coord)
+init = map(coord -> KID.init_1d_column(FT, params, ρ_profile, coord.z), coord)
 
 # create state vector and apply initial condition
-Y = initialise_state(EquilibriumMoisture(), NoPrecipitation(), init)
+Y = KID.initialise_state(KID.EquilibriumMoisture(), KID.NoPrecipitation(), init)
 
 # create aux vector and apply initial condition
-aux = initialise_aux(init, params, w_params, q_surf, ρw0, TS, Stats, face_space)
+aux = KID.initialise_aux(init, params, w_params, q_surf, ρw0, TS, Stats, face_space)
 
 # output the initial condition
-KiD_output(aux, 0.0)
+KID.KiD_output(aux, 0.0)
 
 # Define callbacks for output
-callback_io = ODE.DiscreteCallback(condition_io, affect_io!; save_positions = (false, false))
+callback_io = ODE.DiscreteCallback(KID.condition_io, KID.affect_io!; save_positions = (false, false))
 callbacks = ODE.CallbackSet(callback_io)
 
 # collect all the tendencies into rhs function for ODE solver
 # based on model choices for the solved equations
-ode_rhs! = make_rhs_function(EquilibriumMoisture(), NoPrecipitation())
+ode_rhs! = KID.make_rhs_function(KID.EquilibriumMoisture(), KID.NoPrecipitation())
 
 # Solve the ODE operator
 problem = ODE.ODEProblem(ode_rhs!, Y, (t_ini, t_end), aux)

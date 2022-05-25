@@ -6,7 +6,7 @@
    Interface to ClimaCore.jl Returns an instance of space and face space
    (which are a discretized function space over our computational domain).
 """
-function make_function_space(z_min, z_max, n_elem)
+function make_function_space(FT, z_min, z_max, n_elem)
     domain = CC.Domains.IntervalDomain(
         CC.Geometry.ZPoint{FT}(z_min),
         CC.Geometry.ZPoint{FT}(z_max),
@@ -74,6 +74,8 @@ end
    and passed to ODE solver via the `p` parameter of the ODEProblem.
 """
 function initialise_aux(initial_profiles, params, w_params, q_surf, ρw0, TS, Stats, face_space)
+    FT = eltype(q_surf)
+
     ρw = CC.Geometry.WVector.(zeros(FT, face_space))
 
     return CC.Fields.FieldVector(;
