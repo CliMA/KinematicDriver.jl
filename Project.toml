@@ -1,6 +1,7 @@
 name = "Kinematic1D"
+uuid = "a8a3bb05-6cc5-4342-abf6-5cc636bd2b35"
 authors = ["Climate Modeling Alliance"]
-version = "0.0.0"
+version = "0.1.0"
 
 [deps]
 BlockArrays = "8e7c35d0-a365-5155-bbbb-fb81a777f24e"
