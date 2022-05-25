@@ -1,3 +1,7 @@
+name = "Kinematic1D"
+authors = ["Climate Modeling Alliance"]
+version = "0.0.0"
+
 [deps]
 BlockArrays = "8e7c35d0-a365-5155-bbbb-fb81a777f24e"
 CLIMAParameters = "6eacf6c3-8458-43b9-ae03-caf5306d3d53"
