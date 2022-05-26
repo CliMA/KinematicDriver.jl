@@ -1,3 +1,5 @@
+module Kinematic1D
+
 import ClimaCore
 import Thermodynamics
 import CloudMicrophysics
@@ -24,3 +26,5 @@ include("NetCDFIO.jl")
 include("callbacks.jl")
 include("initial_condition.jl")
 include("tendency.jl")
+
+end
