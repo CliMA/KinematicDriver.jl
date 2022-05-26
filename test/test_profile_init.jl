@@ -14,15 +14,21 @@ struct EarthParameterSet{NT} <: CP.AbstractEarthParameterSet
     nt::NT
 end
 CP.Planet.MSLP(ps::EarthParameterSet) = ps.nt.MSLP
+CP.gas_constant(ps::EarthParameterSet) = ps.nt.gas_constant
+CP.Planet.molmass_dryair(ps::EarthParameterSet) = ps.nt.molmass_dryair
+CP.Planet.cp_d(ps::EarthParameterSet) = ps.nt.cp_d
 nt = (;
     MSLP = 100000.0,
+    gas_constant = 8.314462618,
+    molmass_dryair = 0.02896998,
+    cp_d = 1005.0,
 )
 params = EarthParameterSet(nt)
 
 # Set up the computational domain and time step
 z_min = FT(0)
-z_max = FT(2e3)
-n_elem = 256
+z_max = FT(2220)
+n_elem = 222 # TODO: run PySDM with 20m resolution
 Δt = 1.0
 Δt_output = 10 * Δt
 t_ini = 0.0
@@ -63,8 +69,10 @@ z_centers = parent(CC.Fields.coordinate_field(space))
 q_vap = parent(aux.q_tot) - parent(aux.q_liq) - parent(aux.q_ice) 
         - parent(aux.q_rai) - parent(aux.q_sno)
 ρ = parent(aux.ρ)
-θ_dry = parent(aux.θ_dry)
-T = parent(aux.T)
+#θ_dry = parent(aux.θ_dry)
+#T = parent(aux.T)
+θ_dry = parent(init.θ_dry)
+T = parent(init.T)
 p = parent(aux.p)
 q_liq = parent(aux.q_liq)
 

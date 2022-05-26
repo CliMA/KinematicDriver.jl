@@ -32,7 +32,7 @@ function init_condition(::Type{FT}, params, z; dry = false) where {FT}
     # density at the surface
     p_0::FT = 100700.0
     q_0 = TD.PhasePartition(qv_0, 0.0, 0.0)
-    T_0::FT = θ_0 * TD.exner_given_pressure(params, p_0,  q_0) # THIS IS THE PROBLEM: T_0 = theta_d_0 * exner
+    T_0::FT = θ_0 * TD.exner_given_pressure(params, p_0,  q_0)
     ρ_0::FT = TD.air_density(params, T_0, p_0, q_0)
 
     return(qv = qv, θ = θ, ρ_0 = ρ_0, z_0 = z_0, z_2 = z_2)
@@ -57,8 +57,14 @@ function dρ_dz!(ρ, params, z)
     g::FT = CP.Planet.grav(params)
     cp_m::FT = TD.cp_m(params, q)
     R_m::FT = TD.gas_constant_air(params, q)
+    R_d::FT = CP.gas_constant(params)
+    cp_d::FT = CP.Planet.cp_d(params)
+    molmass_ratio::FT = CP.Planet.molmass_ratio(params)
 
-    T::FT = θ * (ρ * θ / CP.Planet.MSLP(params) * R_m)^((R_m / cp_m) / (1 - R_m / cp_m))
+    θ_dry::FT = θ * (1 + qv/molmass_ratio)^(R_d/cp_d)
+    ρ_dry::FT = ρ ./ (1 .+ qv)
+
+    T::FT = θ_dry * (ρ_dry * θ_dry / CP.Planet.MSLP(params) * R_d)^((R_d / cp_d) / (1 - R_d / cp_d))
 
     return g / T * ρ * (R_m / cp_m - 1) / R_m
 end
@@ -96,7 +102,19 @@ function init_1d_column(::Type{FT}, params, ρ_profile, z; dry=false) where {FT}
     ts = TD.PhaseEquil_ρθq(params, ρ, θ_liq_ice, q_tot)
 
     T::FT = TD.air_temperature(params, ts)
+    # constants
+    # R_d::FT = CP.gas_constant(params)
+    # cp_d::FT = CP.Planet.cp_d(params)
+    # molmass_ratio::FT = CP.Planet.molmass_ratio(params)
+    # θ::FT = init_condition(FT, params, z, dry=dry).θ
+    # qv = q_tot
+
+    # θ_dry::FT = θ * (1 + qv/molmass_ratio)^(R_d/cp_d)
+    # ρ_dry::FT = ρ ./ (1 .+ qv)
+    # T::FT = θ_dry .* (ρ_dry .* θ_dry ./ CP.Planet.MSLP(params) * R_d).^((R_d / cp_d) / (1 - R_d / cp_d))
+
     θ_dry::FT = TD.dry_pottemp(params, ts)
+
     p::FT = TD.air_pressure(params, ts)
 
     q_liq::FT = TD.liquid_specific_humidity(params, ts)
@@ -109,5 +127,5 @@ function init_1d_column(::Type{FT}, params, ρ_profile, z; dry=false) where {FT}
     ρq_rai::FT = q_rai * ρ
     ρq_sno::FT = q_sno * ρ
 
-    return(; ρ, T, p, θ_liq_ice, θ_dry, ρq_tot, ρq_liq, ρq_ice, ρq_rai, ρq_sno, q_tot, q_liq, q_ice, q_rai, q_sno)
+    return(; ρ, θ_dry, T, p, θ_liq_ice, ρq_tot, ρq_liq, ρq_ice, ρq_rai, ρq_sno, q_tot, q_liq, q_ice, q_rai, q_sno)
 end
