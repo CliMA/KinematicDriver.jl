@@ -2,34 +2,28 @@
 This should be turned into a test file
 """
 
-include("Kinematic1D.jl")
+include("../src/Kinematic1D.jl")
+
+import NCDatasets
+import OrdinaryDiffEq
+import UnPack
 
 import ClimaCore
 import Thermodynamics
 import CloudMicrophysics
 import CLIMAParameters
 
-import NCDatasets
-import OrdinaryDiffEq
-import UnPack
-
-const FT = Float64
-
 const CC = ClimaCore
 const TD = Thermodynamics
 const CP = CLIMAParameters
 const NC = NCDatasets
 const ODE = OrdinaryDiffEq
+const KiD = Kinematic1D
 
-const KID = Kinematic1D
+const FT = Float64
 
-# Instantiate CliMA Parameters
-struct EarthParameterSet{NT} <: CP.AbstractEarthParameterSet
-    nt::NT
-end
-CP.Planet.MSLP(ps::EarthParameterSet) = ps.nt.MSLP
-nt = (; MSLP = 100000.0)
-params = EarthParameterSet(nt)
+# Instantiate CliMA Parameters and overwrite the defaults
+params = KiD.params_overwrite
 
 # Set up the computational domain and time step
 z_min = FT(0)
@@ -48,38 +42,38 @@ q_surf = 0.016
 ρw0 = 0.0
 
 # initialize the timestepping struct
-TS = KID.TimeStepping(FT(Δt), FT(Δt_output), FT(t_end))
+TS = KiD.TimeStepping(FT(Δt), FT(Δt_output), FT(t_end))
 
 # create the coordinates,
-space, face_space = KID.make_function_space(FT, z_min, z_max, n_elem)
+space, face_space = KiD.make_function_space(FT, z_min, z_max, n_elem)
 
 coord = CC.Fields.coordinate_field(space)
 face_coord = CC.Fields.coordinate_field(face_space)
 
 # initialize the netcdf output Stats struct
-Stats = KID.NetCDFIO_Stats("Output.nc", 1.0, vec(face_coord), vec(coord))
+Stats = KiD.NetCDFIO_Stats("Output.nc", 1.0, vec(face_coord), vec(coord))
 
 # solve the initial value problem for density profile
-ρ_profile = KID.ρ_ivp(FT, params)
+ρ_profile = KiD.ρ_ivp(FT, params)
 # create the initial condition profiles
-init = map(coord -> KID.init_1d_column(FT, params, ρ_profile, coord.z), coord)
+init = map(coord -> KiD.init_1d_column(FT, params, ρ_profile, coord.z), coord)
 
 # create state vector and apply initial condition
-Y = KID.initialise_state(KID.EquilibriumMoisture(), KID.NoPrecipitation(), init)
+Y = KiD.initialise_state(KiD.EquilibriumMoisture(), KiD.NoPrecipitation(), init)
 
 # create aux vector and apply initial condition
-aux = KID.initialise_aux(init, params, w_params, q_surf, ρw0, TS, Stats, face_space)
+aux = KiD.initialise_aux(init, params, w_params, q_surf, ρw0, TS, Stats, face_space)
 
 # output the initial condition
-KID.KiD_output(aux, 0.0)
+KiD.KiD_output(aux, 0.0)
 
 # Define callbacks for output
-callback_io = ODE.DiscreteCallback(KID.condition_io, KID.affect_io!; save_positions = (false, false))
+callback_io = ODE.DiscreteCallback(KiD.condition_io, KiD.affect_io!; save_positions = (false, false))
 callbacks = ODE.CallbackSet(callback_io)
 
 # collect all the tendencies into rhs function for ODE solver
 # based on model choices for the solved equations
-ode_rhs! = KID.make_rhs_function(KID.EquilibriumMoisture(), KID.NoPrecipitation())
+ode_rhs! = KiD.make_rhs_function(KiD.EquilibriumMoisture(), KiD.NoPrecipitation())
 
 # Solve the ODE operator
 problem = ODE.ODEProblem(ode_rhs!, Y, (t_ini, t_end), aux)
@@ -98,8 +92,7 @@ ENV["GKSwstype"] = "nul"
 using ClimaCorePlots, Plots
 Plots.GRBackend()
 
-dir = "advect"
-path = joinpath(@__DIR__, "output", dir)
+path = joinpath(@__DIR__, "Output", "experiments")
 mkpath(path)
 
 z_centers = parent(CC.Fields.coordinate_field(space))
