@@ -3,27 +3,27 @@ using Plots
 """
     Create plots comparing the Julia & PySDM vertical profiles
 """
-function plot_comparison(KM_data; sdm_case = "dry", dir = "dry")
+function plot_comparison(KM; sdm_case = "dry", dir = "dry")
     sdm_data = load_sdm_data(sdm_case)
     path = joinpath(@__DIR__, "output", dir)
     mkpath(path)
 
-    p1 = Plots.plot(KM_data.q_vap, z_centers, label = "KM", xlabel = "q_vap [g/kg]", ylabel = "z [m]")
+    p1 = Plots.plot(KM.q_vap, KM.z_centers, label = "KM", xlabel = "q_vap [g/kg]", ylabel = "z [m]")
     Plots.plot!(p1, sdm_data.qv_sdm, sdm_data.z_sdm, label = "SDM")
 
-    p2 = Plots.plot(KM_data.ρ, z_centers, label = "KM ρ_tot", xlabel = "ρ [kg/m3]", ylabel = "z [m]")
+    p2 = Plots.plot(KM.ρ, KM.z_centers, label = "KM ρ_tot", xlabel = "ρ [kg/m3]", ylabel = "z [m]")
     Plots.plot!(p2, sdm_data.rho_sdm, sdm_data.z_sdm, label = "SDM ρ")
 
-    p3 = Plots.plot(KM_data.θ_dry, z_centers, label = "KM", xlabel = "θ_dry [K]", ylabel = "z [m]")
+    p3 = Plots.plot(KM.θ_dry, KM.z_centers, label = "KM", xlabel = "θ_dry [K]", ylabel = "z [m]")
     Plots.plot!(p3, sdm_data.thetad_sdm, sdm_data.z_sdm, label = "SDM")
 
-    p4 = Plots.plot(KM_data.T, z_centers, label = "KM", xlabel = "T [K]", ylabel = "z [m]")
+    p4 = Plots.plot(KM.T, KM.z_centers, label = "KM", xlabel = "T [K]", ylabel = "z [m]")
     Plots.plot!(p4, sdm_data.T_sdm, sdm_data.z_sdm, label = "SDM")
 
-    p5 = Plots.plot(KM_data.p, z_centers, label = "KM", xlabel = "p [Pa]", ylabel = "z [m]")
+    p5 = Plots.plot(KM.p, KM.z_centers, label = "KM", xlabel = "p [Pa]", ylabel = "z [m]")
     Plots.plot!(p5, sdm_data.P_sdm, sdm_data.z_sdm, label = "SDM")
 
-    p6 = Plots.plot(KM_data.q_liq, z_centers, label = "KM", xlabel = "q_liq [g/kg]", ylabel = "z [m]")
+    p6 = Plots.plot(KM.q_liq, KM.z_centers, label = "KM", xlabel = "q_liq [g/kg]", ylabel = "z [m]")
     Plots.plot!(p6, sdm_data.ql_sdm, sdm_data.z_sdm, label = "SDM")
 
     p = Plots.plot(p1, p2, p3, p4, p5, p6, size = (1000, 600))
