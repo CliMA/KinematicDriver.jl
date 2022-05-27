@@ -5,7 +5,7 @@
 """
    Initial profiles and surface values as defined by KiD setup
 """
-function init_condition(::Type{FT}, params, z) where {FT}
+function init_condition(::Type{FT}, params, z; dry = false) where {FT}
 
     z_0::FT = 0.0
     z_1::FT = 740.0
@@ -17,35 +17,11 @@ function init_condition(::Type{FT}, params, z) where {FT}
     θ_1::FT = 297.9
     θ_2::FT = 312.66
 
-    # profile of water vapour specific humidity (TODO - or is it mixing ratio?)
-    qv::FT = z < z_1 ? qv_0 + (qv_1 - qv_0) / (z_1 - z_0) * (z - z_0) : qv_1 + (qv_2 - qv_1) / (z_2 - z_1) * (z - z_1)
-
-    # profile of potential temperature
-    θ::FT = z < z_1 ? θ_0 : θ_1 + (θ_2 - θ_1) / (z_2 - z_1) * (z - z_1)
-
-    # density at the surface
-    p_0::FT = 100200.0
-    q_0 = TD.PhasePartition(qv_0, 0.0, 0.0)
-    T_0::FT = θ_0 * TD.exner_given_pressure(params, p_0, q_0)
-    ρ_0::FT = TD.air_density(params, T_0, p_0, q_0)
-
-    return (qv = qv, θ = θ, ρ_0 = ρ_0, z_0 = z_0, z_2 = z_2)
-end
-
-"""
-    TODO
-"""
-function init_condition_dry(::Type{FT}, params, z) where {FT}
-
-    z_0::FT = 0.0
-    z_1::FT = 740.0
-    z_2::FT = 3260.0
-    qv_0::FT = 0.0
-    qv_1::FT = 0.0
-    qv_2::FT = 0.0
-    θ_0::FT = 297.9
-    θ_1::FT = 297.9
-    θ_2::FT = 312.66
+    if dry
+        qv_0 = 0.0
+        qv_1 = 0.0
+        qv_2 = 0.0
+    end
 
     # profile of water vapour specific humidity (TODO - or is it mixing ratio?)
     qv::FT = z < z_1 ? qv_0 + (qv_1 - qv_0) / (z_1 - z_0) * (z - z_0) : qv_1 + (qv_2 - qv_1) / (z_2 - z_1) * (z - z_1)
@@ -54,7 +30,7 @@ function init_condition_dry(::Type{FT}, params, z) where {FT}
     θ::FT = z < z_1 ? θ_0 : θ_1 + (θ_2 - θ_1) / (z_2 - z_1) * (z - z_1)
 
     # density at the surface
-    p_0::FT = 100200.0
+    p_0::FT = 100700.0
     q_0 = TD.PhasePartition(qv_0, 0.0, 0.0)
     T_0::FT = θ_0 * TD.exner_given_pressure(params, p_0, q_0)
     ρ_0::FT = TD.air_density(params, T_0, p_0, q_0)
@@ -81,8 +57,14 @@ function dρ_dz!(ρ, params, z)
     g::FT = CP.Planet.grav(params)
     cp_m::FT = TD.cp_m(params, q)
     R_m::FT = TD.gas_constant_air(params, q)
+    R_d::FT = CP.gas_constant(params)
+    cp_d::FT = CP.Planet.cp_d(params)
+    molmass_ratio::FT = CP.Planet.molmass_ratio(params)
 
-    T::FT = θ * (ρ * θ / CP.Planet.MSLP(params) * R_m)^((R_m / cp_m) / (1 - R_m / cp_m))
+    θ_dry::FT = θ * (1 + qv / molmass_ratio)^(R_d / cp_d)
+    ρ_dry::FT = ρ ./ (1 .+ qv)
+
+    T::FT = θ_dry * (ρ_dry * θ_dry / CP.Planet.MSLP(params) * R_d)^((R_d / cp_d) / (1 - R_d / cp_d))
 
     return g / T * ρ * (R_m / cp_m - 1) / R_m
 end
@@ -90,9 +72,9 @@ end
 """
     Solve the initial value problem for the density profile
 """
-function ρ_ivp(::Type{FT}, params) where {FT}
+function ρ_ivp(::Type{FT}, params; dry = false) where {FT}
 
-    init_surface = init_condition(FT, params, 0.0)
+    init_surface = init_condition(FT, params, 0.0, dry = dry)
 
     ρ_0::FT = init_surface.ρ_0
     z_0::FT = init_surface.z_0
@@ -109,10 +91,10 @@ end
     Populate the remaining profiles based on the KiD initial condition
     and the density profile
 """
-function init_1d_column(::Type{FT}, params, ρ_profile, z) where {FT}
+function init_1d_column(::Type{FT}, params, ρ_profile, z; dry = false) where {FT}
 
-    q_tot::FT = init_condition(FT, params, z).qv
-    θ_liq_ice::FT = init_condition(FT, params, z).θ
+    q_tot::FT = init_condition(FT, params, z, dry = dry).qv
+    θ_liq_ice::FT = init_condition(FT, params, z, dry = dry).θ
 
     ρ::FT = ρ_profile(z)
     ρq_tot::FT = q_tot * ρ
@@ -120,7 +102,19 @@ function init_1d_column(::Type{FT}, params, ρ_profile, z) where {FT}
     ts = TD.PhaseEquil_ρθq(params, ρ, θ_liq_ice, q_tot)
 
     T::FT = TD.air_temperature(params, ts)
+    # constants
+    # R_d::FT = CP.gas_constant(params)
+    # cp_d::FT = CP.Planet.cp_d(params)
+    # molmass_ratio::FT = CP.Planet.molmass_ratio(params)
+    # θ::FT = init_condition(FT, params, z, dry=dry).θ
+    # qv = q_tot
+
+    # θ_dry::FT = θ * (1 + qv/molmass_ratio)^(R_d/cp_d)
+    # ρ_dry::FT = ρ ./ (1 .+ qv)
+    # T::FT = θ_dry .* (ρ_dry .* θ_dry ./ CP.Planet.MSLP(params) * R_d).^((R_d / cp_d) / (1 - R_d / cp_d))
+
     θ_dry::FT = TD.dry_pottemp(params, ts)
+
     p::FT = TD.air_pressure(params, ts)
 
     q_liq::FT = TD.liquid_specific_humidity(params, ts)
