@@ -1,12 +1,13 @@
 """
-Test that initial profiles match PySDM initial profiles
+Test that initial profiles match between CliMA and PySDM
 """
 
 include("data_utils.jl")
 
+const FT = Float64
+
 # TODO - make them test parameters
 dry = true
-const FT = Float64
 if dry
     sdm_case = "dry_coarse"
 else
@@ -55,27 +56,21 @@ SD_q_liq = IP.LinearInterpolation(sdm_data.z_sdm, sdm_data.ql_sdm, extrapolation
 SD_q_vap = IP.LinearInterpolation(sdm_data.z_sdm, sdm_data.qv_sdm, extrapolation_bc = IP.Line())
 SD_θ_dry = IP.LinearInterpolation(sdm_data.z_sdm, sdm_data.thetad_sdm, extrapolation_bc = IP.Line())
 
-# Test that the initial profiles match
+# Test that the initial profiles match between CliMA and PySDM
 @testset "Initial profiles of water (vapour and liquid)" begin
     z_test = z_min:100:z_max
-    for z in z_test
-        @test KM_q_vap(z) ≈ SD_q_vap(z)
-        @test KM_q_liq(z) ≈ SD_q_liq(z)
-    end
+    @test all(isapprox(KM_q_vap(z_test), SD_q_vap(z_test), rtol = 1e-6))
+    @test all(isapprox(KM_q_liq(z_test), SD_q_liq(z_test), rtol = 1e-6))
 end
 @testset "Initial profiles of (T, p, ρ)" begin
     z_test = z_min:100:z_max
-    for z in z_test
-        @test KM_q_vap(z) ≈ SD_q_vap(z)
-        @test KM_q_liq(z) ≈ SD_q_liq(z)
-    end
+    @test all(isapprox(KM_T(z_test), SD_T(z_test), rtol = 1e-3))
+    @test all(isapprox(KM_p(z_test), SD_p(z_test), rtol = 1e-3))
+    @test all(isapprox(KM_ρ(z_test), SD_ρ(z_test), rtol = 1e-3))
 end
 @testset "Initial profiles of θ_dry" begin
     z_test = z_min:100:z_max
-    for z in z_test
-        @test KM_q_vap(z) ≈ SD_q_vap(z)
-        @test KM_q_liq(z) ≈ SD_q_liq(z)
-    end
+    @test all(isapprox(KM_θ_dry(z_test), SD_θ_dry(z_test), rtol = 1e-4))
 end
 
 # Plot the profiles - TODO connect with buildkite artifacts

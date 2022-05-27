@@ -1,21 +1,21 @@
 module Kinematic1D
 
-import ClimaCore
-import Thermodynamics
-import CloudMicrophysics
-import CLIMAParameters
-
-import NCDatasets
 import OrdinaryDiffEq
+import NCDatasets
 import UnPack
-
 import Logging
 import TerminalLoggers
 Logging.global_logger(TerminalLoggers.TerminalLogger())
 
+import ClimaCore
+import CLIMAParameters
+import Thermodynamics
+import CloudMicrophysics
+
 const CC = ClimaCore
-const TD = Thermodynamics
 const CP = CLIMAParameters
+const TD = Thermodynamics
+const CM = CloudMicrophysics
 const NC = NCDatasets
 const ODE = OrdinaryDiffEq
 
@@ -26,5 +26,6 @@ include("NetCDFIO.jl")
 include("callbacks.jl")
 include("initial_condition.jl")
 include("tendency.jl")
+include("InternalParameters.jl")
 
 end
