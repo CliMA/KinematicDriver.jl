@@ -27,7 +27,7 @@ OrdinaryDiffEq = "6.13"
 Plots = "1.29"
 ProgressLogging = "0.1"
 TerminalLoggers = "0.1"
-Thermodynamics = "0.7"
+Thermodynamics = "0.7, 0.8"
 UnPack = "1.0"
 
 [extras]
