@@ -102,19 +102,7 @@ function init_1d_column(::Type{FT}, params, ρ_profile, z; dry = false) where {F
     ts = TD.PhaseEquil_ρθq(params, ρ, θ_liq_ice, q_tot)
 
     T::FT = TD.air_temperature(params, ts)
-    # constants
-    # R_d::FT = CP.gas_constant(params)
-    # cp_d::FT = CP.Planet.cp_d(params)
-    # molmass_ratio::FT = CP.Planet.molmass_ratio(params)
-    # θ::FT = init_condition(FT, params, z, dry=dry).θ
-    # qv = q_tot
-
-    # θ_dry::FT = θ * (1 + qv/molmass_ratio)^(R_d/cp_d)
-    # ρ_dry::FT = ρ ./ (1 .+ qv)
-    # T::FT = θ_dry .* (ρ_dry .* θ_dry ./ CP.Planet.MSLP(params) * R_d).^((R_d / cp_d) / (1 - R_d / cp_d))
-
     θ_dry::FT = TD.dry_pottemp(params, ts)
-
     p::FT = TD.air_pressure(params, ts)
 
     q_liq::FT = TD.liquid_specific_humidity(params, ts)
@@ -127,5 +115,37 @@ function init_1d_column(::Type{FT}, params, ρ_profile, z; dry = false) where {F
     ρq_rai::FT = q_rai * ρ
     ρq_sno::FT = q_sno * ρ
 
-    return (; ρ, T, p, θ_liq_ice, θ_dry, ρq_tot, ρq_liq, ρq_ice, ρq_rai, ρq_sno, q_tot, q_liq, q_ice, q_rai, q_sno)
+    S_ql_moisture::FT = FT(0.0)
+    S_qi_moisture::FT = FT(0.0)
+
+    S_qt_precip::FT = FT(0.0)
+    S_ql_precip::FT = FT(0.0)
+    S_qi_precip::FT = FT(0.0)
+    S_qr_precip::FT = FT(0.0)
+    S_qs_precip::FT = FT(0.0)
+
+    return (;
+        ρ,
+        T,
+        p,
+        θ_liq_ice,
+        θ_dry,
+        ρq_tot,
+        ρq_liq,
+        ρq_ice,
+        ρq_rai,
+        ρq_sno,
+        q_tot,
+        q_liq,
+        q_ice,
+        q_rai,
+        q_sno,
+        S_ql_moisture,
+        S_qi_moisture,
+        S_qt_precip,
+        S_ql_precip,
+        S_qi_precip,
+        S_qr_precip,
+        S_qs_precip,
+    )
 end
