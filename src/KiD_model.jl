@@ -25,14 +25,23 @@ end
    right hand side of the solved ODE. The rhs is assembled via dispatch
    based on the moisture and precipitation types.
 """
-function make_rhs_function(moisture::AbstractMoistureStyle, precipitation::AbstractPrecipitationStyle)
+function make_rhs_function(ms::AbstractMoistureStyle, ps::AbstractPrecipitationStyle)
     function rhs!(dY, Y, aux, t)
-        zero_tendencies!(moisture, precipitation, dY, Y, aux, t)
-        precompute_aux!(moisture, precipitation, dY, Y, aux, t)
-        advection_tendency!(moisture, precipitation, dY, Y, aux, t)
-        sources_tendency!(moisture, precipitation, dY, Y, aux, t)
-    end
 
+        for eq_style in [ms, ps]
+            zero_tendencies!(eq_style, dY, Y, aux, t)
+        end
+
+        precompute_aux_prescribed_velocity!(aux, t)
+        precompute_aux_thermo!(ms, dY, Y, aux, t)
+        precompute_aux_precip!(ps, dY, Y, aux, t)
+
+        for eq_style in [ms, ps]
+            advection_tendency!(eq_style, dY, Y, aux, t)
+            sources_tendency!(eq_style, dY, Y, aux, t)
+        end
+
+    end
     return rhs!
 end
 
@@ -41,6 +50,9 @@ end
     ODE solver state variables. The state is created via dispatching
     on different moisture and precipitation types
 """
+function initialise_state(sm::AbstractMoistureStyle, sp::AbstractPrecipitationStyle, initial_profiles)
+    error("initailisation not implemented for a given $sm and $sp")
+end
 function initialise_state(::EquilibriumMoisture, ::Union{NoPrecipitation, Precipitation0M}, initial_profiles)
     return CC.Fields.FieldVector(; ρq_tot = initial_profiles.ρq_tot)
 end
@@ -73,22 +85,44 @@ end
    The auxiliary state is created as a ClimaCore FieldVector
    and passed to ODE solver via the `p` parameter of the ODEProblem.
 """
-function initialise_aux(initial_profiles, params, w_params, q_surf, ρw0, TS, Stats, face_space)
+function initialise_aux(ip, params, w_params, q_surf, ρw0, TS, Stats, face_space, moisture)
     FT = eltype(q_surf)
 
     ρw = CC.Geometry.WVector.(zeros(FT, face_space))
+    term_vel_rai = CC.Geometry.WVector.(zeros(FT, face_space))
+    term_vel_sno = CC.Geometry.WVector.(zeros(FT, face_space))
+
+    if moisture isa EquilibriumMoisture
+        ts = @. TD.PhaseEquil_ρθq(params, ip.ρ, ip.θ_liq_ice, ip.q_tot)
+    elseif moisture isa NonEquilibriumMoisture
+        q = @. TD.PhasePartition(ip.q_tot, ip.q_liq, ip.q_ice)
+        ts = @. TD.PhaseNonEquil_ρθq(params, ip.ρ, ip.θ_liq_ice, q)
+    else
+        error(
+            "Wrong moisture choise $moisture. The supported options are EquilibriumMoisture and NonEquilibriumMoisture",
+        )
+    end
 
     return CC.Fields.FieldVector(;
-        ρ = initial_profiles.ρ,
-        T = initial_profiles.T,
-        p = initial_profiles.p,
-        θ_liq_ice = initial_profiles.θ_liq_ice,
-        θ_dry = initial_profiles.θ_dry,
-        q_tot = initial_profiles.q_tot,
-        q_liq = initial_profiles.q_liq,
-        q_ice = initial_profiles.q_ice,
-        q_rai = initial_profiles.q_rai,
-        q_sno = initial_profiles.q_sno,
+        constants = (; ρ = ip.ρ, p = ip.p, θ_liq_ice = ip.θ_liq_ice),
+        moisture_variables = (;
+            T = ip.T,
+            θ_dry = ip.θ_dry,
+            q_tot = ip.q_tot,
+            q_liq = ip.q_liq,
+            q_ice = ip.q_ice,
+            ts = ts,
+        ),
+        precip_variables = (; q_rai = ip.q_rai, q_sno = ip.q_sno),
+        moisture_sources = (; S_q_liq = ip.S_ql_moisture, S_q_ice = ip.S_qi_moisture),
+        precip_sources = (;
+            S_q_tot = ip.S_qt_precip,
+            S_q_liq = ip.S_ql_precip,
+            S_q_ice = ip.S_qi_precip,
+            S_q_rai = ip.S_qr_precip,
+            S_q_sno = ip.S_qs_precip,
+        ),
+        precip_velocities = (; term_vel_rai = term_vel_rai, term_vel_sno = term_vel_sno),
         ρw = ρw,
         params = params,
         w_params = w_params,

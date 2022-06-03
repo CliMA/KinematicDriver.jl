@@ -118,7 +118,10 @@ function KiD_output(aux, t::Float64)
     # https://github.com/Alexander-Barth/NCDatasets.jl/issues/135
     # opening/closing files every step should be okay. #removeVarsHack
 
-    UnPack.@unpack Stats, ρ, T, θ_dry, p, q_tot, q_liq, q_ice, q_rai, q_sno, θ_liq_ice = aux
+    UnPack.@unpack Stats = aux
+    UnPack.@unpack ρ, p, θ_liq_ice = aux.constants
+    UnPack.@unpack T, θ_dry, q_tot, q_liq, q_ice = aux.moisture_variables
+    UnPack.@unpack q_rai, q_sno = aux.precip_variables
 
     open_files(Stats)
 

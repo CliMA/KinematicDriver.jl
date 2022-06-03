@@ -6,7 +6,8 @@ export AbstractStyle
 export AbstractMoistureStyle
 export AbstractPrecipitationStyle
 
-export NoMoisture
+# TODO - add support for a dry case
+#export NoMoisture
 export EquilibriumMoisture
 export NonEquilibriumMoisture
 
@@ -18,7 +19,7 @@ abstract type AbstractStyle end
 abstract type AbstractMoistureStyle <: AbstractStyle end
 abstract type AbstractPrecipitationStyle <: AbstractStyle end
 
-struct NoMoisture <: AbstractMoistureStyle end
+#struct NoMoisture <: AbstractMoistureStyle end
 struct EquilibriumMoisture <: AbstractMoistureStyle end
 struct NonEquilibriumMoisture <: AbstractMoistureStyle end
 

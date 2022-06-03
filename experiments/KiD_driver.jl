@@ -25,6 +25,17 @@ const FT = Float64
 # Instantiate CliMA Parameters and overwrite the defaults
 params = KiD.params_overwrite
 
+# Chose the equations to solve for mositure variables
+# (EquilibriumMoisture or NonEquilibriumMoisture).
+moisture = KiD.NonEquilibriumMoisture()
+# Chose the equations to solve for precipitation variables
+# (NoPrecipitation, Precipitation0M or Precipitation1M).
+precip = KiD.Precipitation0M()
+
+# Output folder name TODO - make automatic
+path = joinpath(@__DIR__, "Output_NonEquilibrium_Precipitation1M")
+mkpath(path)
+
 # Set up the computational domain and time step
 z_min = FT(0)
 z_max = FT(2e3)
@@ -38,7 +49,7 @@ t_end = 10.0 * 60
 w1 = 2 # m/s * kg/m3
 t1 = 600 # s
 w_params = (w1 = w1, t1 = t1)
-q_surf = 0.016
+q_surf = 0.015
 ρw0 = 0.0
 
 # initialize the timestepping struct
@@ -51,7 +62,8 @@ coord = CC.Fields.coordinate_field(space)
 face_coord = CC.Fields.coordinate_field(face_space)
 
 # initialize the netcdf output Stats struct
-Stats = KiD.NetCDFIO_Stats("Output.nc", 1.0, vec(face_coord), vec(coord))
+fname = joinpath(path, "Output.nc")
+Stats = KiD.NetCDFIO_Stats(fname, 1.0, vec(face_coord), vec(coord))
 
 # solve the initial value problem for density profile
 ρ_profile = KiD.ρ_ivp(FT, params)
@@ -59,10 +71,10 @@ Stats = KiD.NetCDFIO_Stats("Output.nc", 1.0, vec(face_coord), vec(coord))
 init = map(coord -> KiD.init_1d_column(FT, params, ρ_profile, coord.z), coord)
 
 # create state vector and apply initial condition
-Y = KiD.initialise_state(KiD.EquilibriumMoisture(), KiD.NoPrecipitation(), init)
+Y = KiD.initialise_state(moisture, precip, init)
 
 # create aux vector and apply initial condition
-aux = KiD.initialise_aux(init, params, w_params, q_surf, ρw0, TS, Stats, face_space)
+aux = KiD.initialise_aux(init, params, w_params, q_surf, ρw0, TS, Stats, face_space, moisture)
 
 # output the initial condition
 KiD.KiD_output(aux, 0.0)
@@ -73,7 +85,7 @@ callbacks = ODE.CallbackSet(callback_io)
 
 # collect all the tendencies into rhs function for ODE solver
 # based on model choices for the solved equations
-ode_rhs! = KiD.make_rhs_function(KiD.EquilibriumMoisture(), KiD.NoPrecipitation())
+ode_rhs! = KiD.make_rhs_function(moisture, precip)
 
 # Solve the ODE operator
 problem = ODE.ODEProblem(ode_rhs!, Y, (t_ini, t_end), aux)
@@ -92,23 +104,20 @@ ENV["GKSwstype"] = "nul"
 using ClimaCorePlots, Plots
 Plots.GRBackend()
 
-path = joinpath(@__DIR__, "Output", "experiments")
-mkpath(path)
-
 z_centers = parent(CC.Fields.coordinate_field(space))
 
 anim = Plots.@animate for u in solver.u
     ρq_tot = parent(u.ρq_tot)
-    ρ = parent(aux.ρ)
+    ρ = parent(aux.constants.ρ)
     Plots.plot(ρq_tot ./ ρ, z_centers)
 end
 Plots.mp4(anim, joinpath(path, "KM_qt.mp4"), fps = 10)
 
-ρ = parent(aux.ρ)
-θ_liq_ice_end = parent(aux.θ_liq_ice)
-T_end = parent(aux.T)
-q_liq_end = parent(aux.q_liq)
-q_ice_end = parent(aux.q_ice)
+ρ = parent(aux.constants.ρ)
+θ_liq_ice_end = parent(aux.constants.θ_liq_ice)
+T_end = parent(aux.moisture_variables.T)
+q_liq_end = parent(aux.moisture_variables.q_liq)
+q_ice_end = parent(aux.moisture_variables.q_ice)
 ρq_tot_end = parent(solver.u[end].ρq_tot)
 
 Plots.png(Plots.plot(θ_liq_ice_end, z_centers), joinpath(path, "KM_θ_end.png"))
