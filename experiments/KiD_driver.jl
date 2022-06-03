@@ -49,8 +49,6 @@ t_end = 10.0 * 60
 w1 = 2 # m/s * kg/m3
 t1 = 600 # s
 w_params = (w1 = w1, t1 = t1)
-q_surf = 0.015
-ρw0 = 0.0
 
 # initialize the timestepping struct
 TS = KiD.TimeStepping(FT(Δt), FT(Δt_output), FT(t_end))
@@ -74,7 +72,7 @@ init = map(coord -> KiD.init_1d_column(FT, params, ρ_profile, coord.z), coord)
 Y = KiD.initialise_state(moisture, precip, init)
 
 # create aux vector and apply initial condition
-aux = KiD.initialise_aux(init, params, w_params, q_surf, ρw0, TS, Stats, face_space, moisture)
+aux = KiD.initialise_aux(FT, init, params, w_params, TS, Stats, face_space, moisture)
 
 # output the initial condition
 KiD.KiD_output(aux, 0.0)
