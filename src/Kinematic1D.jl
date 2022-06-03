@@ -24,7 +24,7 @@ const CM0 = CM.Microphysics0M
 const CM1 = CM.Microphysics1M
 
 include("EquationTypes.jl")
-include("Kid_model.jl")
+include("KiD_model.jl")
 include("TimeStepping.jl")
 include("NetCDFIO.jl")
 include("callbacks.jl")
