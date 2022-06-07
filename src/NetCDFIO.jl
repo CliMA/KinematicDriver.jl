@@ -11,7 +11,8 @@ mutable struct NetCDFIO_Stats
     vars::Dict{String, Any} # Hack to avoid https://github.com/Alexander-Barth/NCDatasets.jl/issues/135
 end
 
-function NetCDFIO_Stats(nc_filename, output_interval, z_faces, z_centers)
+function NetCDFIO_Stats(nc_filename, output_interval, z_faces, z_centers, 
+    profile_fields; ts_fields=())
     FT = Float64
 
     # Initialize properties with valid type:
@@ -37,18 +38,21 @@ function NetCDFIO_Stats(nc_filename, output_interval, z_faces, z_centers)
         NC.defVar(profile_grp, "t", Float64, ("t",))
 
         # TODO - define output variables based on the model that is being run?
-        NC.defVar(profile_grp, "density", FT, ("zc", "t"))
-        NC.defVar(profile_grp, "temperature", FT, ("zc", "t"))
-        NC.defVar(profile_grp, "pressure", FT, ("zc", "t"))
+        for profile_field in Set(profile_fields)
+            NC.defVar(profile_grp, profile_field, FT, ("zc", "t"))
+        end
+        # NC.defVar(profile_grp, "density", FT, ("zc", "t"))
+        # NC.defVar(profile_grp, "temperature", FT, ("zc", "t"))
+        # NC.defVar(profile_grp, "pressure", FT, ("zc", "t"))
 
-        NC.defVar(profile_grp, "theta_liq_ice", FT, ("zc", "t"))
-        NC.defVar(profile_grp, "theta_dry", FT, ("zc", "t"))
+        # NC.defVar(profile_grp, "theta_liq_ice", FT, ("zc", "t"))
+        # NC.defVar(profile_grp, "theta_dry", FT, ("zc", "t"))
 
-        NC.defVar(profile_grp, "q_tot", FT, ("zc", "t"))
-        NC.defVar(profile_grp, "q_liq", FT, ("zc", "t"))
-        NC.defVar(profile_grp, "q_ice", FT, ("zc", "t"))
-        NC.defVar(profile_grp, "q_rai", FT, ("zc", "t"))
-        NC.defVar(profile_grp, "q_sno", FT, ("zc", "t"))
+        # NC.defVar(profile_grp, "q_tot", FT, ("zc", "t"))
+        # NC.defVar(profile_grp, "q_liq", FT, ("zc", "t"))
+        # NC.defVar(profile_grp, "q_ice", FT, ("zc", "t"))
+        # NC.defVar(profile_grp, "q_rai", FT, ("zc", "t"))
+        # NC.defVar(profile_grp, "q_sno", FT, ("zc", "t"))
 
         reference_grp = NC.defGroup(root_grp, "reference")
         NC.defDim(reference_grp, "zf", length(z_faces))
@@ -59,6 +63,12 @@ function NetCDFIO_Stats(nc_filename, output_interval, z_faces, z_centers)
         ts_grp = NC.defGroup(root_grp, "timeseries")
         NC.defDim(ts_grp, "t", Inf)
         NC.defVar(ts_grp, "t", Float64, ("t",))
+        if ~isempty(ts_fields)
+            for ts_field in ts_fields
+                NC.defVar(ts_grp, ts_field, Float64, ("t",))
+            end
+        end
+
     end
     vars = Dict{String, Any}()
     return NetCDFIO_Stats(root_grp, profiles_grp, ts_grp, output_interval, nc_filename, vars)
@@ -126,18 +136,18 @@ function KiD_output(aux, t::Float64)
     open_files(Stats)
 
     write_simulation_time(Stats, t)
-    write_field(Stats, "density", vec(ρ), "profiles")
-    write_field(Stats, "temperature", vec(T), "profiles")
-    write_field(Stats, "pressure", vec(p), "profiles")
+    # write_field(Stats, "density", vec(ρ), "profiles")
+    # write_field(Stats, "temperature", vec(T), "profiles")
+    # write_field(Stats, "pressure", vec(p), "profiles")
 
-    write_field(Stats, "theta_liq_ice", vec(θ_liq_ice), "profiles")
-    write_field(Stats, "theta_dry", vec(θ_dry), "profiles")
+    # write_field(Stats, "theta_liq_ice", vec(θ_liq_ice), "profiles")
+    # write_field(Stats, "theta_dry", vec(θ_dry), "profiles")
 
-    write_field(Stats, "q_tot", vec(q_tot), "profiles")
-    write_field(Stats, "q_liq", vec(q_liq), "profiles")
-    write_field(Stats, "q_ice", vec(q_ice), "profiles")
-    write_field(Stats, "q_rai", vec(q_rai), "profiles")
-    write_field(Stats, "q_sno", vec(q_sno), "profiles")
+    # write_field(Stats, "q_tot", vec(q_tot), "profiles")
+    # write_field(Stats, "q_liq", vec(q_liq), "profiles")
+    # write_field(Stats, "q_ice", vec(q_ice), "profiles")
+    # write_field(Stats, "q_rai", vec(q_rai), "profiles")
+    # write_field(Stats, "q_sno", vec(q_sno), "profiles")
 
     close_files(Stats)
 end
