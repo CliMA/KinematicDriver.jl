@@ -9,7 +9,7 @@ function compare_profiles(; is_dry_flag::Bool)
     # Computational domain ...
     z_min = FT(0)
     z_max = FT(2220)
-    n_elem = 222 # TODO: run PySDM with 20m resolution
+    n_elem = 222
     # ... and the created coordinates
     space, face_space = KiD.make_function_space(FT, z_min, z_max, n_elem)
     coord = CC.Fields.coordinate_field(space)
@@ -31,7 +31,7 @@ function compare_profiles(; is_dry_flag::Bool)
     KM_data = (; z_centers, q_vap, ρ, θ_dry, T, p, q_liq)
 
     # Read in the PySDM KiD initial profiles
-    sdm_case = is_dry_flag ? "dry_coarse" : "wet"
+    sdm_case = is_dry_flag ? "dry" : "wet"
     sdm_data = load_sdm_data(sdm_case)
 
     # Interpolate both (we are not doing computations on the same grid)
