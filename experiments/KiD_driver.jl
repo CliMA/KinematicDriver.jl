@@ -74,10 +74,10 @@ init = map(coord -> KiD.init_1d_column(FT, params, ρ_profile, coord.z), coord)
 Y = KiD.initialise_state(moisture, precip, init)
 
 # create aux vector and apply initial condition
-aux = KiD.initialise_aux(FT, init, params, w_params, TS, Stats, nc_outputs, ts_outputs, face_space, moisture)
+aux = KiD.initialise_aux(FT, init, params, w_params, TS, Stats, nc_outputs, ts_outputs, face_space, moisture, precip)
 
 # # output the initial condition
-KiD.KiD_output(aux, 0.0)
+KiD.KiD_output(aux, 0.0, moisture, precip)
 
 # Define callbacks for output
 callback_io = ODE.DiscreteCallback(KiD.condition_io, KiD.affect_io!; save_positions = (false, false))
