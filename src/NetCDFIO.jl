@@ -128,26 +128,62 @@ function KiD_output(aux, t::Float64)
     # https://github.com/Alexander-Barth/NCDatasets.jl/issues/135
     # opening/closing files every step should be okay. #removeVarsHack
 
-    UnPack.@unpack Stats = aux
+    UnPack.@unpack Stats, field_outputs, ts_outputs = aux.io_info
     UnPack.@unpack ρ, p, θ_liq_ice = aux.constants
     UnPack.@unpack T, θ_dry, q_tot, q_liq, q_ice = aux.moisture_variables
     UnPack.@unpack q_rai, q_sno = aux.precip_variables
 
     open_files(Stats)
 
+
+
     write_simulation_time(Stats, t)
-    # write_field(Stats, "density", vec(ρ), "profiles")
-    # write_field(Stats, "temperature", vec(T), "profiles")
-    # write_field(Stats, "pressure", vec(p), "profiles")
 
-    # write_field(Stats, "theta_liq_ice", vec(θ_liq_ice), "profiles")
-    # write_field(Stats, "theta_dry", vec(θ_dry), "profiles")
+    # TODO: there is probably a more elegant way to do this using dictionaries, but I haven't figured it out
+    # field_dict = fieldname_to_var()
+    # for field_out in field_outputs
+    #     write_field(Stats, field_out, vec(eval(Meta.parse(field_dict[field_out]*"()"))), "profiles")
+    # end
 
-    # write_field(Stats, "q_tot", vec(q_tot), "profiles")
-    # write_field(Stats, "q_liq", vec(q_liq), "profiles")
-    # write_field(Stats, "q_ice", vec(q_ice), "profiles")
-    # write_field(Stats, "q_rai", vec(q_rai), "profiles")
-    # write_field(Stats, "q_sno", vec(q_sno), "profiles")
+    if "density" in field_outputs
+        write_field(Stats, "density", vec(ρ), "profiles")
+    end
+    if "temperature" in field_outputs
+        write_field(Stats, "temperature", vec(T), "profiles")
+    end
+    if "pressure" in field_outputs
+        write_field(Stats, "pressure", vec(p), "profiles")
+    end
+    if "theta_liq_ice" in field_outputs
+        write_field(Stats, "theta_liq_ice", vec(ρ), "profiles")
+    end
+    if "theta_dry" in field_outputs
+        write_field(Stats, "density", vec(ρ), "profiles")
+    end
+    if "q_tot" in field_outputs
+        write_field(Stats, "q_tot", vec(q_tot), "profiles")
+    end
+    if "q_liq" in field_outputs
+        write_field(Stats, "q_liq", vec(q_liq), "profiles")
+    end
+    if "q_ice" in field_outputs
+        write_field(Stats, "q_ice", vec(q_ice), "profiles")
+    end
+    if "q_rai" in field_outputs
+        write_field(Stats, "q_rai", vec(q_rai), "profiles")
+    end
+    if "q_sno" in field_outputs
+        write_field(Stats, "q_sno", vec(q_sno), "profiles")
+    end
 
     close_files(Stats)
 end
+
+# TODO: make a more elegant dictionary solution for selecting netcdf outputs
+# function fieldname_to_var()
+#     field_dict = Dict([("density", "ρ")]) #, ("temperature", T), ("pressure", p), 
+#         # ("theta_liq_ice",θ_liq_ice), ("theta_dry", θ_dry), ("q_tot", q_tot),
+#         # ("q_liq", q_liq), ("q_ice", q_ice), ("q_rai", q_rai), ("q_sno", q_sno)])
+
+#     return field_dict
+# end

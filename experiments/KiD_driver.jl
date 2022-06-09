@@ -2,7 +2,7 @@
 This should be turned into a test file
 """
 
-#include("../src/Kinematic1D.jl")
+include("../src/Kinematic1D.jl")
 
 import NCDatasets
 import OrdinaryDiffEq
@@ -18,7 +18,7 @@ const TD = Thermodynamics
 const CP = CLIMAParameters
 const NC = NCDatasets
 const ODE = OrdinaryDiffEq
-#const KiD = Kinematic1D
+const KiD = Kinematic1D
 
 const FT = Float64
 
@@ -77,7 +77,7 @@ Y = KiD.initialise_state(moisture, precip, init)
 aux = KiD.initialise_aux(FT, init, params, w_params, TS, Stats, nc_outputs, ts_outputs, face_space, moisture)
 
 # # output the initial condition
-# KiD.KiD_output(aux, 0.0)
+KiD.KiD_output(aux, 0.0)
 
 # Define callbacks for output
 # callback_io = ODE.DiscreteCallback(KiD.condition_io, KiD.affect_io!; save_positions = (false, false))
