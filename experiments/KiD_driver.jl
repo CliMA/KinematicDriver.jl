@@ -2,7 +2,7 @@
 This should be turned into a test file
 """
 
-include("../src/Kinematic1D.jl")
+#include("../src/Kinematic1D.jl")
 
 import NCDatasets
 import OrdinaryDiffEq
@@ -18,7 +18,7 @@ const TD = Thermodynamics
 const CP = CLIMAParameters
 const NC = NCDatasets
 const ODE = OrdinaryDiffEq
-const KiD = Kinematic1D
+#const KiD = Kinematic1D
 
 const FT = Float64
 
@@ -62,7 +62,7 @@ face_coord = CC.Fields.coordinate_field(face_space)
 # initialize the netcdf output Stats struct
 fname = joinpath(path, "Output.nc")
 nc_outputs = ("density", "temperature", "pressure")
-ts_outputs = ()
+ts_outputs = ("TODO")
 Stats = KiD.NetCDFIO_Stats(fname, 1.0, vec(face_coord), vec(coord), nc_outputs)
 
 #solve the initial value problem for density profile
