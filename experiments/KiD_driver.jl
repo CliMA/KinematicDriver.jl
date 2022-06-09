@@ -63,7 +63,7 @@ face_coord = CC.Fields.coordinate_field(face_space)
 fname = joinpath(path, "Output.nc")
 nc_outputs = ("density", "temperature", "pressure")
 ts_outputs = ("TODO")
-Stats = KiD.NetCDFIO_Stats(fname, 1.0, vec(face_coord), vec(coord), nc_outputs)
+Stats = KiD.NetCDFIO_Stats(fname, Δt_output, vec(face_coord), vec(coord), nc_outputs)
 
 #solve the initial value problem for density profile
 ρ_profile = KiD.ρ_ivp(FT, params)
@@ -80,26 +80,25 @@ aux = KiD.initialise_aux(FT, init, params, w_params, TS, Stats, nc_outputs, ts_o
 KiD.KiD_output(aux, 0.0)
 
 # Define callbacks for output
-# callback_io = ODE.DiscreteCallback(KiD.condition_io, KiD.affect_io!; save_positions = (false, false))
-# callbacks = ODE.CallbackSet(callback_io)
+callback_io = ODE.DiscreteCallback(KiD.condition_io, KiD.affect_io!; save_positions = (false, false))
+callbacks = ODE.CallbackSet(callback_io)
 
-# # collect all the tendencies into rhs function for ODE solver
-# # based on model choices for the solved equations
-# ode_rhs! = KiD.make_rhs_function(moisture, precip)
+# collect all the tendencies into rhs function for ODE solver
+# based on model choices for the solved equations
+ode_rhs! = KiD.make_rhs_function(moisture, precip)
 
-# # Solve the ODE operator
-# problem = ODE.ODEProblem(ode_rhs!, Y, (t_ini, t_end), aux)
-# solver = ODE.solve(
-#     problem,
-#     ODE.SSPRK33(),
-#     dt = Δt,
-#     saveat = 10 * Δt,
-#     callback = callbacks,
-#     progress = true,
-#     progress_message = (dt, u, p, t) -> t,
-# );
+# Solve the ODE operator
+problem = ODE.ODEProblem(ode_rhs!, Y, (t_ini, t_end), aux)
+solver = ODE.solve(
+    problem,
+    ODE.SSPRK33(),
+    dt = Δt,
+    saveat = 10 * Δt,
+    callback = callbacks,
+    progress = true,
+    progress_message = (dt, u, p, t) -> t,
+);
 
-# # TODO - delete below once we have NetCDF output
 # ENV["GKSwstype"] = "nul"
 # using ClimaCorePlots, Plots
 # Plots.GRBackend()

@@ -3,7 +3,8 @@
 """
 
 function condition_io(u, t, integrator)
-    UnPack.@unpack TS, Stats = integrator.p
+    UnPack.@unpack TS, io_info = integrator.p
+    UnPack.@unpack Stats = io_info
     TS.dt_io += TS.dt
     io_flag = false
     if TS.dt_io > Stats.output_interval
