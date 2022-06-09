@@ -18,7 +18,8 @@ const TD = Thermodynamics
 const CP = CLIMAParameters
 const NC = NCDatasets
 const ODE = OrdinaryDiffEq
-const KiD = Kinematic1D
+#const KiD = Kinematic1D
+KiD = Kinematic1D
 
 const FT = Float64
 
