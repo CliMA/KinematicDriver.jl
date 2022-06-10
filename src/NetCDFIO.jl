@@ -11,8 +11,7 @@ mutable struct NetCDFIO_Stats
     vars::Dict{String, Any} # Hack to avoid https://github.com/Alexander-Barth/NCDatasets.jl/issues/135
 end
 
-function NetCDFIO_Stats(nc_filename, output_interval, z_faces, z_centers, 
-    profile_fields; ts_fields=())
+function NetCDFIO_Stats(nc_filename, output_interval, z_faces, z_centers, profile_fields; ts_fields=())
     FT = Float64
 
     # Initialize properties with valid type:

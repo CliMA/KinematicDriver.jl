@@ -132,6 +132,6 @@ function initialise_aux(FT, ip, params, w_params, TS, Stats, field_outputs, ts_o
         io_info = (; Stats = Stats, field_outputs = field_outputs, ts_outputs = ts_outputs),
         TS = TS,
         moisture = moisture,
-        precip = precip
+        precip = precip,
     )
 end
