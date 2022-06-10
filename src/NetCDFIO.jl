@@ -37,6 +37,7 @@ function NetCDFIO_Stats(nc_filename, output_interval, z_faces, z_centers,
         NC.defVar(profile_grp, "zc", z_centers, ("zc",))
         NC.defVar(profile_grp, "t", Float64, ("t",))
 
+        # TODO: make it so we cannot add profile fields that are not tracked by the microphysics method
         for profile_field in Set(profile_fields)
             NC.defVar(profile_grp, profile_field, FT, ("zc", "t"))
         end
@@ -140,24 +141,19 @@ function KiD_output(aux, t::Float64, ::EquilibriumMoisture, ::Union{NoPrecipitat
         write_field(Stats, "pressure", vec(p), "profiles")
     end
     if "theta_liq_ice" in field_outputs
-        write_field(Stats, "theta_liq_ice", vec(ρ), "profiles")
+        write_field(Stats, "theta_liq_ice", vec(θ_liq_ice), "profiles")
     end
     if "theta_dry" in field_outputs
-        write_field(Stats, "density", vec(ρ), "profiles")
+        write_field(Stats, "theta_dry", vec(θ_dry), "profiles")
     end
     if "q_tot" in field_outputs
         write_field(Stats, "q_tot", vec(q_tot), "profiles")
     end
 
     close_files(Stats)
-    # TODO: would be smart to make it so only the actual tracked variables can be output
 end
 
 function KiD_output(aux, t::Float64, ::NonEquilibriumMoisture, ::Union{NoPrecipitation, Precipitation0M})
-
-    # TODO: remove `vars` hack that avoids
-    # https://github.com/Alexander-Barth/NCDatasets.jl/issues/135
-    # opening/closing files every step should be okay. #removeVarsHack
 
     UnPack.@unpack Stats, field_outputs, ts_outputs = aux.io_info
     UnPack.@unpack ρ, p, θ_liq_ice = aux.constants
@@ -178,10 +174,10 @@ function KiD_output(aux, t::Float64, ::NonEquilibriumMoisture, ::Union{NoPrecipi
         write_field(Stats, "pressure", vec(p), "profiles")
     end
     if "theta_liq_ice" in field_outputs
-        write_field(Stats, "theta_liq_ice", vec(ρ), "profiles")
+        write_field(Stats, "theta_liq_ice", vec(θ_liq_ice), "profiles")
     end
     if "theta_dry" in field_outputs
-        write_field(Stats, "density", vec(ρ), "profiles")
+        write_field(Stats, "theta_dry", vec(θ_dry), "profiles")
     end
     if "q_tot" in field_outputs
         write_field(Stats, "q_tot", vec(q_tot), "profiles")
@@ -198,10 +194,6 @@ end
 
 function KiD_output(aux, t::Float64, ::EquilibriumMoisture, ::Precipitation1M)
 
-    # TODO: remove `vars` hack that avoids
-    # https://github.com/Alexander-Barth/NCDatasets.jl/issues/135
-    # opening/closing files every step should be okay. #removeVarsHack
-
     UnPack.@unpack Stats, field_outputs, ts_outputs = aux.io_info
     UnPack.@unpack ρ, p, θ_liq_ice = aux.constants
     UnPack.@unpack T, θ_dry, q_tot, q_liq, q_ice = aux.moisture_variables
@@ -222,10 +214,10 @@ function KiD_output(aux, t::Float64, ::EquilibriumMoisture, ::Precipitation1M)
         write_field(Stats, "pressure", vec(p), "profiles")
     end
     if "theta_liq_ice" in field_outputs
-        write_field(Stats, "theta_liq_ice", vec(ρ), "profiles")
+        write_field(Stats, "theta_liq_ice", vec(θ_liq_ice), "profiles")
     end
     if "theta_dry" in field_outputs
-        write_field(Stats, "density", vec(ρ), "profiles")
+        write_field(Stats, "theta_dry", vec(θ_dry), "profiles")
     end
     if "q_tot" in field_outputs
         write_field(Stats, "q_tot", vec(q_tot), "profiles")
@@ -242,10 +234,6 @@ end
 
 function KiD_output(aux, t::Float64, ::NonEquilibriumMoisture, ::Precipitation1M)
 
-    # TODO: remove `vars` hack that avoids
-    # https://github.com/Alexander-Barth/NCDatasets.jl/issues/135
-    # opening/closing files every step should be okay. #removeVarsHack
-
     UnPack.@unpack Stats, field_outputs, ts_outputs = aux.io_info
     UnPack.@unpack ρ, p, θ_liq_ice = aux.constants
     UnPack.@unpack T, θ_dry, q_tot, q_liq, q_ice = aux.moisture_variables
@@ -266,10 +254,10 @@ function KiD_output(aux, t::Float64, ::NonEquilibriumMoisture, ::Precipitation1M
         write_field(Stats, "pressure", vec(p), "profiles")
     end
     if "theta_liq_ice" in field_outputs
-        write_field(Stats, "theta_liq_ice", vec(ρ), "profiles")
+        write_field(Stats, "theta_liq_ice", vec(θ_liq_ice), "profiles")
     end
     if "theta_dry" in field_outputs
-        write_field(Stats, "density", vec(ρ), "profiles")
+        write_field(Stats, "theta_dry", vec(θ_dry), "profiles")
     end
     if "q_tot" in field_outputs
         write_field(Stats, "q_tot", vec(q_tot), "profiles")

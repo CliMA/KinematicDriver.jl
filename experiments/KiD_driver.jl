@@ -61,7 +61,7 @@ face_coord = CC.Fields.coordinate_field(face_space)
 
 # initialize the netcdf output Stats struct
 fname = joinpath(path, "Output.nc")
-nc_outputs = ("density", "temperature", "pressure")
+nc_outputs = ("density", "temperature", "pressure", "q_tot", "θ_liq_ice","θ_dry", "q_rai")
 ts_outputs = ("TODO")
 Stats = KiD.NetCDFIO_Stats(fname, Δt_output, vec(face_coord), vec(coord), nc_outputs)
 
