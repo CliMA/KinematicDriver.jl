@@ -31,5 +31,6 @@ include("callbacks.jl")
 include("initial_condition.jl")
 include("tendency.jl")
 include("InternalParameters.jl")
+include("plotting_utils.jl")
 
 end

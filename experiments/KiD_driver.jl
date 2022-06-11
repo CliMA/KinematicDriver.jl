@@ -18,7 +18,7 @@ const TD = Thermodynamics
 const CP = CLIMAParameters
 const NC = NCDatasets
 const ODE = OrdinaryDiffEq
-const KiD = Kinematic1D
+#const KiD = Kinematic1D
 
 const FT = Float64
 
@@ -103,7 +103,9 @@ solver = ODE.solve(
 # using ClimaCorePlots, Plots
 # Plots.GRBackend()
 
-# z_centers = parent(CC.Fields.coordinate_field(space))
+z_centers = parent(CC.Fields.coordinate_field(space))
+#plot_spaghetti(parent(aux.constants.ρ), z_centers, path, "density.png")
+plot_anim(solver, "q_tot", aux, z_centers, path)
 
 # anim = Plots.@animate for u in solver.u
 #     ρq_tot = parent(u.ρq_tot)
