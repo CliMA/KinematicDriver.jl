@@ -8,7 +8,7 @@ const FT = Float64
 function compare_profiles(; is_dry_flag::Bool)
     # Computational domain ...
     z_min = FT(0)
-    z_max = FT(2220)
+    z_max = FT(3220)
     n_elem = 222
     # ... and the created coordinates
     space, face_space = KiD.make_function_space(FT, z_min, z_max, n_elem)
@@ -51,40 +51,31 @@ function compare_profiles(; is_dry_flag::Bool)
 
     # Test that the initial profiles match between CliMA and PySDM
     test_title = "Case: " * sdm_case * ". Initial profiles of water (vapour and liquid):"
-    @testset "$test_title" begin
-        z_test = z_min:100:z_max
-        @test all(isapprox(KM_q_vap(z_test), SD_q_vap(z_test), rtol = 1e-6))
-        @test all(isapprox(KM_q_liq(z_test), SD_q_liq(z_test), rtol = 1e-6))
-    end
-
-    test_title = "Case: " * sdm_case * ". Initial profiles of (T, p, ρ):"
     if is_dry_flag
         @testset "$test_title" begin
             z_test = z_min:100:z_max
-            @test all(isapprox(KM_T(z_test), SD_T(z_test), rtol = 1e-3))
-            @test all(isapprox(KM_p(z_test), SD_p(z_test), rtol = 1e-3))
-            @test all(isapprox(KM_ρ(z_test), SD_ρ(z_test), rtol = 1e-3))
+            @test all(isapprox(KM_q_vap(z_test), SD_q_vap(z_test), rtol = 1e-6))
+            @test all(isapprox(KM_q_liq(z_test), SD_q_liq(z_test), rtol = 1e-6))
         end
     else
         @testset "$test_title" begin
             z_test = z_min:100:z_max
-            @test_broken all(isapprox(KM_T(z_test), SD_T(z_test), rtol = 1e-3))
-            @test_broken all(isapprox(KM_p(z_test), SD_p(z_test), rtol = 1e-3))
-            @test_broken all(isapprox(KM_ρ(z_test), SD_ρ(z_test), rtol = 1e-3))
+            @test all(isapprox(KM_q_vap(z_test), SD_q_vap(z_test), rtol = 1e-4))
+            @test all(isapprox(KM_q_liq(z_test), SD_q_liq(z_test), rtol = 1e-6))
         end
+    end
+    test_title = "Case: " * sdm_case * ". Initial profiles of (T, p, ρ):"
+    @testset "$test_title" begin
+        z_test = z_min:100:z_max
+        @test all(isapprox(KM_T(z_test), SD_T(z_test), rtol = 1e-2))
+        @test all(isapprox(KM_p(z_test), SD_p(z_test), rtol = 1e-2))
+        @test all(isapprox(KM_ρ(z_test), SD_ρ(z_test), rtol = 1e-2))
     end
 
     test_title = "Case: " * sdm_case * ". Initial profiles of θ_dry:"
-    if is_dry_flag
-        @testset "$test_title" begin
-            z_test = z_min:100:z_max
-            @test all(isapprox(KM_θ_dry(z_test), SD_θ_dry(z_test), rtol = 1e-4))
-        end
-    else
-        @testset "$test_title" begin
-            z_test = z_min:100:z_max
-            @test_broken all(isapprox(KM_θ_dry(z_test), SD_θ_dry(z_test), rtol = 1e-4))
-        end
+    @testset "$test_title" begin
+        z_test = z_min:100:z_max
+        @test all(isapprox(KM_θ_dry(z_test), SD_θ_dry(z_test), rtol = 1e-6))
     end
 
     # Plot the profiles - TODO connect with buildkite artifacts
