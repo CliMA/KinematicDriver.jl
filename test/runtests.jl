@@ -1,15 +1,19 @@
 using Test
 
 import Interpolations
+import LinearAlgebra
 
 import CLIMAParameters
 import ClimaCore
+import Thermodynamics
 
 include("../src/Kinematic1D.jl")
 
 const IP = Interpolations
+const LA = LinearAlgebra
 const CP = CLIMAParameters
 const CC = ClimaCore
+const TD = Thermodynamics
 
 const KiD = Kinematic1D
 
