@@ -3,10 +3,12 @@ using Plots
 """
     Create plots comparing the Julia & PySDM vertical profiles
 """
-function plot_comparison(KM; sdm_case = "dry", dir = "dry")
+function plot_comparison(KM; sdm_case = "dry", name = "dry")
     sdm_data = load_sdm_data(sdm_case)
-    path = joinpath(@__DIR__, "output", dir)
+    path = joinpath(@__DIR__, "output")
     mkpath(path)
+
+    fig_name = string(name, "_init_profile.png")
 
     p1 = Plots.plot(KM.q_vap, KM.z_centers, label = "KM", xlabel = "q_vap [g/kg]", ylabel = "z [m]")
     Plots.plot!(p1, sdm_data.qv_sdm, sdm_data.z_sdm, label = "SDM")
@@ -26,8 +28,18 @@ function plot_comparison(KM; sdm_case = "dry", dir = "dry")
     p6 = Plots.plot(KM.q_liq, KM.z_centers, label = "KM", xlabel = "q_liq [g/kg]", ylabel = "z [m]")
     Plots.plot!(p6, sdm_data.ql_sdm, sdm_data.z_sdm, label = "SDM")
 
-    p = Plots.plot(p1, p2, p3, p4, p5, p6, size = (1000, 600))
-    Plots.png(p, joinpath(path, "init_profile.png"))
+    p = Plots.plot(
+        p1,
+        p2,
+        p3,
+        p4,
+        p5,
+        p6,
+        size = (1200.0, 750.0),
+        bottom_margin = 40.0 * Plots.PlotMeasures.px,
+        left_margin = 80.0 * Plots.PlotMeasures.px,
+    )
+    Plots.png(p, joinpath(path, fig_name))
 end
 
 """
