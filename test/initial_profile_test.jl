@@ -79,7 +79,7 @@ function compare_profiles(; is_dry_flag::Bool)
     end
 
     # Plot the profiles - TODO connect with buildkite artifacts
-    plot_comparison(KM_data, sdm_case = sdm_case, dir = sdm_case)
+    plot_comparison(KM_data, sdm_case = sdm_case, name = sdm_case)
 end
 
 compare_profiles(is_dry_flag = true)
