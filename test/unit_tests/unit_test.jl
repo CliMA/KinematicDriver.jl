@@ -1,6 +1,26 @@
 """
-    A place to add unit tests (TODO)
+    Some elementary unit tests
 """
+
+using Test
+
+import LinearAlgebra
+
+import CLIMAParameters
+import ClimaCore
+import Thermodynamics
+
+include("../../src/Kinematic1D.jl")
+
+const LA = LinearAlgebra
+const CP = CLIMAParameters
+const CC = ClimaCore
+const TD = Thermodynamics
+
+const KiD = Kinematic1D
+
+# Instantiate CliMA Parameters and overwrite the defaults to match PySDM
+params = KiD.params_overwrite
 
 @testset "Moisture and precipitation types" begin
 

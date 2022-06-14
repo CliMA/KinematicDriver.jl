@@ -2,7 +2,28 @@
 Test that initial profiles match between CliMA and PySDM
 """
 
-include("data_utils.jl")
+using Test
+
+import Interpolations
+import LinearAlgebra
+
+import CLIMAParameters
+import ClimaCore
+import Thermodynamics
+
+include("../../src/Kinematic1D.jl")
+
+const IP = Interpolations
+const CC = ClimaCore
+
+const KID = Kinematic1D
+
+# Instantiate CliMA Parameters and overwrite the defaults to match PySDM
+params = KID.params_overwrite
+
+include("../data_utils.jl")
+include("../plotting_utils.jl")
+
 const FT = Float64
 
 function compare_profiles(; is_dry_flag::Bool)
@@ -11,16 +32,16 @@ function compare_profiles(; is_dry_flag::Bool)
     z_max = FT(3220)
     n_elem = 222
     # ... and the created coordinates
-    space, face_space = KiD.make_function_space(FT, z_min, z_max, n_elem)
+    space, face_space = KID.make_function_space(FT, z_min, z_max, n_elem)
     coord = CC.Fields.coordinate_field(space)
     face_coord = CC.Fields.coordinate_field(face_space)
 
     # Solve the initial value problem for density profile
-    ρ_profile = KiD.ρ_ivp(FT, params, dry = is_dry_flag)
+    ρ_profile = KID.ρ_ivp(FT, params, dry = is_dry_flag)
     # Create the initial condition profiles
-    init = map(coord -> KiD.init_1d_column(FT, params, ρ_profile, coord.z, dry = is_dry_flag), coord)
+    init = map(coord -> KID.init_1d_column(FT, params, ρ_profile, coord.z, dry = is_dry_flag), coord)
 
-    # Store the CliMA KiD initial profiles
+    # Store the CliMA KID initial profiles
     z_centers = parent(CC.Fields.coordinate_field(space))
     T = parent(init.T)
     p = parent(init.p)
@@ -30,7 +51,7 @@ function compare_profiles(; is_dry_flag::Bool)
     q_liq = parent(init.q_liq)
     KM_data = (; z_centers, q_vap, ρ, θ_dry, T, p, q_liq)
 
-    # Read in the PySDM KiD initial profiles
+    # Read in the PySDM KID initial profiles
     sdm_case = is_dry_flag ? "dry" : "wet"
     sdm_data = load_sdm_data(sdm_case)
 
@@ -78,8 +99,7 @@ function compare_profiles(; is_dry_flag::Bool)
         @test all(isapprox(KM_θ_dry(z_test), SD_θ_dry(z_test), rtol = 1e-6))
     end
 
-    # Plot the profiles - TODO connect with buildkite artifacts
-    plot_comparison(KM_data, sdm_case = sdm_case, name = sdm_case)
+    plot_initial_profiles_comparison(KM_data, sdm_case = sdm_case)
 end
 
 compare_profiles(is_dry_flag = true)
