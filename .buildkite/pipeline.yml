@@ -12,7 +12,7 @@ agents:
   slurm_ntasks: 1
 
 steps:
-  - label: "init environment :computer:"
+  - label: "Init environment :computer:"
     key: "init_cpu_env"
     command:
       - "julia --project -e 'using Pkg; Pkg.instantiate(;verbose=true)'"
@@ -25,9 +25,16 @@ steps:
 
   - wait
 
-  - group: "Unit tests"
+  - group: "Tests :umbrella:"
     steps:
 
       - label: ":partly_sunny: Unit tests"
-        command: "julia --color=yes --project=test test/runtests.jl"
-        artifact_paths: "test/output/*"
+        command: "julia --color=yes --project=test test/unit_tests/unit_test.jl"
+
+      - label: ":partly_sunny: Initial condition tests"
+        command: "julia --color=yes --project=test test/initial_condition_tests/initial_profile_test.jl"
+        artifact_paths: "test/initial_condition_tests/output_init_profiles/*"
+
+      - label: ":partly_sunny: Experiments"
+        command: "julia --color=yes --project=test test/experiments/KiD_driver.jl"
+        artifact_paths: "test/experiments/output/*"
