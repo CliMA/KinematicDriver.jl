@@ -374,10 +374,7 @@ end
 
     fcc = CC.Operators.FluxCorrectionC2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
     If = CC.Operators.InterpolateC2F()
-    ∂ = CC.Operators.DivergenceF2C(
-        bottom = CC.Operators.SetValue(CC.Geometry.WVector(aux.ρw0 * FT(0.0))),
-        top = CC.Operators.Extrapolate(),
-    )
+    ∂ = CC.Operators.DivergenceF2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
 
     @. dY.ρq_rai += -∂(aux.ρw / If(aux.constants.ρ) * If(Y.ρq_rai)) + fcc(aux.ρw / If(aux.constants.ρ), Y.ρq_rai)
     @. dY.ρq_sno += -∂(aux.ρw / If(aux.constants.ρ) * If(Y.ρq_sno)) + fcc(aux.ρw / If(aux.constants.ρ), Y.ρq_sno)
