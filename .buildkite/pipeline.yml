@@ -35,6 +35,26 @@ steps:
         command: "julia --color=yes --project=test test/initial_condition_tests/initial_profile_test.jl"
         artifact_paths: "test/initial_condition_tests/output_init_profiles/*"
 
-      - label: ":partly_sunny: Experiments"
-        command: "julia --color=yes --project=test test/experiments/KiD_driver.jl"
-        artifact_paths: "test/experiments/output/*"
+      - label: ":crystal_ball: Experiments: equil + no precp"
+        command: "julia --color=yes --project=test test/experiments/KiD_driver.jl --moisture_choice=EquilibriumMoisture --precipitation_choice=NoPrecipitation"
+        artifact_paths: "test/experiments/Output_EquilibriumMoisture_NoPrecipitation/figures/*"
+
+      - label: ":crystal_ball: Experiments: equil + 0M"
+        command: "julia --color=yes --project=test test/experiments/KiD_driver.jl --moisture_choice=EquilibriumMoisture --precipitation_choice=Precipitation0M"
+        artifact_paths: "test/experiments/Output_EquilibriumMoisture_Precipitation0M/figures/*"
+
+      - label: ":crystal_ball: Experiments: equil + 1M"
+        command: "julia --color=yes --project=test test/experiments/KiD_driver.jl --moisture_choice=EquilibriumMoisture --precipitation_choice=Precipitation1M"
+        artifact_paths: "test/experiments/Output_EquilibriumMoisture_Precipitation1M/figures/*"
+
+      - label: ":crystal_ball: Experiments: non equil + no precip"
+        command: "julia --color=yes --project=test test/experiments/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=NoPrecipitation"
+        artifact_paths: "test/experiments/Output_NonEquilibriumMoisture_NoPrecipitation/figures/*"
+
+      - label: ":crystal_ball: Experiments: non equil + 0M"
+        command: "julia --color=yes --project=test test/experiments/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation0M"
+        artifact_paths: "test/experiments/Output_NonEquilibriumMoisture_Precipitation0M/figures/*"
+
+      - label: ":crystal_ball: Experiments: non equil + 1M"
+        command: "julia --color=yes --project=test test/experiments/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation1M"
+        artifact_paths: "test/experiments/Output_NonEquilibriumMoisture_Precipitation1M/figures/*"
