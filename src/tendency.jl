@@ -191,8 +191,17 @@ end
      Precompute the auxiliary values
 """
 @inline function precompute_aux_prescribed_velocity!(aux, t)
-    @. aux.ρw = CC.Geometry.WVector.(aux.w_params.w1 * sin(pi * t / aux.w_params.t1))
-    aux.ρw0 = aux.w_params.w1 * sin(pi * t / aux.w_params.t1)
+
+    FT = eltype(aux.moisture_variables.q_tot)
+
+    if t < aux.w_params.t1
+        @. aux.ρw = CC.Geometry.WVector.(aux.w_params.w1 * sin(pi * t / aux.w_params.t1))
+        aux.ρw0 = aux.w_params.w1 * sin(pi * t / aux.w_params.t1)
+    else
+        @. aux.ρw = CC.Geometry.WVector.(FT(0))
+        aux.ρw0 = FT(0)
+    end
+
 end
 @inline function precompute_aux_thermo!(sm::AbstractMoistureStyle, dY, Y, aux, t)
     error("precompute_aux not implemented for a given $sm")
