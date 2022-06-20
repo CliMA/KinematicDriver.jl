@@ -68,7 +68,7 @@ output_folder = string("Output_", moisture_choice, "_", precipitation_choice)
 path = joinpath(@__DIR__, output_folder)
 mkpath(path)
 fname = joinpath(path, "Output.nc")
-output_profiles = ("density", "temperature", "pressure", "q_tot", "θ_liq_ice", "θ_dry", "q_rai")
+output_profiles = ("density", "temperature", "pressure", "q_tot", "θ_liq_ice", "θ_dry", "q_rai", "q_liq")
 output_timeseries = ("TODO")
 Stats = KD.NetCDFIO_Stats(fname, TS.dt_io, vec(face_coord), vec(coord), output_profiles)
 
@@ -113,8 +113,11 @@ if simulation_setup["plotting_flag"] == true
     include("../plotting_utils.jl")
 
     plot_folder = string("experiments/", output_folder, "/figures/")
+    nc_data_file = string("experiments/", output_folder, "/Output.nc")
 
     z_centers = parent(CC.Fields.coordinate_field(space))
     plot_final_aux_profiles(z_centers, aux, output = plot_folder)
     plot_animation(z_centers, solver, aux, moisture, precip, KD, output = plot_folder)
+    #plot_moisture_timeheight(z_centers, solver, aux, moisture, precip, KD, output = plot_folder)
+    plot_timeheight(nc_data_file, output = plot_folder)
 end
