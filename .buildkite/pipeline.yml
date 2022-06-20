@@ -1,0 +1,60 @@
+env:
+  JULIA_VERSION: "1.7.2"
+  OPENMPI_VERSION: "4.0.4"
+  CUDA_VERSION: "11.2"
+  OPENBLAS_NUM_THREADS: 1
+  BUILDKITE_COMMIT: "${BUILDKITE_COMMIT}"
+  BUILDKITE_BRANCH: "${BUILDKITE_BRANCH}"
+
+agents:
+  config: cpu
+  queue: central
+  slurm_ntasks: 1
+
+steps:
+  - label: "Init environment :computer:"
+    key: "init_cpu_env"
+    command:
+      - "julia --project -e 'using Pkg; Pkg.instantiate(;verbose=true)'"
+      - "julia --project -e 'using Pkg; Pkg.precompile()'"
+      - "julia --project -e 'using Pkg; Pkg.status()'"
+
+      - "julia --project=test -e 'using Pkg; Pkg.instantiate(;verbose=true)'"
+      - "julia --project=test -e 'using Pkg; Pkg.precompile()'"
+      - "julia --project=test -e 'using Pkg; Pkg.status()'"
+
+  - wait
+
+  - group: "Tests :umbrella:"
+    steps:
+
+      - label: ":partly_sunny: Unit tests"
+        command: "julia --color=yes --project=test test/unit_tests/unit_test.jl"
+
+      - label: ":partly_sunny: Initial condition tests"
+        command: "julia --color=yes --project=test test/initial_condition_tests/initial_profile_test.jl"
+        artifact_paths: "test/initial_condition_tests/output_init_profiles/*"
+
+      - label: ":crystal_ball: Experiments: equil + no precp"
+        command: "julia --color=yes --project=test test/experiments/KiD_driver.jl --moisture_choice=EquilibriumMoisture --precipitation_choice=NoPrecipitation"
+        artifact_paths: "test/experiments/Output_EquilibriumMoisture_NoPrecipitation/figures/*"
+
+      - label: ":crystal_ball: Experiments: equil + 0M"
+        command: "julia --color=yes --project=test test/experiments/KiD_driver.jl --moisture_choice=EquilibriumMoisture --precipitation_choice=Precipitation0M"
+        artifact_paths: "test/experiments/Output_EquilibriumMoisture_Precipitation0M/figures/*"
+
+      - label: ":crystal_ball: Experiments: equil + 1M"
+        command: "julia --color=yes --project=test test/experiments/KiD_driver.jl --moisture_choice=EquilibriumMoisture --precipitation_choice=Precipitation1M"
+        artifact_paths: "test/experiments/Output_EquilibriumMoisture_Precipitation1M/figures/*"
+
+      - label: ":crystal_ball: Experiments: non equil + no precip"
+        command: "julia --color=yes --project=test test/experiments/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=NoPrecipitation"
+        artifact_paths: "test/experiments/Output_NonEquilibriumMoisture_NoPrecipitation/figures/*"
+
+      - label: ":crystal_ball: Experiments: non equil + 0M"
+        command: "julia --color=yes --project=test test/experiments/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation0M"
+        artifact_paths: "test/experiments/Output_NonEquilibriumMoisture_Precipitation0M/figures/*"
+
+      - label: ":crystal_ball: Experiments: non equil + 1M"
+        command: "julia --color=yes --project=test test/experiments/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation1M"
+        artifact_paths: "test/experiments/Output_NonEquilibriumMoisture_Precipitation1M/figures/*"

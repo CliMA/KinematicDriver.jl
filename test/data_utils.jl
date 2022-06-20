@@ -3,10 +3,12 @@ using Plots
 """
     Create plots comparing the Julia & PySDM vertical profiles
 """
-function plot_comparison(KM; sdm_case = "dry", dir = "dry")
+function plot_comparison(KM; sdm_case = "dry", name = "dry")
     sdm_data = load_sdm_data(sdm_case)
-    path = joinpath(@__DIR__, "output", dir)
+    path = joinpath(@__DIR__, "output")
     mkpath(path)
+
+    fig_name = string(name, "_init_profile.png")
 
     p1 = Plots.plot(KM.q_vap, KM.z_centers, label = "KM", xlabel = "q_vap [g/kg]", ylabel = "z [m]")
     Plots.plot!(p1, sdm_data.qv_sdm, sdm_data.z_sdm, label = "SDM")
@@ -20,14 +22,24 @@ function plot_comparison(KM; sdm_case = "dry", dir = "dry")
     p4 = Plots.plot(KM.T, KM.z_centers, label = "KM", xlabel = "T [K]", ylabel = "z [m]")
     Plots.plot!(p4, sdm_data.T_sdm, sdm_data.z_sdm, label = "SDM")
 
-    p5 = Plots.plot(KM.p, KM.z_centers, label = "KM", xlabel = "p [Pa]", ylabel = "z [m]")
-    Plots.plot!(p5, sdm_data.P_sdm, sdm_data.z_sdm, label = "SDM")
+    p5 = Plots.plot(KM.p ./ 100, KM.z_centers, label = "KM", xlabel = "p [hPa]", ylabel = "z [m]")
+    Plots.plot!(p5, sdm_data.P_sdm ./ 100, sdm_data.z_sdm, label = "SDM")
 
     p6 = Plots.plot(KM.q_liq, KM.z_centers, label = "KM", xlabel = "q_liq [g/kg]", ylabel = "z [m]")
     Plots.plot!(p6, sdm_data.ql_sdm, sdm_data.z_sdm, label = "SDM")
 
-    p = Plots.plot(p1, p2, p3, p4, p5, p6, size = (1000, 600))
-    Plots.png(p, joinpath(path, "init_profile.png"))
+    p = Plots.plot(
+        p1,
+        p2,
+        p3,
+        p4,
+        p5,
+        p6,
+        size = (1200.0, 750.0),
+        bottom_margin = 40.0 * Plots.PlotMeasures.px,
+        left_margin = 80.0 * Plots.PlotMeasures.px,
+    )
+    Plots.png(p, joinpath(path, fig_name))
 end
 
 """
@@ -54,7 +66,7 @@ function load_sdm_data(case = "dry")
            2530., 2550., 2570., 2590., 2610., 2630., 2650., 2670., 2690.,
            2710., 2730., 2750., 2770., 2790., 2810., 2830., 2850., 2870.,
            2890., 2910., 2930., 2950., 2970., 2990.]
-    
+
             ql_sdm = [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
             0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
             0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
@@ -64,7 +76,7 @@ function load_sdm_data(case = "dry")
             0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
             0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
             0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]
-    
+
             qv_sdm = [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
             0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
             0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
@@ -74,7 +86,7 @@ function load_sdm_data(case = "dry")
             0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
             0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
             0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]
-    
+
             rhod_sdm = [1.17449888, 1.17257814, 1.1706593 , 1.16874234, 1.16682726,
             1.16491407, 1.16300277, 1.16109334, 1.1591858 , 1.15728015,
             1.15537637, 1.15347448, 1.15157447, 1.14967633, 1.14778008,
@@ -105,7 +117,7 @@ function load_sdm_data(case = "dry")
             0.93635248, 0.93476332, 0.93317662, 0.93159237, 0.93001058,
             0.92843123, 0.92685434, 0.92527988, 0.92370786, 0.92213827,
             0.92057111, 0.91900638, 0.91744407, 0.91588418, 0.9143267 ]
-    
+
             thetad_sdm = [297.9       , 297.9       , 297.9       , 297.9       ,
             297.9       , 297.9       , 297.9       , 297.9       ,
             297.9       , 297.9       , 297.9       , 297.9       ,
@@ -144,7 +156,7 @@ function load_sdm_data(case = "dry")
             310.02428571, 310.14142857, 310.25857143, 310.37571429,
             310.49285714, 310.61      , 310.72714286, 310.84428571,
             310.96142857, 311.07857143]
-    
+
             T_sdm = [298.39644745, 298.20129024, 298.00613302, 297.81097581,
             297.6158186 , 297.42066138, 297.22550417, 297.03034695,
             296.83518974, 296.64003253, 296.44487531, 296.2497181 ,
@@ -183,7 +195,7 @@ function load_sdm_data(case = "dry")
             287.23077389, 287.18748933, 287.14412451, 287.10067946,
             287.05715419, 287.01354872, 286.96986307, 286.92609726,
             286.8822513 , 286.83832521]
-    
+
             P_sdm = [100584.77388511, 100354.60428728, 100124.81122361,  99895.39432411,
             99666.35321891,  99437.68753826,  99209.39691253,  98981.48097221,
             98753.93934793,  98526.7716704 ,  98299.9775705 ,  98073.5566792 ,
@@ -533,10 +545,7 @@ function load_sdm_data(case = "dry")
 
 #! format: on
 
-    # Ra = 286.9
-    # Rw = 461.5
-    # x = qv_sdm ./ (1 .- qv_sdm)
-    # rho_sdm = P_sdm / Ra ./ T_sdm .* (1 .+ x) .* (1 .+ x * Rw/Ra)
+    qv_sdm = qv_sdm ./ (1 .+ qv_sdm)
     rho_sdm = rhod_sdm .* (1 .+ qv_sdm)
 
     return (; z_sdm, qv_sdm, rho_sdm, thetad_sdm, T_sdm, P_sdm, ql_sdm)

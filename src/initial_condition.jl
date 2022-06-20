@@ -10,32 +10,35 @@ function init_condition(::Type{FT}, params, z; dry = false) where {FT}
     z_0::FT = 0.0
     z_1::FT = 740.0
     z_2::FT = 3260.0
-    qv_0::FT = 0.015
-    qv_1::FT = 0.0138
-    qv_2::FT = 0.0024
+    rv_0::FT = 0.015
+    rv_1::FT = 0.0138
+    rv_2::FT = 0.0024
     θ_0::FT = 297.9
     θ_1::FT = 297.9
     θ_2::FT = 312.66
 
     if dry
-        qv_0 = 0.0
-        qv_1 = 0.0
-        qv_2 = 0.0
+        rv_0 = 0.0
+        rv_1 = 0.0
+        rv_2 = 0.0
     end
 
-    # profile of water vapour specific humidity (TODO - or is it mixing ratio?)
-    qv::FT = z < z_1 ? qv_0 + (qv_1 - qv_0) / (z_1 - z_0) * (z - z_0) : qv_1 + (qv_2 - qv_1) / (z_2 - z_1) * (z - z_1)
+    # profile of water vapour mixing ratio
+    rv::FT = z < z_1 ? rv_0 + (rv_1 - rv_0) / (z_1 - z_0) * (z - z_0) : rv_1 + (rv_2 - rv_1) / (z_2 - z_1) * (z - z_1)
+    qv::FT = rv / (1 + rv)
+    qv_0::FT = rv_0 / (1 + rv_0)
 
     # profile of potential temperature
-    θ::FT = z < z_1 ? θ_0 : θ_1 + (θ_2 - θ_1) / (z_2 - z_1) * (z - z_1)
+    θ_std::FT = z < z_1 ? θ_0 : θ_1 + (θ_2 - θ_1) / (z_2 - z_1) * (z - z_1)
 
     # density at the surface
-    p_0::FT = 100700.0
-    q_0 = TD.PhasePartition(qv_0, 0.0, 0.0)
-    T_0::FT = θ_0 * TD.exner_given_pressure(params, p_0, q_0)
-    ρ_0::FT = TD.air_density(params, T_0, p_0, q_0)
+    p_0::FT = 1007.0 * 100.0
+    SDM_θ_dry_0 = SDM_θ_dry(params, θ_0, qv_0)
+    SDM_ρ_dry_0 = SDM_ρ_dry(params, p_0, qv_0, θ_0)
+    SDM_T_0 = SDM_T(params, SDM_θ_dry_0, SDM_ρ_dry_0)
+    #SDM_ρ_0 = SDM_ρ_of_ρ_dry(SDM_ρ_dry_0, qv_0) # TODO - temporary to be more consistent with PySDM
 
-    return (qv = qv, θ = θ, ρ_0 = ρ_0, z_0 = z_0, z_2 = z_2)
+    return (qv = qv, θ_std = θ_std, ρ_0 = SDM_ρ_dry_0, z_0 = z_0, z_2 = z_2)
 end
 
 """
@@ -48,25 +51,30 @@ function dρ_dz!(ρ, params, z)
 
     # initial profiles
     init = init_condition(FT, params, z)
-    θ::FT = init.θ
-    qv::FT = init.qv
+    θ_std::FT = init.θ_std
+    q_vap::FT = init.qv
 
-    q = TD.PhasePartition(qv, 0.0, 0.0)
+    q = TD.PhasePartition(q_vap, 0.0, 0.0)
 
     # constants
     g::FT = CP.Planet.grav(params)
-    cp_m::FT = TD.cp_m(params, q)
-    R_m::FT = TD.gas_constant_air(params, q)
-    R_d::FT = CP.gas_constant(params)
+    R_d::FT = CP.Planet.R_d(params)
+    R_v::FT = CP.Planet.R_v(params)
     cp_d::FT = CP.Planet.cp_d(params)
-    molmass_ratio::FT = CP.Planet.molmass_ratio(params)
+    cp_v::FT = CP.Planet.cp_v(params)
 
-    θ_dry::FT = θ * (1 + qv / molmass_ratio)^(R_d / cp_d)
-    ρ_dry::FT = ρ ./ (1 .+ qv)
+    θ_dry::FT = SDM_θ_dry(params, θ_std, q_vap)
+    ρ_dry::FT = SDM_ρ_dry_of_ρ(ρ, q_vap)
+    T::FT = SDM_T(params, θ_dry, ρ_dry)
+    p::FT = SDM_p(params, ρ_dry, T, q_vap)
 
-    T::FT = θ_dry * (ρ_dry * θ_dry / CP.Planet.MSLP(params) * R_d)^((R_d / cp_d) / (1 - R_d / cp_d))
+    r_vap::FT = q_vap / (1 - q_vap)
+    R_m = R_v / (1 / r_vap + 1) + R_d / (1 + r_vap)
+    cp_m = cp_v / (1 / r_vap + 1) + cp_d / (1 + r_vap)
 
-    return g / T * ρ * (R_m / cp_m - 1) / R_m
+    ρ_SDM = p / R_m / T
+
+    return g / T * ρ_SDM * (R_m / cp_m - 1) / R_m
 end
 
 """
@@ -82,7 +90,7 @@ function ρ_ivp(::Type{FT}, params; dry = false) where {FT}
 
     z_span = (z_0, z_max)
     prob = ODE.ODEProblem(dρ_dz!, ρ_0, z_span, params)
-    sol = ODE.solve(prob, ODE.Tsit5(), reltol = 1e-8, abstol = 1e-8)
+    sol = ODE.solve(prob, ODE.Tsit5(), reltol = 1e-10, abstol = 1e-10)
 
     return sol
 end
@@ -93,16 +101,21 @@ end
 """
 function init_1d_column(::Type{FT}, params, ρ_profile, z; dry = false) where {FT}
 
-    q_tot::FT = init_condition(FT, params, z, dry = dry).qv
-    θ_liq_ice::FT = init_condition(FT, params, z, dry = dry).θ
+    q_vap::FT = init_condition(FT, params, z, dry = dry).qv
+    θ_std::FT = init_condition(FT, params, z, dry = dry).θ_std
 
-    ρ::FT = ρ_profile(z)
+    ρ_dry::FT = ρ_profile(z)
+    ρ::FT = SDM_ρ_of_ρ_dry(ρ_dry, q_vap)
+
+    # assuming no cloud condensate in the initial profile
+    θ_liq_ice::FT = θ_std # TODO - compute this based on TS
+    q_tot::FT = q_vap
     ρq_tot::FT = q_tot * ρ
 
-    ts = TD.PhaseEquil_ρθq(params, ρ, θ_liq_ice, q_tot)
+    θ_dry::FT = SDM_θ_dry(params, θ_std, q_vap)
+    T::FT = SDM_T(params, θ_dry, ρ_dry)
 
-    T::FT = TD.air_temperature(params, ts)
-    θ_dry::FT = TD.dry_pottemp(params, ts)
+    ts = TD.PhaseEquil_ρTq(params, ρ, T, q_tot)
     p::FT = TD.air_pressure(params, ts)
 
     q_liq::FT = TD.liquid_specific_humidity(params, ts)
