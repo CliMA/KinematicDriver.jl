@@ -68,7 +68,9 @@ output_folder = string("Output_", moisture_choice, "_", precipitation_choice)
 path = joinpath(@__DIR__, output_folder)
 mkpath(path)
 fname = joinpath(path, "Output.nc")
-Stats = KD.NetCDFIO_Stats(fname, 1.0, vec(face_coord), vec(coord))
+output_profiles = ("density", "temperature", "pressure", "q_tot", "θ_liq_ice", "θ_dry", "q_rai")
+output_timeseries = ("TODO")
+Stats = KD.NetCDFIO_Stats(fname, TS.dt_io, vec(face_coord), vec(coord), output_profiles)
 
 # Solve the initial value problem for density profile
 ρ_profile = KD.ρ_ivp(FT, params)
@@ -80,7 +82,7 @@ Y = KD.initialise_state(moisture, precip, init)
 
 # Create aux vector and apply initial condition
 w_params = (w1 = simulation_setup["w1"], t1 = simulation_setup["t1"])
-aux = KD.initialise_aux(FT, init, params, w_params, TS, Stats, face_space, moisture)
+aux = KD.initialise_aux(FT, init, params, w_params, TS, Stats, output_profiles, output_timeseries, face_space, moisture, precip)
 
 # Output the initial condition
 KD.KiD_output(aux, 0.0)

@@ -15,9 +15,7 @@ function condition_io(u, t, integrator)
 end
 
 function affect_io!(integrator)
-    ms = integrator.p.moisture
-    ps = integrator.p.precip
-    KiD_output(integrator.p, integrator.t, ms, ps)
+    KiD_output(integrator.p, integrator.t)
 
     ODE.u_modified!(integrator, false) # We're legitamately not mutating `u` (the state vector)
 end
