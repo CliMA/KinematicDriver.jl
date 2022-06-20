@@ -122,10 +122,11 @@ end
     )
     params = KiD.params_overwrite
     space, face_space = KiD.make_function_space(Float64, 0, 100, 10)
+    output_profiles = ("density", "temperature", "pressure", "q_tot", "θ_liq_ice", "θ_dry", "q_rai")
+    output_timeseries = ("TODO")
+    @test_throws Exception KiD.initialise_aux(Float64, ip, params, 0.0, 0.0, 0.0, output_profiles, output_timeseries, face_space, KiD.NoPrecipitation())
 
-    @test_throws Exception KiD.initialise_aux(Float64, ip, params, 0.0, 0.0, 0.0, face_space, KiD.NoPrecipitation())
-
-    aux = KiD.initialise_aux(Float64, ip, params, 0.0, 0.0, 0.0, face_space, KiD.EquilibriumMoisture())
+    aux = KiD.initialise_aux(Float64, ip, params, 0.0, 0.0, 0.0, output_profiles, output_timeseries, face_space, KiD.EquilibriumMoisture(), KiD.NoPrecipitation())
     @test aux isa CC.Fields.FieldVector
     @test aux.constants isa CC.Fields.FieldVector
     @test aux.moisture_variables isa CC.Fields.FieldVector
@@ -137,7 +138,7 @@ end
     @test LA.norm(aux.precip_sources) == 0
     @test LA.norm(aux.moisture_sources) == 0
 
-    aux = KiD.initialise_aux(Float64, ip, params, 0.0, 0.0, 0.0, face_space, KiD.NonEquilibriumMoisture())
+    aux = KiD.initialise_aux(Float64, ip, params, 0.0, 0.0, 0.0, output_profiles, output_timeseries, face_space, KiD.NonEquilibriumMoisture(), KiD.Precipitation1M())
     @test aux isa CC.Fields.FieldVector
     @test aux.constants isa CC.Fields.FieldVector
     @test aux.moisture_variables isa CC.Fields.FieldVector
@@ -179,7 +180,9 @@ end
     )
     params = KiD.params_overwrite
     space, face_space = KiD.make_function_space(Float64, 0, 100, 10)
-    aux = KiD.initialise_aux(Float64, ip, params, 0.0, 0.0, 0.0, face_space, KiD.EquilibriumMoisture())
+    output_profiles = ("density", "temperature", "pressure", "q_tot", "θ_liq_ice", "θ_dry", "q_rai")
+    output_timeseries = ("TODO")
+    aux = KiD.initialise_aux(Float64, ip, params, 0.0, 0.0, 0.0, output_profiles, output_timeseries, face_space, KiD.EquilibriumMoisture(), KiD.NonEquilibriumMoisture())
     Y = KiD.initialise_state(KiD.EquilibriumMoisture(), KiD.NoPrecipitation(), ip)
 
     dY = (; ρq_tot = [10.0, 13.0])
@@ -190,7 +193,7 @@ end
     KiD.zero_tendencies!(KiD.EquilibriumMoisture(), dY, Y, aux, 1.0)
     @test LA.norm(dY) == 0
 
-    aux = KiD.initialise_aux(Float64, ip, params, 0.0, 0.0, 0.0, face_space, KiD.NonEquilibriumMoisture())
+    aux = KiD.initialise_aux(Float64, ip, params, 0.0, 0.0, 0.0, output_profiles, output_timeseries, face_space, KiD.NonEquilibriumMoisture(), KiD.Precipitation1M())
     Y = KiD.initialise_state(KiD.NonEquilibriumMoisture(), KiD.Precipitation1M(), ip)
     dY = (;
         ρq_tot = [10.0, 13.0],
@@ -287,7 +290,9 @@ end
     )
     params = KiD.params_overwrite
     space, face_space = KiD.make_function_space(Float64, 0, 100, 10)
-    aux = KiD.initialise_aux(Float64, ip, params, 0.0, 0.0, 0.0, face_space, KiD.EquilibriumMoisture())
+    output_profiles = ("density", "temperature", "pressure", "q_tot", "θ_liq_ice", "θ_dry", "q_rai")
+    output_timeseries = ("TODO")
+    aux = KiD.initialise_aux(Float64, ip, params, 0.0, 0.0, 0.0, output_profiles, output_timeseries, face_space, KiD.EquilibriumMoisture(), KiD.NoPrecipitation())
     Y = KiD.initialise_state(KiD.EquilibriumMoisture(), KiD.NoPrecipitation(), ip)
     dY = (; ρq_tot = [10.0, 13.0])
     t = 13.0
