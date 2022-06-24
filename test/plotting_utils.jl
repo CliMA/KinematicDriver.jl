@@ -116,3 +116,28 @@ function plot_animation(z_centers, solver, aux, moisture, precip, KiD; output = 
 
     Plots.mp4(anim, joinpath(path, "animation.mp4"), fps = 10)
 end
+
+function plot_timeheight(nc_data_file; output = "output")
+    path = joinpath(@__DIR__, output)
+    mkpath(path)
+
+    ds = NC.NCDataset(joinpath(@__DIR__, nc_data_file))
+    t_plt = collect(ds.group["profiles"]["t"])
+    z_plt = collect(ds.group["profiles"]["zc"])
+    q_tot_plt = collect(ds.group["profiles"]["q_tot"])
+    q_liq_plt = collect(ds.group["profiles"]["q_liq"])
+    q_rai_plt = collect(ds.group["profiles"]["q_rai"])
+    p1 = Plots.heatmap(t_plt, z_plt, q_tot_plt, title = "q_tot [g/kg]", xlabel = "time [s]", ylabel = "z [m]")
+    p2 = Plots.heatmap(t_plt, z_plt, q_liq_plt, title = "q_liq [g/kg]", xlabel = "time [s]", ylabel = "z [m]")
+    p3 = Plots.heatmap(t_plt, z_plt, q_rai_plt, title = "q_rai [g/kg]", xlabel = "time [s]", ylabel = "z [m]")
+    p = Plots.plot(
+        p1,
+        p2,
+        p3,
+        size = (1500.0, 500.0),
+        bottom_margin = 30.0 * Plots.PlotMeasures.px,
+        left_margin = 30.0 * Plots.PlotMeasures.px,
+        layout = (1, 3),
+    )
+    Plots.png(p, joinpath(path, "timeheight.png"))
+end

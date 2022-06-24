@@ -115,4 +115,5 @@ if simulation_setup["plotting_flag"] == true
     z_centers = parent(CC.Fields.coordinate_field(space))
     plot_final_aux_profiles(z_centers, aux, output = plot_folder)
     plot_animation(z_centers, solver, aux, moisture, precip, KD, output = plot_folder)
+    plot_timeheight(string("experiments/", output_folder, "/Output.nc"))
 end
