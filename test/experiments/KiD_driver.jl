@@ -6,6 +6,7 @@
 """
 
 include("../../src/Kinematic1D.jl")
+include("../create_parameters.jl")
 
 import NCDatasets
 import OrdinaryDiffEq
@@ -30,9 +31,6 @@ const FT = Float64
 # Get the parameter values for the simulation
 include("parse_commandline.jl")
 simulation_setup = parse_commandline()
-
-# Instantiate CliMA Parameters and overwrite the defaults
-params = KD.params_overwrite
 
 # Equations to solve for mositure and precipitation variables
 moisture_choice = simulation_setup["moisture_choice"]
@@ -70,6 +68,10 @@ mkpath(path)
 fname = joinpath(path, "Output.nc")
 Stats = KD.NetCDFIO_Stats(fname, 1.0, vec(face_coord), vec(coord))
 
+# Instantiate CliMA Parameters and overwrite the defaults
+toml_dict = CP.create_toml_dict(FT; dict_type = "alias")
+params = create_parameter_set(path, toml_dict, FT, simulation_setup["w1"], simulation_setup["t1"])
+
 # Solve the initial value problem for density profile
 ρ_profile = KD.ρ_ivp(FT, params)
 # Create the initial condition profiles
@@ -79,8 +81,7 @@ init = map(coord -> KD.init_1d_column(FT, params, ρ_profile, coord.z), coord)
 Y = KD.initialise_state(moisture, precip, init)
 
 # Create aux vector and apply initial condition
-w_params = (w1 = simulation_setup["w1"], t1 = simulation_setup["t1"])
-aux = KD.initialise_aux(FT, init, params, w_params, TS, Stats, face_space, moisture)
+aux = KD.initialise_aux(FT, init, params, TS, Stats, face_space, moisture)
 
 # Output the initial condition
 KD.KiD_output(aux, 0.0)

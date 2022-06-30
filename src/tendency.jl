@@ -34,43 +34,50 @@ end
 """
 @inline function moisture_helper_vars_eq(params, ρq_tot, ρ, θ_liq_ice)
 
-    ts = TD.PhaseEquil_ρθq(params, ρ, θ_liq_ice, ρq_tot / ρ)
+    thermo_params = KP.thermodynamics_params(params)
 
-    q_tot = TD.total_specific_humidity(params, ts)
-    q_liq = TD.liquid_specific_humidity(params, ts)
-    q_ice = TD.ice_specific_humidity(params, ts)
+    ts = TD.PhaseEquil_ρθq(thermo_params, ρ, θ_liq_ice, ρq_tot / ρ)
+
+    q_tot = TD.total_specific_humidity(thermo_params, ts)
+    q_liq = TD.liquid_specific_humidity(thermo_params, ts)
+    q_ice = TD.ice_specific_humidity(thermo_params, ts)
     q = TD.PhasePartition(q_tot, q_liq, q_ice)
 
-    T = TD.air_temperature(params, ts)
-    θ_dry = TD.dry_pottemp(params, T, ρ, q) # TODO should be modified to follow PySDM output for comparison
+    T = TD.air_temperature(thermo_params, ts)
+    θ_dry = TD.dry_pottemp(thermo_params, T, ρ, q) # TODO should be modified to follow PySDM output for comparison
 
     return (; ts, q_tot, q_liq, q_ice, T, θ_dry)
 end
 @inline function moisture_helper_vars_neq(params, ρq_tot, ρq_liq, ρq_ice, ρ, θ_liq_ice)
+
+    thermo_params = KP.thermodynamics_params(params)
 
     q_tot = ρq_tot / ρ
     q_liq = ρq_liq / ρ
     q_ice = ρq_ice / ρ
     q = TD.PhasePartition(q_tot, q_liq, q_ice)
 
-    ts = TD.PhaseNonEquil_ρθq(params, ρ, θ_liq_ice, q)
+    ts = TD.PhaseNonEquil_ρθq(thermo_params, ρ, θ_liq_ice, q)
 
-    T = TD.air_temperature(params, ts)
-    θ_dry = TD.dry_pottemp(params, T, ρ, q) # TODO should be modified to follow PySDM output for comparison
+    T = TD.air_temperature(thermo_params, ts)
+    θ_dry = TD.dry_pottemp(thermo_params, T, ρ, q) # TODO should be modified to follow PySDM output for comparison
 
     return (; ts, q_tot, q_liq, q_ice, T, θ_dry)
 end
 @inline function moisture_helper_sources(params, ρ, T, q_tot, q_liq, q_ice)
 
+    thermo_params = KP.thermodynamics_params(params)
+    microphys_params = KP.microphysics_params(params)
+
     q = TD.PhasePartition(q_tot, q_liq, q_ice)
 
     # from sat adjst
     #ts = TD.PhaseEquil_ρθq(params, ρ, θ_liq_ice, ρq_tot / ρ)
-    ts_eq = TD.PhaseEquil_ρTq(params, ρ, T, q_tot)
-    q_eq = TD.PhasePartition(params, ts_eq)
+    ts_eq = TD.PhaseEquil_ρTq(thermo_params, ρ, T, q_tot)
+    q_eq = TD.PhasePartition(thermo_params, ts_eq)
 
-    S_q_liq = CMNe.conv_q_vap_to_q_liq_ice(params, CM.CommonTypes.LiquidType(), q_eq, q)
-    S_q_ice = CMNe.conv_q_vap_to_q_liq_ice(params, CM.CommonTypes.IceType(), q_eq, q)
+    S_q_liq = CMNe.conv_q_vap_to_q_liq_ice(microphys_params, CM.CommonTypes.LiquidType(), q_eq, q)
+    S_q_ice = CMNe.conv_q_vap_to_q_liq_ice(microphys_params, CM.CommonTypes.IceType(), q_eq, q)
 
     return (; S_q_liq, S_q_ice)
 end
@@ -82,11 +89,15 @@ end
     return (; q_rai, q_sno)
 end
 @inline function precip_helper_sources_0M!(params, ts, q_tot, q_liq, q_ice, dt)
-    q = TD.PhasePartition(q_tot, q_liq, q_ice)
-    qsat = TD.q_vap_saturation(params, ts)
-    λ = TD.liquid_fraction(params, ts)
 
-    S_qt = -min((q.liq + q.ice) / dt, -CM0.remove_precipitation(params, q, qsat))
+    thermo_params = KP.thermodynamics_params(params)
+    microphys_params = KP.microphysics_params(params)
+
+    q = TD.PhasePartition(q_tot, q_liq, q_ice)
+    qsat = TD.q_vap_saturation(thermo_params, ts)
+    λ = TD.liquid_fraction(thermo_params, ts)
+
+    S_qt = -min((q.liq + q.ice) / dt, -CM0.remove_precipitation(microphys_params, q, qsat))
 
     S_q_rai = -S_qt * λ
     S_q_sno = -S_qt * (1 - λ)
@@ -99,6 +110,9 @@ end
 end
 @inline function precip_helper_sources_1M!(params, ts, q_tot, q_liq, q_ice, q_rai, q_sno, T, ρ, dt)
 
+    microphys_params = KP.microphysics_params(params)
+    thermo_params = KP.thermodynamics_params(params)
+
     FT = eltype(q_tot)
 
     S_q_rai = FT(0)
@@ -107,17 +121,17 @@ end
     S_q_liq = FT(0)
     S_q_ice = FT(0)
 
-    T_fr = CP.Planet.T_freeze(params)
-    c_vl = CP.Planet.cv_l(params)
-    c_vm = TD.cv_m(params, ts)
-    Rm = TD.gas_constant_air(params, ts)
-    Lf = TD.latent_heat_fusion(params, ts)
+    T_fr = KP.T_freeze(params)
+    c_vl = KP.cv_l(params)
+    c_vm = TD.cv_m(thermo_params, ts)
+    Rm = TD.gas_constant_air(thermo_params, ts)
+    Lf = TD.latent_heat_fusion(thermo_params, ts)
 
     q = TD.PhasePartition(q_tot, q_liq, q_ice)
 
     # autoconversion liquid to rain and ice to snow
-    S_qt_rain = -min(q.liq / dt, CM1.conv_q_liq_to_q_rai(params, q.liq))
-    S_qt_snow = -min(q.ice / dt, CM1.conv_q_ice_to_q_sno(params, q, ρ, T))
+    S_qt_rain = -min(q.liq / dt, CM1.conv_q_liq_to_q_rai(microphys_params, q.liq))
+    S_qt_snow = -min(q.ice / dt, CM1.conv_q_ice_to_q_sno(microphys_params, q, ρ, T))
     S_q_rai -= S_qt_rain
     S_q_sno -= S_qt_snow
     S_q_tot += S_qt_rain + S_qt_snow
@@ -126,15 +140,20 @@ end
     #θ_liq_ice_tendency -= 1 / Π_m / c_pm * (L_v0 * S_qt_rain + L_s0 * S_qt_snow)
 
     # accretion cloud water + rain
-    S_qr =
-        min(q.liq / dt, CM1.accretion(params, CM.CommonTypes.LiquidType(), CM.CommonTypes.RainType(), q.liq, q_rai, ρ))
+    S_qr = min(
+        q.liq / dt,
+        CM1.accretion(microphys_params, CM.CommonTypes.LiquidType(), CM.CommonTypes.RainType(), q.liq, q_rai, ρ),
+    )
     S_q_rai += S_qr
     S_q_tot -= S_qr
     S_q_liq -= S_qr
     #θ_liq_ice_tendency += S_qr / Π_m / c_pm * L_v0
 
     # accretion cloud ice + snow
-    S_qs = min(q.ice / dt, CM1.accretion(params, CM.CommonTypes.IceType(), CM.CommonTypes.SnowType(), q.ice, q_sno, ρ))
+    S_qs = min(
+        q.ice / dt,
+        CM1.accretion(microphys_params, CM.CommonTypes.IceType(), CM.CommonTypes.SnowType(), q.ice, q_sno, ρ),
+    )
     S_q_sno += S_qs
     S_q_tot -= S_qs
     S_q_ice -= S_qs
@@ -142,7 +161,10 @@ end
 
     # sink of cloud water via accretion cloud water + snow
     S_qt =
-        -min(q.liq / dt, CM1.accretion(params, CM.CommonTypes.LiquidType(), CM.CommonTypes.SnowType(), q.liq, q_sno, ρ))
+        -min(
+            q.liq / dt,
+            CM1.accretion(microphys_params, CM.CommonTypes.LiquidType(), CM.CommonTypes.SnowType(), q.liq, q_sno, ρ),
+        )
     if T < T_fr # cloud droplets freeze to become snow)
         S_q_sno -= S_qt
         S_q_tot += S_qt
@@ -158,9 +180,13 @@ end
     end
 
     # sink of cloud ice via accretion cloud ice - rain
-    S_qt = -min(q.ice / dt, CM1.accretion(params, CM.CommonTypes.IceType(), CM.CommonTypes.RainType(), q.ice, q_rai, ρ))
+    S_qt =
+        -min(
+            q.ice / dt,
+            CM1.accretion(microphys_params, CM.CommonTypes.IceType(), CM.CommonTypes.RainType(), q.ice, q_rai, ρ),
+        )
     # sink of rain via accretion cloud ice - rain
-    S_qr = -min(q_rai / dt, CM1.accretion_rain_sink(params, q.ice, q_rai, ρ))
+    S_qr = -min(q_rai / dt, CM1.accretion_rain_sink(microphys_params, q.ice, q_rai, ρ))
     S_q_tot += S_qt
     S_q_ice += S_qt
     S_q_rai += S_qr
@@ -171,20 +197,37 @@ end
     if T < T_fr
         S_qs = min(
             q_rai / dt,
-            CM1.accretion_snow_rain(params, CM.CommonTypes.SnowType(), CM.CommonTypes.RainType(), q_sno, q_rai, ρ),
+            CM1.accretion_snow_rain(
+                microphys_params,
+                CM.CommonTypes.SnowType(),
+                CM.CommonTypes.RainType(),
+                q_sno,
+                q_rai,
+                ρ,
+            ),
         )
     else
         S_qs =
             -min(
                 q_sno / dt,
-                CM1.accretion_snow_rain(params, CM.CommonTypes.RainType(), CM.CommonTypes.SnowType(), q_rai, q_sno, ρ),
+                CM1.accretion_snow_rain(
+                    microphys_params,
+                    CM.CommonTypes.RainType(),
+                    CM.CommonTypes.SnowType(),
+                    q_rai,
+                    q_sno,
+                    ρ,
+                ),
             )
     end
     S_q_sno += S_qs
     S_q_rai -= S_qs
     #θ_liq_ice_tendency += S_qs * Lf / Π_m / c_vm
 
-    return (; S_q_tot, S_q_liq, S_q_ice, S_q_rai, S_q_sno)
+    term_vel_rai = CM1.terminal_velocity(microphys_params, CM.CommonTypes.RainType(), ρ, q_rai)
+    term_vel_sno = CM1.terminal_velocity(microphys_params, CM.CommonTypes.SnowType(), ρ, q_sno)
+
+    return (; S_q_tot, S_q_liq, S_q_ice, S_q_rai, S_q_sno, term_vel_rai, term_vel_sno)
 end
 
 """
@@ -194,9 +237,9 @@ end
 
     FT = eltype(aux.moisture_variables.q_tot)
 
-    if t < aux.w_params.t1
-        @. aux.ρw = CC.Geometry.WVector.(aux.w_params.w1 * sin(pi * t / aux.w_params.t1))
-        aux.ρw0 = aux.w_params.w1 * sin(pi * t / aux.w_params.t1)
+    if t < aux.params.t1
+        @. aux.ρw = CC.Geometry.WVector.(aux.params.w1 * sin(pi * t / aux.params.t1))
+        aux.ρw0 = aux.params.w1 * sin(pi * t / aux.params.t1)
     else
         @. aux.ρw = CC.Geometry.WVector.(FT(0))
         aux.ρw0 = FT(0)
@@ -223,7 +266,6 @@ end
 @inline function precompute_aux_thermo!(::NonEquilibriumMoisture, dY, Y, aux, t)
     #@. aux.moisture_variables = moisture_helper_vars_neq(aux.params, Y.ρq_tot, Y.ρq_liq, Y.ρq_ice, aux.constants.ρ, aux.constants.θ_liq_ice)
     #@. aux.moisture_sources = moisture_helper_sources(aux.params, aux.constants.ρ, aux.moisture_variables.T, aux.moisture_variables.q_tot, aux.moisture_variables.q_liq, aux.moisture_variables.q_ice)
-
     tmp =
         @. moisture_helper_vars_neq(aux.params, Y.ρq_tot, Y.ρq_liq, Y.ρq_ice, aux.constants.ρ, aux.constants.θ_liq_ice)
     aux.moisture_variables.T = tmp.T
@@ -286,15 +328,7 @@ end
 end
 @inline function precompute_aux_precip!(::Precipitation1M, dY, Y, aux, t)
     FT = eltype(Y.ρq_rai)
-
-    If = CC.Operators.InterpolateC2F(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
-
-    @. aux.precip_velocities.term_vel_rai = CC.Geometry.WVector(
-        If(CM1.terminal_velocity(aux.params, CM.CommonTypes.RainType(), aux.constants.ρ, aux.precip_variables.q_rai)) * FT(-1),
-    )
-    @. aux.precip_velocities.term_vel_sno = CC.Geometry.WVector(
-        If(CM1.terminal_velocity(aux.params, CM.CommonTypes.SnowType(), aux.constants.ρ, aux.precip_variables.q_sno)) * FT(-1),
-    )
+    microphys_params = KP.microphysics_params(aux.params)
 
     #@. aux.precip_variables = precip_helper_vars(Y.ρq_rai, Y.ρq_sno, aux.constants.ρ)
     #@. aux.precip_sources = precip_helper_sources_1M!(aux.params, aux.moisture_variables.ts, aux.moisture_variables.q_tot, aux.moisture_variables.q_liq, aux.moisture_variables.q_ice, aux.precip_variables.q_rai, aux.precip_variables.q_sno, aux.moisture_variables.T, aux.constants.ρ, aux.TS.dt)
@@ -320,6 +354,10 @@ end
     aux.precip_sources.S_q_tot = tmp.S_q_tot
     aux.precip_sources.S_q_liq = tmp.S_q_liq
     aux.precip_sources.S_q_ice = tmp.S_q_ice
+
+    If = CC.Operators.InterpolateC2F(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
+    @. aux.precip_velocities.term_vel_rai = CC.Geometry.WVector(If(tmp.term_vel_rai) * FT(-1))
+    @. aux.precip_velocities.term_vel_sno = CC.Geometry.WVector(If(tmp.term_vel_sno) * FT(-1))
 end
 
 """
