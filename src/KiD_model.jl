@@ -85,7 +85,9 @@ end
    The auxiliary state is created as a ClimaCore FieldVector
    and passed to ODE solver via the `p` parameter of the ODEProblem.
 """
-function initialise_aux(FT, ip, params, w_params, TS, Stats, face_space, moisture)
+function initialise_aux(FT, ip, params, TS, Stats, face_space, moisture)
+    thermo_params = KP.thermodynamics_params(params)
+
     q_surf = init_condition(FT, params, 0.0).qv
 
     ρw = CC.Geometry.WVector.(zeros(FT, face_space))
@@ -94,10 +96,10 @@ function initialise_aux(FT, ip, params, w_params, TS, Stats, face_space, moistur
     term_vel_sno = CC.Geometry.WVector.(zeros(FT, face_space))
 
     if moisture isa EquilibriumMoisture
-        ts = @. TD.PhaseEquil_ρθq(params, ip.ρ, ip.θ_liq_ice, ip.q_tot)
+        ts = @. TD.PhaseEquil_ρθq(thermo_params, ip.ρ, ip.θ_liq_ice, ip.q_tot)
     elseif moisture isa NonEquilibriumMoisture
         q = @. TD.PhasePartition(ip.q_tot, ip.q_liq, ip.q_ice)
-        ts = @. TD.PhaseNonEquil_ρθq(params, ip.ρ, ip.θ_liq_ice, q)
+        ts = @. TD.PhaseNonEquil_ρθq(thermo_params, ip.ρ, ip.θ_liq_ice, q)
     else
         error(
             "Wrong moisture choise $moisture. The supported options are EquilibriumMoisture and NonEquilibriumMoisture",
@@ -126,7 +128,6 @@ function initialise_aux(FT, ip, params, w_params, TS, Stats, face_space, moistur
         precip_velocities = (; term_vel_rai = term_vel_rai, term_vel_sno = term_vel_sno),
         ρw = ρw,
         params = params,
-        w_params = w_params,
         q_surf = q_surf,
         ρw0 = ρw0,
         Stats = Stats,

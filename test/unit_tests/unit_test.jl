@@ -11,6 +11,7 @@ import ClimaCore
 import Thermodynamics
 
 include("../../src/Kinematic1D.jl")
+include("../create_parameters.jl")
 
 const LA = LinearAlgebra
 const CP = CLIMAParameters
@@ -18,9 +19,12 @@ const CC = ClimaCore
 const TD = Thermodynamics
 
 const KiD = Kinematic1D
+const KP = KiD.Parameters
 
-# Instantiate CliMA Parameters and overwrite the defaults to match PySDM
-params = KiD.params_overwrite
+# Create all the params boxes and overwrite the defaults to match PySDM
+toml_dict = CP.create_toml_dict(Float64; dict_type = "alias")
+params = create_parameter_set(@__DIR__, toml_dict, Float64)
+thermo_params = KP.thermodynamics_params(params)
 
 @testset "Moisture and precipitation types" begin
 
@@ -35,12 +39,10 @@ end
 
 @testset "Parameter overwrites" begin
 
-    params = KiD.params_overwrite
+    @test KP.R_d(params) == 8.314462618 / 0.02896998
+    @test KP.R_v(params) == 8.314462618 / 0.018015
 
-    @test CP.Planet.R_d(params) == 8.314462618 / 0.02896998
-    @test CP.Planet.R_v(params) == 8.314462618 / 0.018015
-
-    @test CP.Planet.MSLP(params) == 100000.0
+    @test KP.MSLP(params) == 100000.0
 
 end
 
@@ -120,12 +122,11 @@ end
         S_qr_precip = [0.0, 0.0],
         S_qs_precip = [0.0, 0.0],
     )
-    params = KiD.params_overwrite
     space, face_space = KiD.make_function_space(Float64, 0, 100, 10)
 
-    @test_throws Exception KiD.initialise_aux(Float64, ip, params, 0.0, 0.0, 0.0, face_space, KiD.NoPrecipitation())
+    @test_throws Exception KiD.initialise_aux(Float64, ip, params, 0.0, 0.0, face_space, KiD.NoPrecipitation())
 
-    aux = KiD.initialise_aux(Float64, ip, params, 0.0, 0.0, 0.0, face_space, KiD.EquilibriumMoisture())
+    aux = KiD.initialise_aux(Float64, ip, params, 0.0, 0.0, face_space, KiD.EquilibriumMoisture())
     @test aux isa CC.Fields.FieldVector
     @test aux.constants isa CC.Fields.FieldVector
     @test aux.moisture_variables isa CC.Fields.FieldVector
@@ -137,7 +138,7 @@ end
     @test LA.norm(aux.precip_sources) == 0
     @test LA.norm(aux.moisture_sources) == 0
 
-    aux = KiD.initialise_aux(Float64, ip, params, 0.0, 0.0, 0.0, face_space, KiD.NonEquilibriumMoisture())
+    aux = KiD.initialise_aux(Float64, ip, params, 0.0, 0.0, face_space, KiD.NonEquilibriumMoisture())
     @test aux isa CC.Fields.FieldVector
     @test aux.constants isa CC.Fields.FieldVector
     @test aux.moisture_variables isa CC.Fields.FieldVector
@@ -177,9 +178,8 @@ end
         S_qr_precip = [0.0, 0.0],
         S_qs_precip = [0.0, 0.0],
     )
-    params = KiD.params_overwrite
     space, face_space = KiD.make_function_space(Float64, 0, 100, 10)
-    aux = KiD.initialise_aux(Float64, ip, params, 0.0, 0.0, 0.0, face_space, KiD.EquilibriumMoisture())
+    aux = KiD.initialise_aux(Float64, ip, params, 0.0, 0.0, face_space, KiD.EquilibriumMoisture())
     Y = KiD.initialise_state(KiD.EquilibriumMoisture(), KiD.NoPrecipitation(), ip)
 
     dY = (; ρq_tot = [10.0, 13.0])
@@ -190,7 +190,7 @@ end
     KiD.zero_tendencies!(KiD.EquilibriumMoisture(), dY, Y, aux, 1.0)
     @test LA.norm(dY) == 0
 
-    aux = KiD.initialise_aux(Float64, ip, params, 0.0, 0.0, 0.0, face_space, KiD.NonEquilibriumMoisture())
+    aux = KiD.initialise_aux(Float64, ip, params, 0.0, 0.0, face_space, KiD.NonEquilibriumMoisture())
     Y = KiD.initialise_state(KiD.NonEquilibriumMoisture(), KiD.Precipitation1M(), ip)
     dY = (;
         ρq_tot = [10.0, 13.0],
@@ -207,7 +207,6 @@ end
 
 @testset "Tendency helper functions" begin
 
-    params = KiD.params_overwrite
     ρ = 1.2
     θ_liq_ice = 350.0
     ρq_tot = 15e-3
@@ -229,13 +228,13 @@ end
     @test tmp.q_tot >= 0.0
     @test tmp.q_liq >= 0.0
     @test tmp.q_ice >= 0.0
-    @test tmp.T == TD.air_temperature(params, tmp.ts)
-    @test tmp.θ_dry == TD.dry_pottemp(params, tmp.ts)
+    @test tmp.T == TD.air_temperature(thermo_params, tmp.ts)
+    @test tmp.θ_dry == TD.dry_pottemp(thermo_params, tmp.ts)
 
     tmp = KiD.moisture_helper_vars_neq(params, ρq_tot, ρq_liq, ρq_ice, ρ, θ_liq_ice)
     @test !isnan(tmp.q_tot .+ tmp.q_liq .+ tmp.q_ice .+ tmp.T .+ tmp.θ_dry)
-    @test tmp.T == TD.air_temperature(params, tmp.ts)
-    @test tmp.θ_dry == TD.dry_pottemp(params, tmp.ts)
+    @test tmp.T == TD.air_temperature(thermo_params, tmp.ts)
+    @test tmp.θ_dry == TD.dry_pottemp(thermo_params, tmp.ts)
 
     tmp = KiD.moisture_helper_sources(params, ρ, T, q_tot, q_liq, q_ice)
     @test !isnan(tmp.S_q_liq .+ tmp.S_q_ice)
@@ -246,7 +245,7 @@ end
     @test tmp.q_sno == q_sno
 
     dt = 0.5
-    ts = @. TD.PhaseEquil_ρTq(params, ρ, T, q_tot)
+    ts = @. TD.PhaseEquil_ρTq(thermo_params, ρ, T, q_tot)
     tmp = KiD.precip_helper_sources_0M!(params, ts, q_tot, q_liq, q_ice, dt)
     @test !isnan(tmp.S_q_tot .+ tmp.S_q_liq .+ tmp.S_q_ice .+ tmp.S_q_rai .+ tmp.S_q_sno)
     @test tmp.S_q_tot == tmp.S_q_liq + tmp.S_q_ice
@@ -254,7 +253,7 @@ end
 
     tmp = KiD.precip_helper_sources_1M!(params, ts, q_tot, q_liq, q_ice, q_rai, q_sno, T, ρ, dt)
     @test !isnan(tmp.S_q_tot .+ tmp.S_q_liq .+ tmp.S_q_ice .+ tmp.S_q_rai .+ tmp.S_q_sno)
-    @test tmp.S_q_tot == tmp.S_q_liq + tmp.S_q_ice
+    @test tmp.S_q_tot ≈ tmp.S_q_liq + tmp.S_q_ice
     @test tmp.S_q_tot ≈ -(tmp.S_q_rai + tmp.S_q_sno)
 
 end
@@ -285,9 +284,8 @@ end
         S_qr_precip = [0.0, 0.0],
         S_qs_precip = [0.0, 0.0],
     )
-    params = KiD.params_overwrite
     space, face_space = KiD.make_function_space(Float64, 0, 100, 10)
-    aux = KiD.initialise_aux(Float64, ip, params, 0.0, 0.0, 0.0, face_space, KiD.EquilibriumMoisture())
+    aux = KiD.initialise_aux(Float64, ip, params, 0.0, 0.0, face_space, KiD.EquilibriumMoisture())
     Y = KiD.initialise_state(KiD.EquilibriumMoisture(), KiD.NoPrecipitation(), ip)
     dY = (; ρq_tot = [10.0, 13.0])
     t = 13.0

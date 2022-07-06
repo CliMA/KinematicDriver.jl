@@ -57,11 +57,11 @@ function dρ_dz!(ρ, params, z)
     q = TD.PhasePartition(q_vap, 0.0, 0.0)
 
     # constants
-    g::FT = CP.Planet.grav(params)
-    R_d::FT = CP.Planet.R_d(params)
-    R_v::FT = CP.Planet.R_v(params)
-    cp_d::FT = CP.Planet.cp_d(params)
-    cp_v::FT = CP.Planet.cp_v(params)
+    g::FT = KP.grav(params)
+    R_d::FT = KP.R_d(params)
+    R_v::FT = KP.R_v(params)
+    cp_d::FT = KP.cp_d(params)
+    cp_v::FT = KP.cp_v(params)
 
     θ_dry::FT = SDM_θ_dry(params, θ_std, q_vap)
     ρ_dry::FT = SDM_ρ_dry_of_ρ(ρ, q_vap)
@@ -101,6 +101,8 @@ end
 """
 function init_1d_column(::Type{FT}, params, ρ_profile, z; dry = false) where {FT}
 
+    thermo_params = KP.thermodynamics_params(params)
+
     q_vap::FT = init_condition(FT, params, z, dry = dry).qv
     θ_std::FT = init_condition(FT, params, z, dry = dry).θ_std
 
@@ -115,11 +117,11 @@ function init_1d_column(::Type{FT}, params, ρ_profile, z; dry = false) where {F
     θ_dry::FT = SDM_θ_dry(params, θ_std, q_vap)
     T::FT = SDM_T(params, θ_dry, ρ_dry)
 
-    ts = TD.PhaseEquil_ρTq(params, ρ, T, q_tot)
-    p::FT = TD.air_pressure(params, ts)
+    ts = TD.PhaseEquil_ρTq(thermo_params, ρ, T, q_tot)
+    p::FT = TD.air_pressure(thermo_params, ts)
 
-    q_liq::FT = TD.liquid_specific_humidity(params, ts)
-    q_ice::FT = TD.ice_specific_humidity(params, ts)
+    q_liq::FT = TD.liquid_specific_humidity(thermo_params, ts)
+    q_ice::FT = TD.ice_specific_humidity(thermo_params, ts)
     ρq_liq::FT = q_liq * ρ
     ρq_ice::FT = q_ice * ρ
 
