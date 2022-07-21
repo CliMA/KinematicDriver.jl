@@ -24,3 +24,36 @@ Kinematic 1D driver
 
 [bors-img]: https://bors.tech/images/badge_small.svg
 [bors-url]: https://app.bors.tech/repositories/45132
+
+## Installation and running instructions
+
+Kinematic1D.jl is a Julia package (that will soon be registered).
+See the [Project.toml](https://github.com/CliMA/CloudMicrophysics.jl/blob/main/Project.toml)
+  for a full list of dependencies.
+When using the Kinematic1D.jl,
+  the easiest way to obtain the package dependencies
+  is to use the Julia built-in package manager
+  (accessed by pressing `]` in the Julia REPL):
+```bash
+julia --project
+
+julia> ]
+pkg> instantiate
+```
+Additional dependencies related to plotting and NetCDF output are
+  included in the `test` environment.
+See the [Pkg docs](https://docs.julialang.org/en/v1/stdlib/Pkg/)
+  for an overview of basic package manager features.
+
+The `KiD_driver.jl` inside `test/experiments` folder is
+  the main file that runs the simulations.
+It accepts some command line arguments,
+  see the `--help` for details.
+```bash
+julia --project=test/ test/experiments/KiD_driver.jl --help
+```
+
+An example command to run the `Kid_driver.jl` from terminal:
+```bash
+julia --color=yes --project=test test/experiments/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation1M
+```
