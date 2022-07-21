@@ -17,6 +17,8 @@ const AKP = AbstractKinematicParameters
 Base.@kwdef struct KinematicParameters{FT, MP} <: AKP
     w1::FT
     t1::FT
+    precip_sources::Int
+    precip_sinks::Int
     microphys_params::MP
 end
 thermodynamics_params(ps::AKP) = CM.Parameters.thermodynamics_params(ps.microphys_params)
@@ -25,6 +27,8 @@ microphysics_params(ps::AKP) = ps.microphys_params
 Base.eltype(::KinematicParameters{FT}) where {FT} = FT
 w1(ps::AKP) = ps.w1
 t1(ps::AKP) = ps.t1
+precip_sources(ps::AKP) = ps.precip_sources
+precip_sinks(ps::AKP) = ps.precip_sinks
 
 # Forward parameters to Thermodynamics
 const TDPS = TD.Parameters.ThermodynamicsParameters

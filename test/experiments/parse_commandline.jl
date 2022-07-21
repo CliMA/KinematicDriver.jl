@@ -18,6 +18,14 @@ function parse_commandline()
         help = "Set to true if you want to generate some basic plots at the end of the simulation"
         arg_type = Bool
         default = true
+        "--precip_sources"
+        help = "Set to true if you want to switch on autoconversion and accretion in the 1-moment scheme"
+        arg_type = Bool
+        default = true
+        "--precip_sinks"
+        help = "Set to true if you want to switch on evaporation, deposition, sublimation and melting in the 1-moment scheme"
+        arg_type = Bool
+        default = true
         "--z_min"
         help = "Bottom of the computational domain [m]"
         arg_type = Real
