@@ -97,7 +97,7 @@ end
     qsat = TD.q_vap_saturation(thermo_params, ts)
     λ = TD.liquid_fraction(thermo_params, ts)
 
-    S_qt = -min((q.liq + q.ice) / dt, -CM0.remove_precipitation(microphys_params, q, qsat))
+    S_qt = -min(max(0.0, (q.liq + q.ice) / dt), -CM0.remove_precipitation(microphys_params, q, qsat))
 
     S_q_rai = -S_qt * λ
     S_q_sno = -S_qt * (1 - λ)
@@ -130,8 +130,8 @@ end
     q = TD.PhasePartition(q_tot, q_liq, q_ice)
 
     # autoconversion liquid to rain and ice to snow
-    S_qt_rain = -min(q.liq / dt, CM1.conv_q_liq_to_q_rai(microphys_params, q.liq))
-    S_qt_snow = -min(q.ice / dt, CM1.conv_q_ice_to_q_sno(microphys_params, q, ρ, T))
+    S_qt_rain = -min(max(0.0, q.liq / dt), CM1.conv_q_liq_to_q_rai(microphys_params, q.liq))
+    S_qt_snow = -min(max(0.0, q.ice / dt), CM1.conv_q_ice_to_q_sno(microphys_params, q, ρ, T))
     S_q_rai -= S_qt_rain
     S_q_sno -= S_qt_snow
     S_q_tot += S_qt_rain + S_qt_snow
@@ -141,7 +141,7 @@ end
 
     # accretion cloud water + rain
     S_qr = min(
-        q.liq / dt,
+        max(0.0, q.liq / dt),
         CM1.accretion(microphys_params, CM.CommonTypes.LiquidType(), CM.CommonTypes.RainType(), q.liq, q_rai, ρ),
     )
     S_q_rai += S_qr
@@ -151,7 +151,7 @@ end
 
     # accretion cloud ice + snow
     S_qs = min(
-        q.ice / dt,
+        max(0.0, q.ice / dt),
         CM1.accretion(microphys_params, CM.CommonTypes.IceType(), CM.CommonTypes.SnowType(), q.ice, q_sno, ρ),
     )
     S_q_sno += S_qs
@@ -162,7 +162,7 @@ end
     # sink of cloud water via accretion cloud water + snow
     S_qt =
         -min(
-            q.liq / dt,
+            max(0.0, q.liq / dt),
             CM1.accretion(microphys_params, CM.CommonTypes.LiquidType(), CM.CommonTypes.SnowType(), q.liq, q_sno, ρ),
         )
     if T < T_fr # cloud droplets freeze to become snow)
@@ -182,11 +182,11 @@ end
     # sink of cloud ice via accretion cloud ice - rain
     S_qt =
         -min(
-            q.ice / dt,
+            max(0.0, q.ice / dt),
             CM1.accretion(microphys_params, CM.CommonTypes.IceType(), CM.CommonTypes.RainType(), q.ice, q_rai, ρ),
         )
     # sink of rain via accretion cloud ice - rain
-    S_qr = -min(q_rai / dt, CM1.accretion_rain_sink(microphys_params, q.ice, q_rai, ρ))
+    S_qr = -min(max(0.0, q_rai / dt), CM1.accretion_rain_sink(microphys_params, q.ice, q_rai, ρ))
     S_q_tot += S_qt
     S_q_ice += S_qt
     S_q_rai += S_qr
@@ -196,7 +196,7 @@ end
     # accretion rain - snow
     if T < T_fr
         S_qs = min(
-            q_rai / dt,
+            max(0.0, q_rai / dt),
             CM1.accretion_snow_rain(
                 microphys_params,
                 CM.CommonTypes.SnowType(),
@@ -209,7 +209,7 @@ end
     else
         S_qs =
             -min(
-                q_sno / dt,
+                max(0.0, q_sno / dt),
                 CM1.accretion_snow_rain(
                     microphys_params,
                     CM.CommonTypes.RainType(),
