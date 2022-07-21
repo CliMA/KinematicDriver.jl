@@ -236,14 +236,10 @@ end
 @inline function precompute_aux_prescribed_velocity!(aux, t)
 
     FT = eltype(aux.moisture_variables.q_tot)
+    ρw = FT(ρw_helper(t, aux.params.w1, aux.params.t1))
 
-    if t < aux.params.t1
-        @. aux.ρw = CC.Geometry.WVector.(aux.params.w1 * sin(pi * t / aux.params.t1))
-        aux.ρw0 = aux.params.w1 * sin(pi * t / aux.params.t1)
-    else
-        @. aux.ρw = CC.Geometry.WVector.(FT(0))
-        aux.ρw0 = FT(0)
-    end
+    @. aux.ρw = CC.Geometry.WVector.(ρw)
+    aux.ρw0 = ρw
 
 end
 @inline function precompute_aux_thermo!(sm::AbstractMoistureStyle, dY, Y, aux, t)
