@@ -253,7 +253,7 @@ end
 
     tmp = KiD.precip_helper_sources_1M!(params, ts, q_tot, q_liq, q_ice, q_rai, q_sno, T, ρ, dt)
     @test !isnan(tmp.S_q_tot .+ tmp.S_q_liq .+ tmp.S_q_ice .+ tmp.S_q_rai .+ tmp.S_q_sno)
-    @test tmp.S_q_tot ≈ tmp.S_q_liq + tmp.S_q_ice
+    @test tmp.S_q_tot ≈ tmp.S_q_liq + tmp.S_q_ice + tmp.S_q_vap
     @test tmp.S_q_tot ≈ -(tmp.S_q_rai + tmp.S_q_sno)
 
 end

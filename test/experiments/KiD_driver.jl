@@ -30,11 +30,11 @@ const FT = Float64
 
 # Get the parameter values for the simulation
 include("parse_commandline.jl")
-simulation_setup = parse_commandline()
+opts = parse_commandline()
 
 # Equations to solve for mositure and precipitation variables
-moisture_choice = simulation_setup["moisture_choice"]
-precipitation_choice = simulation_setup["precipitation_choice"]
+moisture_choice = opts["moisture_choice"]
+precipitation_choice = opts["precipitation_choice"]
 if moisture_choice == "EquilibriumMoisture"
     moisture = KD.EquilibriumMoisture()
 elseif moisture_choice == "NonEquilibriumMoisture"
@@ -53,11 +53,10 @@ else
 end
 
 # Initialize the timestepping struct
-TS = KD.TimeStepping(FT(simulation_setup["dt"]), FT(simulation_setup["dt_output"]), FT(simulation_setup["t_end"]))
+TS = KD.TimeStepping(FT(opts["dt"]), FT(opts["dt_output"]), FT(opts["t_end"]))
 
 # Create the coordinates
-space, face_space =
-    KD.make_function_space(FT, simulation_setup["z_min"], simulation_setup["z_max"], simulation_setup["n_elem"])
+space, face_space = KD.make_function_space(FT, opts["z_min"], opts["z_max"], opts["n_elem"])
 coord = CC.Fields.coordinate_field(space)
 face_coord = CC.Fields.coordinate_field(face_space)
 
@@ -70,7 +69,15 @@ Stats = KD.NetCDFIO_Stats(fname, 1.0, vec(face_coord), vec(coord))
 
 # Instantiate CliMA Parameters and overwrite the defaults
 toml_dict = CP.create_toml_dict(FT; dict_type = "alias")
-params = create_parameter_set(path, toml_dict, FT, simulation_setup["w1"], simulation_setup["t1"])
+params = create_parameter_set(
+    path,
+    toml_dict,
+    FT,
+    opts["w1"],
+    opts["t1"],
+    Int(opts["precip_sources"]),
+    Int(opts["precip_sinks"]),
+)
 
 # Solve the initial value problem for density profile
 ρ_profile = KD.ρ_ivp(FT, params)
@@ -95,7 +102,7 @@ callbacks = ODE.CallbackSet(callback_io)
 ode_rhs! = KD.make_rhs_function(moisture, precip)
 
 # Solve the ODE operator
-problem = ODE.ODEProblem(ode_rhs!, Y, (simulation_setup["t_ini"], simulation_setup["t_end"]), aux)
+problem = ODE.ODEProblem(ode_rhs!, Y, (opts["t_ini"], opts["t_end"]), aux)
 solver = ODE.solve(
     problem,
     ODE.SSPRK33(),
@@ -107,7 +114,7 @@ solver = ODE.solve(
 );
 
 # Some basic plots
-if simulation_setup["plotting_flag"] == true
+if opts["plotting_flag"] == true
 
     include("../plotting_utils.jl")
 

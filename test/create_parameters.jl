@@ -11,6 +11,8 @@ function create_parameter_set(
     FTD = CP.float_type(toml_dict),
     w1 = 2.0,
     t1 = 600.0,
+    precip_sources = 1,
+    precip_sinks = 1,
 )
     FT = CP.float_type(toml_dict)
     override_file = joinpath(out_dir, "override_dict.toml")
@@ -55,6 +57,14 @@ function create_parameter_set(
         println(io, "alias = \"t1\"")
         println(io, "value = " * string(t1))
         println(io, "type = \"float\"")
+        println(io, "[precipitation_sources_flag]")
+        println(io, "alias = \"precip_sources\"")
+        println(io, "value = " * string(precip_sources))
+        println(io, "type = \"integer\"")
+        println(io, "[precipitation_sinks_flag]")
+        println(io, "alias = \"precip_sinks\"")
+        println(io, "value = " * string(precip_sinks))
+        println(io, "type = \"integer\"")
     end
     toml_dict = CP.create_toml_dict(FT; override_file, dict_type="alias")
     isfile(override_file) && rm(override_file; force=true)
@@ -73,7 +83,7 @@ function create_parameter_set(
     )
     MP = typeof(microphys_params)
 
-    aliases = ["w1", "t1"]
+    aliases = ["w1", "t1", "precip_sources", "precip_sinks"]
     pairs = CP.get_parameter_values!(toml_dict, aliases, "Kinematic1D")
 
     param_set = Kinematic1D.Parameters.KinematicParameters{FTD, MP}(; pairs..., microphys_params)

@@ -120,6 +120,7 @@ end
     S_q_tot = FT(0)
     S_q_liq = FT(0)
     S_q_ice = FT(0)
+    S_q_vap = FT(0) # added for testing
 
     T_fr = KP.T_freeze(params)
     c_vl = KP.cv_l(params)
@@ -128,106 +129,151 @@ end
     Lf = TD.latent_heat_fusion(thermo_params, ts)
 
     q = TD.PhasePartition(q_tot, q_liq, q_ice)
+    q_vap = TD.vapor_specific_humidity(thermo_params, ts)
 
-    # autoconversion liquid to rain and ice to snow
-    S_qt_rain = -min(max(0.0, q.liq / dt), CM1.conv_q_liq_to_q_rai(microphys_params, q.liq))
-    S_qt_snow = -min(max(0.0, q.ice / dt), CM1.conv_q_ice_to_q_sno(microphys_params, q, ρ, T))
-    S_q_rai -= S_qt_rain
-    S_q_sno -= S_qt_snow
-    S_q_tot += S_qt_rain + S_qt_snow
-    S_q_liq += S_qt_rain
-    S_q_ice += S_qt_snow
-    #θ_liq_ice_tendency -= 1 / Π_m / c_pm * (L_v0 * S_qt_rain + L_s0 * S_qt_snow)
+    if Bool(params.precip_sources)
+        # autoconversion liquid to rain and ice to snow
+        S_qt_rain = -min(max(0.0, q.liq / dt), CM1.conv_q_liq_to_q_rai(microphys_params, q.liq))
+        S_qt_snow = -min(max(0.0, q.ice / dt), CM1.conv_q_ice_to_q_sno(microphys_params, q, ρ, T))
+        S_q_rai -= S_qt_rain
+        S_q_sno -= S_qt_snow
+        S_q_tot += S_qt_rain + S_qt_snow
+        S_q_liq += S_qt_rain
+        S_q_ice += S_qt_snow
+        #θ_liq_ice_tendency -= 1 / Π_m / c_pm * (L_v0 * S_qt_rain + L_s0 * S_qt_snow)
 
-    # accretion cloud water + rain
-    S_qr = min(
-        max(0.0, q.liq / dt),
-        CM1.accretion(microphys_params, CM.CommonTypes.LiquidType(), CM.CommonTypes.RainType(), q.liq, q_rai, ρ),
-    )
-    S_q_rai += S_qr
-    S_q_tot -= S_qr
-    S_q_liq -= S_qr
-    #θ_liq_ice_tendency += S_qr / Π_m / c_pm * L_v0
-
-    # accretion cloud ice + snow
-    S_qs = min(
-        max(0.0, q.ice / dt),
-        CM1.accretion(microphys_params, CM.CommonTypes.IceType(), CM.CommonTypes.SnowType(), q.ice, q_sno, ρ),
-    )
-    S_q_sno += S_qs
-    S_q_tot -= S_qs
-    S_q_ice -= S_qs
-    #θ_liq_ice_tendency += S_qs / Π_m / c_pm * L_s0
-
-    # sink of cloud water via accretion cloud water + snow
-    S_qt =
-        -min(
+        # accretion cloud water + rain
+        S_qr = min(
             max(0.0, q.liq / dt),
-            CM1.accretion(microphys_params, CM.CommonTypes.LiquidType(), CM.CommonTypes.SnowType(), q.liq, q_sno, ρ),
+            CM1.accretion(microphys_params, CM.CommonTypes.LiquidType(), CM.CommonTypes.RainType(), q.liq, q_rai, ρ),
         )
-    if T < T_fr # cloud droplets freeze to become snow)
-        S_q_sno -= S_qt
-        S_q_tot += S_qt
-        S_q_liq += S_qt
-        #θ_liq_ice_tendency -= S_qt / Π_m / c_pm * Lf * (1 + Rm / c_vm)
-    else # snow melts, both cloud water and snow become rain
-        α::FT = c_vl / Lf * (T - T_fr)
-        S_q_tot += S_qt
-        S_q_liq += S_qt
-        S_q_sno += S_qt * α
-        S_q_rai -= S_qt * (1 + α)
-        #θ_liq_ice_tendency += S_qt / Π_m / c_pm * (Lf * (1 + Rm / c_vm) * α - L_v0)
-    end
+        S_q_rai += S_qr
+        S_q_tot -= S_qr
+        S_q_liq -= S_qr
+        #θ_liq_ice_tendency += S_qr / Π_m / c_pm * L_v0
 
-    # sink of cloud ice via accretion cloud ice - rain
-    S_qt =
-        -min(
-            max(0.0, q.ice / dt),
-            CM1.accretion(microphys_params, CM.CommonTypes.IceType(), CM.CommonTypes.RainType(), q.ice, q_rai, ρ),
-        )
-    # sink of rain via accretion cloud ice - rain
-    S_qr = -min(max(0.0, q_rai / dt), CM1.accretion_rain_sink(microphys_params, q.ice, q_rai, ρ))
-    S_q_tot += S_qt
-    S_q_ice += S_qt
-    S_q_rai += S_qr
-    S_q_sno += -(S_qt + S_qr)
-    #θ_liq_ice_tendency -= 1 / Π_m / c_pm * (S_qr * Lf * (1 + Rm / c_vm) + S_qt * L_s0)
-
-    # accretion rain - snow
-    if T < T_fr
+        # accretion cloud ice + snow
         S_qs = min(
-            max(0.0, q_rai / dt),
-            CM1.accretion_snow_rain(
-                microphys_params,
-                CM.CommonTypes.SnowType(),
-                CM.CommonTypes.RainType(),
-                q_sno,
-                q_rai,
-                ρ,
-            ),
+            max(0.0, q.ice / dt),
+            CM1.accretion(microphys_params, CM.CommonTypes.IceType(), CM.CommonTypes.SnowType(), q.ice, q_sno, ρ),
         )
-    else
-        S_qs =
+        S_q_sno += S_qs
+        S_q_tot -= S_qs
+        S_q_ice -= S_qs
+        #θ_liq_ice_tendency += S_qs / Π_m / c_pm * L_s0
+
+        # sink of cloud water via accretion cloud water + snow
+        S_qt =
             -min(
-                max(0.0, q_sno / dt),
-                CM1.accretion_snow_rain(
+                max(0.0, q.liq / dt),
+                CM1.accretion(
                     microphys_params,
-                    CM.CommonTypes.RainType(),
+                    CM.CommonTypes.LiquidType(),
                     CM.CommonTypes.SnowType(),
-                    q_rai,
+                    q.liq,
                     q_sno,
                     ρ,
                 ),
             )
+        if T < T_fr # cloud droplets freeze to become snow)
+            S_q_sno -= S_qt
+            S_q_tot += S_qt
+            S_q_liq += S_qt
+            #θ_liq_ice_tendency -= S_qt / Π_m / c_pm * Lf * (1 + Rm / c_vm)
+        else # snow melts, both cloud water and snow become rain
+            α::FT = c_vl / Lf * (T - T_fr)
+            S_q_tot += S_qt
+            S_q_liq += S_qt
+            S_q_sno += S_qt * α
+            S_q_rai -= S_qt * (1 + α)
+            #θ_liq_ice_tendency += S_qt / Π_m / c_pm * (Lf * (1 + Rm / c_vm) * α - L_v0)
+        end
+
+        # sink of cloud ice via accretion cloud ice - rain
+        S_qt =
+            -min(
+                max(0.0, q.ice / dt),
+                CM1.accretion(microphys_params, CM.CommonTypes.IceType(), CM.CommonTypes.RainType(), q.ice, q_rai, ρ),
+            )
+        # sink of rain via accretion cloud ice - rain
+        S_qr = -min(max(0.0, q_rai / dt), CM1.accretion_rain_sink(microphys_params, q.ice, q_rai, ρ))
+        S_q_tot += S_qt
+        S_q_ice += S_qt
+        S_q_rai += S_qr
+        S_q_sno += -(S_qt + S_qr)
+        #θ_liq_ice_tendency -= 1 / Π_m / c_pm * (S_qr * Lf * (1 + Rm / c_vm) + S_qt * L_s0)
+
+        # accretion rain - snow
+        if T < T_fr
+            S_qs = min(
+                max(0.0, q_rai / dt),
+                CM1.accretion_snow_rain(
+                    microphys_params,
+                    CM.CommonTypes.SnowType(),
+                    CM.CommonTypes.RainType(),
+                    q_sno,
+                    q_rai,
+                    ρ,
+                ),
+            )
+        else
+            S_qs =
+                -min(
+                    max(0.0, q_sno / dt),
+                    CM1.accretion_snow_rain(
+                        microphys_params,
+                        CM.CommonTypes.RainType(),
+                        CM.CommonTypes.SnowType(),
+                        q_rai,
+                        q_sno,
+                        ρ,
+                    ),
+                )
+        end
+        S_q_sno += S_qs
+        S_q_rai -= S_qs
+        #θ_liq_ice_tendency += S_qs * Lf / Π_m / c_vm
     end
-    S_q_sno += S_qs
-    S_q_rai -= S_qs
-    #θ_liq_ice_tendency += S_qs * Lf / Π_m / c_vm
+
+    if Bool(params.precip_sinks)
+        # evaporation
+        S_qr =
+            -min(
+                max(0.0, q_rai / dt),
+                -CM1.evaporation_sublimation(microphys_params, CM.CommonTypes.RainType(), q, q_rai, ρ, T),
+            )
+        S_q_rai += S_qr
+        S_q_tot -= S_qr
+        S_q_vap -= S_qr
+
+        # melting
+        S_qs = -min(max(0.0, q_sno / dt), CM1.snow_melt(microphys_params, q_sno, ρ, T))
+        S_q_rai -= S_qs
+        S_q_sno += S_qs
+
+        # deposition, sublimation
+        tmp = CM1.evaporation_sublimation(microphys_params, CM.CommonTypes.SnowType(), q, q_sno, ρ, T)
+        if tmp > 0
+            S_qs = min(max(0.0, q_vap / dt), tmp)
+        else
+            S_qs = -min(max(0.0, q_sno / dt), -tmp)
+        end
+        S_q_sno += S_qs
+        S_q_tot -= S_qs
+        S_q_vap -= S_qs
+
+        #θ_liq_ice_tendency +=
+        #    1 / Π_m / c_pm * (
+        #        S_qr_evap * (L_v - R_v * T) * (1 + R_m / c_vm) +
+        #        S_qs_sub_dep * (L_s - R_v * T) * (1 + R_m / c_vm) +
+        #        S_qs_melt * L_f * (1 + R_m / c_vm)
+        #)
+    end
 
     term_vel_rai = CM1.terminal_velocity(microphys_params, CM.CommonTypes.RainType(), ρ, q_rai)
     term_vel_sno = CM1.terminal_velocity(microphys_params, CM.CommonTypes.SnowType(), ρ, q_sno)
 
-    return (; S_q_tot, S_q_liq, S_q_ice, S_q_rai, S_q_sno, term_vel_rai, term_vel_sno)
+    return (; S_q_tot, S_q_liq, S_q_ice, S_q_rai, S_q_sno, S_q_vap, term_vel_rai, term_vel_sno)
 end
 
 """
