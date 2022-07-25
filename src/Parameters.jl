@@ -28,7 +28,6 @@ microphysics_params(ps::AKP) = ps.microphys_params
 Base.eltype(::KinematicParameters{FT}) where {FT} = FT
 w1(ps::AKP) = ps.w1
 t1(ps::AKP) = ps.t1
-p0(ps::AKP) = ps.p0
 precip_sources(ps::AKP) = ps.precip_sources
 precip_sinks(ps::AKP) = ps.precip_sinks
 
