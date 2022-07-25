@@ -11,6 +11,7 @@ function create_parameter_set(
     FTD = CP.float_type(toml_dict),
     w1 = 2.0,
     t1 = 600.0,
+    p0 = 100700.0,
     precip_sources = 1,
     precip_sinks = 1,
 )
@@ -57,6 +58,10 @@ function create_parameter_set(
         println(io, "alias = \"t1\"")
         println(io, "value = " * string(t1))
         println(io, "type = \"float\"")
+        println(io, "[surface_pressure]")
+        println(io, "alias = \"p0\"")
+        println(io, "value = " * string(p0))
+        println(io, "type = \"float\"")
         println(io, "[precipitation_sources_flag]")
         println(io, "alias = \"precip_sources\"")
         println(io, "value = " * string(precip_sources))
@@ -83,7 +88,7 @@ function create_parameter_set(
     )
     MP = typeof(microphys_params)
 
-    aliases = ["w1", "t1", "precip_sources", "precip_sinks"]
+    aliases = ["w1", "t1", "p0", "precip_sources", "precip_sinks"]
     pairs = CP.get_parameter_values!(toml_dict, aliases, "Kinematic1D")
 
     param_set = Kinematic1D.Parameters.KinematicParameters{FTD, MP}(; pairs..., microphys_params)

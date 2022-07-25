@@ -32,7 +32,7 @@ function init_condition(::Type{FT}, params, z; dry = false) where {FT}
     θ_std::FT = z < z_1 ? θ_0 : θ_1 + (θ_2 - θ_1) / (z_2 - z_1) * (z - z_1)
 
     # density at the surface
-    p_0::FT = 1007.0 * 100.0
+    p_0 = params.p0
     SDM_θ_dry_0 = SDM_θ_dry(params, θ_0, qv_0)
     SDM_ρ_dry_0 = SDM_ρ_dry(params, p_0, qv_0, θ_0)
     SDM_T_0 = SDM_T(params, SDM_θ_dry_0, SDM_ρ_dry_0)
