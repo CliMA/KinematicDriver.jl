@@ -75,6 +75,7 @@ params = create_parameter_set(
     FT,
     opts["w1"],
     opts["t1"],
+    opts["p0"],
     Int(opts["precip_sources"]),
     Int(opts["precip_sinks"]),
 )

@@ -62,6 +62,10 @@ function parse_commandline()
         help = "Oscillation time of the prescribed momentum flux [s]"
         arg_type = Real
         default = 600.0
+        "--p0"
+        help = "Pressure at the surface [pa]"
+        arg_type = Real
+        default = 100700.0
     end
 
     return AP.parse_args(s)

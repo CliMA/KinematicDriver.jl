@@ -17,6 +17,7 @@ const AKP = AbstractKinematicParameters
 Base.@kwdef struct KinematicParameters{FT, MP} <: AKP
     w1::FT
     t1::FT
+    p0::FT
     precip_sources::Int
     precip_sinks::Int
     microphys_params::MP
