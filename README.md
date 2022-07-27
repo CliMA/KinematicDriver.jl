@@ -27,7 +27,7 @@ Kinematic 1D driver
 
 ## Installation and running instructions
 
-Kinematic1D.jl is a Julia package (that will soon be registered).
+Kinematic1D.jl is a Julia registered package.
 See the [Project.toml](https://github.com/CliMA/CloudMicrophysics.jl/blob/main/Project.toml)
   for a full list of dependencies.
 When using the Kinematic1D.jl,
