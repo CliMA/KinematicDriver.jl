@@ -1,5 +1,4 @@
-include("../src/Kinematic1D.jl")
-
+import Kinematic1D as KID
 import CLIMAParameters as CP
 import CloudMicrophysics as CM
 import Thermodynamics as TD
@@ -91,7 +90,7 @@ function create_parameter_set(
     aliases = ["w1", "t1", "p0", "precip_sources", "precip_sinks"]
     pairs = CP.get_parameter_values!(toml_dict, aliases, "Kinematic1D")
 
-    param_set = Kinematic1D.Parameters.KinematicParameters{FTD, MP}(; pairs..., microphys_params)
+    param_set = KID.Parameters.KinematicParameters{FTD, MP}(; pairs..., microphys_params)
     if !isbits(param_set)
         @warn "The parameter set SHOULD be isbits in order to be stack-allocated."
     end
