@@ -10,13 +10,15 @@ import LinearAlgebra
 import CLIMAParameters
 import ClimaCore
 import Thermodynamics
+import Kinematic1D
 
-include("../../src/Kinematic1D.jl")
-include("../create_parameters.jl")
+const kid_dir = pkgdir(Kinematic1D)
+include(joinpath(kid_dir, "test", "data_utils.jl"))
+include(joinpath(kid_dir, "test", "plotting_utils.jl"))
+include(joinpath(kid_dir, "test", "create_parameters.jl"))
 
 const IP = Interpolations
 const CC = ClimaCore
-
 const KID = Kinematic1D
 
 const FT = Float64
@@ -24,9 +26,6 @@ const FT = Float64
 # Create parameters overwrite the defaults to match PySDM
 toml_dict = CP.create_toml_dict(FT; dict_type = "alias")
 params = create_parameter_set(@__DIR__, toml_dict, FT)
-
-include("../data_utils.jl")
-include("../plotting_utils.jl")
 
 function compare_profiles(; is_dry_flag::Bool)
     # Computational domain ...
