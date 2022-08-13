@@ -20,6 +20,7 @@ Base.@kwdef struct KinematicParameters{FT, MP} <: AKP
     p0::FT
     precip_sources::Int
     precip_sinks::Int
+    advection_flux_correction::Int
     microphys_params::MP
 end
 thermodynamics_params(ps::AKP) = CM.Parameters.thermodynamics_params(ps.microphys_params)

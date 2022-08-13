@@ -32,7 +32,7 @@ end
 """
      Helper functions for broadcasting and populating the auxiliary state
 """
-@inline function moisture_helper_vars_eq(params, ρq_tot, ρ, θ_liq_ice)
+@inline function moisture_helper_vars_eq_ρθq(params, ρq_tot, ρ, θ_liq_ice)
 
     thermo_params = KP.thermodynamics_params(params)
 
@@ -41,14 +41,32 @@ end
     q_tot = TD.total_specific_humidity(thermo_params, ts)
     q_liq = TD.liquid_specific_humidity(thermo_params, ts)
     q_ice = TD.ice_specific_humidity(thermo_params, ts)
-    q = TD.PhasePartition(q_tot, q_liq, q_ice)
 
+    ρ_dry = ρ - ρq_tot
+    p = TD.air_pressure(thermo_params, ts)
     T = TD.air_temperature(thermo_params, ts)
-    θ_dry = TD.dry_pottemp(thermo_params, T, ρ, q) # TODO should be modified to follow PySDM output for comparison
+    θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
 
-    return (; ts, q_tot, q_liq, q_ice, T, θ_dry)
+    return (; ts, q_tot, q_liq, q_ice, ρ_dry, p, T, θ_dry)
 end
-@inline function moisture_helper_vars_neq(params, ρq_tot, ρq_liq, ρq_ice, ρ, θ_liq_ice)
+@inline function moisture_helper_vars_eq_ρdTq(params, ρq_tot, ρ_dry, T)
+
+    thermo_params = KP.thermodynamics_params(params)
+
+    ρ = ρ_dry .+ ρq_tot
+    ts = TD.PhaseEquil_ρTq(thermo_params, ρ, T, ρq_tot / ρ)
+    p = TD.air_pressure(thermo_params, ts)
+
+    q_tot = TD.total_specific_humidity(thermo_params, ts)
+    q_liq = TD.liquid_specific_humidity(thermo_params, ts)
+    q_ice = TD.ice_specific_humidity(thermo_params, ts)
+
+    θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
+    θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
+
+    return (; ts, q_tot, q_liq, q_ice, ρ, p, θ_liq_ice, θ_dry)
+end
+@inline function moisture_helper_vars_neq_ρθq(params, ρq_tot, ρq_liq, ρq_ice, ρ, θ_liq_ice)
 
     thermo_params = KP.thermodynamics_params(params)
 
@@ -59,10 +77,31 @@ end
 
     ts = TD.PhaseNonEquil_ρθq(thermo_params, ρ, θ_liq_ice, q)
 
+    ρ_dry = ρ - ρq_tot
+    p = TD.air_pressure(thermo_params, ts)
     T = TD.air_temperature(thermo_params, ts)
-    θ_dry = TD.dry_pottemp(thermo_params, T, ρ, q) # TODO should be modified to follow PySDM output for comparison
+    θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
 
-    return (; ts, q_tot, q_liq, q_ice, T, θ_dry)
+    return (; ts, q_tot, q_liq, q_ice, ρ_dry, p, T, θ_dry)
+end
+@inline function moisture_helper_vars_neq_ρdTq(params, ρq_tot, ρq_liq, ρq_ice, ρ_dry, T)
+
+    thermo_params = KP.thermodynamics_params(params)
+
+    ρ = ρ_dry .+ ρq_tot
+
+    q_tot = ρq_tot / ρ
+    q_liq = ρq_liq / ρ
+    q_ice = ρq_ice / ρ
+    q = TD.PhasePartition(q_tot, q_liq, q_ice)
+
+    ts = TD.PhaseNonEquil_ρTq(thermo_params, ρ, T, q)
+    p = TD.air_pressure(thermo_params, ts)
+
+    θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
+    θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
+
+    return (; ts, q_tot, q_liq, q_ice, ρ, p, θ_liq_ice, θ_dry)
 end
 @inline function moisture_helper_sources(params, ρ, T, q_tot, q_liq, q_ice)
 
@@ -133,7 +172,8 @@ end
 
     if Bool(params.precip_sources)
         # autoconversion liquid to rain and ice to snow
-        S_qt_rain = -min(max(0.0, q.liq / dt), CM1.conv_q_liq_to_q_rai(microphys_params, q.liq))
+        S_qt_rain =
+            -min(max(0.0, q.liq / dt), CM1.conv_q_liq_to_q_rai(microphys_params, q.liq, smooth_transition = true))
         S_qt_snow = -min(max(0.0, q.ice / dt), CM1.conv_q_ice_to_q_sno(microphys_params, q, ρ, T))
         S_q_rai -= S_qt_rain
         S_q_sno -= S_qt_snow
@@ -291,12 +331,15 @@ end
 @inline function precompute_aux_thermo!(sm::AbstractMoistureStyle, dY, Y, aux, t)
     error("precompute_aux not implemented for a given $sm")
 end
-@inline function precompute_aux_thermo!(::EquilibriumMoisture, dY, Y, aux, t)
+@inline function precompute_aux_thermo!(::EquilibriumMoisture_ρθq, dY, Y, aux, t)
 
     # TODO - why this is not working?
-    #@. aux.moisture_variables = moisture_helper_vars_eq(aux.params, Y.ρq_tot, aux.constants.ρ, aux.constants.θ_liq_ice)
+    #@. aux.moisture_variables = moisture_helper_vars_eq(aux.params, Y.ρq_tot, aux.moisture_variables.ρ, aux.moisture_variables.θ_liq_ice)
 
-    tmp = @. moisture_helper_vars_eq(aux.params, Y.ρq_tot, aux.constants.ρ, aux.constants.θ_liq_ice)
+    tmp =
+        @. moisture_helper_vars_eq_ρθq(aux.params, Y.ρq_tot, aux.moisture_variables.ρ, aux.moisture_variables.θ_liq_ice)
+    aux.moisture_variables.ρ_dry = tmp.ρ_dry
+    aux.moisture_variables.p = tmp.p
     aux.moisture_variables.T = tmp.T
     aux.moisture_variables.θ_dry = tmp.θ_dry
     aux.moisture_variables.q_tot = tmp.q_tot
@@ -305,11 +348,32 @@ end
     aux.moisture_variables.ts = tmp.ts
 
 end
-@inline function precompute_aux_thermo!(::NonEquilibriumMoisture, dY, Y, aux, t)
-    #@. aux.moisture_variables = moisture_helper_vars_neq(aux.params, Y.ρq_tot, Y.ρq_liq, Y.ρq_ice, aux.constants.ρ, aux.constants.θ_liq_ice)
-    #@. aux.moisture_sources = moisture_helper_sources(aux.params, aux.constants.ρ, aux.moisture_variables.T, aux.moisture_variables.q_tot, aux.moisture_variables.q_liq, aux.moisture_variables.q_ice)
-    tmp =
-        @. moisture_helper_vars_neq(aux.params, Y.ρq_tot, Y.ρq_liq, Y.ρq_ice, aux.constants.ρ, aux.constants.θ_liq_ice)
+@inline function precompute_aux_thermo!(::EquilibriumMoisture_ρdTq, dY, Y, aux, t)
+
+    tmp = @. moisture_helper_vars_eq_ρdTq(aux.params, Y.ρq_tot, aux.moisture_variables.ρ_dry, aux.moisture_variables.T)
+    aux.moisture_variables.ρ = tmp.ρ
+    aux.moisture_variables.p = tmp.p
+    aux.moisture_variables.θ_liq_ice = tmp.θ_liq_ice
+    aux.moisture_variables.θ_dry = tmp.θ_dry
+    aux.moisture_variables.q_tot = tmp.q_tot
+    aux.moisture_variables.q_liq = tmp.q_liq
+    aux.moisture_variables.q_ice = tmp.q_ice
+    aux.moisture_variables.ts = tmp.ts
+
+end
+@inline function precompute_aux_thermo!(::NonEquilibriumMoisture_ρθq, dY, Y, aux, t)
+    #@. aux.moisture_variables = moisture_helper_vars_neq(aux.params, Y.ρq_tot, Y.ρq_liq, Y.ρq_ice, aux.moisture_variables.ρ, aux.moisture_variables.θ_liq_ice)
+    #@. aux.moisture_sources = moisture_helper_sources(aux.params, aux.moisture_variables.ρ, aux.moisture_variables.T, aux.moisture_variables.q_tot, aux.moisture_variables.q_liq, aux.moisture_variables.q_ice)
+    tmp = @. moisture_helper_vars_neq_ρθq(
+        aux.params,
+        Y.ρq_tot,
+        Y.ρq_liq,
+        Y.ρq_ice,
+        aux.moisture_variables.ρ,
+        aux.moisture_variables.θ_liq_ice,
+    )
+    aux.moisture_variables.ρ_dry = tmp.ρ_dry
+    aux.moisture_variables.p = tmp.p
     aux.moisture_variables.T = tmp.T
     aux.moisture_variables.θ_dry = tmp.θ_dry
     aux.moisture_variables.q_tot = tmp.q_tot
@@ -319,7 +383,37 @@ end
 
     tmp_s = @. moisture_helper_sources(
         aux.params,
-        aux.constants.ρ,
+        aux.moisture_variables.ρ,
+        aux.moisture_variables.T,
+        aux.moisture_variables.q_tot,
+        aux.moisture_variables.q_liq,
+        aux.moisture_variables.q_ice,
+    )
+    aux.moisture_sources.S_q_liq = tmp_s.S_q_liq
+    aux.moisture_sources.S_q_ice = tmp_s.S_q_ice
+
+end
+@inline function precompute_aux_thermo!(::NonEquilibriumMoisture_ρdTq, dY, Y, aux, t)
+    tmp = @. moisture_helper_vars_neq_ρdTq(
+        aux.params,
+        Y.ρq_tot,
+        Y.ρq_liq,
+        Y.ρq_ice,
+        aux.moisture_variables.ρ_dry,
+        aux.moisture_variables.T,
+    )
+    aux.moisture_variables.ρ = tmp.ρ
+    aux.moisture_variables.p = tmp.p
+    aux.moisture_variables.θ_liq_ice = tmp.θ_liq_ice
+    aux.moisture_variables.θ_dry = tmp.θ_dry
+    aux.moisture_variables.q_tot = tmp.q_tot
+    aux.moisture_variables.q_liq = tmp.q_liq
+    aux.moisture_variables.q_ice = tmp.q_ice
+    aux.moisture_variables.ts = tmp.ts
+
+    tmp_s = @. moisture_helper_sources(
+        aux.params,
+        aux.moisture_variables.ρ,
         aux.moisture_variables.T,
         aux.moisture_variables.q_tot,
         aux.moisture_variables.q_liq,
@@ -372,10 +466,10 @@ end
     FT = eltype(Y.ρq_rai)
     microphys_params = KP.microphysics_params(aux.params)
 
-    #@. aux.precip_variables = precip_helper_vars(Y.ρq_rai, Y.ρq_sno, aux.constants.ρ)
-    #@. aux.precip_sources = precip_helper_sources_1M!(aux.params, aux.moisture_variables.ts, aux.moisture_variables.q_tot, aux.moisture_variables.q_liq, aux.moisture_variables.q_ice, aux.precip_variables.q_rai, aux.precip_variables.q_sno, aux.moisture_variables.T, aux.constants.ρ, aux.TS.dt)
+    #@. aux.precip_variables = precip_helper_vars(Y.ρq_rai, Y.ρq_sno, aux.moisture_variables.ρ)
+    #@. aux.precip_sources = precip_helper_sources_1M!(aux.params, aux.moisture_variables.ts, aux.moisture_variables.q_tot, aux.moisture_variables.q_liq, aux.moisture_variables.q_ice, aux.precip_variables.q_rai, aux.precip_variables.q_sno, aux.moisture_variables.T, aux.moisture_variables.ρ, aux.TS.dt)
 
-    tmp_v = @. precip_helper_vars(Y.ρq_rai, Y.ρq_sno, aux.constants.ρ)
+    tmp_v = @. precip_helper_vars(Y.ρq_rai, Y.ρq_sno, aux.moisture_variables.ρ)
     aux.precip_variables.q_rai = tmp_v.q_rai
     aux.precip_variables.q_sno = tmp_v.q_sno
 
@@ -388,7 +482,7 @@ end
         aux.precip_variables.q_rai,
         aux.precip_variables.q_sno,
         aux.moisture_variables.T,
-        aux.constants.ρ,
+        aux.moisture_variables.ρ,
         aux.TS.dt,
     )
     aux.precip_sources.S_q_rai = tmp.S_q_rai
@@ -413,20 +507,23 @@ end
 end
 @inline function advection_tendency!(::EquilibriumMoisture, dY, Y, aux, t)
 
-    fcc = CC.Operators.FluxCorrectionC2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
     If = CC.Operators.InterpolateC2F()
     ∂ = CC.Operators.DivergenceF2C(
         bottom = CC.Operators.SetValue(CC.Geometry.WVector(aux.ρw0 * aux.q_surf)),
         top = CC.Operators.Extrapolate(),
     )
-    @. dY.ρq_tot += -∂(aux.ρw / If(aux.constants.ρ) * If(Y.ρq_tot)) + fcc(aux.ρw / If(aux.constants.ρ), Y.ρq_tot)
+    @. dY.ρq_tot += -∂(aux.ρw / If(aux.moisture_variables.ρ) * If(Y.ρq_tot))
+
+    if Bool(aux.params.advection_flux_correction)
+        fcc = CC.Operators.FluxCorrectionC2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
+        @. dY.ρq_tot += fcc(aux.ρw / If(aux.moisture_variables.ρ), Y.ρq_tot)
+    end
 
     return dY
 end
 @inline function advection_tendency!(::NonEquilibriumMoisture, dY, Y, aux, t)
     FT = eltype(Y.ρq_tot)
 
-    fcc = CC.Operators.FluxCorrectionC2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
     If = CC.Operators.InterpolateC2F()
 
     ∂_qt = CC.Operators.DivergenceF2C(
@@ -442,9 +539,18 @@ end
         top = CC.Operators.Extrapolate(),
     )
 
-    @. dY.ρq_tot += -∂_qt(aux.ρw / If(aux.constants.ρ) * If(Y.ρq_tot)) + fcc(aux.ρw / If(aux.constants.ρ), Y.ρq_tot)
-    @. dY.ρq_liq += -∂_ql(aux.ρw / If(aux.constants.ρ) * If(Y.ρq_liq)) + fcc(aux.ρw / If(aux.constants.ρ), Y.ρq_liq)
-    @. dY.ρq_ice += -∂_qi(aux.ρw / If(aux.constants.ρ) * If(Y.ρq_ice)) + fcc(aux.ρw / If(aux.constants.ρ), Y.ρq_ice)
+    @. dY.ρq_tot += -∂_qt(aux.ρw / If(aux.moisture_variables.ρ) * If(Y.ρq_tot))
+    @. dY.ρq_liq += -∂_ql(aux.ρw / If(aux.moisture_variables.ρ) * If(Y.ρq_liq))
+    @. dY.ρq_ice += -∂_qi(aux.ρw / If(aux.moisture_variables.ρ) * If(Y.ρq_ice))
+
+
+    if Bool(aux.params.advection_flux_correction)
+        fcc = CC.Operators.FluxCorrectionC2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
+        @. dY.ρq_tot += fcc(aux.ρw / If(aux.moisture_variables.ρ), Y.ρq_tot)
+        @. dY.ρq_liq += fcc(aux.ρw / If(aux.moisture_variables.ρ), Y.ρq_liq)
+        @. dY.ρq_ice += fcc(aux.ρw / If(aux.moisture_variables.ρ), Y.ρq_ice)
+    end
+
 
     return dY
 end
@@ -452,17 +558,18 @@ end
 @inline function advection_tendency!(::Precipitation1M, dY, Y, aux, t)
     FT = eltype(Y.ρq_tot)
 
-    fcc = CC.Operators.FluxCorrectionC2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
     If = CC.Operators.InterpolateC2F()
     ∂ = CC.Operators.DivergenceF2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
 
-    @. dY.ρq_rai += -∂(aux.ρw / If(aux.constants.ρ) * If(Y.ρq_rai)) + fcc(aux.ρw / If(aux.constants.ρ), Y.ρq_rai)
-    @. dY.ρq_sno += -∂(aux.ρw / If(aux.constants.ρ) * If(Y.ρq_sno)) + fcc(aux.ρw / If(aux.constants.ρ), Y.ρq_sno)
+    @. dY.ρq_rai += -∂((aux.ρw / If(aux.moisture_variables.ρ) + aux.precip_velocities.term_vel_rai) * If(Y.ρq_rai))
+    @. dY.ρq_sno += -∂((aux.ρw / If(aux.moisture_variables.ρ) + aux.precip_velocities.term_vel_sno) * If(Y.ρq_sno))
 
-    @. dY.ρq_rai +=
-        -∂(aux.precip_velocities.term_vel_rai * If(Y.ρq_rai)) + fcc(aux.precip_velocities.term_vel_rai, Y.ρq_rai)
-    @. dY.ρq_sno +=
-        -∂(aux.precip_velocities.term_vel_sno * If(Y.ρq_sno)) + fcc(aux.precip_velocities.term_vel_sno, Y.ρq_sno)
+    if Bool(aux.params.advection_flux_correction)
+        fcc = CC.Operators.FluxCorrectionC2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
+        @. dY.ρq_rai += fcc((aux.ρw / If(aux.moisture_variables.ρ) + aux.precip_velocities.term_vel_rai), Y.ρq_rai)
+        @. dY.ρq_sno += fcc((aux.ρw / If(aux.moisture_variables.ρ) + aux.precip_velocities.term_vel_sno), Y.ρq_sno)
+    end
+
 
     return dY
 end
@@ -478,26 +585,26 @@ end
 end
 @inline function sources_tendency!(::EquilibriumMoisture, dY, Y, aux, t)
 
-    @. dY.ρq_tot += aux.constants.ρ * aux.precip_sources.S_q_tot
+    @. dY.ρq_tot += aux.moisture_variables.ρ * aux.precip_sources.S_q_tot
 
     return dY
 end
 @inline function sources_tendency!(::NonEquilibriumMoisture, dY, Y, aux, t)
 
-    @. dY.ρq_liq += aux.constants.ρ * aux.moisture_sources.S_q_liq
-    @. dY.ρq_ice += aux.constants.ρ * aux.moisture_sources.S_q_ice
+    @. dY.ρq_liq += aux.moisture_variables.ρ * aux.moisture_sources.S_q_liq
+    @. dY.ρq_ice += aux.moisture_variables.ρ * aux.moisture_sources.S_q_ice
 
-    @. dY.ρq_tot += aux.constants.ρ * aux.precip_sources.S_q_tot
-    @. dY.ρq_liq += aux.constants.ρ * aux.precip_sources.S_q_liq
-    @. dY.ρq_ice += aux.constants.ρ * aux.precip_sources.S_q_ice
+    @. dY.ρq_tot += aux.moisture_variables.ρ * aux.precip_sources.S_q_tot
+    @. dY.ρq_liq += aux.moisture_variables.ρ * aux.precip_sources.S_q_liq
+    @. dY.ρq_ice += aux.moisture_variables.ρ * aux.precip_sources.S_q_ice
 
     return dY
 end
 @inline function sources_tendency!(::Union{NoPrecipitation, Precipitation0M}, dY, Y, aux, t) end
 @inline function sources_tendency!(::Precipitation1M, dY, Y, aux, t)
 
-    @. dY.ρq_rai += aux.constants.ρ * aux.precip_sources.S_q_rai
-    @. dY.ρq_sno += aux.constants.ρ * aux.precip_sources.S_q_sno
+    @. dY.ρq_rai += aux.moisture_variables.ρ * aux.precip_sources.S_q_rai
+    @. dY.ρq_sno += aux.moisture_variables.ρ * aux.precip_sources.S_q_sno
 
     return dY
 end

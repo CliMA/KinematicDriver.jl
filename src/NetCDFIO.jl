@@ -72,7 +72,7 @@ function KiD_output(aux, t::Float64)
         @inbounds ts_t[end + 1] = t::Float64
 
         # write profiles
-        for field in (aux.constants, aux.moisture_variables, aux.precip_variables)
+        for field in (aux.moisture_variables, aux.precip_variables)
             for var in keys(Stats.output_profiles)
                 if var in propertynames(field)
                     prop = getproperty(field, var)

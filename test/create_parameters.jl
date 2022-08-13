@@ -13,6 +13,7 @@ function create_parameter_set(
     p0 = 100700.0,
     precip_sources = 1,
     precip_sinks = 1,
+    advection_flux_correction = 1,
 )
     FT = CP.float_type(toml_dict)
     override_file = joinpath(out_dir, "override_dict.toml")
@@ -69,6 +70,10 @@ function create_parameter_set(
         println(io, "alias = \"precip_sinks\"")
         println(io, "value = " * string(precip_sinks))
         println(io, "type = \"integer\"")
+        println(io, "[advection_flux_correction_flag]")
+        println(io, "alias = \"advection_flux_correction\"")
+        println(io, "value = " * string(advection_flux_correction))
+        println(io, "type = \"integer\"")
     end
     toml_dict = CP.create_toml_dict(FT; override_file, dict_type="alias")
     isfile(override_file) && rm(override_file; force=true)
@@ -87,7 +92,7 @@ function create_parameter_set(
     )
     MP = typeof(microphys_params)
 
-    aliases = ["w1", "t1", "p0", "precip_sources", "precip_sinks"]
+    aliases = ["w1", "t1", "p0", "precip_sources", "precip_sinks", "advection_flux_correction"]
     pairs = CP.get_parameter_values!(toml_dict, aliases, "Kinematic1D")
 
     param_set = KID.Parameters.KinematicParameters{FTD, MP}(; pairs..., microphys_params)

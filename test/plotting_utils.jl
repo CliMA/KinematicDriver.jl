@@ -84,7 +84,7 @@ function plot_animation(z_centers, solver, aux, moisture, precip, KiD; output = 
 
     anim = Plots.@animate for u in solver.u
 
-        ρ = parent(aux.constants.ρ)
+        ρ = parent(aux.moisture_variables.ρ)
         q_tot = parent(u.ρq_tot) ./ ρ .* 1e3
 
         if moisture isa KiD.NonEquilibriumMoisture
