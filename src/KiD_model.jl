@@ -107,9 +107,12 @@ function initialise_aux(FT, ip, params, TS, Stats, face_space, moisture)
     end
 
     return CC.Fields.FieldVector(;
-        constants = (; ρ = ip.ρ, p = ip.p, θ_liq_ice = ip.θ_liq_ice),
         moisture_variables = (;
+            ρ = ip.ρ,
+            ρ_dry = ip.ρ_dry,
+            p = ip.p,
             T = ip.T,
+            θ_liq_ice = ip.θ_liq_ice,
             θ_dry = ip.θ_dry,
             q_tot = ip.q_tot,
             q_liq = ip.q_liq,

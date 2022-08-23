@@ -10,6 +10,10 @@ function parse_commandline()
         help = "Mositure model choice: EquilibriumMoisture, NonEquilibriumMoisture"
         arg_type = String
         default = "NonEquilibriumMoisture"
+        "--prognostic_vars"
+        help = "Prognostic variables choice: RhoThetaQ, RhodTQ"
+        arg_type = String
+        default = "RhoThetaQ"
         "--precipitation_choice"
         help = "Precipitation model choice: NoPrecipitation, Precipitation0M, Precipitation1M"
         arg_type = String
@@ -24,6 +28,10 @@ function parse_commandline()
         default = true
         "--precip_sinks"
         help = "Set to true if you want to switch on evaporation, deposition, sublimation and melting in the 1-moment scheme"
+        arg_type = Bool
+        default = true
+        "--advection_flux_correction"
+        help = "Set to true if you want to apply flux correction in the advection scheme"
         arg_type = Bool
         default = true
         "--z_min"

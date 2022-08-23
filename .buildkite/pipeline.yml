@@ -36,26 +36,42 @@ steps:
         command: "julia --color=yes --project=test test/initial_condition_tests/initial_profile_test.jl"
         artifact_paths: "test/initial_condition_tests/output_init_profiles/*"
 
-      - label: ":crystal_ball: Experiments: equil + no precp"
+      - label: ":crystal_ball: Experiments: equil (fixed rho and theta) + no precp"
         command: "julia --color=yes --project=test test/experiments/KiD_driver.jl --moisture_choice=EquilibriumMoisture --precipitation_choice=NoPrecipitation"
-        artifact_paths: "test/experiments/Output_EquilibriumMoisture_NoPrecipitation/figures/*"
+        artifact_paths: "test/experiments/Output_EquilibriumMoisture_RhoThetaQ_NoPrecipitation/figures/*"
 
-      - label: ":crystal_ball: Experiments: equil + 0M"
+      - label: ":crystal_ball: Experiments: equil (fixed rho and theta) + 0M"
         command: "julia --color=yes --project=test test/experiments/KiD_driver.jl --moisture_choice=EquilibriumMoisture --precipitation_choice=Precipitation0M"
-        artifact_paths: "test/experiments/Output_EquilibriumMoisture_Precipitation0M/figures/*"
+        artifact_paths: "test/experiments/Output_EquilibriumMoisture_RhoThetaQ_Precipitation0M/figures/*"
 
-      - label: ":crystal_ball: Experiments: equil + 1M"
+      - label: ":crystal_ball: Experiments: equil (fixed rho and theta) + 1M"
         command: "julia --color=yes --project=test test/experiments/KiD_driver.jl --moisture_choice=EquilibriumMoisture --precipitation_choice=Precipitation1M"
-        artifact_paths: "test/experiments/Output_EquilibriumMoisture_Precipitation1M/figures/*"
+        artifact_paths: "test/experiments/Output_EquilibriumMoisture_RhoThetaQ_Precipitation1M/figures/*"
 
-      - label: ":crystal_ball: Experiments: non equil + no precip"
+      - label: ":crystal_ball: Experiments: equil (fixed rho and theta) + 1M w/o FluxCorrection"
+        command: "julia --color=yes --project=test test/experiments/KiD_driver.jl --moisture_choice=EquilibriumMoisture --precipitation_choice=Precipitation1M --advection_flux_correction=false"
+        artifact_paths: "test/experiments/Output_EquilibriumMoisture_RhoThetaQ_Precipitation1M_woFC/figures/*"
+
+      - label: ":crystal_ball: Experiments: equil (fixed rhod and T) + 1M "
+        command: "julia --color=yes --project=test test/experiments/KiD_driver.jl --moisture_choice=EquilibriumMoisture --prognostic_vars=RhodTQ --precipitation_choice=Precipitation1M"
+        artifact_paths: "test/experiments/Output_EquilibriumMoisture_RhodTQ_Precipitation1M/figures/*"
+
+      - label: ":crystal_ball: Experiments: non equil (fixed rho and theta) + no precip"
         command: "julia --color=yes --project=test test/experiments/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=NoPrecipitation"
-        artifact_paths: "test/experiments/Output_NonEquilibriumMoisture_NoPrecipitation/figures/*"
+        artifact_paths: "test/experiments/Output_NonEquilibriumMoisture_RhoThetaQ_NoPrecipitation/figures/*"
 
-      - label: ":crystal_ball: Experiments: non equil + 0M"
+      - label: ":crystal_ball: Experiments: non equil (fixed rho and theta) + 0M"
         command: "julia --color=yes --project=test test/experiments/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation0M"
-        artifact_paths: "test/experiments/Output_NonEquilibriumMoisture_Precipitation0M/figures/*"
+        artifact_paths: "test/experiments/Output_NonEquilibriumMoisture_RhoThetaQ_Precipitation0M/figures/*"
 
-      - label: ":crystal_ball: Experiments: non equil + 1M"
+      - label: ":crystal_ball: Experiments: non equil (fixed rho and theta) + 1M"
         command: "julia --color=yes --project=test test/experiments/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation1M"
-        artifact_paths: "test/experiments/Output_NonEquilibriumMoisture_Precipitation1M/figures/*"
+        artifact_paths: "test/experiments/Output_NonEquilibriumMoisture_RhoThetaQ_Precipitation1M/figures/*"
+
+      - label: ":crystal_ball: Experiments: non equil (fixed rho and theta) + 1M w/o FluxCorrection"
+        command: "julia --color=yes --project=test test/experiments/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation1M --advection_flux_correction=false"
+        artifact_paths: "test/experiments/Output_NonEquilibriumMoisture_RhoThetaQ_Precipitation1M_woFC/figures/*"
+
+      - label: ":crystal_ball: Experiments: non equil (fixed rhod and T) + 1M "
+        command: "julia --color=yes --project=test test/experiments/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --prognostic_vars=RhodTQ --precipitation_choice=Precipitation1M"
+        artifact_paths: "test/experiments/Output_NonEquilibriumMoisture_RhodTQ_Precipitation1M/figures/*"

@@ -35,13 +35,18 @@ opts = parse_commandline()
 
 # Equations to solve for mositure and precipitation variables
 moisture_choice = opts["moisture_choice"]
+prognostics_choice = opts["prognostic_vars"]
 precipitation_choice = opts["precipitation_choice"]
-if moisture_choice == "EquilibriumMoisture"
-    moisture = KID.EquilibriumMoisture()
-elseif moisture_choice == "NonEquilibriumMoisture"
-    moisture = KID.NonEquilibriumMoisture()
+if moisture_choice == "EquilibriumMoisture" && prognostics_choice == "RhoThetaQ"
+    moisture = KID.EquilibriumMoisture_ρθq()
+elseif moisture_choice == "EquilibriumMoisture" && prognostics_choice == "RhodTQ"
+    moisture = KID.EquilibriumMoisture_ρdTq()
+elseif moisture_choice == "NonEquilibriumMoisture" && prognostics_choice == "RhoThetaQ"
+    moisture = KID.NonEquilibriumMoisture_ρθq()
+elseif moisture_choice == "NonEquilibriumMoisture" && prognostics_choice == "RhodTQ"
+    moisture = KID.NonEquilibriumMoisture_ρdTq()
 else
-    error("Invalid moisture choice: $moisture_choice")
+    error("Invalid moisture choice: $moisture_choice or invalid prognostic variables choice: $prognostic_vars")
 end
 if precipitation_choice == "NoPrecipitation"
     precip = KID.NoPrecipitation()
@@ -62,7 +67,10 @@ coord = CC.Fields.coordinate_field(space)
 face_coord = CC.Fields.coordinate_field(face_space)
 
 # Initialize the netcdf output Stats struct
-output_folder = string("Output_", moisture_choice, "_", precipitation_choice)
+output_folder = string("Output_", moisture_choice, "_", prognostics_choice, "_", precipitation_choice)
+if !opts["advection_flux_correction"]
+    output_folder = output_folder * "_woFC"
+end
 path = joinpath(@__DIR__, output_folder)
 mkpath(path)
 fname = joinpath(path, "Output.nc")
@@ -79,6 +87,7 @@ params = create_parameter_set(
     opts["p0"],
     Int(opts["precip_sources"]),
     Int(opts["precip_sinks"]),
+    Int(opts["advection_flux_correction"]),
 )
 
 # Solve the initial value problem for density profile

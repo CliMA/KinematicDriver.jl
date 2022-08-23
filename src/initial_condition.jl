@@ -36,25 +36,26 @@ function init_condition(::Type{FT}, params, z; dry = false) where {FT}
     SDM_θ_dry_0 = SDM_θ_dry(params, θ_0, qv_0)
     SDM_ρ_dry_0 = SDM_ρ_dry(params, p_0, qv_0, θ_0)
     SDM_T_0 = SDM_T(params, SDM_θ_dry_0, SDM_ρ_dry_0)
-    #SDM_ρ_0 = SDM_ρ_of_ρ_dry(SDM_ρ_dry_0, qv_0) # TODO - temporary to be more consistent with PySDM
+    SDM_ρ_0 = SDM_ρ_of_ρ_dry(SDM_ρ_dry_0, qv_0)
 
-    return (qv = qv, θ_std = θ_std, ρ_0 = SDM_ρ_dry_0, z_0 = z_0, z_2 = z_2)
+    return (qv = qv, θ_std = θ_std, ρ_0 = SDM_ρ_0, z_0 = z_0, z_2 = z_2)
 end
 
 """
     Density derivative as a function of height (assuming no cloud condensate)
     Needed to solve the initial value problem to create the density profile.
 """
-function dρ_dz!(ρ, params, z)
+function dρ_dz!(ρ, ode_settings, z)
 
     FT = eltype(ρ)
 
+    dry = ode_settings["dry"]
+    params = ode_settings["params"]
+
     # initial profiles
-    init = init_condition(FT, params, z)
+    init = init_condition(FT, params, z, dry = dry)
     θ_std::FT = init.θ_std
     q_vap::FT = init.qv
-
-    q = TD.PhasePartition(q_vap, 0.0, 0.0)
 
     # constants
     g::FT = KP.grav(params)
@@ -87,9 +88,11 @@ function ρ_ivp(::Type{FT}, params; dry = false) where {FT}
     ρ_0::FT = init_surface.ρ_0
     z_0::FT = init_surface.z_0
     z_max::FT = init_surface.z_2
-
     z_span = (z_0, z_max)
-    prob = ODE.ODEProblem(dρ_dz!, ρ_0, z_span, params)
+
+    ode_settings = Dict("dry" => dry, "params" => params)
+
+    prob = ODE.ODEProblem(dρ_dz!, ρ_0, z_span, ode_settings)
     sol = ODE.solve(prob, ODE.Tsit5(), reltol = 1e-10, abstol = 1e-10)
 
     return sol
@@ -106,8 +109,8 @@ function init_1d_column(::Type{FT}, params, ρ_profile, z; dry = false) where {F
     q_vap::FT = init_condition(FT, params, z, dry = dry).qv
     θ_std::FT = init_condition(FT, params, z, dry = dry).θ_std
 
-    ρ_dry::FT = ρ_profile(z)
-    ρ::FT = SDM_ρ_of_ρ_dry(ρ_dry, q_vap)
+    ρ::FT = ρ_profile(z)
+    ρ_dry::FT = SDM_ρ_dry_of_ρ(ρ, q_vap)
 
     # assuming no cloud condensate in the initial profile
     θ_liq_ice::FT = θ_std # TODO - compute this based on TS
@@ -141,6 +144,7 @@ function init_1d_column(::Type{FT}, params, ρ_profile, z; dry = false) where {F
 
     return (;
         ρ,
+        ρ_dry,
         T,
         p,
         θ_liq_ice,
