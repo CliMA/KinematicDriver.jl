@@ -168,45 +168,49 @@ end
     @test_throws Exception KID.initialise_aux(Float64, ip, params, 0.0, 0.0, face_space, KID.NonEquilibriumMoisture())
 
     aux = KID.initialise_aux(Float64, ip, params, 0.0, 0.0, face_space, KID.EquilibriumMoisture_ρθq())
-    @test aux isa CC.Fields.FieldVector
+    @test aux isa NamedTuple
     @test aux.moisture_variables isa CC.Fields.FieldVector
     @test aux.precip_variables isa CC.Fields.FieldVector
     @test aux.moisture_sources isa CC.Fields.FieldVector
     @test aux.precip_sources isa CC.Fields.FieldVector
     @test aux.precip_velocities isa CC.Fields.FieldVector
+    @test aux.prescribed_velocity isa CC.Fields.FieldVector
     @test LA.norm(aux.precip_variables) == 0
     @test LA.norm(aux.precip_sources) == 0
     @test LA.norm(aux.moisture_sources) == 0
 
     aux = KID.initialise_aux(Float64, ip, params, 0.0, 0.0, face_space, KID.EquilibriumMoisture_ρdTq())
-    @test aux isa CC.Fields.FieldVector
+    @test aux isa NamedTuple
     @test aux.moisture_variables isa CC.Fields.FieldVector
     @test aux.precip_variables isa CC.Fields.FieldVector
     @test aux.moisture_sources isa CC.Fields.FieldVector
     @test aux.precip_sources isa CC.Fields.FieldVector
     @test aux.precip_velocities isa CC.Fields.FieldVector
+    @test aux.prescribed_velocity isa CC.Fields.FieldVector
     @test LA.norm(aux.precip_variables) == 0
     @test LA.norm(aux.precip_sources) == 0
     @test LA.norm(aux.moisture_sources) == 0
 
     aux = KID.initialise_aux(Float64, ip, params, 0.0, 0.0, face_space, KID.NonEquilibriumMoisture_ρθq())
-    @test aux isa CC.Fields.FieldVector
+    @test aux isa NamedTuple
     @test aux.moisture_variables isa CC.Fields.FieldVector
     @test aux.precip_variables isa CC.Fields.FieldVector
     @test aux.moisture_sources isa CC.Fields.FieldVector
     @test aux.precip_sources isa CC.Fields.FieldVector
     @test aux.precip_velocities isa CC.Fields.FieldVector
+    @test aux.prescribed_velocity isa CC.Fields.FieldVector
     @test LA.norm(aux.precip_variables) == 0
     @test LA.norm(aux.precip_sources) == 0
     @test LA.norm(aux.moisture_sources) == 0
 
     aux = KID.initialise_aux(Float64, ip, params, 0.0, 0.0, face_space, KID.NonEquilibriumMoisture_ρdTq())
-    @test aux isa CC.Fields.FieldVector
+    @test aux isa NamedTuple
     @test aux.moisture_variables isa CC.Fields.FieldVector
     @test aux.precip_variables isa CC.Fields.FieldVector
     @test aux.moisture_sources isa CC.Fields.FieldVector
     @test aux.precip_sources isa CC.Fields.FieldVector
     @test aux.precip_velocities isa CC.Fields.FieldVector
+    @test aux.prescribed_velocity isa CC.Fields.FieldVector
     @test LA.norm(aux.precip_variables) == 0
     @test LA.norm(aux.precip_sources) == 0
     @test LA.norm(aux.moisture_sources) == 0
@@ -363,6 +367,9 @@ end
     @test_throws Exception KID.sources_tendency!(KID.AbstractMoistureStyle(), dY, Y, aux, t)
     @test_throws Exception KID.sources_tendency!(KID.AbstractPrecipitationStyle(), dY, Y, aux, t)
 
+    KID.advection_tendency!(KID.EquilibriumMoisture_ρθq(), dY, Y, aux, 1.0)
+    @test dY == Y / 10
+
     KID.precompute_aux_thermo!(KID.EquilibriumMoisture_ρθq(), dY, Y, aux, t)
     @test aux.moisture_variables.ρ_dry == aux.moisture_variables.ρ .- Y.ρq_tot
     @test aux.moisture_variables.p == TD.air_pressure.(thermo_params, aux.moisture_variables.ts)
@@ -381,6 +388,9 @@ end
     Y = KID.initialise_state(KID.NonEquilibriumMoisture_ρθq(), KID.NoPrecipitation(), init)
     dY = Y / 10
     t = 13.0
+
+    KID.advection_tendency!(KID.NonEquilibriumMoisture_ρθq(), dY, Y, aux, 1.0)
+    @test dY == Y / 10
 
     KID.precompute_aux_thermo!(KID.NonEquilibriumMoisture_ρθq(), dY, Y, aux, t)
     @test aux.moisture_variables.ρ_dry == aux.moisture_variables.ρ .- Y.ρq_tot

@@ -68,8 +68,8 @@ face_coord = CC.Fields.coordinate_field(face_space)
 
 # Initialize the netcdf output Stats struct
 output_folder = string("Output_", moisture_choice, "_", prognostics_choice, "_", precipitation_choice)
-if !opts["advection_flux_correction"]
-    output_folder = output_folder * "_woFC"
+if opts["qtot_flux_correction"]
+    output_folder = output_folder * "_wFC"
 end
 path = joinpath(@__DIR__, output_folder)
 mkpath(path)
@@ -87,7 +87,7 @@ params = create_parameter_set(
     opts["p0"],
     Int(opts["precip_sources"]),
     Int(opts["precip_sinks"]),
-    Int(opts["advection_flux_correction"]),
+    Int(opts["qtot_flux_correction"]),
 )
 
 # Solve the initial value problem for density profile

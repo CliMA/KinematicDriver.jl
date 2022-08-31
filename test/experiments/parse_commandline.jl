@@ -5,7 +5,7 @@
 function parse_commandline()
     s = AP.ArgParseSettings()
 
-    AP.@add_arg_table s begin
+    AP.@add_arg_table! s begin
         "--moisture_choice"
         help = "Mositure model choice: EquilibriumMoisture, NonEquilibriumMoisture"
         arg_type = String
@@ -30,10 +30,11 @@ function parse_commandline()
         help = "Set to true if you want to switch on evaporation, deposition, sublimation and melting in the 1-moment scheme"
         arg_type = Bool
         default = true
-        "--advection_flux_correction"
-        help = "Set to true if you want to apply flux correction in the advection scheme"
+        "--qtot_flux_correction"
+        help = "Set to true if you want to apply flux correction for advecting q_tot. 
+        (By default flux correction is not applied to q_tot but is applied to all other microphysics tracers)"
         arg_type = Bool
-        default = true
+        default = false
         "--z_min"
         help = "Bottom of the computational domain [m]"
         arg_type = Real
