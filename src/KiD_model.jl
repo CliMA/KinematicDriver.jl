@@ -106,8 +106,8 @@ function initialise_aux(FT, ip, params, TS, Stats, face_space, moisture)
         )
     end
 
-    return CC.Fields.FieldVector(;
-        moisture_variables = (;
+    return (;
+        moisture_variables = CC.Fields.FieldVector(;
             ρ = ip.ρ,
             ρ_dry = ip.ρ_dry,
             p = ip.p,
@@ -119,20 +119,19 @@ function initialise_aux(FT, ip, params, TS, Stats, face_space, moisture)
             q_ice = ip.q_ice,
             ts = ts,
         ),
-        precip_variables = (; q_rai = ip.q_rai, q_sno = ip.q_sno),
-        moisture_sources = (; S_q_liq = ip.S_ql_moisture, S_q_ice = ip.S_qi_moisture),
-        precip_sources = (;
+        precip_variables = CC.Fields.FieldVector(; q_rai = ip.q_rai, q_sno = ip.q_sno),
+        moisture_sources = CC.Fields.FieldVector(; S_q_liq = ip.S_ql_moisture, S_q_ice = ip.S_qi_moisture),
+        precip_sources = CC.Fields.FieldVector(;
             S_q_tot = ip.S_qt_precip,
             S_q_liq = ip.S_ql_precip,
             S_q_ice = ip.S_qi_precip,
             S_q_rai = ip.S_qr_precip,
             S_q_sno = ip.S_qs_precip,
         ),
-        precip_velocities = (; term_vel_rai = term_vel_rai, term_vel_sno = term_vel_sno),
-        ρw = ρw,
+        precip_velocities = CC.Fields.FieldVector(; term_vel_rai = term_vel_rai, term_vel_sno = term_vel_sno),
+        prescribed_velocity = CC.Fields.FieldVector(; ρw = ρw, ρw0 = ρw0),
         params = params,
         q_surf = q_surf,
-        ρw0 = ρw0,
         Stats = Stats,
         TS = TS,
     )

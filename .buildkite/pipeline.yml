@@ -48,8 +48,8 @@ steps:
         command: "julia --color=yes --project=test test/experiments/KiD_driver.jl --moisture_choice=EquilibriumMoisture --precipitation_choice=Precipitation1M"
         artifact_paths: "test/experiments/Output_EquilibriumMoisture_RhoThetaQ_Precipitation1M/figures/*"
 
-      - label: ":crystal_ball: Experiments: equil (fixed rho and theta) + 1M w/o FluxCorrection"
-        command: "julia --color=yes --project=test test/experiments/KiD_driver.jl --moisture_choice=EquilibriumMoisture --precipitation_choice=Precipitation1M --advection_flux_correction=false"
+      - label: ":crystal_ball: Experiments: equil (fixed rho and theta) + 1M with qtot FluxCorrection"
+        command: "julia --color=yes --project=test test/experiments/KiD_driver.jl --moisture_choice=EquilibriumMoisture --precipitation_choice=Precipitation1M --qtot_flux_correction=true"
         artifact_paths: "test/experiments/Output_EquilibriumMoisture_RhoThetaQ_Precipitation1M_woFC/figures/*"
 
       - label: ":crystal_ball: Experiments: equil (fixed rhod and T) + 1M "
@@ -68,8 +68,8 @@ steps:
         command: "julia --color=yes --project=test test/experiments/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation1M"
         artifact_paths: "test/experiments/Output_NonEquilibriumMoisture_RhoThetaQ_Precipitation1M/figures/*"
 
-      - label: ":crystal_ball: Experiments: non equil (fixed rho and theta) + 1M w/o FluxCorrection"
-        command: "julia --color=yes --project=test test/experiments/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation1M --advection_flux_correction=false"
+      - label: ":crystal_ball: Experiments: non equil (fixed rho and theta) + 1M with qtot FluxCorrection"
+        command: "julia --color=yes --project=test test/experiments/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation1M --qtot_flux_correction=true"
         artifact_paths: "test/experiments/Output_NonEquilibriumMoisture_RhoThetaQ_Precipitation1M_woFC/figures/*"
 
       - label: ":crystal_ball: Experiments: non equil (fixed rhod and T) + 1M "
