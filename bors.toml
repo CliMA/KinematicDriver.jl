@@ -1,7 +1,7 @@
 status = [
-  "ci 1.7.2 - ubuntu-latest",
-  "ci 1.7.2 - macOS-latest",
-  "ci 1.7.2 - windows-latest",
+  "ci 1.8.1 - ubuntu-latest",
+  "ci 1.8.1 - macOS-latest",
+  "ci 1.8.1 - windows-latest",
   "buildkite/kinematic1d-dot-jl-ci",
   "docbuild",
   "format",
