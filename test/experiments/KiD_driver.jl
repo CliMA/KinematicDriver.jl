@@ -26,6 +26,7 @@ const NC = NCDatasets
 const ODE = OrdinaryDiffEq
 const KID = Kinematic1D
 const AP = ArgParse
+const CMT = CloudMicrophysics.CommonTypes
 
 const FT = Float64
 
@@ -37,6 +38,8 @@ opts = parse_commandline()
 moisture_choice = opts["moisture_choice"]
 prognostics_choice = opts["prognostic_vars"]
 precipitation_choice = opts["precipitation_choice"]
+rain_formation_choice = opts["rain_formation_scheme_choice"]
+
 if moisture_choice == "EquilibriumMoisture" && prognostics_choice == "RhoThetaQ"
     moisture = KID.EquilibriumMoisture_ρθq()
 elseif moisture_choice == "EquilibriumMoisture" && prognostics_choice == "RhodTQ"
@@ -53,7 +56,19 @@ if precipitation_choice == "NoPrecipitation"
 elseif precipitation_choice == "Precipitation0M"
     precip = KID.Precipitation0M()
 elseif precipitation_choice == "Precipitation1M"
-    precip = KID.Precipitation1M()
+    if rain_formation_choice == "CliMA_1M"
+        precip = KID.Precipitation1M(KID.OneMomentRainFormation())
+    elseif rain_formation_choice == "KK2000"
+        precip = KID.Precipitation1M(CMT.KK2000Type())
+    elseif rain_formation_choice == "B1994"
+        precip = KID.Precipitation1M(CMT.B1994Type())
+    elseif rain_formation_choice == "TC1980"
+        precip = KID.Precipitation1M(CMT.TC1980Type())
+    elseif rain_formation_choice == "LD2004"
+        precip = KID.Precipitation1M(CMT.LD2004Type())
+    else
+        error("Invalid rain formation choice: $rain_formation_choice")
+    end
 else
     error("Invalid precipitation choice: $precipitation_choice")
 end
@@ -68,6 +83,9 @@ face_coord = CC.Fields.coordinate_field(face_space)
 
 # Initialize the netcdf output Stats struct
 output_folder = string("Output_", moisture_choice, "_", prognostics_choice, "_", precipitation_choice)
+if precipitation_choice == "Precipitation1M"
+    output_folder = output_folder * "_" * rain_formation_choice
+end
 if opts["qtot_flux_correction"]
     output_folder = output_folder * "_wFC"
 end
@@ -88,6 +106,7 @@ params = create_parameter_set(
     Int(opts["precip_sources"]),
     Int(opts["precip_sinks"]),
     Int(opts["qtot_flux_correction"]),
+    FT(opts["prescribed_Nd"]),
 )
 
 # Solve the initial value problem for density profile

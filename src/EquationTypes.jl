@@ -5,6 +5,7 @@ Types for dispatching on different equation sets for KiD
 export AbstractStyle
 export AbstractMoistureStyle
 export AbstractPrecipitationStyle
+export AbstractRainFormationStyle
 
 # TODO - add support for a dry case
 #export NoMoisture
@@ -19,9 +20,14 @@ export NoPrecipitation
 export Precipitation0M
 export Precipitation1M
 
+export OneMomentRainFormation
+
 abstract type AbstractStyle end
 abstract type AbstractMoistureStyle <: AbstractStyle end
 abstract type AbstractPrecipitationStyle <: AbstractStyle end
+abstract type AbstractRainFormationStyle <: AbstractStyle end
+
+Base.broadcastable(x::AbstractPrecipitationStyle) = Ref(x)
 
 #struct NoMoisture <: AbstractMoistureStyle end
 abstract type EquilibriumMoisture <: AbstractMoistureStyle end
@@ -33,4 +39,8 @@ struct NonEquilibriumMoisture_ρdTq <: NonEquilibriumMoisture end
 
 struct NoPrecipitation <: AbstractPrecipitationStyle end
 struct Precipitation0M <: AbstractPrecipitationStyle end
-struct Precipitation1M <: AbstractPrecipitationStyle end
+struct Precipitation1M{PT} <: AbstractPrecipitationStyle
+    rain_formation::PT
+end
+
+struct OneMomentRainFormation <: AbstractRainFormationStyle end

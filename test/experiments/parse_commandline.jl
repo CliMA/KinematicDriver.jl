@@ -18,6 +18,14 @@ function parse_commandline()
         help = "Precipitation model choice: NoPrecipitation, Precipitation0M, Precipitation1M"
         arg_type = String
         default = "Precipitation1M"
+        "--rain_formation_scheme_choice"
+        help = "Rain formation scheme choice: CliMA_1M, KK2000, B1994, TC1980, LD2004"
+        arg_type = String
+        default = "CliMA_1M"
+        "--prescribed_Nd"
+        help = "Prescribed number of cloud droplets (used in KK2000, B1994, TC1980 and LD2004 rain formation schemes"
+        arg_type = Float64
+        default = Float64(1e8)
         "--plotting_flag"
         help = "Set to true if you want to generate some basic plots at the end of the simulation"
         arg_type = Bool
@@ -31,7 +39,7 @@ function parse_commandline()
         arg_type = Bool
         default = true
         "--qtot_flux_correction"
-        help = "Set to true if you want to apply flux correction for advecting q_tot. 
+        help = "Set to true if you want to apply flux correction for advecting q_tot.
         (By default flux correction is not applied to q_tot but is applied to all other microphysics tracers)"
         arg_type = Bool
         default = false
