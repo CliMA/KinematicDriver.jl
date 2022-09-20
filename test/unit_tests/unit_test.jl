@@ -58,7 +58,7 @@ end
 
 @testset "Make rhs function" begin
 
-    rhs = KID.make_rhs_function(KID.EquilibriumMoisture_ρθq(), KID.Precipitation1M())
+    rhs = KID.make_rhs_function(KID.EquilibriumMoisture_ρθq(), KID.Precipitation1M(KID.OneMomentRainFormation()))
     @test typeof(rhs) <: Function
 
 end
@@ -77,7 +77,11 @@ end
     @test state isa CC.Fields.FieldVector
     @test LA.norm(state.ρq_tot) == 0
 
-    state = KID.initialise_state(KID.EquilibriumMoisture_ρθq(), KID.Precipitation1M(), initial_profiles)
+    state = KID.initialise_state(
+        KID.EquilibriumMoisture_ρθq(),
+        KID.Precipitation1M(KID.OneMomentRainFormation()),
+        initial_profiles,
+    )
     @test state isa CC.Fields.FieldVector
     @test LA.norm(state.ρq_tot) == 0
     @test LA.norm(state.ρq_rai) == 0
@@ -91,7 +95,11 @@ end
     @test state isa CC.Fields.FieldVector
     @test LA.norm(state.ρq_tot) == 0
 
-    state = KID.initialise_state(KID.EquilibriumMoisture_ρdTq(), KID.Precipitation1M(), initial_profiles)
+    state = KID.initialise_state(
+        KID.EquilibriumMoisture_ρdTq(),
+        KID.Precipitation1M(KID.OneMomentRainFormation()),
+        initial_profiles,
+    )
     @test state isa CC.Fields.FieldVector
     @test LA.norm(state.ρq_tot) == 0
     @test LA.norm(state.ρq_rai) == 0
@@ -109,7 +117,11 @@ end
     @test LA.norm(state.ρq_liq) == 0
     @test LA.norm(state.ρq_ice) == 0
 
-    state = KID.initialise_state(KID.NonEquilibriumMoisture_ρθq(), KID.Precipitation1M(), initial_profiles)
+    state = KID.initialise_state(
+        KID.NonEquilibriumMoisture_ρθq(),
+        KID.Precipitation1M(KID.OneMomentRainFormation()),
+        initial_profiles,
+    )
     @test state isa CC.Fields.FieldVector
     @test LA.norm(state.ρq_tot) == 0
     @test LA.norm(state.ρq_liq) == 0
@@ -129,7 +141,11 @@ end
     @test LA.norm(state.ρq_liq) == 0
     @test LA.norm(state.ρq_ice) == 0
 
-    state = KID.initialise_state(KID.NonEquilibriumMoisture_ρdTq(), KID.Precipitation1M(), initial_profiles)
+    state = KID.initialise_state(
+        KID.NonEquilibriumMoisture_ρdTq(),
+        KID.Precipitation1M(KID.OneMomentRainFormation()),
+        initial_profiles,
+    )
     @test state isa CC.Fields.FieldVector
     @test LA.norm(state.ρq_tot) == 0
     @test LA.norm(state.ρq_liq) == 0
@@ -257,7 +273,7 @@ end
     @test LA.norm(dY) == 0
 
     aux = KID.initialise_aux(Float64, ip, params, 0.0, 0.0, face_space, KID.NonEquilibriumMoisture_ρθq())
-    Y = KID.initialise_state(KID.NonEquilibriumMoisture_ρθq(), KID.Precipitation1M(), ip)
+    Y = KID.initialise_state(KID.NonEquilibriumMoisture_ρθq(), KID.Precipitation1M(KID.OneMomentRainFormation()), ip)
     dY = (;
         ρq_tot = [10.0, 13.0],
         ρq_liq = [5.0, 10.0],
@@ -266,7 +282,7 @@ end
         ρq_sno = [1.0, 1.0],
     )
     KID.zero_tendencies!(KID.NonEquilibriumMoisture_ρθq(), dY, Y, aux, 1.0)
-    KID.zero_tendencies!(KID.Precipitation1M(), dY, Y, aux, 1.0)
+    KID.zero_tendencies!(KID.Precipitation1M(KID.OneMomentRainFormation()), dY, Y, aux, 1.0)
     @test LA.norm(dY) == 0
 
 end
@@ -339,7 +355,9 @@ end
     @test tmp.S_q_tot == tmp.S_q_liq + tmp.S_q_ice
     @test tmp.S_q_tot == -(tmp.S_q_rai + tmp.S_q_sno)
 
-    tmp = KID.precip_helper_sources_1M!(params, ts, q_tot, q_liq, q_ice, q_rai, q_sno, T, ρ, dt)
+
+    ps = KID.Precipitation1M(KID.OneMomentRainFormation())
+    tmp = KID.precip_helper_sources_1M!(params, ts, q_tot, q_liq, q_ice, q_rai, q_sno, T, ρ, dt, ps)
     @test !isnan(tmp.S_q_tot .+ tmp.S_q_liq .+ tmp.S_q_ice .+ tmp.S_q_rai .+ tmp.S_q_sno)
     @test tmp.S_q_tot ≈ tmp.S_q_liq + tmp.S_q_ice + tmp.S_q_vap
     @test tmp.S_q_tot ≈ -(tmp.S_q_rai + tmp.S_q_sno)

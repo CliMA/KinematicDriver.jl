@@ -20,6 +20,7 @@ Base.@kwdef struct KinematicParameters{FT, MP} <: AKP
     p0::FT
     precip_sources::Int
     precip_sinks::Int
+    prescribed_Nd::FT
     qtot_flux_correction::Int
     microphys_params::MP
 end
@@ -31,6 +32,7 @@ w1(ps::AKP) = ps.w1
 t1(ps::AKP) = ps.t1
 precip_sources(ps::AKP) = ps.precip_sources
 precip_sinks(ps::AKP) = ps.precip_sinks
+prescribed_Nd(ps::AKP) = ps.prescribed_Nd
 
 # Forward parameters to Thermodynamics
 const TDPS = TD.Parameters.ThermodynamicsParameters

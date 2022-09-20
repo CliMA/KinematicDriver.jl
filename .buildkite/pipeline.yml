@@ -46,15 +46,15 @@ steps:
 
       - label: ":crystal_ball: Experiments: equil (fixed rho and theta) + 1M"
         command: "julia --color=yes --project=test test/experiments/KiD_driver.jl --moisture_choice=EquilibriumMoisture --precipitation_choice=Precipitation1M"
-        artifact_paths: "test/experiments/Output_EquilibriumMoisture_RhoThetaQ_Precipitation1M/figures/*"
+        artifact_paths: "test/experiments/Output_EquilibriumMoisture_RhoThetaQ_Precipitation1M_CliMA_1M/figures/*"
 
       - label: ":crystal_ball: Experiments: equil (fixed rho and theta) + 1M with qtot FluxCorrection"
         command: "julia --color=yes --project=test test/experiments/KiD_driver.jl --moisture_choice=EquilibriumMoisture --precipitation_choice=Precipitation1M --qtot_flux_correction=true"
-        artifact_paths: "test/experiments/Output_EquilibriumMoisture_RhoThetaQ_Precipitation1M_woFC/figures/*"
+        artifact_paths: "test/experiments/Output_EquilibriumMoisture_RhoThetaQ_Precipitation1M_CliMA_1M_wFC/figures/*"
 
       - label: ":crystal_ball: Experiments: equil (fixed rhod and T) + 1M "
         command: "julia --color=yes --project=test test/experiments/KiD_driver.jl --moisture_choice=EquilibriumMoisture --prognostic_vars=RhodTQ --precipitation_choice=Precipitation1M"
-        artifact_paths: "test/experiments/Output_EquilibriumMoisture_RhodTQ_Precipitation1M/figures/*"
+        artifact_paths: "test/experiments/Output_EquilibriumMoisture_RhodTQ_Precipitation1M_CliMA_1M/figures/*"
 
       - label: ":crystal_ball: Experiments: non equil (fixed rho and theta) + no precip"
         command: "julia --color=yes --project=test test/experiments/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=NoPrecipitation"
@@ -66,12 +66,28 @@ steps:
 
       - label: ":crystal_ball: Experiments: non equil (fixed rho and theta) + 1M"
         command: "julia --color=yes --project=test test/experiments/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation1M"
-        artifact_paths: "test/experiments/Output_NonEquilibriumMoisture_RhoThetaQ_Precipitation1M/figures/*"
+        artifact_paths: "test/experiments/Output_NonEquilibriumMoisture_RhoThetaQ_Precipitation1M_CliMA_1M/figures/*"
 
       - label: ":crystal_ball: Experiments: non equil (fixed rho and theta) + 1M with qtot FluxCorrection"
         command: "julia --color=yes --project=test test/experiments/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation1M --qtot_flux_correction=true"
-        artifact_paths: "test/experiments/Output_NonEquilibriumMoisture_RhoThetaQ_Precipitation1M_woFC/figures/*"
+        artifact_paths: "test/experiments/Output_NonEquilibriumMoisture_RhoThetaQ_Precipitation1M_CliMA_1M_wFC/figures/*"
 
       - label: ":crystal_ball: Experiments: non equil (fixed rhod and T) + 1M "
         command: "julia --color=yes --project=test test/experiments/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --prognostic_vars=RhodTQ --precipitation_choice=Precipitation1M"
-        artifact_paths: "test/experiments/Output_NonEquilibriumMoisture_RhodTQ_Precipitation1M/figures/*"
+        artifact_paths: "test/experiments/Output_NonEquilibriumMoisture_RhodTQ_Precipitation1M_CliMA_1M/figures/*"
+
+      - label: ":crystal_ball: Experiments: equil (fixed rhod and T) + KK2000 "
+        command: "julia --color=yes --project=test test/experiments/KiD_driver.jl --moisture_choice=EquilibriumMoisture --prognostic_vars=RhodTQ --precipitation_choice=Precipitation1M --rain_formation_scheme_choice KK2000 --prescribed_Nd 1e8"
+        artifact_paths: "test/experiments/Output_EquilibriumMoisture_RhodTQ_Precipitation1M_KK2000/figures/*"
+
+      - label: ":crystal_ball: Experiments: equil (fixed rhod and T) + B1994 "
+        command: "julia --color=yes --project=test test/experiments/KiD_driver.jl --moisture_choice=EquilibriumMoisture --prognostic_vars=RhodTQ --precipitation_choice=Precipitation1M --rain_formation_scheme_choice B1994 --prescribed_Nd 1e8"
+        artifact_paths: "test/experiments/Output_EquilibriumMoisture_RhodTQ_Precipitation1M_B1994/figures/*"
+
+      - label: ":crystal_ball: Experiments: equil (fixed rhod and T) + TC1980 "
+        command: "julia --color=yes --project=test test/experiments/KiD_driver.jl --moisture_choice=EquilibriumMoisture --prognostic_vars=RhodTQ --precipitation_choice=Precipitation1M --rain_formation_scheme_choice TC1980 --prescribed_Nd 1e8"
+        artifact_paths: "test/experiments/Output_EquilibriumMoisture_RhodTQ_Precipitation1M_TC1980/figures/*"
+
+      - label: ":crystal_ball: Experiments: equil (fixed rhod and T) + LD2004 "
+        command: "julia --color=yes --project=test test/experiments/KiD_driver.jl --moisture_choice=EquilibriumMoisture --prognostic_vars=RhodTQ --precipitation_choice=Precipitation1M --rain_formation_scheme_choice LD2004 --prescribed_Nd 1e8"
+        artifact_paths: "test/experiments/Output_EquilibriumMoisture_RhodTQ_Precipitation1M_LD2004/figures/*"

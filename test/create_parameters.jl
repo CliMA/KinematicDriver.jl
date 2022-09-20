@@ -14,6 +14,7 @@ function create_parameter_set(
     precip_sources = 1,
     precip_sinks = 1,
     qtot_flux_correction = 0,
+    prescribed_Nd = 100 * 1e6,
 )
     FT = CP.float_type(toml_dict)
     override_file = joinpath(out_dir, "override_dict.toml")
@@ -74,6 +75,10 @@ function create_parameter_set(
         println(io, "alias = \"qtot_flux_correction\"")
         println(io, "value = " * string(qtot_flux_correction))
         println(io, "type = \"integer\"")
+        println(io, "[prescribed_Nd]")
+        println(io, "alias = \"prescribed_Nd\"")
+        println(io, "value = " * string(prescribed_Nd))
+        println(io, "type = \"float\"")
     end
     toml_dict = CP.create_toml_dict(FT; override_file, dict_type="alias")
     isfile(override_file) && rm(override_file; force=true)
@@ -92,11 +97,12 @@ function create_parameter_set(
     )
     MP = typeof(microphys_params)
 
-    aliases = ["w1", "t1", "p0", "precip_sources", "precip_sinks", "qtot_flux_correction"]
+    aliases = ["w1", "t1", "p0", "precip_sources", "precip_sinks", "qtot_flux_correction", "prescribed_Nd"]
     pairs = CP.get_parameter_values!(toml_dict, aliases, "Kinematic1D")
 
     param_set = KID.Parameters.KinematicParameters{FTD, MP}(; pairs..., microphys_params)
     if !isbits(param_set)
+        print(param_set)
         @warn "The parameter set SHOULD be isbits in order to be stack-allocated."
     end
     return param_set
