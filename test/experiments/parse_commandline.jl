@@ -62,7 +62,7 @@ function parse_commandline()
         "--dt_output"
         help = "Output time step [s]"
         arg_type = Real
-        default = 10.0
+        default = 30.0
         "--t_ini"
         help = "Time at the beginning of the simulation [s]"
         arg_type = Real
