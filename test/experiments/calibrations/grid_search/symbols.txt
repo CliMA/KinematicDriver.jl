@@ -1,0 +1,17 @@
+{
+"q_liq_threshold": "$q_{l,th}$",
+"k_thrshld_stpnss": "$k$",
+"τ_acnv_rai": "$\\tau_{acnv}$",
+"τ_cond_evap": "$\\tau_{cond}$",
+"C_drag": "$C_{drag}$",
+"n0_rai": "$n_0$",
+"E_liq_rai": "$E_{lr}$",
+"a_vent_rai": "$a_{vent}$",
+"b_vent_rai": "$b_{vent}$",
+"χm_rai": "$\\chi_m$",
+"Δm_rai": "$\\Delta_m$",
+"χa_rai": "$\\chi_a$",
+"Δa_rai": "$\\Delta_a$",
+"χv_rai": "$\\chi_v$",
+"Δv_rai": "$\\Delta_v$"
+}

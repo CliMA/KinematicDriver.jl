@@ -5,7 +5,6 @@ import NCDatasets
 import UnPack
 import Logging
 import TerminalLoggers
-Logging.global_logger(TerminalLoggers.TerminalLogger())
 
 import ClimaCore
 import Thermodynamics
@@ -36,5 +35,8 @@ include("dispatch_helper.jl")
 include("pysdm_functions.jl")
 include("initial_condition.jl")
 include("tendency.jl")
+
+include("calibration_pipeline/calibrateKiD.jl")
+Logging.global_logger(TerminalLoggers.TerminalLogger())
 
 end

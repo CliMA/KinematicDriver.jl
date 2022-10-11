@@ -425,3 +425,6 @@ end
           TD.dry_pottemp.(thermo_params, aux.moisture_variables.T, aux.moisture_variables.ρ_dry)
 
 end
+
+# calibration pipeline unit tests
+include("./calibration_pipeline/run_calibration_pipeline_unit_tests.jl")
