@@ -146,12 +146,12 @@ solver = ODE.solve(
 # Some basic plots
 if opts["plotting_flag"] == true
 
-    include("../plotting_utils.jl")
+    include("../../plotting_utils.jl")
 
-    plot_folder = string("experiments/", output_folder, "/figures/")
+    plot_folder = string("experiments/KiD_driver/", output_folder, "/figures/")
 
     z_centers = parent(CC.Fields.coordinate_field(space))
     plot_final_aux_profiles(z_centers, aux, output = plot_folder)
     plot_animation(z_centers, solver, aux, moisture, precip, KID, output = plot_folder)
-    plot_timeheight(string("experiments/", output_folder, "/Output.nc"), output = plot_folder)
+    plot_timeheight(string("experiments/KiD_driver/", output_folder, "/Output.nc"), output = plot_folder)
 end
