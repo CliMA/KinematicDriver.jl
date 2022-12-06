@@ -50,15 +50,35 @@ end
     @test sum((maximum(y, dims = 2) - mean(y, dims = 2)) .^ 2) > 1e-3
 end
 
+@testset "filter field" begin
+    #setup
+    a = [
+        1 2 3 4 5 6
+        7 8 9 1 2 3.0
+        0 1 0 3 2 9
+        -6 5 -3 4 2 1
+    ]
+    t_data = [1, 2, 3, 4, 5, 6, 7.0]
+    t_calib = [1, 4, 6.0]
+    z_data = [-4, -3, -2, -1, 0.0]
+    z_calib = [-3, -2, 0.0]
+
+    #action
+    a_ = KID.filter_field(a, t_data, t_calib, z_data, z_calib)
+
+    #test
+    @test a_ == [8.0 1.5; -0.5 2.75]
+end
+
 @testset "Get observational data" begin
     #setup
     cases = get_observations_config()["cases"]
     dirs = [case.dir for case in cases]
     n_samples = 50
     n_heights = 50
-    n_times = 30
+    n_times = 31
     n_cases = length(dirs)
-    generate_fake_pysdm_data(dirs; n_files = n_samples, z_max = 3000.0, n_z = 60, t_max = 240.0, n_t = 40)
+    generate_fake_pysdm_data(dirs; n_files = n_samples, z_max = 3000.0, n_z = 60, t_max = 240.0, n_t = 41)
     heights = collect(range(0.0, 3000, n_heights))
     times = collect(range(0.0, 240.0, n_times))
     variables = ["qlr", "rr"]
@@ -72,7 +92,15 @@ end
     #test
     @test result isa Dict
     @test Set(keys(result)) == Set(variables)
-    @test size(result["qlr"]) == size(result["rr"]) == (50, 30)
+    @test size(result["qlr"]) == size(result["rr"]) == (50, 31)
+    @test_throws Exception KID.get_single_obs_field(
+        dirs[1] * "output_1.nc",
+        variables,
+        heights,
+        times;
+        apply_filter = true,
+    )
+
 
     #action
     result_vec = KID.get_single_obs_vector(dirs[1] * "output_1.nc", variables, heights, times)
@@ -90,6 +118,21 @@ end
 
     #action
     result_tot = KID.get_obs_matrix(cases, variables, heights, times)
+
+    #test
+    @test result_tot isa Matrix
+    @test size(result_tot) == (n_multiple_cases, n_samples)
+
+    #setup
+    n_heights = 30
+    n_times = 21
+    heights = collect(range(50.0, 2950, n_heights))
+    times = collect(range(0.0, 240.0, n_times))
+    n_single_case = n_heights * (n_times - 1) * n_variables
+    n_multiple_cases = n_single_case * n_cases
+
+    #action
+    result_tot = KID.get_obs_matrix(cases, variables, heights, times; apply_filter = true)
 
     #test
     @test result_tot isa Matrix

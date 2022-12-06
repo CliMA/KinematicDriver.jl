@@ -101,9 +101,11 @@ end
     u = (; ρq_tot = [0.01, 0.005], ρq_liq = [0.001, 0.0005], ρq_rai = [0.0001, 0.00005])
 
     #test
-    @test_throws Exception KID.get_variable_data_from_ODE(u, ρ, "qt_") == [0.01, 0.005]
+    @test_throws Exception KID.get_variable_data_from_ODE(u, ρ, "qt_")
     @test KID.get_variable_data_from_ODE(u, ρ, "ql") == [0.001, 0.0005]
     @test KID.get_variable_data_from_ODE(u, ρ, "rr") ≈ [0.00010101, 0.00005025] atol = 1e-8
+    @test KID.get_variable_data_from_ODE(u, ρ, "rho") == ρ
+    @test length(KID.get_variable_data_from_ODE(u, ρ, "rain averaged terminal velocity")) == length(ρ)
 end
 
 @testset "Run KiD" begin
@@ -126,6 +128,24 @@ end
 
     #test
     @test length(G) == n_heights * n_times * 2
+
+    #setup
+    model_settings["filter"] = KID.make_filter_props(
+        model_settings["n_elem"],
+        model_settings["t_calib"];
+        apply = true,
+        nz_per_filtered_cell = 2,
+        nt_per_filtered_cell = 5,
+    )
+
+    #action
+    ode_sol, aux = KID.run_KiD(u, u_names, model_settings)
+    G = KID.ODEsolution2Gvector(ode_sol, aux, ["rlr", "rv"], [0.01, 1.0], model_settings["filter"])
+
+    #test
+    @test length(ode_sol) == (n_times - 1) * 5
+    @test length(G) == n_heights / 2 * (n_times - 1) * 2
+
 end
 
 @testset "Run KiD (multiple cases) and run dynamical model" begin

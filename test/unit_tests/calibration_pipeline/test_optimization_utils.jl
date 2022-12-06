@@ -20,8 +20,31 @@
     @test res isa EnsembleKalmanProcess
     @test min_iter <= length(θ) - 1 <= max_iter
     @test size(θ[1]) == (n_vars, n_ensemble)
-    @test u isa Vector
-    @test norm((u .- u_true) ./ u_true) < 3e-1
+    @test u.ϕ_optim isa Vector
+    @test u.cov_optim isa Matrix
+    @test norm((u.ϕ_optim .- u_true) ./ u_true) < 3e-1
+
+    #setup
+    config["process"]["EKP_method"] = "UKI"
+
+    #action
+    res = KID.calibrate(KID.EKPStyle(), priors, config, ref_stats, verbose = false)
+    θ = KID.get_u(res)
+    u = KID.get_results(res, priors)
+
+    #test
+    @test res isa EnsembleKalmanProcess
+    @test min_iter <= length(θ) - 1 <= max_iter
+    @test size(θ[1]) == (n_vars, 2 * n_vars + 1)
+    @test u.ϕ_optim isa Vector
+    @test u.cov_optim isa Matrix
+    @test norm((u.ϕ_optim .- u_true) ./ u_true) < 1e-1
+
+    #setup
+    config["process"]["EKP_method"] = "UKP_"
+
+    #test
+    @test_throws Exception KID.calibrate(KID.EKPStyle(), priors, config, ref_stats, verbose = false)
 end
 
 @testset "Calibrate by Optim - Get results" begin
@@ -42,8 +65,9 @@ end
     #test
     @test res isa Optim.MultivariateOptimizationResults
     @test f isa Function
-    @test u isa Vector
-    @test norm((u .- u_true) ./ u_true) < 1e-2
+    @test u.ϕ_optim isa Vector
+    @test u.cov_optim isa Matrix
+    @test norm((u.ϕ_optim .- u_true) ./ u_true) < 1e-2
 end
 
 @testset "Calibrate function for abstract optimization style" begin

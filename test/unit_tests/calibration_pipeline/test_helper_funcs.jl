@@ -19,3 +19,18 @@
     @test norm(ext_min .- minima) < eps(Float64)
     @test norm(ext_max .- maxima) < eps(Float64)
 end
+
+@testset "make filter" begin
+    #setup
+    n_elem = 10
+    t_calib = [0, 100, 500]
+
+    #action
+    filter = KID.make_filter_props(n_elem, t_calib; apply = true, nz_per_filtered_cell = 2, nt_per_filtered_cell = 2)
+
+    #test
+    @test filter["apply"] == true
+    @test filter["nz_filtered"] == 5
+    @test filter["nt_filtered"] == 2
+    @test filter["saveat_t"] == [25.0, 75.0, 200.0, 400.0]
+end

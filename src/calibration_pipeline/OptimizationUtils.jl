@@ -38,28 +38,42 @@ function make_optim_loss_function(u_names::Array{String, 1}, priors, config::Dic
 end
 
 function get_results(optres::Optim.MultivariateOptimizationResults, priors::ParameterDistribution)
-    _θ_bests = Optim.minimizer(optres)
-    _u_bests = mapslices(x -> transform_unconstrained_to_constrained(priors, x), _θ_bests; dims = 1)
-    return _u_bests
+    _θ_optim = Optim.minimizer(optres)
+    _ϕ_optim = mapslices(x -> transform_unconstrained_to_constrained(priors, x), _θ_optim; dims = 1)
+    _cov_optim = Matrix(I(length(_ϕ_optim))) .* eltype(_ϕ_optim)(1)
+    return (ϕ_optim = _ϕ_optim, cov_optim = _cov_optim)
 end
 
 # EKP
 function calibrate(::EKPStyle, priors, config, RS::ReferenceStatistics; verbose::Bool = true)
-    ekiobj = EnsembleKalmanProcess(
-        initial_parameter_ensemble(priors, config["process"]["n_ens"]),
-        RS.y,
-        RS.Γ,
-        Inversion(),
-        Δt = config["process"]["Δt"],
-    )
+    method = config["process"]["EKP_method"]
+    if method == "EKI"
+        ekpobj = EnsembleKalmanProcess(
+            initial_parameter_ensemble(priors, config["process"]["n_ens"]),
+            RS.y,
+            RS.Γ,
+            Inversion(),
+            Δt = config["process"]["Δt"],
+        )
+    elseif method == "UKI"
+        α_reg = config["process"]["α_reg"]
+        update_freq = config["process"]["update_freq"]
+        prior_mean = EKP.ParameterDistributions.mean(priors)
+        prior_cov = EKP.ParameterDistributions.cov(priors)
+        process = Unscented(prior_mean, prior_cov; α_reg = α_reg, update_freq = update_freq)
+        ekpobj = EnsembleKalmanProcess(RS.y, RS.Γ, process, Δt = config["process"]["Δt"])
+    else
+        error("EKP method not implemented!!!")
+    end
+
 
     u_names = collect(keys(config["prior"]["parameters"]))
     n_iter_min = config["process"]["n_iter_min"]
     n_iter_max = config["process"]["n_iter_max"]
-    n_ensemble = config["process"]["n_ens"]
+    n_ensemble = config["process"]["EKP_method"] == "EKI" ? config["process"]["n_ens"] : 2 * length(u_names) + 1
     old_loss = Float64(1e16)
     for n in 1:n_iter_max
-        ϕ_n = get_ϕ_final(priors, ekiobj)
+        ϕ_n = get_ϕ_final(priors, ekpobj)
         ϕ_mean = mean(ϕ_n, dims = 2)
         loss = compute_loss(ϕ_mean[:], u_names, config, RS)
         if verbose
@@ -73,12 +87,15 @@ function calibrate(::EKPStyle, priors, config, RS::ReferenceStatistics; verbose:
 
         G_n = [run_dyn_model(ϕ_n[:, i], u_names, config, RS = RS) for i in 1:n_ensemble]
         G_ens = hcat(G_n...)
-        EnsembleKalmanProcesses.update_ensemble!(ekiobj, G_ens)
+        EnsembleKalmanProcesses.update_ensemble!(ekpobj, G_ens)
     end
 
-    return ekiobj
+    return ekpobj
 end
 
-function get_results(ekiobj::EnsembleKalmanProcess, priors::ParameterDistribution)
-    return get_ϕ_mean_final(priors, ekiobj)
+function get_results(ekpobj::EnsembleKalmanProcess, priors::ParameterDistribution)
+    _ϕ_optim = get_ϕ_mean_final(priors, ekpobj)
+    _cov_optim = get_u_cov_final(ekpobj)
+    _cov_optim = _cov_optim ./ tr(_cov_optim) .* length(_ϕ_optim)
+    return (ϕ_optim = _ϕ_optim, cov_optim = _cov_optim)
 end

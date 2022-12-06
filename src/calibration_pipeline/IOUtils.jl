@@ -7,14 +7,13 @@ function make_output_directories(dir::String = "/output/")
     return data_save_directory
 end
 
-function save_data(u, config; file_name = "parameters.jld2")
-    @save file_name u config
+function save_data(u_bests, u_names, config; file_name = "parameters.jld2")
+    @save file_name u_bests u_names config
 end
 
 function load_data(file_name::String = "parameters.jld2")
-    @load file_name u config
-    u_names = collect(keys(config["prior"]["parameters"]))
-    return (u = u, u_names = u_names, config = config)
+    @load file_name u_bests u_names config
+    return (u_bests = u_bests, u_names = u_names, config = config)
 end
 
 function print_results(u, u_names)
@@ -188,17 +187,26 @@ function compare_model_and_obs_contours(
     file_base = "model_vs_obs_contours",
 ) where {FT <: Float64}
 
-    _dz = (config["model"]["z_max"] - config["model"]["z_min"]) / config["model"]["n_elem"]
-    _heights::Array{FT} = collect(
-        range(config["model"]["z_min"] + _dz / 2, config["model"]["z_max"] - _dz / 2, config["model"]["n_elem"]),
+    _n_heights =
+        config["model"]["filter"]["apply"] == true ? config["model"]["filter"]["nz_filtered"] :
+        config["model"]["n_elem"]
+    _dz = (config["model"]["z_max"] - config["model"]["z_min"]) / _n_heights
+    _heights::Array{FT} =
+        collect(range(config["model"]["z_min"] + _dz / 2, config["model"]["z_max"] - _dz / 2, _n_heights))
+    _heights_f::Array{FT} = collect(range(config["model"]["z_min"], config["model"]["z_max"], _n_heights + 1))
+    _dt = (config["model"]["t_end"] - config["model"]["t_ini"]) / length(config["model"]["t_calib"])
+    _times_f::Array{FT} = collect(config["model"]["t_calib"])
+    _times_c::Array{FT} = collect(
+        range(
+            config["model"]["t_ini"] + _dt / 2,
+            config["model"]["t_end"] - _dt / 2,
+            length(config["model"]["t_calib"]) - 1,
+        ),
     )
-    _heights_f::Array{FT} =
-        collect(range(config["model"]["z_min"], config["model"]["z_max"], config["model"]["n_elem"] + 1))
-    _times::Array{FT} = collect(config["model"]["t_calib"])
+    _times::Array{FT} = config["model"]["filter"]["apply"] == true ? _times_c : _times_f
+    _n_times = config["model"]["filter"]["apply"] == true ? length(_times_c) : length(_times_f)
     _variables_full = config["observations"]["data_names"]
     @assert issubset(Set(variables), Set(_variables_full))
-    _n_heights = length(_heights)
-    _n_times = length(_times)
     _n_variables = length(variables)
     _n_variables_full = length(_variables_full)
     _n_cases = length(config["observations"]["cases"])
@@ -217,6 +225,9 @@ function compare_model_and_obs_contours(
         p = Array{Plots.Plot}(undef, _n_variables * 2)
 
         if overlay
+            if config["model"]["filter"]["apply"] == true
+                print("Overlaid heatmaps not possible!! Plotting contours instead!!")
+            end
             k = 1
             for j in 1:_n_variables_full
                 if !(_variables_full[j] in variables)
@@ -225,13 +236,13 @@ function compare_model_and_obs_contours(
 
                 _G_matrix_var = _G_matrix[((j - 1) * _n_heights + 1):(j * _n_heights), :]
                 _f_G = LinearInterpolation((_heights, _times), _G_matrix_var, extrapolation_bc = Line())
-                _G_matrix_f = [_f_G(z, t) for z in _heights_f, t in _times]
+                _G_matrix_f = [_f_G(z, t) for z in _heights_f, t in _times_f]
                 _obs_matrix_var = _obs_matrix[((j - 1) * _n_heights + 1):(j * _n_heights), :]
                 _f_obs = LinearInterpolation((_heights, _times), _obs_matrix_var, extrapolation_bc = Line())
-                _obs_matrix_f = [_f_obs(z, t) for z in _heights_f, t in _times]
+                _obs_matrix_f = [_f_obs(z, t) for z in _heights_f, t in _times_f]
 
                 p[k] = contour(
-                    _times ./ 60,
+                    _times_f ./ 60,
                     _heights_f ./ 1000,
                     _obs_matrix_f,
                     levels = levels,
@@ -241,7 +252,7 @@ function compare_model_and_obs_contours(
                     ylabel = "height [km]",
                     title = titles_overlay[k],
                 )
-                p[k] = contour!(_times ./ 60, _heights_f ./ 1000, _G_matrix_f, levels = levels, linewidth = linewidth)
+                p[k] = contour!(_times_f ./ 60, _heights_f ./ 1000, _G_matrix_f, levels = levels, linewidth = linewidth)
                 k = k + 1
             end
             k = 1
@@ -250,7 +261,7 @@ function compare_model_and_obs_contours(
                     continue
                 end
                 p[_n_variables + k] = contour(
-                    _times ./ 60,
+                    _times_f ./ 60,
                     _heights_f ./ 1000,
                     abs.(_G_matrix_f .- _obs_matrix_f),
                     levels = 0:0.05:1.0,
@@ -271,18 +282,30 @@ function compare_model_and_obs_contours(
 
                     _data_var = _data[((j - 1) * _n_heights + 1):(j * _n_heights), :]
                     _f = LinearInterpolation((_heights, _times), _data_var, extrapolation_bc = Line())
-                    _data_f = [_f(z, t) for z in _heights_f, t in _times]
+                    _data_f = [_f(z, t) for z in _heights_f, t in _times_f]
+                    _data_c = [_f(z, t) for z in _heights, t in _times_c]
 
-                    p[(i - 1) * _n_variables + k] = contourf(
-                        _times ./ 60,
-                        _heights_f ./ 1000,
-                        _data_f,
-                        levels = levels,
-                        linewidth = linewidth,
-                        xlabel = "time [min]",
-                        ylabel = "height [km]",
-                        title = titles[(i - 1) * _n_variables + k],
-                    )
+                    if config["model"]["filter"]["apply"] == true
+                        p[(i - 1) * _n_variables + k] = heatmap(
+                            _times_c ./ 60,
+                            _heights ./ 1000,
+                            _data_c,
+                            xlabel = "time [min]",
+                            ylabel = "height [km]",
+                            title = titles[(i - 1) * _n_variables + k],
+                        )
+                    else
+                        p[(i - 1) * _n_variables + k] = contourf(
+                            _times_f ./ 60,
+                            _heights_f ./ 1000,
+                            _data_f,
+                            levels = levels,
+                            linewidth = linewidth,
+                            xlabel = "time [min]",
+                            ylabel = "height [km]",
+                            title = titles[(i - 1) * _n_variables + k],
+                        )
+                    end
                     k = k + 1
                 end
             end
@@ -292,8 +315,8 @@ function compare_model_and_obs_contours(
             layout = layout,
             labelfontsize = fontsize,
             titlefontsize = fontsize,
-            size = (_n_variables * 450, 500),
-            left_margin = _n_variables * 2Plots.mm,
+            size = (_n_variables * 675, 750),
+            left_margin = _n_variables * 3Plots.mm,
             right_margin = 0Plots.mm,
             bottom_margin = _n_variables * 2Plots.mm,
         )

@@ -1,6 +1,7 @@
 import CLIMAParameters as CP
 import CloudMicrophysics as CM
 import Thermodynamics as TD
+import Kinematic1D as KD
 
 function get_config()
     config = Dict()
@@ -78,10 +79,17 @@ function get_process_config()
     config["n_iter_min"] = 5
     # Define maximum number of iterations for EKP
     config["n_iter_max"] = 10
-    # Define number of parameter ensemle for EKP
+    # Define number of parameter ensemle for EKP (Inversion)
     config["n_ens"] = 15
     # Define EKP time step
     config["Δt"] = 0.5
+    config["EKP_method"] = "EKI"
+    # Choose regularization factor α ∈ (0,1] for UKI, when enough observation data α=1: no regularization
+    config["α_reg"] = 1.0
+    # UKI parameter
+    # update_freq = 1 : approximate posterior covariance matrix with an uninformative prior
+    #               0 : weighted average between posterior covariance matrix with an uninformative prior and prior
+    config["update_freq"] = 1
     # Define Optim absolute tolerance for convergence
     config["tol"] = 1e-3
     # Define Optim maximum iterations
@@ -104,22 +112,36 @@ function get_observations_config()
     # Define offset of true values from prior means for validation
     config["true_values_offset"] = 0.25
     # Define data
-    root_dir = "/Users/sajjadazimi/Postdoc/Code/PySDM/01-rain_shaft/data/03-p1000/"
+    root_dir = "/Users/sajjadazimi/Postdoc/Results/01-PySDM_1D_rain_shaft/data/03-p1000/"
     config["cases"] = [
+        # (w1 = 1.0, p0 = 100000.0, Nd = 10 * 1e6, dir = root_dir * "rhow=1.0_Nd=10/"),
         # (w1 = 2.0, p0 = 100000.0, Nd = 10 * 1e6, dir = root_dir * "rhow=2.0_Nd=10/"),
         # (w1 = 3.0, p0 = 100000.0, Nd = 10 * 1e6, dir = root_dir * "rhow=3.0_Nd=10/"),
+        # (w1 = 4.0, p0 = 100000.0, Nd = 10 * 1e6, dir = root_dir * "rhow=4.0_Nd=10/"),
+        # (w1 = 1.0, p0 = 100000.0, Nd = 20 * 1e6, dir = root_dir * "rhow=1.0_Nd=20/"),
         # (w1 = 2.0, p0 = 100000.0, Nd = 20 * 1e6, dir = root_dir * "rhow=2.0_Nd=20/"),
         # (w1 = 3.0, p0 = 100000.0, Nd = 20 * 1e6, dir = root_dir * "rhow=3.0_Nd=20/"),
+        # (w1 = 4.0, p0 = 100000.0, Nd = 20 * 1e6, dir = root_dir * "rhow=4.0_Nd=20/"),
+        # (w1 = 1.0, p0 = 100000.0, Nd = 50 * 1e6, dir = root_dir * "rhow=1.0_Nd=50/"),
         # (w1 = 2.0, p0 = 100000.0, Nd = 50 * 1e6, dir = root_dir * "rhow=2.0_Nd=50/"),
         # (w1 = 3.0, p0 = 100000.0, Nd = 50 * 1e6, dir = root_dir * "rhow=3.0_Nd=50/"),
-        (w1 = 2.0, p0 = 100000.0, Nd = 100 * 1e6, dir = root_dir * "rhow=2.0_Nd=100/"),
+        # (w1 = 4.0, p0 = 100000.0, Nd = 50 * 1e6, dir = root_dir * "rhow=4.0_Nd=50/"),
+        # (w1 = 1.0, p0 = 100000.0, Nd = 100 * 1e6, dir = root_dir * "rhow=1.0_Nd=100/"),
+        # (w1 = 2.0, p0 = 100000.0, Nd = 100 * 1e6, dir = root_dir * "rhow=2.0_Nd=100/"),
         (w1 = 3.0, p0 = 100000.0, Nd = 100 * 1e6, dir = root_dir * "rhow=3.0_Nd=100/"),
+        # (w1 = 4.0, p0 = 100000.0, Nd = 100 * 1e6, dir = root_dir * "rhow=4.0_Nd=100/"),
+        # (w1 = 1.0, p0 = 100000.0, Nd = 200 * 1e6, dir = root_dir * "rhow=1.0_Nd=200/"),
         # (w1 = 2.0, p0 = 100000.0, Nd = 200 * 1e6, dir = root_dir * "rhow=2.0_Nd=200/"),
         # (w1 = 3.0, p0 = 100000.0, Nd = 200 * 1e6, dir = root_dir * "rhow=3.0_Nd=200/"),
+        # (w1 = 4.0, p0 = 100000.0, Nd = 200 * 1e6, dir = root_dir * "rhow=4.0_Nd=200/"),
+        # (w1 = 1.0, p0 = 100000.0, Nd = 500 * 1e6, dir = root_dir * "rhow=1.0_Nd=500/"),
         # (w1 = 2.0, p0 = 100000.0, Nd = 500 * 1e6, dir = root_dir * "rhow=2.0_Nd=500/"),
         # (w1 = 3.0, p0 = 100000.0, Nd = 500 * 1e6, dir = root_dir * "rhow=3.0_Nd=500/"),
+        # (w1 = 4.0, p0 = 100000.0, Nd = 500 * 1e6, dir = root_dir * "rhow=4.0_Nd=500/"),
+        # (w1 = 1.0, p0 = 100000.0, Nd = 1000 * 1e6, dir = root_dir * "rhow=1.0_Nd=1000/"),
         # (w1 = 2.0, p0 = 100000.0, Nd = 1000 * 1e6, dir = root_dir * "rhow=2.0_Nd=1000/"),
         # (w1 = 3.0, p0 = 100000.0, Nd = 1000 * 1e6, dir = root_dir * "rhow=3.0_Nd=1000/"),
+        # (w1 = 4.0, p0 = 100000.0, Nd = 1000 * 1e6, dir = root_dir * "rhow=4.0_Nd=1000/"),
     ]
     # Define type of data
     config["data_type"] = Float64
@@ -155,13 +177,20 @@ function get_model_config(params_calib_names::Array{String})
     config["dt"] = 2.0
     config["t_ini"] = 0.0
     config["t_end"] = 3600.0
-    config["dt_output"] = 600.0
-    config["t_calib"] = 0:config["dt_output"]:config["t_end"]
+    config["dt_calib"] = 600.0
+    config["t_calib"] = config["t_ini"]:config["dt_calib"]:config["t_end"]
     config["w1"] = 3.0
     config["t1"] = 600.0
     config["p0"] = 100000.0
     config["Nd"] = 100 * 1e6
     config["qtot_flux_correction"] = false
+    config["filter"] = KD.make_filter_props(
+        config["n_elem"],
+        config["t_calib"];
+        apply = true,
+        nz_per_filtered_cell = 2,
+        nt_per_filtered_cell = 120,
+    )
     # Define fixed thermodynamics and microphysics parameters
     fixed_parameters = create_fixed_parameter_set(params_calib_names)
     config["thermo_params"] = fixed_parameters.thermo_params

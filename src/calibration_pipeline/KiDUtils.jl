@@ -31,15 +31,22 @@ function run_KiD_multiple_cases(u::Array{FT, 1}, u_names::Array{String, 1}, conf
         config["model"]["p0"] = case.p0
         config["model"]["Nd"] = case.Nd
         ode_sol, aux = run_KiD(u, u_names, config["model"])
-        outputs = [
-            outputs
+        single_case_Gvector =
+            config["model"]["filter"]["apply"] ?
+            ODEsolution2Gvector(
+                ode_sol,
+                aux,
+                config["observations"]["data_names"],
+                config["observations"]["ynorm"][i, :],
+                config["model"]["filter"],
+            ) :
             ODEsolution2Gvector(
                 ode_sol,
                 aux,
                 config["observations"]["data_names"],
                 config["observations"]["ynorm"][i, :],
             )
-        ]
+        outputs = [outputs; single_case_Gvector]
     end
 
     return outputs
@@ -56,7 +63,7 @@ function run_KiD(u::Array{FT, 1}, u_names::Array{String, 1}, model_settings::Dic
         model_settings["rain_formation_choice"],
     )
 
-    TS = TimeStepping(model_settings["dt"], model_settings["dt_output"], model_settings["t_end"])
+    TS = TimeStepping(model_settings["dt"], model_settings["dt_calib"], model_settings["t_end"])
     space, face_space =
         make_function_space(FT, model_settings["z_min"], model_settings["z_max"], model_settings["n_elem"])
     coord = CC.Fields.coordinate_field(space)
@@ -67,7 +74,8 @@ function run_KiD(u::Array{FT, 1}, u_names::Array{String, 1}, model_settings::Dic
     aux = initialise_aux(FT, init, params, TS, nothing, face_space, moisture)
     ode_rhs! = make_rhs_function(moisture, precip)
     problem = ODE.ODEProblem(ode_rhs!, Y, (model_settings["t_ini"], model_settings["t_end"]), aux)
-    solution = ODE.solve(problem, ODE.SSPRK33(), dt = model_settings["dt"], saveat = model_settings["t_calib"])
+    saveat = model_settings["filter"]["apply"] ? model_settings["filter"]["saveat_t"] : model_settings["t_calib"]
+    solution = ODE.solve(problem, ODE.SSPRK33(), dt = model_settings["dt"], saveat = saveat)
 
     return solution, aux
 end
@@ -83,6 +91,37 @@ function ODEsolution2Gvector(ODEsol, aux, variables, norm_vec)
         for (i, var) in enumerate(variables)
             outputs = [outputs; get_variable_data_from_ODE(u, ρ[:], var) ./ norm_vec[i]]
         end
+    end
+
+    return outputs
+end
+
+function ODEsolution2Gvector(ODEsol, aux, variables, norm_vec, filter)
+
+    outputs = Float64[]
+    _nz_filtered = filter["nz_filtered"]
+    _nz_per_filtered_cell = filter["nz_per_filtered_cell"]
+    _nz = _nz_filtered * _nz_per_filtered_cell
+    _nt_filtered = filter["nt_filtered"]
+    _nt_per_filtered_cell = filter["nt_per_filtered_cell"]
+    _nvar = length(variables)
+
+    ρ_dry = parent(aux.moisture_variables.ρ_dry)
+    for i in 1:_nt_filtered
+        _single_filtered_cell_data = zeros(_nz * _nvar, _nt_per_filtered_cell)
+        for j in 1:_nt_per_filtered_cell
+            u = ODEsol[(i - 1) * _nt_per_filtered_cell + j]
+            ρ = ρ_dry .+ parent(u.ρq_tot)
+            for (k, var) in enumerate(variables)
+                _single_filtered_cell_data[((k - 1) * _nz + 1):(k * _nz), j] =
+                    get_variable_data_from_ODE(u, ρ[:], var) ./ norm_vec[k]
+            end
+        end
+        single_var_filtered_vec = [
+            mean(_single_filtered_cell_data[((j - 1) * _nz_per_filtered_cell + 1):(j * _nz_per_filtered_cell), :])
+            for j in 1:(_nz_filtered * _nvar)
+        ]
+        outputs = [outputs; single_var_filtered_vec]
     end
 
     return outputs
@@ -115,6 +154,10 @@ function get_variable_data_from_ODE(u, ρ::Vector{Float64}, var::String)
     elseif var == "rlr"
         _qtot = parent(u.ρq_tot) ./ ρ
         output = (parent(u.ρq_liq) .+ parent(u.ρq_rai)) ./ ρ ./ (1 .- _qtot)
+    elseif var == "rho"
+        output = ρ
+    elseif var == "rain averaged terminal velocity"
+        output = zeros(length(ρ)) #TODO
     else
         error("Data name \"" * var * "\" not recognized!!")
     end

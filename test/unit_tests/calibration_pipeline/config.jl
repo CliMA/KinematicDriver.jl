@@ -1,6 +1,7 @@
 import CLIMAParameters as CP
 import CloudMicrophysics as CM
 import Thermodynamics as TD
+import Kinematic1D as KD
 
 function get_config()
     config = Dict()
@@ -28,6 +29,9 @@ function get_process_config()
     config["n_iter_max"] = 20
     config["n_ens"] = 15
     config["Δt"] = 0.5
+    config["EKP_method"] = "EKI"
+    config["α_reg"] = 1.0
+    config["update_freq"] = 1
     config["tol"] = 1e-8
     config["maxiter"] = 1000
     return config
@@ -70,13 +74,14 @@ function get_model_config(params_calib_names::Array{String})
     config["dt"] = 4.0
     config["t_ini"] = 0.0
     config["t_end"] = 60.0
-    config["dt_output"] = 60.0
-    config["t_calib"] = 0:config["dt_output"]:config["t_end"]
+    config["dt_calib"] = 60.0
+    config["t_calib"] = config["t_ini"]:config["dt_calib"]:config["t_end"]
     config["w1"] = 3.0
     config["t1"] = 600.0
     config["p0"] = 99000.0
     config["Nd"] = 50 * 1e6
     config["qtot_flux_correction"] = false
+    config["filter"] = KD.make_filter_props(config["n_elem"], config["t_calib"]; apply = false)
     fixed_parameters = create_fixed_parameter_set(params_calib_names)
     config["thermo_params"] = fixed_parameters.thermo_params
     config["fixed_microphys_param_pairs"] = fixed_parameters.fixed_microphys_param_pairs

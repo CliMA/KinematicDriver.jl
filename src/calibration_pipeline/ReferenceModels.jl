@@ -2,17 +2,19 @@
 function get_obs!(config::Dict)
 
     FT = config["observations"]["data_type"]
-    _dz = (config["model"]["z_max"] - config["model"]["z_min"]) / config["model"]["n_elem"]
-    _heights::Array{FT} = collect(
-        range(config["model"]["z_min"] + _dz / 2, config["model"]["z_max"] - _dz / 2, config["model"]["n_elem"]),
-    )
+    _n_heights =
+        config["model"]["filter"]["apply"] ? config["model"]["filter"]["nz_filtered"] : config["model"]["n_elem"]
+    _dz = (config["model"]["z_max"] - config["model"]["z_min"]) / _n_heights
+    _heights::Array{FT} =
+        collect(range(config["model"]["z_min"] + _dz / 2, config["model"]["z_max"] - _dz / 2, _n_heights))
     _times::Array{FT} = collect(config["model"]["t_calib"])
     _variables::Array{String} = config["observations"]["data_names"]
 
     if config["observations"]["data_source"] == "file"
         _cases::Vector{NamedTuple{(:w1, :p0, :Nd, :dir), Tuple{Float64, Float64, Float64, String}}} =
             config["observations"]["cases"]
-        _y::Matrix{FT} = get_obs_matrix(_cases, _variables, _heights, _times)
+        _y::Matrix{FT} =
+            get_obs_matrix(_cases, _variables, _heights, _times; apply_filter = config["model"]["filter"]["apply"])
     elseif config["observations"]["data_source"] == "perfect_model"
         _y = get_validation_samples(config)
     else
@@ -21,7 +23,8 @@ function get_obs!(config::Dict)
 
     # Normalize variables by their maximum (times given numbers) for each case separately 
     _ynorm = config["observations"]["ynorm"]
-    normalize_y!(_y, _ynorm, length(_variables), length(_heights), length(_times))
+    _n_times = config["model"]["filter"]["apply"] ? length(_times) - 1 : length(_times)
+    normalize_y!(_y, _ynorm, length(_variables), _n_heights, _n_times)
     config["observations"]["ynorm"] = _ynorm
 
     _Γy::Matrix{FT} = cov(_y, dims = 2, corrected = false)
@@ -66,13 +69,15 @@ function get_obs_matrix(
     cases::Vector{NamedTuple{(:w1, :p0, :Nd, :dir), Tuple{Float64, Float64, Float64, String}}},
     variables::Array{String},
     heights::Array{FT},
-    times::Array{FT},
+    times::Array{FT};
+    apply_filter::Bool = false,
 ) where {FT <: Real}
 
     _data_matrix = Matrix{FT}
     for (i, case) in enumerate(cases)
         _dir::String = case.dir
-        _data_matrix_single_case::Matrix{FT} = get_obs_matrix(_dir, variables, heights, times)
+        _data_matrix_single_case::Matrix{FT} =
+            get_obs_matrix(_dir, variables, heights, times; apply_filter = apply_filter)
 
         if i == 1
             _data_matrix = _data_matrix_single_case
@@ -86,14 +91,21 @@ function get_obs_matrix(
 
 end
 
-function get_obs_matrix(dir::String, variables::Array{String}, heights::Array{FT}, times::Array{FT}) where {FT <: Real}
+function get_obs_matrix(
+    dir::String,
+    variables::Array{String},
+    heights::Array{FT},
+    times::Array{FT};
+    apply_filter::Bool = false,
+) where {FT <: Real}
 
-    _n_single_data_vector_size::Int = length(heights) * length(times) * length(variables)
+    _n_times = apply_filter ? length(times) - 1 : length(times)
+    _n_single_data_vector_size::Int = length(heights) * _n_times * length(variables)
 
     _data_matrix = zeros(FT, _n_single_data_vector_size, 0)
     foreach(readdir(dir)) do file
         _filename = dir * file
-        _file_data_vector = get_single_obs_vector(_filename, variables, heights, times)
+        _file_data_vector = get_single_obs_vector(_filename, variables, heights, times; apply_filter = apply_filter)
         _data_matrix = hcat(_data_matrix, _file_data_vector)
     end
 
@@ -105,13 +117,15 @@ function get_single_obs_vector(
     filename::String,
     variables::Array{String},
     heights::Array{FT},
-    times::Array{FT},
+    times::Array{FT};
+    apply_filter::Bool = false,
 ) where {FT <: Real}
     _data_dict = Dict()
-    _data_dict = get_single_obs_field(filename, variables, heights, times)
+    _data_dict = get_single_obs_field(filename, variables, heights, times; apply_filter = apply_filter)
 
+    _n_times = apply_filter ? length(times) - 1 : length(times)
     _outputs = FT[]
-    for i in 1:length(times)
+    for i in 1:_n_times
         _single_time_output = FT[]
         for var in variables
             _single_time_output = [_single_time_output; _data_dict[var][:, i]]
@@ -126,7 +140,8 @@ function get_single_obs_field(
     filename::String,
     variables::Array{String},
     heights::Array{FT},
-    times::Array{FT},
+    times::Array{FT};
+    apply_filter::Bool = false,
 ) where {FT <: Real}
 
     _data_pysdm = read_pysdm_data(filename).variables
@@ -174,9 +189,41 @@ function get_single_obs_field(
         end
 
         _f = linear_interpolation((_t_data, _z_data), _data, extrapolation_bc = Line())
-        _output[var] = [_f(t, z) for z in heights, t in times]
+        if apply_filter
+            _dz_data = _z_data[2] - _z_data[1]
+            _n_z_data = length(_z_data)
+            _dz_heights = heights[2] - heights[1]
+            _n_heights = length(heights)
+            _t_data_c = [0.5 * (_t_data[i] + _t_data[i + 1]) for i in 1:(length(_t_data) - 1)]
+            _data_c = [_f(t, z) for z in _z_data, t in _t_data_c]
+            _heights_f = collect(range(heights[1] - _dz_heights / 2, heights[end] + _dz_heights / 2, _n_heights + 1))
+            _z_data_f = collect(range(_z_data[1] - _dz_data / 2, _z_data[end] + _dz_data / 2, _n_z_data + 1))
+            _output[var] = filter_field(_data_c, _t_data, times, _z_data_f, _heights_f)
+        else
+            _output[var] = [_f(t, z) for z in heights, t in times]
+        end
     end
 
+    return _output
+end
+
+function filter_field(data::Array{FT}, t_data::Array, times::Array{FT}, z_data::Array, heights::Array{FT})
+    @assert issubset(Set(times), Set(t_data))
+    @assert issubset(Set(heights), Set(z_data))
+    @assert size(data) == (length(z_data) - 1, length(t_data) - 1)
+
+    _nz_calib = length(heights) - 1
+    _nt_calib = length(times) - 1
+    _output = zeros(_nz_calib, _nt_calib)
+    for i in 1:_nz_calib
+        ind_ini_z = findall(x -> x == heights[i], z_data)[1]
+        ind_end_z = findall(x -> x == heights[i + 1], z_data)[1] - 1
+        for j in 1:_nt_calib
+            ind_ini_t = findall(x -> x == times[j], t_data)[1]
+            ind_end_t = findall(x -> x == times[j + 1], t_data)[1] - 1
+            _output[i, j] = mean(data[ind_ini_z:ind_end_z, ind_ini_t:ind_end_t])
+        end
+    end
     return _output
 end
 
