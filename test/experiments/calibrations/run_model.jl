@@ -1,25 +1,29 @@
 using Plots
 
 import Kinematic1D
-const KID = Kinematic1D
+const KiD = Kinematic1D
 
 include("./config.jl")
 
-data_save_directory = KID.make_output_directories()
+data_save_directory = KiD.make_output_directories()
 output_file_name_base = "model_vs_obs_contours"
 
 config = get_config()
 u_names = collect(keys(config["prior"]["parameters"]))
 u_values = collect([v.mean for v in values(config["prior"]["parameters"])])
 
-truth = KID.get_obs!(config)
-G = KID.run_dyn_model(u_values, u_names, config)
+obs = KiD.get_obs!(config)
+config["statistics"]["normalization"] = "mean_normalized"
+ref_stats_list = KiD.make_ref_stats_list(obs, config["statistics"], KiD.get_numbers_from_config(config)...)
+ref_stats = KiD.combine_ref_stats(ref_stats_list)
+G = KiD.run_dyn_model(u_values, u_names, config)
+Gn = KiD.normalize_sim(G, ref_stats)
 
-KID.compare_model_and_obs_contours(
-    G[:],
-    truth.mean,
+KiD.compare_model_and_obs_contours(
+    Gn,
+    ref_stats.y_full,
     config,
-    levels = range(minimum([0, minimum(G)]), maximum([1, maximum(G)]), 10),
+    levels = range(minimum([0, minimum(Gn)]), maximum([1, maximum(Gn)]), 10),
     linewidth = 0.5,
     overlay = false,
     G_title = "KiD",
@@ -28,8 +32,8 @@ KID.compare_model_and_obs_contours(
     file_base = output_file_name_base,
 )
 
-ref_stats = KID.ReferenceStatistics(truth, config["statistics"])
-println("loss: ", KID.compute_loss(u_values, u_names, config, ref_stats))
+model_error = KiD.compute_error_metrics(u_values, u_names, config, ref_stats)
+println("loss = ", model_error.loss, ",\t mse_m = ", model_error.mse_m, ",\t mse_s = ", model_error.mse_s)
 
-plot(truth.mean)
-plot!(G, legend = false)
+plot(ref_stats.y_full)
+plot!(Gn, legend = false)

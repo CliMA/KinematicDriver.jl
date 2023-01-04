@@ -22,21 +22,25 @@ const CM0 = CM.Microphysics0M
 const CM1 = CM.Microphysics1M
 const CM2 = CM.Microphysics2M
 
-include("Parameters.jl")
-import .Parameters as KP
+# modules used only for calibrateKiD
+using Distributions
+using LinearAlgebra
+using Random
+using Plots
+using Interpolations
+using Optim
+using EnsembleKalmanProcesses
+using EnsembleKalmanProcesses.ParameterDistributions
+using EnsembleKalmanProcesses.Observations
+using JLD2
 
-include("EquationTypes.jl")
-include("KiD_model.jl")
-include("TimeStepping.jl")
-include("NetCDFIO.jl")
-include("callbacks.jl")
-include("helper_functions.jl")
-include("dispatch_helper.jl")
-include("pysdm_functions.jl")
-include("initial_condition.jl")
-include("tendency.jl")
+const EKP = EnsembleKalmanProcesses
+const DS = Distributions
+const FT = Float64
 
-include("calibration_pipeline/calibrateKiD.jl")
+# include driveKiD and calibrateKiD
+include("driveKiD/driveKiD.jl")
+include("calibrateKiD/calibrateKiD.jl")
 Logging.global_logger(TerminalLoggers.TerminalLogger())
 
 end

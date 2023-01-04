@@ -20,7 +20,7 @@ function generate_fake_pysdm_data(dirs; n_files = 50, z_max = 3000.0, n_z = 60, 
                 ncvar[:] = collect(range(0.0, t_max, n_t))
                 ncvar = NC.defVar(ds, "qv", Float64, ("time", "height"))
                 ncvar[:, :] = rand(n_t, n_z)
-                ncvar = NC.defVar(ds, "ql", Float64, ("time", "height"))
+                ncvar = NC.defVar(ds, "qc", Float64, ("time", "height"))
                 ncvar[:, :] = rand(n_t, n_z)
                 ncvar = NC.defVar(ds, "qr", Float64, ("time", "height"))
                 ncvar[:, :] = rand(n_t, n_z)

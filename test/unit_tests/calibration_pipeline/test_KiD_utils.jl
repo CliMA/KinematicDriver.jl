@@ -68,31 +68,27 @@ end
     n_v = 3
     n_c = 1
 
-    config = Dict("model" => get_model_config(u_names), "observations" => Dict("ynorm" => [1.0 1e-3 1.0]))
-    config["model"]["n_elem"] = n_h
-    config["model"]["t_calib"] = collect(range(0, 60, n_t))
+    model_settings = get_model_config(u_names)
+    model_settings["n_elem"] = n_h
+    model_settings["t_calib"] = collect(range(0, 60, n_t))
 
     n = n_h * n_t * n_v * n_c
     obs = rand(n)
 
-    fixed_microphys_param_pairs = config["model"]["fixed_microphys_param_pairs"]
-    thermo_params = config["model"]["thermo_params"]
+    fixed_microphys_param_pairs = model_settings["fixed_microphys_param_pairs"]
+    thermo_params = model_settings["thermo_params"]
     microphys_params = CM.Parameters.CloudMicrophysicsParameters(; fixed_microphys_param_pairs..., thermo_params)
-    ρ1 = obs[1:2] * config["observations"]["ynorm"][1, 1]
-    q_rai1 = obs[3:4] * config["observations"]["ynorm"][1, 2]
-    ρ2 = obs[7:8] * config["observations"]["ynorm"][1, 1]
-    q_rai2 = obs[9:10] * config["observations"]["ynorm"][1, 2]
+    ρ1 = obs[1:2]
+    q_rai1 = obs[3:4]
+    ρ2 = obs[7:8]
+    q_rai2 = obs[9:10]
 
     #action
-    vel = KID.compute_terminal_velocity(u, u_names, config, obs)
+    vel = KID.compute_terminal_velocity(u, u_names, model_settings, obs)
 
     #test
-    @test vel[5:6] ==
-          CM.Microphysics1M.terminal_velocity.(microphys_params, CM.CommonTypes.RainType(), ρ1, q_rai1) /
-          config["observations"]["ynorm"][1, 3]
-    @test vel[11:12] ==
-          CM.Microphysics1M.terminal_velocity.(microphys_params, CM.CommonTypes.RainType(), ρ2, q_rai2) /
-          config["observations"]["ynorm"][1, 3]
+    @test vel[5:6] == CM.Microphysics1M.terminal_velocity.(microphys_params, CM.CommonTypes.RainType(), ρ1, q_rai1)
+    @test vel[11:12] == CM.Microphysics1M.terminal_velocity.(microphys_params, CM.CommonTypes.RainType(), ρ2, q_rai2)
 end
 
 @testset "Get variable data from ODE" begin
@@ -124,7 +120,7 @@ end
     @test length(parent(aux.moisture_variables.ρ_dry)) == n_heights
 
     #action
-    G = KID.ODEsolution2Gvector(ode_sol, aux, ["rlr", "rv"], [0.01, 1.0])
+    G = KID.ODEsolution2Gvector(ode_sol, aux, ["rlr", "rv"])
 
     #test
     @test length(G) == n_heights * n_times * 2
@@ -140,7 +136,7 @@ end
 
     #action
     ode_sol, aux = KID.run_KiD(u, u_names, model_settings)
-    G = KID.ODEsolution2Gvector(ode_sol, aux, ["rlr", "rv"], [0.01, 1.0], model_settings["filter"])
+    G = KID.ODEsolution2Gvector(ode_sol, aux, ["rlr", "rv"], model_settings["filter"])
 
     #test
     @test length(ode_sol) == (n_times - 1) * 5
@@ -158,24 +154,28 @@ end
     n_vars = length(config["observations"]["data_names"])
     n_cases = length(config["observations"]["cases"])
     n_tot = n_heights * n_times * n_vars * n_cases
+    case_numbers_1 = [1]
+    case_numbers_tot = collect(1:n_cases)
 
     #action
-    G_KiD = KID.run_KiD_multiple_cases(u, u_names, config)
+    G_KiD_1 = KID.run_KiD_multiple_cases(u, u_names, config, case_numbers_1)
+    G_KiD = KID.run_KiD_multiple_cases(u, u_names, config, case_numbers_tot)
+    G_dyn_1 = KID.run_dyn_model(u, u_names, config, case_numbers = case_numbers_1)
     G_dyn = KID.run_dyn_model(u, u_names, config)
 
     #test
+    @test length(G_KiD_1) == n_heights * n_times * n_vars
     @test length(G_KiD) == n_tot
+    @test length(G_dyn_1) == n_heights * n_times * n_vars
     @test length(G_dyn) == n_tot
 
     #setup
     config["model"]["model"] = "terminal_velocity"
     config["observations"]["data_names"] = ["rho", "qr", "rain averaged terminal velocity"]
-    config["observations"]["ynorm"] = ones(n_cases, 3)
     n_tot = n_heights * n_times * 3 * n_cases
     config["statistics"] = get_stats_config()
-    ref_stats = KID.ReferenceStatistics(
-        Observations.Observation(rand(n_tot, 50), rand(n_tot, n_tot), ["_"]),
-        config["statistics"],
+    ref_stats = KID.combine_ref_stats(
+        KID.make_ref_stats_list(rand(n_tot, 50), config["statistics"], n_cases, 3, n_heights, n_times),
     )
 
     #action

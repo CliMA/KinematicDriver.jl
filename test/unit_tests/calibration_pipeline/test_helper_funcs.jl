@@ -34,3 +34,50 @@ end
     @test filter["nt_filtered"] == 2
     @test filter["saveat_t"] == [25.0, 75.0, 200.0, 400.0]
 end
+
+@testset "get numbers from config" begin
+    #setup
+    config = get_config()
+
+    #action
+    nums = KID.get_numbers_from_config(config)
+
+    #test
+    @test length(nums) == 4
+    @test eltype(nums) == Int
+end
+
+@testset "make block diagonal matrix" begin
+    #setup
+    a = [1.0 2; 3 4]
+    b = [5.0 6 7]
+
+    #action
+    c = KID.make_block_diagonal_matrix(a, b)
+
+    #test
+    @test size(c) == (3, 5)
+    @test c[1:2, 1:2] == a
+    @test c[3:3, 3:5] == b
+    @test c[1:2, 3:5] == zeros((2, 3))
+    @test c[3:3, 1:2] == zeros((1, 2))
+end
+
+@testset "compute error metrics" begin
+    #setup
+    config = get_config()
+    ϕ_names = collect(keys(config["prior"]["parameters"]))
+    ϕ_values = collect([v.mean for v in values(config["prior"]["parameters"])])
+    obs = KID.get_obs!(config)
+    ref_stats_list = KID.make_ref_stats_list(obs, config["statistics"], KID.get_numbers_from_config(config)...)
+    ref_stats = KID.combine_ref_stats(ref_stats_list)
+
+    #action
+    me_1 = KID.compute_error_metrics(ϕ_values, ϕ_names, config, obs)
+    me_2 = KID.compute_error_metrics(ϕ_values, ϕ_names, config, ref_stats)
+
+    #test
+    @test me_1.loss ≈ me_2.loss rtol = eps(Float64) * 10.0
+    @test me_1.mse_m ≈ me_2.mse_m rtol = eps(Float64) * 10.0
+    @test me_1.mse_s ≈ me_2.mse_s rtol = eps(Float64) * 10.0
+end

@@ -4,48 +4,50 @@ function run_dyn_model(
     u_names::Array{String, 1},
     config::Dict;
     RS::Union{Nothing, ReferenceStatistics} = nothing,
+    case_numbers::Vector{Int} = Int[],
 )
 
+    if RS === nothing && isempty(case_numbers)
+        case_numbers = collect(1:length(config["observations"]["cases"]))
+    elseif RS !== nothing && isempty(case_numbers)
+        case_numbers = RS.case_numbers
+    elseif RS !== nothing && !isempty(case_numbers)
+        @warn("Both RS and case_numbers are given! To avoid errors, RS.case_numbers will be used!")
+        case_numbers = RS.case_numbers
+    end
+
     if config["model"]["model"] == "KiD"
-        outputs = run_KiD_multiple_cases(u, u_names, config)
+        sim_vec = run_KiD_multiple_cases(u, u_names, config, case_numbers)
     elseif config["model"]["model"] == "terminal_velocity"
         @assert config["observations"]["data_names"] == ["rho", "qr", "rain averaged terminal velocity"]
-        @assert RS != nothing
-        outputs = compute_terminal_velocity(u, u_names, config, RS)
+        @assert RS !== nothing
+        sim_vec = compute_terminal_velocity(u, u_names, config["model"], RS)
+    elseif config["model"]["model"] == "test_model" # for testing
+        @assert config["observations"]["data_names"] == ["test data"]
+        sim_vec = test_model(u, u_names, config, case_numbers)
     else
         error("Invalid model!")
     end
 
-    if RS != nothing
-        outputs = RS.P_pca' * outputs
-    end
+    outputs = RS === nothing ? sim_vec : outputs = pca_transform(normalize_sim(sim_vec, RS), RS)
 
     return outputs
 end
 
-function run_KiD_multiple_cases(u::Array{FT, 1}, u_names::Array{String, 1}, config::Dict)
+function run_KiD_multiple_cases(u::Array{FT, 1}, u_names::Array{String, 1}, config::Dict, case_numbers::Vector{Int})
+
+    @assert !isempty(case_numbers)
 
     outputs = Float64[]
-    for (i, case) in enumerate(config["observations"]["cases"])
+    for case in config["observations"]["cases"][case_numbers]
         config["model"]["w1"] = case.w1
         config["model"]["p0"] = case.p0
         config["model"]["Nd"] = case.Nd
         ode_sol, aux = run_KiD(u, u_names, config["model"])
         single_case_Gvector =
             config["model"]["filter"]["apply"] ?
-            ODEsolution2Gvector(
-                ode_sol,
-                aux,
-                config["observations"]["data_names"],
-                config["observations"]["ynorm"][i, :],
-                config["model"]["filter"],
-            ) :
-            ODEsolution2Gvector(
-                ode_sol,
-                aux,
-                config["observations"]["data_names"],
-                config["observations"]["ynorm"][i, :],
-            )
+            ODEsolution2Gvector(ode_sol, aux, config["observations"]["data_names"], config["model"]["filter"]) :
+            ODEsolution2Gvector(ode_sol, aux, config["observations"]["data_names"])
         outputs = [outputs; single_case_Gvector]
     end
 
@@ -80,7 +82,7 @@ function run_KiD(u::Array{FT, 1}, u_names::Array{String, 1}, model_settings::Dic
     return solution, aux
 end
 
-function ODEsolution2Gvector(ODEsol, aux, variables, norm_vec)
+function ODEsolution2Gvector(ODEsol, aux, variables)
 
     outputs = Float64[]
 
@@ -89,14 +91,14 @@ function ODEsolution2Gvector(ODEsol, aux, variables, norm_vec)
         ρ = ρ_dry .+ parent(u.ρq_tot)
 
         for (i, var) in enumerate(variables)
-            outputs = [outputs; get_variable_data_from_ODE(u, ρ[:], var) ./ norm_vec[i]]
+            outputs = [outputs; get_variable_data_from_ODE(u, ρ[:], var)]
         end
     end
 
-    return outputs
+    return outputs[:]
 end
 
-function ODEsolution2Gvector(ODEsol, aux, variables, norm_vec, filter)
+function ODEsolution2Gvector(ODEsol, aux, variables, filter)
 
     outputs = Float64[]
     _nz_filtered = filter["nz_filtered"]
@@ -113,8 +115,7 @@ function ODEsolution2Gvector(ODEsol, aux, variables, norm_vec, filter)
             u = ODEsol[(i - 1) * _nt_per_filtered_cell + j]
             ρ = ρ_dry .+ parent(u.ρq_tot)
             for (k, var) in enumerate(variables)
-                _single_filtered_cell_data[((k - 1) * _nz + 1):(k * _nz), j] =
-                    get_variable_data_from_ODE(u, ρ[:], var) ./ norm_vec[k]
+                _single_filtered_cell_data[((k - 1) * _nz + 1):(k * _nz), j] = get_variable_data_from_ODE(u, ρ[:], var)
             end
         end
         single_var_filtered_vec = [
@@ -166,15 +167,24 @@ function get_variable_data_from_ODE(u, ρ::Vector{Float64}, var::String)
 
 end
 
-function compute_terminal_velocity(u::Array{FT, 1}, u_names::Array{String, 1}, config::Dict, RS::ReferenceStatistics)
-    return compute_terminal_velocity(u, u_names, config, RS.y_full)
+function compute_terminal_velocity(
+    u::Array{FT, 1},
+    u_names::Array{String, 1},
+    model_settings::Dict,
+    RS::ReferenceStatistics,
+)
+    return compute_terminal_velocity(u, u_names, model_settings, RS.obs_mean)
 end
 
 Base.broadcastable(ps::CM.CommonTypes.RainType) = Ref(ps)
 Base.broadcastable(ps::CM.Parameters.CloudMicrophysicsParameters) = Ref(ps)
-function compute_terminal_velocity(u::Array{FT, 1}, u_names::Array{String, 1}, config::Dict, obs_vec_full::Array{FT, 1})
+function compute_terminal_velocity(
+    u::Array{FT, 1},
+    u_names::Array{String, 1},
+    model_settings::Dict,
+    obs_vec_full::Array{FT, 1},
+)
 
-    model_settings = config["model"]
     params_calib = create_param_dict(u, u_names)
     params = create_parameter_set(FT, model_settings, params_calib)
     microphys_params = Parameters.microphysics_params(params)
@@ -192,13 +202,11 @@ function compute_terminal_velocity(u::Array{FT, 1}, u_names::Array{String, 1}, c
         ρ_mat = y_mat[1:_n_elem, :]
         q_rai_mat = y_mat[(_n_elem + 1):(2 * _n_elem), :]
 
-        norm_vec = config["observations"]["ynorm"][i, :]
-
         for j in 1:_n_times
-            ρ = ρ_mat[:, j] .* norm_vec[1]
-            q_rai = q_rai_mat[:, j] .* norm_vec[2]
+            ρ = ρ_mat[:, j]
+            q_rai = q_rai_mat[:, j]
             term_vel_rai = CM1.terminal_velocity.(microphys_params, CM.CommonTypes.RainType(), ρ, q_rai)
-            outputs = [outputs; ρ ./ norm_vec[1]; q_rai ./ norm_vec[2]; term_vel_rai ./ norm_vec[3]]
+            outputs = [outputs; ρ; q_rai; term_vel_rai]
         end
 
     end
@@ -270,4 +278,28 @@ function create_parameter_set(FT, model_settings::Dict, params_cal::Dict)
         microphys_params,
     )
     return param_set
+end
+
+function test_model(u::Array{FT, 1}, u_names::Array{String, 1}, config::Dict, case_numbers::Vector{Int})
+    (n_c, n_v, n_z, n_t) = get_numbers_from_config(config)
+
+    @assert !isempty(case_numbers)
+    @assert length(u) == length(u_names) == 2
+    @assert Set(u_names) == Set(["a", "b"])
+    @assert n_v == 1
+
+    a = u[findall(name -> name == "a", u_names)]
+    b = u[findall(name -> name == "b", u_names)]
+
+    n_zt = n_z * n_t
+    x = range(0.0, 1.0, n_zt)
+
+    outputs = Float64[]
+    for case in config["observations"]["cases"][case_numbers]
+        p = case.power
+        y = a .* x .^ p .+ b
+        outputs = [outputs; y]
+    end
+
+    return outputs
 end

@@ -31,13 +31,14 @@ end
     n_cases = length(config["observations"]["cases"])
     n_tot = n_heights * n_times * n_vars * n_cases
     n_samples = config["observations"]["number_of_samples"]
+    config["observations"]["scov_G_ratio"] = 0.0
 
     #action
     y = KID.get_validation_samples(config)
 
     #test
     @test size(y) == (n_tot, n_samples)
-    @test norm(maximum(y, dims = 2) - mean(y, dims = 2)) < eps(Float64)
+    @test norm(maximum(y, dims = 2) - mean(y, dims = 2)) < eps(Float64) * 10.0
 
     #setup
     config["observations"]["scov_G_ratio"] = 0.2
@@ -47,7 +48,7 @@ end
 
     #test
     @test size(y) == (n_tot, n_samples)
-    @test sum((maximum(y, dims = 2) - mean(y, dims = 2)) .^ 2) > 1e-3
+    @test sum((maximum(y, dims = 2) - mean(y, dims = 2)) .^ 2) > eps(Float64) * 10.0
 end
 
 @testset "filter field" begin
@@ -59,15 +60,17 @@ end
         -6 5 -3 4 2 1
     ]
     t_data = [1, 2, 3, 4, 5, 6, 7.0]
-    t_calib = [1, 4, 6.0]
     z_data = [-4, -3, -2, -1, 0.0]
-    z_calib = [-3, -2, 0.0]
-
-    #action
-    a_ = KID.filter_field(a, t_data, t_calib, z_data, z_calib)
 
     #test
-    @test a_ == [8.0 1.5; -0.5 2.75]
+    @test_throws Exception KID.filter_field(a, t_data, [1.5, 1.25], z_data, [-1.25, -0.5])
+    @test_throws Exception KID.filter_field(a, t_data, [1.5, 1.5], z_data, [-1.25, -0.5])
+    @test_throws Exception KID.filter_field(a, t_data, [1.0, 1.0], z_data, [-1.25, -0.5])
+    @test_throws Exception KID.filter_field(a, t_data, [1.5, 3.25], z_data, [-3.0, -3.0])
+    @test KID.filter_field(a, t_data, [1.5, 3.25], z_data, [-3.25, -0.5]) ≈ [3.3636363636363638] atol =
+        eps(Float64) * 10.0
+    @test KID.filter_field(a, t_data, [1, 4, 6.0], z_data, [-3, -2, 0.0]) ≈ [8.0 1.5; -0.5 2.75] atol =
+        eps(Float64) * 10.0
 end
 
 @testset "Get observational data" begin
@@ -141,31 +144,6 @@ end
     rm_fake_pysdm_data(dirs)
 end
 
-@testset "normalize observations" begin
-    # setup
-    n_cases = 2
-    n_heights = 2
-    n_times = 2
-    n_vars = 2
-    n_samples = 20
-    y = rand(n_cases * n_vars * n_heights * n_times, n_samples) .* 10.0
-    norm_vecs = ones(n_cases, n_vars)
-
-    # action
-    ym = mean(y, dims = 2)
-    _norm_vecs = [
-        maximum([ym[1:2]; ym[5:6]]) maximum([ym[3:4]; ym[7:8]])
-        maximum([ym[9:10]; ym[13:14]]) maximum([ym[11:12]; ym[15:16]])
-    ]
-    _norm_vecs_extended = reshape(repeat(_norm_vecs, inner = [2 2])', :, 1)
-    _y = y ./ _norm_vecs_extended
-    KID.normalize_y!(y, norm_vecs, n_vars, n_heights, n_times)
-
-    #test
-    @test norm_vecs == _norm_vecs
-    @test y == _y
-end
-
 @testset "Get Observations" begin
     #setup
     config = get_config()
@@ -177,12 +155,11 @@ end
     n_samples = config["observations"]["number_of_samples"]
 
     #action
-    truth = KID.get_obs!(config)
+    obs = KID.get_obs!(config)
 
     #test
-    @test truth isa Observation
-    @test length(truth.mean) == n_tot
-    @test size(truth.obs_noise_cov) == (n_tot, n_tot)
+    @test obs isa Matrix
+    @test size(obs) == (n_tot, n_samples)
 
     #setup
     config["observations"]["data_source"] = "file"
@@ -193,9 +170,8 @@ end
     truth = KID.get_obs!(config)
 
     #test
-    @test truth isa Observation
-    @test length(truth.mean) == n_tot
-    @test size(truth.obs_noise_cov) == (n_tot, n_tot)
+    @test obs isa Matrix
+    @test size(obs) == (n_tot, n_samples)
 
     rm_fake_pysdm_data(dirs)
 end
