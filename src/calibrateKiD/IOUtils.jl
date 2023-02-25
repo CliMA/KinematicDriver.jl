@@ -7,13 +7,13 @@ function make_output_directories(dir::String = "/output/")
     return data_save_directory
 end
 
-function save_data(u_bests, u_names, config; file_name = "parameters.jld2")
-    @save file_name u_bests u_names config
+function save_data(res, u_bests, u_names, config; file_name = "parameters.jld2")
+    @save file_name res u_bests u_names config
 end
 
 function load_data(file_name::String = "parameters.jld2")
-    @load file_name u_bests u_names config
-    return (u_bests = u_bests, u_names = u_names, config = config)
+    @load file_name res u_bests u_names config
+    return (result = res, u_bests = u_bests, u_names = u_names, config = config)
 end
 
 function print_results(u, u_names)
@@ -24,15 +24,13 @@ function print_results(u, u_names)
 end
 
 function ensemble_convergence_single_panel(
-    ensemble_kalman_process,
+    u::Vector{Matrix{FT}},
     sol;
     file_name::String = "ensemble_convergence.gif",
     sol_label = "true_parameters",
     params_index = [1, 2],
     axis_labels = ["u₁", "u₂"],
-)
-
-    u = get_u(ensemble_kalman_process)
+) where {FT <: Real}
     n_iter_p1 = length(u)
     limits = get_limits(u)
 
@@ -69,22 +67,21 @@ function ensemble_convergence_single_panel(
 end
 
 function ensemble_convergence(
-    ensemble_kalman_process,
+    u::Vector{Matrix{FT}},
     priors,
     config::Dict;
     file_name::String = "ensemble_convergence.gif",
-)
+) where {FT <: Real}
     θ = params_validation(config, priors).θ
-    ensemble_convergence(ensemble_kalman_process, θ, file_name = file_name)
+    ensemble_convergence(u, θ, file_name = file_name)
 end
 
 function ensemble_convergence(
-    ensemble_kalman_process,
+    u::Vector{Matrix{FT}},
     sol::Array{Float64, 1};
     file_name::String = "ensemble_convergence.gif",
-)
+) where {FT <: Real}
 
-    u = get_u(ensemble_kalman_process)
     n_iter_p1 = length(u)
     n_par = size(u[1])[1]
     n_panel = Int(ceil(n_par / 2))
@@ -325,4 +322,40 @@ function compare_model_and_obs_contours(
         file_name = file_base * "_case_" * string(case_num) * ".png"
         Plots.png(fig, joinpath(path, file_name))
     end
+end
+
+"""
+    plot_correlation_map(file_uki; output_filename)
+
+plot correlation map and save as a png file. 
+
+# Inputs:
+- `u_names` :: parameter names
+- `u_cov` :: parameter covariance matrix
+- `output_filename` :: name of the output png file
+"""
+function plot_correlation_map(
+    u_names::Vector{String},
+    u_cov::Matrix{FT};
+    output_filename::String = "correlation_map.png",
+) where {FT <: Real}
+    num = size(u_cov)[1]
+    cor_map = zeros(num, num)
+    for i in 1:num
+        for j in num:-1:1
+            if j > num - i
+                cor_map[i, j] = NaN
+            else
+                cor_map[i, j] = u_cov[i, num - j + 1] / sqrt(u_cov[i, i]) / sqrt(u_cov[num - j + 1, num - j + 1])
+            end
+        end
+    end
+
+    fig = heatmap(
+        cor_map,
+        xticks = (collect(1:num), collect(u_names)[end:-1:2]),
+        yticks = (collect(1:num), collect(u_names)[1:(end - 1)]),
+        size = (800, 600),
+    )
+    Plots.png(fig, output_filename)
 end

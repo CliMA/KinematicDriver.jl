@@ -2,66 +2,25 @@
 function get_obs!(config::Dict)
 
     FT = config["observations"]["data_type"]
-    _n_heights =
-        config["model"]["filter"]["apply"] ? config["model"]["filter"]["nz_filtered"] : config["model"]["n_elem"]
+    _variables::Array{String} = config["observations"]["data_names"]
+    _n_heights = get_numbers_from_config(config).n_heights
     _dz = (config["model"]["z_max"] - config["model"]["z_min"]) / _n_heights
     _heights::Array{FT} =
         collect(range(config["model"]["z_min"] + _dz / 2, config["model"]["z_max"] - _dz / 2, _n_heights))
     _times::Array{FT} = collect(config["model"]["t_calib"])
-    _variables::Array{String} = config["observations"]["data_names"]
 
     if config["observations"]["data_source"] == "file"
         _cases::Vector{NamedTuple{(:w1, :p0, :Nd, :dir), Tuple{Float64, Float64, Float64, String}}} =
             config["observations"]["cases"]
-        _y::Matrix{FT} =
+        _obs::Matrix{FT} =
             get_obs_matrix(_cases, _variables, _heights, _times; apply_filter = config["model"]["filter"]["apply"])
     elseif config["observations"]["data_source"] == "perfect_model"
-        _y = get_validation_samples(config)
+        _obs = get_validation_samples(config)
     else
         @error("Invalid data source!")
     end
 
-    # Normalize variables by their maximum (times given numbers) for each case separately 
-    _ynorm = config["observations"]["ynorm"]
-    _n_times = config["model"]["filter"]["apply"] ? length(_times) - 1 : length(_times)
-    normalize_y!(_y, _ynorm, length(_variables), _n_heights, _n_times)
-    config["observations"]["ynorm"] = _ynorm
-
-    _Γy::Matrix{FT} = cov(_y, dims = 2, corrected = false)
-
-    return Observations.Observation(_y, _Γy, _variables)
-
-end
-
-# fill norm_vec with maximum of mean profiles (for all variables) in space and time
-function normalize_y!(
-    y::Matrix{FT},
-    ynorm::Matrix{FT},
-    n_variables::Int,
-    n_heights::Int,
-    n_times::Int,
-) where {FT <: Real}
-
-    _n_cases = size(ynorm)[1]
-    _n_single_sim = n_variables * n_heights * n_times
-    @assert size(y)[1] == (_n_cases * _n_single_sim)
-
-    for i in 1:_n_cases
-        _y_single_case = y[((i - 1) * _n_single_sim + 1):(i * _n_single_sim), :]
-
-        _y_mean_vector_single_case = mean(_y_single_case, dims = 2)
-        _y_mean_matrix::Matrix{FT} = reshape(_y_mean_vector_single_case, n_variables * n_heights, n_times)
-        _var_max = [maximum(abs.(_y_mean_matrix[((j - 1) * n_heights + 1):(j * n_heights), :])) for j in 1:n_variables]
-        _var_max = ifelse.(_var_max .> eps(FT), _var_max, 1.0)
-        _norm_vec = ynorm[i, :] .* _var_max
-
-        # normalise part of y belonging to case i by _norm_vec
-        _norm_vec_extended_single_time = reshape((ones(n_heights, n_variables) .* _norm_vec'), :, 1)
-        _norm_vec_extended = reshape(ones(n_heights * n_variables, n_times) .* _norm_vec_extended_single_time, :, 1)
-        _y_single_case = _y_single_case ./ _norm_vec_extended
-        y[((i - 1) * _n_single_sim + 1):(i * _n_single_sim), :] = _y_single_case
-        ynorm[i, :] = _norm_vec
-    end
+    return _obs
 
 end
 
@@ -152,38 +111,38 @@ function get_single_obs_field(
 
     for var in variables
         if var == "qt"
-            _r_tot = _data_pysdm["qv"] .+ _data_pysdm["ql"] .* 1e-3
+            _r_tot = _data_pysdm["qv"] .+ _data_pysdm["qc"] .* 1e-3
             _data = _r_tot ./ (1 .+ _r_tot)
         elseif var == "qv"
-            _r_tot = _data_pysdm["qv"] .+ _data_pysdm["ql"] .* 1e-3
+            _r_tot = _data_pysdm["qv"] .+ _data_pysdm["qc"] .* 1e-3
             _data = _data_pysdm["qv"] ./ (1 .+ _r_tot)
         elseif var == "ql"
-            _r_tot = _data_pysdm["qv"] .+ _data_pysdm["ql"] .* 1e-3
-            _data = _data_pysdm["ql"] .* 1e-3 ./ (1 .+ _r_tot)
+            _r_tot = _data_pysdm["qv"] .+ _data_pysdm["qc"] .* 1e-3
+            _data = _data_pysdm["qc"] .* 1e-3 ./ (1 .+ _r_tot)
         elseif var == "qr"
-            _r_tot = _data_pysdm["qv"] .+ _data_pysdm["ql"] .* 1e-3
+            _r_tot = _data_pysdm["qv"] .+ _data_pysdm["qc"] .* 1e-3
             _data = _data_pysdm["qr"] .* 1e-3 ./ (1 .+ _r_tot)
         elseif var == "qlr"
-            _r_tot = _data_pysdm["qv"] .+ _data_pysdm["ql"] .* 1e-3
-            _data = (_data_pysdm["ql"] .+ _data_pysdm["qr"]) .* 1e-3 ./ (1 .+ _r_tot)
+            _r_tot = _data_pysdm["qv"] .+ _data_pysdm["qc"] .* 1e-3
+            _data = (_data_pysdm["qc"] .+ _data_pysdm["qr"]) .* 1e-3 ./ (1 .+ _r_tot)
         elseif var == "qtr"
-            _r_tot = _data_pysdm["qv"] .+ _data_pysdm["ql"] .* 1e-3
+            _r_tot = _data_pysdm["qv"] .+ _data_pysdm["qc"] .* 1e-3
             _data = (_r_tot .+ _data_pysdm["qr"] .* 1e-3) ./ (1 .+ _r_tot)
         elseif var == "rho"
-            _r_tot = _data_pysdm["qv"] .+ _data_pysdm["ql"] .* 1e-3
+            _r_tot = _data_pysdm["qv"] .+ _data_pysdm["qc"] .* 1e-3
             _data = _data_pysdm["rhod"] .* (1 .+ _r_tot)
         elseif var == "rt"
-            _data = _data_pysdm["qv"] .+ _data_pysdm["ql"] .* 1e-3
+            _data = _data_pysdm["qv"] .+ _data_pysdm["qc"] .* 1e-3
         elseif var == "rv"
             _data = _data_pysdm["qv"]
         elseif var == "rl"
-            _data = _data_pysdm["ql"] .* 1e-3
+            _data = _data_pysdm["qc"] .* 1e-3
         elseif var == "rr"
             _data = _data_pysdm["qr"] .* 1e-3
         elseif var == "rlr"
-            _data = (_data_pysdm["ql"] .+ _data_pysdm["qr"]) .* 1e-3
+            _data = (_data_pysdm["qc"] .+ _data_pysdm["qr"]) .* 1e-3
         elseif var == "rtr"
-            _data = _data_pysdm["qv"] .+ (_data_pysdm["ql"] .+ _data_pysdm["qr"]) .* 1e-3
+            _data = _data_pysdm["qv"] .+ (_data_pysdm["qc"] .+ _data_pysdm["qr"]) .* 1e-3
         else
             _data = _data_pysdm[var]
         end
@@ -208,20 +167,45 @@ function get_single_obs_field(
 end
 
 function filter_field(data::Array{FT}, t_data::Array, times::Array{FT}, z_data::Array, heights::Array{FT})
-    @assert issubset(Set(times), Set(t_data))
-    @assert issubset(Set(heights), Set(z_data))
+    @assert issorted(heights)
+    @assert length(Set(heights)) == length(heights)
+    @assert issorted(z_data)
+    @assert length(Set(z_data)) == length(z_data)
+    @assert z_data[1] <= heights[1]
+    @assert heights[end] <= z_data[end]
+    @assert issorted(times)
+    @assert length(Set(times)) == length(times)
+    @assert issorted(t_data)
+    @assert length(Set(t_data)) == length(t_data)
+    @assert t_data[1] <= times[1]
+    @assert times[end] <= t_data[end]
     @assert size(data) == (length(z_data) - 1, length(t_data) - 1)
 
     _nz_calib = length(heights) - 1
     _nt_calib = length(times) - 1
     _output = zeros(_nz_calib, _nt_calib)
     for i in 1:_nz_calib
-        ind_ini_z = findall(x -> x == heights[i], z_data)[1]
-        ind_end_z = findall(x -> x == heights[i + 1], z_data)[1] - 1
+        ind_ini_z = findall(x -> x > heights[i], z_data)[1] - 1
+        ind_end_z = findall(x -> x >= heights[i + 1], z_data)[1] - 1
         for j in 1:_nt_calib
-            ind_ini_t = findall(x -> x == times[j], t_data)[1]
-            ind_end_t = findall(x -> x == times[j + 1], t_data)[1] - 1
-            _output[i, j] = mean(data[ind_ini_z:ind_end_z, ind_ini_t:ind_end_t])
+            ind_ini_t = findall(x -> x > times[j], t_data)[1] - 1
+            ind_end_t = findall(x -> x >= times[j + 1], t_data)[1] - 1
+
+            _s_ij = FT(0)
+            _s_times_output_ij = FT(0)
+            for k in ind_ini_z:ind_end_z
+                _z1 = (k == ind_ini_z) ? heights[i] : z_data[k]
+                _z2 = (k == ind_end_z) ? heights[i + 1] : z_data[k + 1]
+                for l in ind_ini_t:ind_end_t
+                    _t1 = (l == ind_ini_t) ? times[j] : t_data[l]
+                    _t2 = (l == ind_end_t) ? times[j + 1] : t_data[l + 1]
+                    _s = (_z2 - _z1) * (_t2 - _t1)
+                    _s_ij = _s_ij + _s
+                    _s_times_output_ij = _s_times_output_ij + _s * data[k, l]
+                end
+            end
+            _output[i, j] = _s_times_output_ij / _s_ij
+
         end
     end
     return _output
@@ -241,6 +225,7 @@ function get_validation_samples(config)
     # Since KiD is deterministic we add an artificial noise to G_t to generate a set of data with noise
     _Γy = convert(Array, Diagonal((_G_t .* _G_t .+ eps(Float64))[:]))
     _μ = zeros(length(_G_t))
+    Random.seed!(config["observations"]["random_seed"])
     scov_G_ratio = config["observations"]["scov_G_ratio"]
     for i in 1:_n_samples
         _samples[:, i] = _G_t .+ rand(MvNormal(_μ, _Γy)) .* scov_G_ratio

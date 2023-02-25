@@ -23,50 +23,8 @@ function get_prior_config()
     config = Dict()
     # Define prior mean and bounds on the parameters.
     config["parameters"] = Dict(
-        # shared params
-        # "τ_cond_evap" => (mean = 10.0, var = 1.0, lbound = 1.0, ubound = Inf),
-        "a_vent_rai" => (mean = 1.5, var = 0.5, lbound = 0.0, ubound = Inf),
-        # "b_vent_rai" => (mean = 0.53, var = 0.1, lbound = 0.0, ubound = Inf),
-        "χv_rai" => (mean = 0.1, var = 0.03, lbound = 0.0, ubound = Inf),
-        #"Δm_rai" => (mean = 0.0, var = 0.5, lbound = -3.0, ubound = 3.0),
-        #"Δv_rai" => (mean = 0.0, var = 0.5, lbound = -3.0, ubound = 3.0),
-
-        # CliMA_1M
-        "q_liq_threshold" => (mean = 5.0e-4, var = 1e-4, lbound = 0.0, ubound = 2e-3),
-        "k_thrshld_stpnss" => (mean = 2.0, var = 0.5, lbound = 0.5, ubound = 100.0),
-        "τ_acnv_rai" => (mean = 1000.0, var = 200.0, lbound = 100.0, ubound = Inf),
-        "χa_rai" => (mean = 4.0, var = 1.0, lbound = 0.0, ubound = Inf),
-        #"Δa_rai" => (mean = 0.0, var = 0.5, lbound = -3.0, ubound = 3.0),
-
-        # #TC1980
-        # "k_thrshld_stpnss" => (mean = 2.0, var = 0.5, lbound = 0.5, ubound = 100.0),
-        # "D_acnv_TC1980" => (mean = 3268.0, var = 100.0, lbound = 0.0, ubound = Inf), 
-        # "a_acnv_TC1980" => (mean = 2.33333333333333333333, var = 0.5, lbound = 0.0, ubound = Inf), 
-        # "r_0_acnv_TC1980" => (mean = 7e-6, var = 1e-6, lbound = 0.0, ubound = Inf), 
-        # "A_acc_TC1980" => (mean =  4.7, var = 1.0, lbound = 0.0, ubound = Inf), 
-
-        # # B1994
-        # "k_thrshld_stpnss" => (mean = 2.0, var = 0.5, lbound = 0.5, ubound = 100.0),
-        # "b_acnv_B1994" => (mean = 4.7, var = 1.0, lbound = 0.0, ubound = Inf), 
-        # "d_low_acnv_B1994" => (mean = 3.9, var = 1.0, lbound = 0.0, ubound = Inf), 
-        # "d_high_acnv_B1994" => (mean = 9.9, var = 1.0, lbound = 0.0, ubound = Inf), 
-        # "N_0_B1994" => (mean = 2e8, var = 5e7, lbound = 0.0, ubound = Inf), 
-        # "A_acc_B1994" => (mean = 6.0, var = 1.0, lbound = 0.0, ubound = Inf), 
-
-        # # KK2000
-        # "A_acnv_KK2000" => (mean = 7.42e13, var = 1e13, lbound = 0.0, ubound = Inf), 
-        # "a_acnv_KK2000" => (mean = 2.47, var = 0.5, lbound = 0.0, ubound = Inf), 
-        # "c_acnv_KK2000" => (mean = -1.47, var = 0.5, lbound = -Inf, ubound = Inf), 
-        # "A_acc_KK2000" => (mean = 67.0, var = 10.0, lbound = 0.0, ubound = Inf), 
-        # "a_acc_KK2000" => (mean = 1.15, var = 0.4, lbound = 0.0, ubound = Inf), 
-        # "b_acc_KK2000" => (mean = -1.3, var = 0.3, lbound = -Inf, ubound = Inf), 
-
-        # # LD2004
-        # "k_thrshld_stpnss" => (mean = 2.0, var = 0.5, lbound = 0.5, ubound = 100.0),
-        # "χa_rai" => (mean = 4.0, var = 1.0, lbound = 0.0, ubound = Inf),
-        # "Δa_rai" => (mean = 0.0, var = 0.5, lbound = -3.0, ubound = 3.0),
-        # "R_6C_coeff_LD2004" => (mean = 7.5, var = 1.0, lbound = -Inf, ubound = Inf),
-        # "E_0_LD2004" => (mean = 1.08e10, var = 1e9, lbound = 0.0, ubound = Inf),
+        "χv_rai" => (mean = 0.1, var = 0.03, lbound = 0.0, ubound = 1.0),
+        "χa_rai" => (mean = 4.0, var = 1.0, lbound = 0.0, ubound = 10.0),
     )
     return config
 end
@@ -75,15 +33,15 @@ function get_process_config()
     config = Dict()
     # Define method of calibration : currently only EKP and Optim are supported
     config["method"] = "EKP"
-    # Define minimum number of iterations for EKP
-    config["n_iter_min"] = 5
-    # Define maximum number of iterations for EKP
-    config["n_iter_max"] = 10
+    # Define mini batch size for EKP
+    config["batch_size"] = 1
+    # Define number of iterations for EKP
+    config["n_iter"] = 10
     # Define number of parameter ensemle for EKP (Inversion)
     config["n_ens"] = 15
     # Define EKP time step
-    config["Δt"] = 0.5
-    config["EKP_method"] = "EKI"
+    config["Δt"] = 1.0
+    config["EKP_method"] = "UKI"
     # Choose regularization factor α ∈ (0,1] for UKI, when enough observation data α=1: no regularization
     config["α_reg"] = 1.0
     # UKI parameter
@@ -102,60 +60,33 @@ end
 function get_observations_config()
     config = Dict()
     # Define data names.
-    config["data_names"] = ["rlr"]
+    config["data_names"] = ["rl", "rr"]
     # Define source of data: "file" or "perfect_model"
     config["data_source"] = "perfect_model"
     # Define number of samples for validation
-    config["number_of_samples"] = 500
+    config["number_of_samples"] = 1000
+    # Define random seed for generating validation samples
+    config["random_seed"] = 15
     # Define the ratio of square root of covariance to G for adding artificial noise to data in the perfect-model setting
-    config["scov_G_ratio"] = 0.0
+    config["scov_G_ratio"] = 0.2
     # Define offset of true values from prior means for validation
     config["true_values_offset"] = 0.25
     # Define data
     root_dir = "/Users/sajjadazimi/Postdoc/Results/01-PySDM_1D_rain_shaft/data/03-p1000/"
-    config["cases"] = [
-        # (w1 = 1.0, p0 = 100000.0, Nd = 10 * 1e6, dir = root_dir * "rhow=1.0_Nd=10/"),
-        # (w1 = 2.0, p0 = 100000.0, Nd = 10 * 1e6, dir = root_dir * "rhow=2.0_Nd=10/"),
-        # (w1 = 3.0, p0 = 100000.0, Nd = 10 * 1e6, dir = root_dir * "rhow=3.0_Nd=10/"),
-        # (w1 = 4.0, p0 = 100000.0, Nd = 10 * 1e6, dir = root_dir * "rhow=4.0_Nd=10/"),
-        # (w1 = 1.0, p0 = 100000.0, Nd = 20 * 1e6, dir = root_dir * "rhow=1.0_Nd=20/"),
-        # (w1 = 2.0, p0 = 100000.0, Nd = 20 * 1e6, dir = root_dir * "rhow=2.0_Nd=20/"),
-        # (w1 = 3.0, p0 = 100000.0, Nd = 20 * 1e6, dir = root_dir * "rhow=3.0_Nd=20/"),
-        # (w1 = 4.0, p0 = 100000.0, Nd = 20 * 1e6, dir = root_dir * "rhow=4.0_Nd=20/"),
-        # (w1 = 1.0, p0 = 100000.0, Nd = 50 * 1e6, dir = root_dir * "rhow=1.0_Nd=50/"),
-        # (w1 = 2.0, p0 = 100000.0, Nd = 50 * 1e6, dir = root_dir * "rhow=2.0_Nd=50/"),
-        # (w1 = 3.0, p0 = 100000.0, Nd = 50 * 1e6, dir = root_dir * "rhow=3.0_Nd=50/"),
-        # (w1 = 4.0, p0 = 100000.0, Nd = 50 * 1e6, dir = root_dir * "rhow=4.0_Nd=50/"),
-        # (w1 = 1.0, p0 = 100000.0, Nd = 100 * 1e6, dir = root_dir * "rhow=1.0_Nd=100/"),
-        # (w1 = 2.0, p0 = 100000.0, Nd = 100 * 1e6, dir = root_dir * "rhow=2.0_Nd=100/"),
-        (w1 = 3.0, p0 = 100000.0, Nd = 100 * 1e6, dir = root_dir * "rhow=3.0_Nd=100/"),
-        # (w1 = 4.0, p0 = 100000.0, Nd = 100 * 1e6, dir = root_dir * "rhow=4.0_Nd=100/"),
-        # (w1 = 1.0, p0 = 100000.0, Nd = 200 * 1e6, dir = root_dir * "rhow=1.0_Nd=200/"),
-        # (w1 = 2.0, p0 = 100000.0, Nd = 200 * 1e6, dir = root_dir * "rhow=2.0_Nd=200/"),
-        # (w1 = 3.0, p0 = 100000.0, Nd = 200 * 1e6, dir = root_dir * "rhow=3.0_Nd=200/"),
-        # (w1 = 4.0, p0 = 100000.0, Nd = 200 * 1e6, dir = root_dir * "rhow=4.0_Nd=200/"),
-        # (w1 = 1.0, p0 = 100000.0, Nd = 500 * 1e6, dir = root_dir * "rhow=1.0_Nd=500/"),
-        # (w1 = 2.0, p0 = 100000.0, Nd = 500 * 1e6, dir = root_dir * "rhow=2.0_Nd=500/"),
-        # (w1 = 3.0, p0 = 100000.0, Nd = 500 * 1e6, dir = root_dir * "rhow=3.0_Nd=500/"),
-        # (w1 = 4.0, p0 = 100000.0, Nd = 500 * 1e6, dir = root_dir * "rhow=4.0_Nd=500/"),
-        # (w1 = 1.0, p0 = 100000.0, Nd = 1000 * 1e6, dir = root_dir * "rhow=1.0_Nd=1000/"),
-        # (w1 = 2.0, p0 = 100000.0, Nd = 1000 * 1e6, dir = root_dir * "rhow=2.0_Nd=1000/"),
-        # (w1 = 3.0, p0 = 100000.0, Nd = 1000 * 1e6, dir = root_dir * "rhow=3.0_Nd=1000/"),
-        # (w1 = 4.0, p0 = 100000.0, Nd = 1000 * 1e6, dir = root_dir * "rhow=4.0_Nd=1000/"),
-    ]
+    config["cases"] = [(w1 = 3.0, p0 = 100000.0, Nd = 100 * 1e6, dir = root_dir * "rhow=3.0_Nd=100/")]
     # Define type of data
     config["data_type"] = Float64
-    # Define normalization vector
-    config["ynorm"] = ones(length(keys(config["cases"])), length(config["data_names"]))
     return config
 end
 
 function get_stats_config()
     config = Dict()
+    # Define normalization method: mean_normalized or std_normalized
+    config["normalization"] = "std_normalized"
     # Define if pca is performed
-    config["perform_pca"] = false
+    config["perform_pca"] = true
     # Define fraction of variance loss when performing PCA.
-    config["variance_loss"] = 1e-2
+    config["variance_loss"] = 0.01
     # Define tikhonov mode: absulute or relative
     config["tikhonov_mode"] = "absolute"
     # Define tikhonov noise
@@ -231,42 +162,6 @@ function create_fixed_parameter_set(params_calib_names::Array{String})
         println(io, "[molar_mass_water]")
         println(io, "alias = \"molmass_water\"")
         println(io, "value = 0.018015")
-        println(io, "type = \"float\"")
-        println(io, "[cloud_liquid_water_specific_humidity_autoconversion_threshold]")
-        println(io, "alias = \"q_liq_threshold\"")
-        println(io, "value = 5.0e-4")
-        println(io, "type = \"float\"")
-        println(io, "[threshold_smooth_transition_steepness]")
-        println(io, "alias = \"k_thrshld_stpnss\"")
-        println(io, "value = 100.0")
-        println(io, "type = \"float\"")
-        println(io, "[rain_autoconversion_timescale]")
-        println(io, "alias = \"τ_acnv_rai\"")
-        println(io, "value = 1000.0")
-        println(io, "type = \"float\"")
-        println(io, "[condensation_evaporation_timescale]")
-        println(io, "alias = \"τ_cond_evap\"")
-        println(io, "value = 10.0")
-        println(io, "type = \"float\"")
-        println(io, "[rain_ventillation_coefficient_a]")
-        println(io, "alias = \"a_vent_rai\"")
-        println(io, "value = 1.5")
-        println(io, "type = \"float\"")
-        println(io, "[rain_ventillation_coefficient_b]")
-        println(io, "alias = \"b_vent_rai\"")
-        println(io, "value = 0.53")
-        println(io, "type = \"float\"")
-        println(io, "[rain_mass_size_relation_coefficient_chim]")
-        println(io, "alias = \"χm_rai\"")
-        println(io, "value = 1.0")
-        println(io, "type = \"float\"")
-        println(io, "[rain_cross_section_size_relation_coefficient_chia]")
-        println(io, "alias = \"χa_rai\"")
-        println(io, "value = 1.0")
-        println(io, "type = \"float\"")
-        println(io, "[rain_terminal_velocity_size_relation_coefficient_chiv]")
-        println(io, "alias = \"χv_rai\"")
-        println(io, "value = 1.0")
         println(io, "type = \"float\"")
     end
     toml_dict = CP.create_toml_dict(FT; override_file, dict_type = "alias")

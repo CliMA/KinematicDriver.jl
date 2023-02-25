@@ -17,20 +17,20 @@ end
 function get_prior_config()
     config = Dict()
     config["parameters"] = Dict(
-        "q_liq_threshold" => (mean = 5.0e-4, var = 1e-4, lbound = 0.0, ubound = 2e-3),
-        "τ_acnv_rai" => (mean = 1000.0, var = 200.0, lbound = 100.0, ubound = Inf),
+        "χv_rai" => (mean = 1.0, var = 0.25, lbound = 0.0, ubound = 2.0),
+        "χa_rai" => (mean = 1.0, var = 0.25, lbound = 0.0, ubound = Inf),
     )
     return config
 end
 
 function get_process_config()
     config = Dict()
-    config["n_iter_min"] = 10
-    config["n_iter_max"] = 20
-    config["n_ens"] = 15
-    config["Δt"] = 0.5
+    config["batch_size"] = 1
+    config["n_iter"] = 10
+    config["n_ens"] = 10
+    config["Δt"] = 1.0
     config["EKP_method"] = "EKI"
-    config["α_reg"] = 1.0
+    config["α_reg"] = 0.5
     config["update_freq"] = 1
     config["tol"] = 1e-8
     config["maxiter"] = 1000
@@ -39,22 +39,23 @@ end
 
 function get_observations_config()
     config = Dict()
-    config["data_names"] = ["rlr", "qt"]
+    config["data_names"] = ["rl", "qr"]
     config["data_source"] = "perfect_model"
-    config["number_of_samples"] = 50
-    config["scov_G_ratio"] = 0.0
+    config["number_of_samples"] = 100
+    config["random_seed"] = 15
+    config["scov_G_ratio"] = 0.2
     config["true_values_offset"] = 0.25
     config["cases"] = [
         (w1 = 2.0, p0 = 99000.0, Nd = 50 * 1e6, dir = "./case1/"),
         (w1 = 3.0, p0 = 99000.0, Nd = 50 * 1e6, dir = "./case2/"),
     ]
     config["data_type"] = Float64
-    config["ynorm"] = ones(length(keys(config["cases"])), length(config["data_names"]))
     return config
 end
 
 function get_stats_config()
     config = Dict()
+    config["normalization"] = "std_normalized"
     config["perform_pca"] = false
     config["variance_loss"] = 1e-2
     config["tikhonov_mode"] = "absolute"
@@ -70,11 +71,11 @@ function get_model_config(params_calib_names::Array{String})
     config["rain_formation_choice"] = "CliMA_1M"
     config["z_min"] = 0.0
     config["z_max"] = 3000.0
-    config["n_elem"] = 16
-    config["dt"] = 4.0
+    config["n_elem"] = 10
+    config["dt"] = 10.0
     config["t_ini"] = 0.0
-    config["t_end"] = 60.0
-    config["dt_calib"] = 60.0
+    config["t_end"] = 1200.0
+    config["dt_calib"] = 300.0
     config["t_calib"] = config["t_ini"]:config["dt_calib"]:config["t_end"]
     config["w1"] = 3.0
     config["t1"] = 600.0
