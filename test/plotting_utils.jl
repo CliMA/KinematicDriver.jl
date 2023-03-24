@@ -127,9 +127,9 @@ function plot_timeheight(nc_data_file; output = "output")
     q_tot_plt = collect(ds.group["profiles"]["q_tot"])
     q_liq_plt = collect(ds.group["profiles"]["q_liq"])
     q_rai_plt = collect(ds.group["profiles"]["q_rai"])
-    p1 = Plots.heatmap(t_plt, z_plt, q_tot_plt, title = "q_tot [g/kg]", xlabel = "time [s]", ylabel = "z [m]")
-    p2 = Plots.heatmap(t_plt, z_plt, q_liq_plt, title = "q_liq [g/kg]", xlabel = "time [s]", ylabel = "z [m]")
-    p3 = Plots.heatmap(t_plt, z_plt, q_rai_plt, title = "q_rai [g/kg]", xlabel = "time [s]", ylabel = "z [m]")
+    p1 = Plots.heatmap(t_plt, z_plt, q_tot_plt .* 1e3, title = "q_tot [g/kg]", xlabel = "time [s]", ylabel = "z [m]")
+    p2 = Plots.heatmap(t_plt, z_plt, q_liq_plt .* 1e3, title = "q_liq [g/kg]", xlabel = "time [s]", ylabel = "z [m]")
+    p3 = Plots.heatmap(t_plt, z_plt, q_rai_plt .* 1e3, title = "q_rai [g/kg]", xlabel = "time [s]", ylabel = "z [m]")
     p = Plots.plot(
         p1,
         p2,

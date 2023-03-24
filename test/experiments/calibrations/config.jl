@@ -100,7 +100,7 @@ function get_model_config(params_calib_names::Array{String})
     config["model"] = "KiD"
     config["moisture_choice"] = "NonEquilibriumMoisture"
     config["precipitation_choice"] = "Precipitation1M"
-    # Define rain formation choice: "CliMA_1M", "KK2000", "B1994", "TC1980", "LD2004"
+    # Define rain formation choice: "CliMA_1M", "KK2000", "B1994", "TC1980", "LD2004", "SB2006"
     config["rain_formation_choice"] = "CliMA_1M"
     config["z_min"] = 0.0
     config["z_max"] = 3000.0

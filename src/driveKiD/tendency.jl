@@ -28,6 +28,12 @@ end
     @. dY.ρq_rai = FT(0)
     @. dY.ρq_sno = FT(0)
 end
+@inline function zero_tendencies!(::Precipitation2M, dY, Y, aux, t)
+    FT = eltype(Y.ρq_tot)
+    @. dY.ρq_rai = FT(0)
+    @. dY.N_liq = FT(0)
+    @. dY.N_rai = FT(0)
+end
 
 """
      Helper functions for broadcasting and populating the auxiliary state
@@ -294,6 +300,66 @@ end
 
     return (; S_q_tot, S_q_liq, S_q_ice, S_q_rai, S_q_sno, S_q_vap, term_vel_rai, term_vel_sno)
 end
+@inline function precip_helper_sources_2M!(params, q_tot, q_liq, q_rai, N_liq, N_rai, T, ρ, dt, ps)
+
+    microphys_params = KP.microphysics_params(params)
+
+    rf = ps.rain_formation
+
+    FT = eltype(q_tot)
+
+    S_q_rai::FT = FT(0)
+    S_q_tot::FT = FT(0)
+    S_q_liq::FT = FT(0)
+    S_q_vap::FT = FT(0) # added for testing
+    S_N_liq::FT = FT(0)
+    S_N_rai::FT = FT(0)
+
+    q = TD.PhasePartition(q_tot, q_liq, FT(0))
+
+    # autoconversion liquid to rain
+    tmp = CM2.autoconversion(microphys_params, rf, q.liq, q_rai, ρ, N_liq)
+    S_qr = min(max(0, q.liq / dt), tmp.dq_rai_dt)
+    S_q_rai += S_qr
+    S_q_tot -= S_qr
+    S_q_liq -= S_qr
+    S_N_liq += -min(max(0, N_liq / dt), -tmp.dN_liq_dt)
+    S_N_rai += min(max(0, N_liq / dt), tmp.dN_rai_dt)
+
+    # self_collection
+    tmp_l = CM2.liquid_self_collection(microphys_params, rf, q.liq, ρ, -S_qr)
+    tmp_r = CM2.rain_self_collection(microphys_params, rf, q_rai, ρ, N_rai)
+    S_N_liq += -min(max(0, N_liq / dt), -tmp_l)
+    S_N_rai += -min(max(0, N_rai / dt), -tmp_r)
+
+    # rain breakup
+    tmp = CM2.rain_breakup(microphys_params, rf, q_rai, ρ, N_rai, tmp_r)
+    S_N_rai += min(max(0, N_rai / dt), tmp_r)
+
+    # accretion cloud water + rain
+    tmp = CM2.accretion(microphys_params, rf, q.liq, q_rai, ρ, N_liq)
+    S_qr = min(max(0, q.liq / dt), tmp.dq_rai_dt)
+    S_q_rai += S_qr
+    S_q_tot -= S_qr
+    S_q_liq -= S_qr
+    S_N_liq += -min(max(0, N_liq / dt), -tmp.dN_liq_dt)
+    S_N_rai += min(max(0, N_rai / dt), tmp.dN_rai_dt)
+
+    # evaporation
+    tmp = CM2.evaporation(microphys_params, rf, q, q_rai, ρ, N_rai, T)
+    S_Nr = -min(max(0, N_rai / dt), -tmp[1])
+    S_qr = -min(max(0, q_rai / dt), -tmp[2])
+    S_q_rai += S_qr
+    S_q_tot -= S_qr
+    S_q_vap -= S_qr
+    S_N_rai += S_Nr
+
+    vt = CM2.terminal_velocity(microphys_params, CMT.SB2006Type(), q_rai, ρ, N_rai)
+    term_vel_N_rai = vt[1]
+    term_vel_rai = vt[2]
+
+    return (; S_q_tot, S_q_liq, S_q_rai, S_N_liq, S_N_rai, S_q_vap, term_vel_rai, term_vel_N_rai)
+end
 
 """
      Precompute the auxiliary values
@@ -475,6 +541,35 @@ end
     @. aux.precip_velocities.term_vel_rai = CC.Geometry.WVector(If(tmp.term_vel_rai) * FT(-1))
     @. aux.precip_velocities.term_vel_sno = CC.Geometry.WVector(If(tmp.term_vel_sno) * FT(-1))
 end
+@inline function precompute_aux_precip!(ps::Precipitation2M, dY, Y, aux, t)
+    FT = eltype(Y.ρq_rai)
+
+    aux.precip_variables.q_rai = Y.ρq_rai ./ aux.moisture_variables.ρ
+    aux.precip_variables.N_liq = Y.N_liq
+    aux.precip_variables.N_rai = Y.N_rai
+
+    tmp = @. precip_helper_sources_2M!(
+        aux.params,
+        aux.moisture_variables.q_tot,
+        aux.moisture_variables.q_liq,
+        aux.precip_variables.q_rai,
+        aux.precip_variables.N_liq,
+        aux.precip_variables.N_rai,
+        aux.moisture_variables.T,
+        aux.moisture_variables.ρ,
+        aux.TS.dt,
+        ps,
+    )
+    aux.precip_sources.S_q_rai = tmp.S_q_rai
+    aux.precip_sources.S_q_tot = tmp.S_q_tot
+    aux.precip_sources.S_q_liq = tmp.S_q_liq
+    aux.precip_sources.S_N_liq = tmp.S_N_liq
+    aux.precip_sources.S_N_rai = tmp.S_N_rai
+
+    If = CC.Operators.InterpolateC2F(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
+    @. aux.precip_velocities.term_vel_N_rai = CC.Geometry.WVector(If(tmp.term_vel_N_rai) * FT(-1))
+    @. aux.precip_velocities.term_vel_rai = CC.Geometry.WVector(If(tmp.term_vel_rai) * FT(-1))
+end
 
 """
    Advection Equation: ∂ϕ/dt = -∂(vΦ)
@@ -561,6 +656,31 @@ end
 
     return dY
 end
+@inline function advection_tendency!(::Precipitation2M, dY, Y, aux, t)
+    FT = eltype(Y.ρq_tot)
+
+    If = CC.Operators.InterpolateC2F()
+    ∂ = CC.Operators.DivergenceF2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
+
+    @. dY.N_rai +=
+        -∂(
+            (aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) + aux.precip_velocities.term_vel_N_rai) *
+            If(Y.N_rai),
+        )
+    @. dY.ρq_rai +=
+        -∂(
+            (aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) + aux.precip_velocities.term_vel_rai) *
+            If(Y.ρq_rai),
+        )
+
+    fcc = CC.Operators.FluxCorrectionC2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
+    @. dY.N_rai +=
+        fcc((aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) + aux.precip_velocities.term_vel_N_rai), Y.N_rai)
+    @. dY.ρq_rai +=
+        fcc((aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) + aux.precip_velocities.term_vel_rai), Y.ρq_rai)
+
+    return dY
+end
 
 """
    Additional source terms
@@ -593,6 +713,14 @@ end
 
     @. dY.ρq_rai += aux.moisture_variables.ρ * aux.precip_sources.S_q_rai
     @. dY.ρq_sno += aux.moisture_variables.ρ * aux.precip_sources.S_q_sno
+
+    return dY
+end
+@inline function sources_tendency!(::Precipitation2M, dY, Y, aux, t)
+
+    @. dY.ρq_rai += aux.moisture_variables.ρ * aux.precip_sources.S_q_rai
+    @. dY.N_liq += aux.precip_sources.S_N_liq
+    @. dY.N_rai += aux.precip_sources.S_N_rai
 
     return dY
 end

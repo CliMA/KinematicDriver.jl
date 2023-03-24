@@ -155,6 +155,10 @@ function get_variable_data_from_ODE(u, ρ::Vector{Float64}, var::String)
     elseif var == "rlr"
         _qtot = parent(u.ρq_tot) ./ ρ
         output = (parent(u.ρq_liq) .+ parent(u.ρq_rai)) ./ ρ ./ (1 .- _qtot)
+    elseif var == "Nl"
+        output = parent(u.N_liq)
+    elseif var == "Nr"
+        output = parent(u.N_rai)
     elseif var == "rho"
         output = ρ
     elseif var == "rain averaged terminal velocity"
@@ -237,6 +241,12 @@ function equation_types(moisture_choice::String, precipitation_choice::String, r
             precip = Precipitation1M(CMT.TC1980Type())
         elseif rain_formation_choice == "LD2004"
             precip = Precipitation1M(CMT.LD2004Type())
+        else
+            error("Invalid rain formation choice: $rain_formation_choice")
+        end
+    elseif precipitation_choice == "Precipitation2M"
+        if rain_formation_choice == "SB2006"
+            precip = Precipitation2M(CMT.SB2006Type())
         else
             error("Invalid rain formation choice: $rain_formation_choice")
         end
