@@ -346,7 +346,7 @@ end
     S_N_rai += min(max(0, N_rai / dt), tmp.dN_rai_dt)
 
     # evaporation
-    tmp = CM2.evaporation(microphys_params, rf, q, q_rai, ρ, N_rai, T)
+    tmp = CM2.rain_evaporation(microphys_params, rf, q, q_rai, ρ, N_rai, T)
     S_Nr = -min(max(0, N_rai / dt), -tmp[1])
     S_qr = -min(max(0, q_rai / dt), -tmp[2])
     S_q_rai += S_qr
@@ -354,7 +354,7 @@ end
     S_q_vap -= S_qr
     S_N_rai += S_Nr
 
-    vt = CM2.terminal_velocity(microphys_params, CMT.SB2006Type(), q_rai, ρ, N_rai)
+    vt = CM2.rain_terminal_velocity(microphys_params, CMT.SB2006Type(), q_rai, ρ, N_rai)
     term_vel_N_rai = vt[1]
     term_vel_rai = vt[2]
 
