@@ -83,6 +83,18 @@ function parse_commandline()
         help = "Pressure at the surface [pa]"
         arg_type = Real
         default = 100000.0
+        "--r_dry"
+        help = "aerosol distribution mean radius for aerosol activation calculations in 2M schemes [m]"
+        arg_type = Real
+        default = 0.04 * 1e-6
+        "--std_dry"
+        help = "aerosol distribution standard deviation for aerosol activation calucaulations in 2M schemes"
+        arg_type = Real
+        default = 1.4
+        "--kappa"
+        help = "hygroscopicity of aerosols for aerosol activation calucaulations in 2M schemes"
+        arg_type = Real
+        default = 0.9
     end
 
     return AP.parse_args(s)

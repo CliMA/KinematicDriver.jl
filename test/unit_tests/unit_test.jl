@@ -38,6 +38,7 @@ thermo_params = KP.thermodynamics_params(params)
     @test KID.NoPrecipitation <: KID.AbstractPrecipitationStyle
     @test KID.Precipitation0M <: KID.AbstractPrecipitationStyle
     @test KID.Precipitation1M <: KID.AbstractPrecipitationStyle
+    @test KID.Precipitation2M <: KID.AbstractPrecipitationStyle
 
 end
 

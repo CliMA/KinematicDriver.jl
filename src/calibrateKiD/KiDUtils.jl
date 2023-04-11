@@ -159,6 +159,8 @@ function get_variable_data_from_ODE(u, ρ::Vector{Float64}, var::String)
         output = parent(u.N_liq)
     elseif var == "Nr"
         output = parent(u.N_rai)
+    elseif var == "Na"
+        output = parent(u.N_aer)
     elseif var == "rho"
         output = ρ
     elseif var == "rain averaged terminal velocity"
@@ -285,6 +287,9 @@ function create_parameter_set(FT, model_settings::Dict, params_cal::Dict)
         precip_sinks = 1,
         prescribed_Nd = model_settings["Nd"],
         qtot_flux_correction = Int(model_settings["qtot_flux_correction"]),
+        r_dry = model_settings["r_dry"],
+        std_dry = model_settings["std_dry"],
+        κ = model_settings["κ"],
         microphys_params,
     )
     return param_set

@@ -113,6 +113,9 @@ params = create_parameter_set(
     Int(opts["precip_sinks"]),
     Int(opts["qtot_flux_correction"]),
     FT(opts["prescribed_Nd"]),
+    FT(opts["r_dry"]),
+    FT(opts["std_dry"]),
+    FT(opts["kappa"]),
 )
 
 # Solve the initial value problem for density profile

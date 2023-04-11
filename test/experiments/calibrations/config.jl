@@ -115,6 +115,9 @@ function get_model_config(params_calib_names::Array{String})
     config["p0"] = 100000.0
     config["Nd"] = 100 * 1e6
     config["qtot_flux_correction"] = false
+    config["r_dry"] = 0.04 * 1e-6
+    config["std_dry"] = 1.4
+    config["κ"] = 0.9
     config["filter"] = KD.make_filter_props(
         config["n_elem"],
         config["t_calib"];

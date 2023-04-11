@@ -144,9 +144,11 @@ function get_single_obs_field(
         elseif var == "rtr"
             _data = _data_pysdm["qv"] .+ (_data_pysdm["qc"] .+ _data_pysdm["qr"]) .* 1e-3
         elseif var == "Nl"
-            _data = _data_pysdm["na"] + _data_pysdm["nc"]
+            _data = _data_pysdm["nc"]
         elseif var == "Nr"
             _data = _data_pysdm["nr"]
+        elseif var == "Na"
+            _data = _data_pysdm["na"]
         else
             _data = _data_pysdm[var]
         end

@@ -33,6 +33,7 @@ end
     @. dY.ρq_rai = FT(0)
     @. dY.N_liq = FT(0)
     @. dY.N_rai = FT(0)
+    @. dY.N_aer = FT(0)
 end
 
 """
@@ -323,8 +324,9 @@ end
     S_q_rai += S_qr
     S_q_tot -= S_qr
     S_q_liq -= S_qr
-    S_N_liq += -min(max(0, N_liq / dt), -tmp.dN_liq_dt)
-    S_N_rai += min(max(0, N_liq / dt), tmp.dN_rai_dt)
+    S_Nr = min(max(0, N_liq / 2 / dt), tmp.dN_rai_dt)
+    S_N_rai += S_Nr
+    S_N_liq -= 2*S_Nr
 
     # self_collection
     tmp_l = CM2.liquid_self_collection(microphys_params, rf, q.liq, ρ, -S_qr)
@@ -343,7 +345,7 @@ end
     S_q_tot -= S_qr
     S_q_liq -= S_qr
     S_N_liq += -min(max(0, N_liq / dt), -tmp.dN_liq_dt)
-    S_N_rai += min(max(0, N_rai / dt), tmp.dN_rai_dt)
+    S_N_rai += FT(0)
 
     # evaporation
     tmp = CM2.rain_evaporation(microphys_params, rf, q, q_rai, ρ, N_rai, T)
@@ -544,10 +546,25 @@ end
 @inline function precompute_aux_precip!(ps::Precipitation2M, dY, Y, aux, t)
     FT = eltype(Y.ρq_rai)
 
+    aux.aerosol_variables.N_aer = Y.N_aer
+    tmp = @. aerosol_activation_helper!(
+        aux.params,
+        aux.moisture_variables.q_tot,
+        aux.moisture_variables.q_liq,
+        aux.aerosol_variables.N_aer,
+        aux.aerosol_variables.N_aer_0,
+        aux.moisture_variables.T,
+        aux.moisture_variables.p,
+        aux.moisture_variables.ρ,
+        ClimaCore.Operators.InterpolateF2C().(aux.prescribed_velocity.ρw.components.data.:1),
+        aux.TS.dt,
+    )
+    @. Y.N_liq += tmp.S_Nl
+    @. Y.N_aer += tmp.S_Na
+
     aux.precip_variables.q_rai = Y.ρq_rai ./ aux.moisture_variables.ρ
     aux.precip_variables.N_liq = Y.N_liq
     aux.precip_variables.N_rai = Y.N_rai
-
     tmp = @. precip_helper_sources_2M!(
         aux.params,
         aux.moisture_variables.q_tot,
@@ -721,6 +738,7 @@ end
     @. dY.ρq_rai += aux.moisture_variables.ρ * aux.precip_sources.S_q_rai
     @. dY.N_liq += aux.precip_sources.S_N_liq
     @. dY.N_rai += aux.precip_sources.S_N_rai
+    @. dY.N_aer += aux.aerosol_variables.S_N_aer
 
     return dY
 end
