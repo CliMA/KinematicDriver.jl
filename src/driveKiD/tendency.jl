@@ -326,7 +326,7 @@ end
     S_q_liq -= S_qr
     S_Nr = min(max(0, N_liq / 2 / dt), tmp.dN_rai_dt)
     S_N_rai += S_Nr
-    S_N_liq -= 2*S_Nr
+    S_N_liq -= 2 * S_Nr
 
     # self_collection
     tmp_l = CM2.liquid_self_collection(microphys_params, rf, q.liq, ρ, -S_qr)

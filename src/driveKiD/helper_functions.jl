@@ -29,7 +29,7 @@ end
     κ = KP.κ(params)
     w = ρw / ρ
 
-    aerosol_distribution =  CMAM.AerosolDistribution((CMAM.Mode_κ(r_dry, std_dry, N_aer_0, FT(1), FT(1), FT(0), κ, 1),))
+    aerosol_distribution = CMAM.AerosolDistribution((CMAM.Mode_κ(r_dry, std_dry, N_aer_0, FT(1), FT(1), FT(0), κ, 1),))
     N_act = CMAA.N_activated_per_mode(microphys_params, aerosol_distribution, T, p, w, q)[1]
 
     if isnan(N_act)
