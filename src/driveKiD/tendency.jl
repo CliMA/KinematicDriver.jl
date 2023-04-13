@@ -557,7 +557,6 @@ end
         aux.moisture_variables.p,
         aux.moisture_variables.ρ,
         ClimaCore.Operators.InterpolateF2C().(aux.prescribed_velocity.ρw.components.data.:1),
-        aux.TS.dt,
     )
     @. Y.N_liq += tmp.S_Nl
     @. Y.N_aer += tmp.S_Na
