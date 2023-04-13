@@ -508,5 +508,25 @@ end
 
 end
 
+@testset "aerosol activation for 2M schemes" begin
+    #setup
+    q_tot = 1e-2
+    q_liq = 1e-3
+    N_aer = 5e7
+    N_aer_0 = 1e8
+    T = 280.0
+    p = 1e5
+    ρ = 1.0
+    ρw = 2.0
+
+    #action
+    tmp = KID.aerosol_activation_helper(params, q_tot, q_liq, N_aer, N_aer_0, T, p, ρ, ρw)
+
+    #test
+    @test tmp isa NamedTuple
+    @test tmp.S_Nl ≈ -tmp.S_Na
+    @test 0 < tmp.S_Nl < N_aer_0
+end
+
 # calibration pipeline unit tests
 include("./calibration_pipeline/run_calibration_pipeline_unit_tests.jl")

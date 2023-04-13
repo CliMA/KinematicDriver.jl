@@ -547,7 +547,7 @@ end
     FT = eltype(Y.ρq_rai)
 
     aux.aerosol_variables.N_aer = Y.N_aer
-    tmp = @. aerosol_activation_helper!(
+    tmp = @. aerosol_activation_helper(
         aux.params,
         aux.moisture_variables.q_tot,
         aux.moisture_variables.q_liq,
