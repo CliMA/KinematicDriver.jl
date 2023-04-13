@@ -172,6 +172,8 @@ end
         q_sno = [0.0, 0.0],
         N_liq = [0.0, 0.0],
         N_rai = [0.0, 0.0],
+        N_aer_0 = [0.0, 0.0],
+        N_aer = [0.0, 0.0],
         S_ql_moisture = [0.0, 0.0],
         S_qi_moisture = [0.0, 0.0],
         S_qt_precip = [0.0, 0.0],
@@ -181,6 +183,7 @@ end
         S_qs_precip = [0.0, 0.0],
         S_Nl_precip = [0.0, 0.0],
         S_Nr_precip = [0.0, 0.0],
+        S_Na = [0.0, 0.0],
     )
     space, face_space = KID.make_function_space(Float64, 0, 100, 10)
 
@@ -259,6 +262,8 @@ end
         q_sno = [0.0, 0.0],
         N_liq = [0.0, 0.0],
         N_rai = [0.0, 0.0],
+        N_aer_0 = [0.0, 0.0],
+        N_aer = [0.0, 0.0],
         S_ql_moisture = [0.0, 0.0],
         S_qi_moisture = [0.0, 0.0],
         S_qt_precip = [0.0, 0.0],
@@ -268,6 +273,7 @@ end
         S_qs_precip = [0.0, 0.0],
         S_Nl_precip = [0.0, 0.0],
         S_Nr_precip = [0.0, 0.0],
+        S_Na = [0.0, 0.0],
     )
     space, face_space = KID.make_function_space(Float64, 0, 100, 10)
     aux = KID.initialise_aux(Float64, ip, params, 0.0, 0.0, face_space, KID.EquilibriumMoisture_ρθq())
