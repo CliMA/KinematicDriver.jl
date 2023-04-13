@@ -90,8 +90,8 @@ function create_parameter_set(
         println(io, "alias = \"std_dry\"")
         println(io, "value = " * string(std_dry))
         println(io, "type = \"float\"")
-        println(io, "[κ]")
-        println(io, "alias = \"κ\"")
+        println(io, "[kappa]")
+        println(io, "alias = \"kappa\"")
         println(io, "value = " * string(κ))
         println(io, "type = \"float\"")
     end
