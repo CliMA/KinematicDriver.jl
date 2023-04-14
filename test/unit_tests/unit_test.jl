@@ -446,20 +446,22 @@ end
 
 end
 
-@testset "precompute_aux, advection_tendency and sources_tendency" begin
+@testset "advection_tendency and sources_tendency" begin
 
     space, face_space = KID.make_function_space(Float64, 0, 100, 5)
     coord = CC.Fields.coordinate_field(space)
     ρ_profile = KID.ρ_ivp(Float64, params)
     init = map(coord -> KID.init_1d_column(Float64, params, ρ_profile, coord.z), coord)
-
-    aux = KID.initialise_aux(Float64, init, params, 0.0, 0.0, face_space, KID.EquilibriumMoisture_ρθq())
-    Y = KID.initialise_state(KID.EquilibriumMoisture_ρθq(), KID.NoPrecipitation(), init)
-    dY = Y / 10
     t = 13.0
 
-    @test_throws Exception KID.precompute_aux_thermo!(KID.AbstractMoistureStyle(), dY, Y, aux, t)
-    @test_throws Exception KID.precompute_aux_precip!(KID.AbstractPrecipitationStyle(), dY, Y, aux, t)
+    # eq
+    aux = KID.initialise_aux(Float64, init, params, 0.0, 0.0, face_space, KID.EquilibriumMoisture_ρθq())
+    ρw = 0.0
+    @. aux.prescribed_velocity.ρw = CC.Geometry.WVector.(ρw)
+    aux.prescribed_velocity.ρw0 = ρw
+
+    Y = KID.initialise_state(KID.EquilibriumMoisture_ρθq(), KID.NoPrecipitation(), init)
+    dY = Y / 10
 
     @test_throws Exception advection_tendency!(KID.AbstractMoistureStyle(), dY, Y, aux, t)
     @test_throws Exception advection_tendency!(KID.AbstractPrecipitationStyle(), dY, Y, aux, t)
@@ -467,8 +469,50 @@ end
     @test_throws Exception KID.sources_tendency!(KID.AbstractMoistureStyle(), dY, Y, aux, t)
     @test_throws Exception KID.sources_tendency!(KID.AbstractPrecipitationStyle(), dY, Y, aux, t)
 
-    KID.advection_tendency!(KID.EquilibriumMoisture_ρθq(), dY, Y, aux, 1.0)
-    @test dY == Y / 10
+    KID.advection_tendency!(KID.EquilibriumMoisture_ρθq(), dY, Y, aux, t)
+    @test dY ≈ Y / 10 atol = eps(Float64) * 10
+
+    Y = KID.initialise_state(KID.EquilibriumMoisture_ρθq(), KID.Precipitation2M(CMT.SB2006Type()), init)
+    dY = Y / 10
+    KID.advection_tendency!(KID.Precipitation2M(CMT.SB2006Type()), dY, Y, aux, t)
+    @test dY ≈ Y / 10 atol = eps(Float64) * 10
+
+    # Non-eq
+    aux = KID.initialise_aux(Float64, init, params, 0.0, 0.0, face_space, KID.NonEquilibriumMoisture_ρθq())
+    ρw = 0.0
+    @. aux.prescribed_velocity.ρw = CC.Geometry.WVector.(ρw)
+    aux.prescribed_velocity.ρw0 = ρw
+
+    Y = KID.initialise_state(KID.NonEquilibriumMoisture_ρθq(), KID.NoPrecipitation(), init)
+    dY = Y / 10
+
+    KID.advection_tendency!(KID.NonEquilibriumMoisture_ρθq(), dY, Y, aux, t)
+    @test dY ≈ Y / 10 atol = eps(Float64) * 10
+
+
+    Y = KID.initialise_state(KID.NonEquilibriumMoisture_ρθq(), KID.Precipitation2M(CMT.SB2006Type()), init)
+    dY = Y / 10
+    KID.advection_tendency!(KID.Precipitation2M(CMT.SB2006Type()), dY, Y, aux, t)
+    @test dY ≈ Y / 10 atol = eps(Float64) * 10
+
+end
+
+@testset "precompute aux" begin
+
+    space, face_space = KID.make_function_space(Float64, 0, 100, 5)
+    coord = CC.Fields.coordinate_field(space)
+    ρ_profile = KID.ρ_ivp(Float64, params)
+    init = map(coord -> KID.init_1d_column(Float64, params, ρ_profile, coord.z), coord)
+    t = 13.0
+
+    # eq
+    aux = KID.initialise_aux(Float64, init, params, 0.0, 0.0, face_space, KID.EquilibriumMoisture_ρθq())
+
+    Y = KID.initialise_state(KID.EquilibriumMoisture_ρθq(), KID.NoPrecipitation(), init)
+    dY = Y / 10
+
+    @test_throws Exception KID.precompute_aux_thermo!(KID.AbstractMoistureStyle(), dY, Y, aux, t)
+    @test_throws Exception KID.precompute_aux_precip!(KID.AbstractPrecipitationStyle(), dY, Y, aux, t)
 
     KID.precompute_aux_thermo!(KID.EquilibriumMoisture_ρθq(), dY, Y, aux, t)
     @test aux.moisture_variables.ρ_dry == aux.moisture_variables.ρ .- Y.ρq_tot
@@ -484,13 +528,10 @@ end
     @test aux.moisture_variables.θ_dry ==
           TD.dry_pottemp.(thermo_params, aux.moisture_variables.T, aux.moisture_variables.ρ_dry)
 
+    # Non-eq
     aux = KID.initialise_aux(Float64, init, params, 0.0, 0.0, face_space, KID.NonEquilibriumMoisture_ρθq())
     Y = KID.initialise_state(KID.NonEquilibriumMoisture_ρθq(), KID.NoPrecipitation(), init)
     dY = Y / 10
-    t = 13.0
-
-    KID.advection_tendency!(KID.NonEquilibriumMoisture_ρθq(), dY, Y, aux, 1.0)
-    @test dY == Y / 10
 
     KID.precompute_aux_thermo!(KID.NonEquilibriumMoisture_ρθq(), dY, Y, aux, t)
     @test aux.moisture_variables.ρ_dry == aux.moisture_variables.ρ .- Y.ρq_tot
@@ -505,6 +546,29 @@ end
     @test aux.moisture_variables.θ_liq_ice == TD.liquid_ice_pottemp.(thermo_params, aux.moisture_variables.ts)
     @test aux.moisture_variables.θ_dry ==
           TD.dry_pottemp.(thermo_params, aux.moisture_variables.T, aux.moisture_variables.ρ_dry)
+
+    aux = KID.initialise_aux(Float64, init, params, (; dt = 2.0), 0.0, face_space, KID.NonEquilibriumMoisture_ρθq())
+    Y = KID.initialise_state(KID.NonEquilibriumMoisture_ρθq(), KID.Precipitation2M(CMT.SB2006Type()), init)
+    dY = Y / 10
+
+    KID.precompute_aux_precip!(KID.Precipitation2M(CMT.SB2006Type()), dY, Y, aux, t)
+    tmp = @. KID.precip_helper_sources_2M!(
+        aux.params,
+        aux.moisture_variables.q_tot,
+        aux.moisture_variables.q_liq,
+        aux.precip_variables.q_rai,
+        aux.precip_variables.N_liq,
+        aux.precip_variables.N_rai,
+        aux.moisture_variables.T,
+        aux.moisture_variables.ρ,
+        aux.TS.dt,
+        KID.Precipitation2M(CMT.SB2006Type()),
+    )
+    @test aux.precip_sources.S_q_rai ≈ tmp.S_q_rai atol = eps(Float64) * 10
+    @test aux.precip_sources.S_q_tot ≈ tmp.S_q_tot atol = eps(Float64) * 10
+    @test aux.precip_sources.S_q_liq ≈ tmp.S_q_liq atol = eps(Float64) * 10
+    @test aux.precip_sources.S_N_liq ≈ tmp.S_N_liq atol = eps(Float64) * 10
+    @test aux.precip_sources.S_N_rai ≈ tmp.S_N_rai atol = eps(Float64) * 10
 
 end
 
@@ -526,6 +590,21 @@ end
     @test tmp isa NamedTuple
     @test tmp.S_Nl ≈ -tmp.S_Na
     @test 0 < tmp.S_Nl < N_aer_0
+
+    #action
+    tmp = KID.aerosol_activation_helper(params, q_tot, q_liq, N_aer, N_aer_0, 290.0, p, ρ, ρw)
+
+    #test
+    @test tmp.S_Nl ≈ 0.0 atol = eps(Float64)
+    @test tmp.S_Na ≈ 0.0 atol = eps(Float64)
+
+    #action
+    tmp = KID.aerosol_activation_helper(params, q_tot, q_liq, N_aer, N_aer_0, T, p, ρ, 0.0)
+
+    #test
+    @test tmp.S_Nl ≈ 0.0 atol = eps(Float64)
+    @test tmp.S_Na ≈ 0.0 atol = eps(Float64)
+
 end
 
 # calibration pipeline unit tests
