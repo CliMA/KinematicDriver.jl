@@ -26,7 +26,7 @@ model_settings = get_model_config(param_names)
 config["model"] = model_settings
 param_names = collect(keys(parameters))
 truth = KID.get_obs!(config)
-ref_stats_list = KID.make_ref_stats_list(obs, config["statistics"], KID.get_numbers_from_config(config)...)
+ref_stats_list = KID.make_ref_stats_list(truth, config["statistics"], KID.get_numbers_from_config(config)...)
 ref_stats = KID.combine_ref_stats(ref_stats_list)
 
 NC.Dataset(output_file_name, "c") do ds
