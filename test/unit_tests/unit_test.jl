@@ -582,9 +582,10 @@ end
     p = 1e5
     ρ = 1.0
     ρw = 2.0
+    dt = 1.0
 
     #action
-    tmp = KID.aerosol_activation_helper(params, q_tot, q_liq, N_aer, N_aer_0, T, p, ρ, ρw)
+    tmp = KID.aerosol_activation_helper(params, q_tot, q_liq, N_aer, N_aer_0, T, p, ρ, ρw, dt)
 
     #test
     @test tmp isa NamedTuple
@@ -592,14 +593,14 @@ end
     @test 0 < tmp.S_Nl < N_aer_0
 
     #action
-    tmp = KID.aerosol_activation_helper(params, q_tot, q_liq, N_aer, N_aer_0, 290.0, p, ρ, ρw)
+    tmp = KID.aerosol_activation_helper(params, q_tot, q_liq, N_aer, N_aer_0, 290.0, p, ρ, ρw, dt)
 
     #test
     @test tmp.S_Nl ≈ 0.0 atol = eps(Float64)
     @test tmp.S_Na ≈ 0.0 atol = eps(Float64)
 
     #action
-    tmp = KID.aerosol_activation_helper(params, q_tot, q_liq, N_aer, N_aer_0, T, p, ρ, 0.0)
+    tmp = KID.aerosol_activation_helper(params, q_tot, q_liq, N_aer, N_aer_0, T, p, ρ, 0.0, dt)
 
     #test
     @test tmp.S_Nl ≈ 0.0 atol = eps(Float64)

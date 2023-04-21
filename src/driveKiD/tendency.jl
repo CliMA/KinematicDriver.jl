@@ -557,9 +557,10 @@ end
         aux.moisture_variables.p,
         aux.moisture_variables.ρ,
         ClimaCore.Operators.InterpolateF2C().(aux.prescribed_velocity.ρw.components.data.:1),
+        aux.TS.dt,
     )
-    @. Y.N_liq += tmp.S_Nl
-    @. Y.N_aer += tmp.S_Na
+    aux.aerosol_variables.S_N_aer = tmp.S_Na
+    aux.precip_sources.S_N_liq = tmp.S_Nl
 
     aux.precip_variables.q_rai = Y.ρq_rai ./ aux.moisture_variables.ρ
     aux.precip_variables.N_liq = Y.N_liq
@@ -579,7 +580,7 @@ end
     aux.precip_sources.S_q_rai = tmp.S_q_rai
     aux.precip_sources.S_q_tot = tmp.S_q_tot
     aux.precip_sources.S_q_liq = tmp.S_q_liq
-    aux.precip_sources.S_N_liq = tmp.S_N_liq
+    @. aux.precip_sources.S_N_liq += tmp.S_N_liq
     aux.precip_sources.S_N_rai = tmp.S_N_rai
 
     If = CC.Operators.InterpolateC2F(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())

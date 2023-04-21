@@ -8,7 +8,7 @@ end
 """
     Returns the number of new activated aerosol particles and updates aerosol number density
 """
-@inline function aerosol_activation_helper(params, q_tot, q_liq, N_aer, N_aer_0, T, p, ρ, ρw)
+@inline function aerosol_activation_helper(params, q_tot, q_liq, N_aer, N_aer_0, T, p, ρ, ρw, dt)
 
     microphys_params = KP.microphysics_params(params)
     thermo_params = CM.Parameters.thermodynamics_params(microphys_params)
@@ -36,7 +36,7 @@ end
         return (; S_Nl, S_Na)
     end
 
-    S_Nl = max(0, N_act - (N_aer_0 - N_aer))
+    S_Nl = max(0, N_act - (N_aer_0 - N_aer)) / dt
     S_Na = -S_Nl
 
     return (; S_Nl, S_Na)
