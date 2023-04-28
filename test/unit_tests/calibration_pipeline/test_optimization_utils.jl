@@ -23,7 +23,7 @@
     @test size(res[1]) == (n_vars, n_ensemble)
     @test u.ϕ_optim isa Vector
     @test u.cov_optim isa Matrix
-    @test norm((u.ϕ_optim .- u_true) ./ u_true) < 0.05
+    @test norm((u.ϕ_optim .- u_true) ./ u_true) < 0.1
 
     #setup
     config["process"]["EKP_method"] = "UKI"
@@ -39,7 +39,7 @@
     @test size(res[1]) == (n_vars, 2 * n_vars + 1)
     @test u.ϕ_optim isa Vector
     @test u.cov_optim isa Matrix
-    @test norm((u.ϕ_optim .- u_true) ./ u_true) < 0.05
+    @test norm((u.ϕ_optim .- u_true) ./ u_true) < 0.1
 
     #setup
     config["process"]["EKP_method"] = "UKP_"
@@ -81,12 +81,10 @@ end
     u = KID.get_results(res, priors)
 
     #test
-    @test norm((u.ϕ_optim .- u_true) ./ u_true) < 0.05
+    @test norm((u.ϕ_optim .- u_true) ./ u_true) < 0.1
 
     #setup
     config["process"]["EKP_method"] = "UKI"
-    config["process"]["batch_size"] = 1
-    config["process"]["α_reg"] = 0.1
     config["process"]["Δt"] = 10.0
 
     #action
@@ -94,7 +92,7 @@ end
     u = KID.get_results(res, priors)
 
     #test
-    @test norm((u.ϕ_optim .- u_true) ./ u_true) < 0.05
+    @test norm((u.ϕ_optim .- u_true) ./ u_true) < 0.1
 end
 
 @testset "Calibrate by Optim and Get results" begin

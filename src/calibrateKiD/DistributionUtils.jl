@@ -1,6 +1,6 @@
 function initial_parameter_ensemble(priors, N_ensemble; rng_seed = 10)
     Random.seed!(rng_seed)
-    initial_ensemble = construct_initial_ensemble(priors, N_ensemble; rng_seed = rng_seed)
+    initial_ensemble = construct_initial_ensemble(priors, N_ensemble)
     return initial_ensemble
 end
 

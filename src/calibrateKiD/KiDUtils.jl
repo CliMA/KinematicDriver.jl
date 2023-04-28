@@ -279,17 +279,42 @@ function create_parameter_set(FT, model_settings::Dict, params_cal::Dict)
         CM.Parameters.CloudMicrophysicsParameters{FT, TP}(; fixed_microphys_pairs..., pairs..., thermo_params)
     MP = typeof(microphys_params)
 
+    precip_sources = if ("precip_sources" in keys(model_settings))
+        model_settings["precip_sources"]
+    else
+        1
+    end
+    precip_sinks = if ("precip_sinks" in keys(model_settings))
+        model_settings["precip_sinks"]
+    else
+        1
+    end
+    r_dry = if ("r_dry" in keys(model_settings))
+        model_settings["r_dry"]
+    else
+        0.04 * 1e-6
+    end
+    std_dry = if ("std_dry" in keys(model_settings))
+        model_settings["std_dry"]
+    else
+        1.4
+    end
+    κ = if ("κ" in keys(model_settings))
+        model_settings["κ"]
+    else
+        0.9
+    end
     param_set = KP.KinematicParameters{FT, MP}(;
         w1 = model_settings["w1"],
         t1 = model_settings["t1"],
         p0 = model_settings["p0"],
-        precip_sources = 1,
-        precip_sinks = 1,
+        precip_sources = precip_sources,
+        precip_sinks = precip_sinks,
         prescribed_Nd = model_settings["Nd"],
         qtot_flux_correction = Int(model_settings["qtot_flux_correction"]),
-        r_dry = model_settings["r_dry"],
-        std_dry = model_settings["std_dry"],
-        κ = model_settings["κ"],
+        r_dry = r_dry,
+        std_dry = std_dry,
+        κ = κ,
         microphys_params,
     )
     return param_set
