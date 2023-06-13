@@ -111,6 +111,7 @@ function init_1d_column(::Type{FT}, params, ρ_profile, z; dry = false) where {F
 
     ρ::FT = ρ_profile(z)
     ρ_dry::FT = SDM_ρ_dry_of_ρ(ρ, q_vap)
+    ρ_SDP = 1.225
 
     # assuming no cloud condensate in the initial profile
     θ_liq_ice::FT = θ_std # TODO - compute this based on TS
@@ -132,6 +133,10 @@ function init_1d_column(::Type{FT}, params, ρ_profile, z; dry = false) where {F
     q_sno::FT = FT(0.0)
     ρq_rai::FT = q_rai * ρ
     ρq_sno::FT = q_sno * ρ
+    N_liq::FT = FT(0)
+    N_rai::FT = FT(0)
+    N_aer_0::FT = Parameters.prescribed_Nd(params) * ρ_dry / ρ_SDP
+    N_aer::FT = N_aer_0
 
     S_ql_moisture::FT = FT(0.0)
     S_qi_moisture::FT = FT(0.0)
@@ -141,6 +146,9 @@ function init_1d_column(::Type{FT}, params, ρ_profile, z; dry = false) where {F
     S_qi_precip::FT = FT(0.0)
     S_qr_precip::FT = FT(0.0)
     S_qs_precip::FT = FT(0.0)
+    S_Nl_precip::FT = FT(0)
+    S_Nr_precip::FT = FT(0)
+    S_Na::FT = FT(0)
 
     return (;
         ρ,
@@ -159,6 +167,10 @@ function init_1d_column(::Type{FT}, params, ρ_profile, z; dry = false) where {F
         q_ice,
         q_rai,
         q_sno,
+        N_liq,
+        N_rai,
+        N_aer,
+        N_aer_0,
         S_ql_moisture,
         S_qi_moisture,
         S_qt_precip,
@@ -166,5 +178,8 @@ function init_1d_column(::Type{FT}, params, ρ_profile, z; dry = false) where {F
         S_qi_precip,
         S_qr_precip,
         S_qs_precip,
+        S_Nl_precip,
+        S_Nr_precip,
+        S_Na,
     )
 end

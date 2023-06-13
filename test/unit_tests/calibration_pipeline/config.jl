@@ -82,6 +82,9 @@ function get_model_config(params_calib_names::Array{String})
     config["p0"] = 99000.0
     config["Nd"] = 50 * 1e6
     config["qtot_flux_correction"] = false
+    config["r_dry"] = 0.04 * 1e-6
+    config["std_dry"] = 1.4
+    config["κ"] = 0.9
     config["filter"] = KD.make_filter_props(config["n_elem"], config["t_calib"]; apply = false)
     fixed_parameters = create_fixed_parameter_set(params_calib_names)
     config["thermo_params"] = fixed_parameters.thermo_params

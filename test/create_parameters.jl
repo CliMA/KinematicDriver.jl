@@ -15,6 +15,9 @@ function create_parameter_set(
     precip_sinks = 1,
     qtot_flux_correction = 0,
     prescribed_Nd = 100 * 1e6,
+    r_dry = 0.04 * 1e-6,
+    std_dry = 1.4,
+    κ = 0.9,
 )
     FT = CP.float_type(toml_dict)
     override_file = joinpath(out_dir, "override_dict.toml")
@@ -79,6 +82,18 @@ function create_parameter_set(
         println(io, "alias = \"prescribed_Nd\"")
         println(io, "value = " * string(prescribed_Nd))
         println(io, "type = \"float\"")
+        println(io, "[r_dry]")
+        println(io, "alias = \"r_dry\"")
+        println(io, "value = " * string(r_dry))
+        println(io, "type = \"float\"")
+        println(io, "[std_dry]")
+        println(io, "alias = \"std_dry\"")
+        println(io, "value = " * string(std_dry))
+        println(io, "type = \"float\"")
+        println(io, "[kappa]")
+        println(io, "alias = \"κ\"")
+        println(io, "value = " * string(κ))
+        println(io, "type = \"float\"")
     end
     toml_dict = CP.create_toml_dict(FT; override_file, dict_type="alias")
     isfile(override_file) && rm(override_file; force=true)
@@ -97,7 +112,7 @@ function create_parameter_set(
     )
     MP = typeof(microphys_params)
 
-    aliases = ["w1", "t1", "p0", "precip_sources", "precip_sinks", "qtot_flux_correction", "prescribed_Nd"]
+    aliases = ["w1", "t1", "p0", "precip_sources", "precip_sinks", "qtot_flux_correction", "prescribed_Nd", "r_dry", "std_dry", "κ"]
     pairs = CP.get_parameter_values!(toml_dict, aliases, "Kinematic1D")
 
     param_set = KID.Parameters.KinematicParameters{FTD, MP}(; pairs..., microphys_params)

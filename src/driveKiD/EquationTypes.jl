@@ -19,6 +19,7 @@ export NonEquilibriumMoisture_ρdTq
 export NoPrecipitation
 export Precipitation0M
 export Precipitation1M
+export Precipitation2M
 
 export OneMomentRainFormation
 
@@ -40,6 +41,9 @@ struct NonEquilibriumMoisture_ρdTq <: NonEquilibriumMoisture end
 struct NoPrecipitation <: AbstractPrecipitationStyle end
 struct Precipitation0M <: AbstractPrecipitationStyle end
 struct Precipitation1M{PT} <: AbstractPrecipitationStyle
+    rain_formation::PT
+end
+struct Precipitation2M{PT} <: AbstractPrecipitationStyle
     rain_formation::PT
 end
 

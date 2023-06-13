@@ -15,15 +15,15 @@ function parse_commandline()
         arg_type = String
         default = "RhoThetaQ"
         "--precipitation_choice"
-        help = "Precipitation model choice: NoPrecipitation, Precipitation0M, Precipitation1M"
+        help = "Precipitation model choice: NoPrecipitation, Precipitation0M, Precipitation1M, Precipitation2M"
         arg_type = String
         default = "Precipitation1M"
         "--rain_formation_scheme_choice"
-        help = "Rain formation scheme choice: CliMA_1M, KK2000, B1994, TC1980, LD2004"
+        help = "Rain formation scheme choice: CliMA_1M, KK2000, B1994, TC1980, LD2004 for Precipitation1M; and SB2006 for Precipitation2M"
         arg_type = String
         default = "CliMA_1M"
         "--prescribed_Nd"
-        help = "Prescribed number of cloud droplets (used in KK2000, B1994, TC1980 and LD2004 rain formation schemes"
+        help = "Prescribed number of cloud droplets (used in KK2000, B1994, TC1980, LD2004 and SB2006 rain formation schemes)"
         arg_type = Float64
         default = Float64(1e8)
         "--plotting_flag"
@@ -82,7 +82,19 @@ function parse_commandline()
         "--p0"
         help = "Pressure at the surface [pa]"
         arg_type = Real
-        default = 100700.0
+        default = 100000.0
+        "--r_dry"
+        help = "aerosol distribution mean radius for aerosol activation calculations in 2M schemes [m]"
+        arg_type = Real
+        default = 0.04 * 1e-6
+        "--std_dry"
+        help = "aerosol distribution standard deviation for aerosol activation calucaulations in 2M schemes"
+        arg_type = Real
+        default = 1.4
+        "--kappa"
+        help = "hygroscopicity of aerosols for aerosol activation calucaulations in 2M schemes"
+        arg_type = Real
+        default = 0.9
     end
 
     return AP.parse_args(s)

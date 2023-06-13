@@ -155,6 +155,12 @@ function get_variable_data_from_ODE(u, ρ::Vector{Float64}, var::String)
     elseif var == "rlr"
         _qtot = parent(u.ρq_tot) ./ ρ
         output = (parent(u.ρq_liq) .+ parent(u.ρq_rai)) ./ ρ ./ (1 .- _qtot)
+    elseif var == "Nl"
+        output = parent(u.N_liq)
+    elseif var == "Nr"
+        output = parent(u.N_rai)
+    elseif var == "Na"
+        output = parent(u.N_aer)
     elseif var == "rho"
         output = ρ
     elseif var == "rain averaged terminal velocity"
@@ -240,6 +246,12 @@ function equation_types(moisture_choice::String, precipitation_choice::String, r
         else
             error("Invalid rain formation choice: $rain_formation_choice")
         end
+    elseif precipitation_choice == "Precipitation2M"
+        if rain_formation_choice == "SB2006"
+            precip = Precipitation2M(CMT.SB2006Type())
+        else
+            error("Invalid rain formation choice: $rain_formation_choice")
+        end
     else
         error("Invalid precipitation choice: $precipitation_choice")
     end
@@ -275,6 +287,9 @@ function create_parameter_set(FT, model_settings::Dict, params_cal::Dict)
         precip_sinks = 1,
         prescribed_Nd = model_settings["Nd"],
         qtot_flux_correction = Int(model_settings["qtot_flux_correction"]),
+        r_dry = model_settings["r_dry"],
+        std_dry = model_settings["std_dry"],
+        κ = model_settings["κ"],
         microphys_params,
     )
     return param_set

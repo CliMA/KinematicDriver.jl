@@ -69,6 +69,12 @@ elseif precipitation_choice == "Precipitation1M"
     else
         error("Invalid rain formation choice: $rain_formation_choice")
     end
+elseif precipitation_choice == "Precipitation2M"
+    if rain_formation_choice == "SB2006"
+        precip = KID.Precipitation2M(CMT.SB2006Type())
+    else
+        error("Invalid rain formation choice: $rain_formation_choice")
+    end
 else
     error("Invalid precipitation choice: $precipitation_choice")
 end
@@ -83,7 +89,7 @@ face_coord = CC.Fields.coordinate_field(face_space)
 
 # Initialize the netcdf output Stats struct
 output_folder = string("Output_", moisture_choice, "_", prognostics_choice, "_", precipitation_choice)
-if precipitation_choice == "Precipitation1M"
+if precipitation_choice in ["Precipitation1M", "Precipitation2M"]
     output_folder = output_folder * "_" * rain_formation_choice
 end
 if opts["qtot_flux_correction"]
@@ -107,6 +113,9 @@ params = create_parameter_set(
     Int(opts["precip_sinks"]),
     Int(opts["qtot_flux_correction"]),
     FT(opts["prescribed_Nd"]),
+    FT(opts["r_dry"]),
+    FT(opts["std_dry"]),
+    FT(opts["kappa"]),
 )
 
 # Solve the initial value problem for density profile

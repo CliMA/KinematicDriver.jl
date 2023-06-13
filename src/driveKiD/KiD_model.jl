@@ -79,6 +79,26 @@ function initialise_state(::NonEquilibriumMoisture, ::Precipitation1M, initial_p
         ρq_sno = initial_profiles.ρq_sno,
     )
 end
+function initialise_state(::EquilibriumMoisture, ::Precipitation2M, initial_profiles)
+    return CC.Fields.FieldVector(;
+        ρq_tot = initial_profiles.ρq_tot,
+        ρq_rai = initial_profiles.ρq_rai,
+        N_liq = initial_profiles.N_liq,
+        N_rai = initial_profiles.N_rai,
+        N_aer = initial_profiles.N_aer,
+    )
+end
+function initialise_state(::NonEquilibriumMoisture, ::Precipitation2M, initial_profiles)
+    return CC.Fields.FieldVector(;
+        ρq_tot = initial_profiles.ρq_tot,
+        ρq_liq = initial_profiles.ρq_liq,
+        ρq_ice = initial_profiles.ρq_ice,
+        ρq_rai = initial_profiles.ρq_rai,
+        N_liq = initial_profiles.N_liq,
+        N_rai = initial_profiles.N_rai,
+        N_aer = initial_profiles.N_aer,
+    )
+end
 
 """
    Interface to ODE solver. It initializes the auxiliary state.
@@ -119,7 +139,13 @@ function initialise_aux(FT, ip, params, TS, Stats, face_space, moisture)
             q_ice = ip.q_ice,
             ts = ts,
         ),
-        precip_variables = CC.Fields.FieldVector(; q_rai = ip.q_rai, q_sno = ip.q_sno),
+        precip_variables = CC.Fields.FieldVector(;
+            q_rai = ip.q_rai,
+            q_sno = ip.q_sno,
+            N_liq = ip.N_liq,
+            N_rai = ip.N_rai,
+        ),
+        aerosol_variables = CC.Fields.FieldVector(; N_aer = ip.N_aer, N_aer_0 = ip.N_aer_0, S_N_aer = ip.S_Na),
         moisture_sources = CC.Fields.FieldVector(; S_q_liq = ip.S_ql_moisture, S_q_ice = ip.S_qi_moisture),
         precip_sources = CC.Fields.FieldVector(;
             S_q_tot = ip.S_qt_precip,
@@ -127,8 +153,14 @@ function initialise_aux(FT, ip, params, TS, Stats, face_space, moisture)
             S_q_ice = ip.S_qi_precip,
             S_q_rai = ip.S_qr_precip,
             S_q_sno = ip.S_qs_precip,
+            S_N_liq = ip.S_Nl_precip,
+            S_N_rai = ip.S_Nr_precip,
         ),
-        precip_velocities = CC.Fields.FieldVector(; term_vel_rai = term_vel_rai, term_vel_sno = term_vel_sno),
+        precip_velocities = CC.Fields.FieldVector(;
+            term_vel_rai = term_vel_rai,
+            term_vel_sno = term_vel_sno,
+            term_vel_N_rai = term_vel_rai,
+        ),
         prescribed_velocity = CC.Fields.FieldVector(; ρw = ρw, ρw0 = ρw0),
         params = params,
         q_surf = q_surf,

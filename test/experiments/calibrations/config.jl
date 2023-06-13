@@ -100,7 +100,7 @@ function get_model_config(params_calib_names::Array{String})
     config["model"] = "KiD"
     config["moisture_choice"] = "NonEquilibriumMoisture"
     config["precipitation_choice"] = "Precipitation1M"
-    # Define rain formation choice: "CliMA_1M", "KK2000", "B1994", "TC1980", "LD2004"
+    # Define rain formation choice: "CliMA_1M", "KK2000", "B1994", "TC1980", "LD2004", "SB2006"
     config["rain_formation_choice"] = "CliMA_1M"
     config["z_min"] = 0.0
     config["z_max"] = 3000.0
@@ -115,6 +115,9 @@ function get_model_config(params_calib_names::Array{String})
     config["p0"] = 100000.0
     config["Nd"] = 100 * 1e6
     config["qtot_flux_correction"] = false
+    config["r_dry"] = 0.04 * 1e-6
+    config["std_dry"] = 1.4
+    config["κ"] = 0.9
     config["filter"] = KD.make_filter_props(
         config["n_elem"],
         config["t_calib"];
