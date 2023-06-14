@@ -140,8 +140,8 @@ end
     microphys_params = KP.microphysics_params(params)
 
     q = TD.PhasePartition(q_tot, q_liq, q_ice)
-    qsat = TD.q_vap_saturation(thermo_params, ts...)
-    λ = TD.liquid_fraction(thermo_params, ts...)
+    qsat = TD.q_vap_saturation(thermo_params, ts)
+    λ = TD.liquid_fraction(thermo_params, ts)
 
     S_qt = -min(max(0, (q.liq + q.ice) / dt), -CM0.remove_precipitation(microphys_params, q, qsat))
 
@@ -172,12 +172,12 @@ end
 
     T_fr::FT = KP.T_freeze(params)
     c_vl::FT = KP.cv_l(params)
-    c_vm::FT = TD.cv_m(thermo_params, ts...)
-    Rm::FT = TD.gas_constant_air(thermo_params, ts...)
-    Lf::FT = TD.latent_heat_fusion(thermo_params, ts...)
+    c_vm::FT = TD.cv_m(thermo_params, ts)
+    Rm::FT = TD.gas_constant_air(thermo_params, ts)
+    Lf::FT = TD.latent_heat_fusion(thermo_params, ts)
 
     q = TD.PhasePartition(q_tot, q_liq, q_ice)
-    q_vap::FT = TD.vapor_specific_humidity(thermo_params, ts...)
+    q_vap::FT = TD.vapor_specific_humidity(thermo_params, ts)
 
     if Bool(params.precip_sources)
         tmp::FT = FT(0)

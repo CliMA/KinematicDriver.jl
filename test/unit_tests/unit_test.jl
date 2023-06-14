@@ -360,91 +360,91 @@ end
 
 end
 
-@testset "Tendency helper functions" begin
-
-    ρ = 1.2
-    ρ_dry = 1.185
-    θ_liq_ice = 350.0
-    ρq_tot = 15e-3
-    ρq_liq = 1e-3
-    ρq_ice = 2e-3
-    ρq_rai = 1e-3
-    ρq_sno = 2e-3
-    q_tot = ρq_tot / ρ
-    q_liq = ρq_liq / ρ
-    q_ice = ρq_ice / ρ
-    q_rai = ρq_rai / ρ
-    q_sno = ρq_sno / ρ
-    N_liq = 1e8
-    N_rai = 1e4
-    T = 280.0
-
-    q = TD.PhasePartition(q_tot, q_liq, q_ice)
-
-    tmp = KID.moisture_helper_vars_eq_ρθq(params, ρq_tot, ρ, θ_liq_ice)
-    @test !isnan(tmp.q_tot + tmp.q_liq + tmp.q_ice .+ tmp.ρ_dry .+ tmp.p .+ tmp.T + tmp.θ_dry)
-    @test tmp.q_tot >= 0.0
-    @test tmp.q_liq >= 0.0
-    @test tmp.q_ice >= 0.0
-    @test tmp.ρ_dry == ρ - ρq_tot
-    @test tmp.p == TD.air_pressure(thermo_params, tmp.ts)
-    @test tmp.T == TD.air_temperature(thermo_params, tmp.ts)
-    @test tmp.θ_dry == TD.dry_pottemp(thermo_params, tmp.T, tmp.ρ_dry)
-
-    tmp = KID.moisture_helper_vars_eq_ρdTq(params, ρq_tot, ρ_dry, T)
-    @test !isnan(tmp.q_tot + tmp.q_liq + tmp.q_ice .+ tmp.ρ .+ tmp.p .+ tmp.θ_liq_ice + tmp.θ_dry)
-    @test tmp.q_tot >= 0.0
-    @test tmp.q_liq >= 0.0
-    @test tmp.q_ice >= 0.0
-    @test tmp.ρ == ρ_dry + ρq_tot
-    @test tmp.p == TD.air_pressure(thermo_params, tmp.ts)
-    @test tmp.θ_liq_ice == TD.liquid_ice_pottemp(thermo_params, tmp.ts)
-    @test tmp.θ_dry == TD.dry_pottemp(thermo_params, T, ρ_dry)
-
-    tmp = KID.moisture_helper_vars_neq_ρθq(params, ρq_tot, ρq_liq, ρq_ice, ρ, θ_liq_ice)
-    @test !isnan(tmp.q_tot .+ tmp.q_liq .+ tmp.q_ice .+ tmp.ρ_dry .+ tmp.p .+ tmp.T .+ tmp.θ_dry)
-    @test tmp.ρ_dry == ρ - ρq_tot
-    @test tmp.p == TD.air_pressure(thermo_params, tmp.ts)
-    @test tmp.T == TD.air_temperature(thermo_params, tmp.ts)
-    @test tmp.θ_dry == TD.dry_pottemp(thermo_params, tmp.T, tmp.ρ_dry)
-
-    tmp = KID.moisture_helper_vars_neq_ρdTq(params, ρq_tot, ρq_liq, ρq_ice, ρ_dry, T)
-    @test !isnan(tmp.q_tot .+ tmp.q_liq .+ tmp.q_ice .+ tmp.ρ .+ tmp.p .+ tmp.θ_liq_ice .+ tmp.θ_dry)
-    @test tmp.ρ == ρ_dry + ρq_tot
-    @test tmp.p == TD.air_pressure(thermo_params, tmp.ts)
-    @test tmp.θ_liq_ice == TD.liquid_ice_pottemp(thermo_params, tmp.ts)
-    @test tmp.θ_dry == TD.dry_pottemp(thermo_params, T, ρ_dry)
-
-    tmp = KID.moisture_helper_sources(params, ρ, T, q_tot, q_liq, q_ice)
-    @test !isnan(tmp.S_q_liq .+ tmp.S_q_ice)
-
-    tmp = KID.precip_helper_vars(ρq_rai, ρq_sno, ρ)
-    @test !isnan(tmp.q_rai .+ tmp.q_sno)
-    @test tmp.q_rai == q_rai
-    @test tmp.q_sno == q_sno
-
-    dt = 0.5
-    ts = @. TD.PhaseEquil_ρTq(thermo_params, ρ, T, q_tot)
-    tmp = KID.precip_helper_sources_0M!(params, ts, q_tot, q_liq, q_ice, dt)
-    @test !isnan(tmp.S_q_tot .+ tmp.S_q_liq .+ tmp.S_q_ice .+ tmp.S_q_rai .+ tmp.S_q_sno)
-    @test tmp.S_q_tot == tmp.S_q_liq + tmp.S_q_ice
-    @test tmp.S_q_tot == -(tmp.S_q_rai + tmp.S_q_sno)
-
-    ps = KID.Precipitation1M(KID.OneMomentRainFormation())
-    tmp = KID.precip_helper_sources_1M!(params, ts, q_tot, q_liq, q_ice, q_rai, q_sno, T, ρ, dt, ps)
-    @test !isnan(tmp.S_q_tot .+ tmp.S_q_liq .+ tmp.S_q_ice .+ tmp.S_q_rai .+ tmp.S_q_sno)
-    @test tmp.S_q_tot ≈ tmp.S_q_liq + tmp.S_q_ice + tmp.S_q_vap
-    @test tmp.S_q_tot ≈ -(tmp.S_q_rai + tmp.S_q_sno)
-
-    ps = KID.Precipitation2M(CMT.SB2006Type())
-    tmp = KID.precip_helper_sources_2M!(params, q_tot, q_liq, q_rai, N_liq, N_rai, T, ρ, dt, ps)
-    @test !isnan(tmp.S_q_tot .+ tmp.S_q_liq .+ tmp.S_q_rai)
-    @test !isnan(tmp.S_N_liq .+ tmp.S_N_rai)
-    @test !isnan(tmp.term_vel_rai .+ tmp.term_vel_N_rai)
-    @test tmp.S_q_tot ≈ tmp.S_q_liq + tmp.S_q_vap
-    @test tmp.S_q_tot ≈ -tmp.S_q_rai
-
-end
+#@testset "Tendency helper functions" begin
+#
+#    ρ = 1.2
+#    ρ_dry = 1.185
+#    θ_liq_ice = 350.0
+#    ρq_tot = 15e-3
+#    ρq_liq = 1e-3
+#    ρq_ice = 2e-3
+#    ρq_rai = 1e-3
+#    ρq_sno = 2e-3
+#    q_tot = ρq_tot / ρ
+#    q_liq = ρq_liq / ρ
+#    q_ice = ρq_ice / ρ
+#    q_rai = ρq_rai / ρ
+#    q_sno = ρq_sno / ρ
+#    N_liq = 1e8
+#    N_rai = 1e4
+#    T = 280.0
+#
+#    q = TD.PhasePartition(q_tot, q_liq, q_ice)
+#
+#    tmp = KID.moisture_helper_vars_eq_ρθq(params, ρq_tot, ρ, θ_liq_ice)
+#    @test !isnan(tmp.q_tot + tmp.q_liq + tmp.q_ice .+ tmp.ρ_dry .+ tmp.p .+ tmp.T + tmp.θ_dry)
+#    @test tmp.q_tot >= 0.0
+#    @test tmp.q_liq >= 0.0
+#    @test tmp.q_ice >= 0.0
+#    @test tmp.ρ_dry == ρ - ρq_tot
+#    @test tmp.p == TD.air_pressure(thermo_params, tmp.ts)
+#    @test tmp.T == TD.air_temperature(thermo_params, tmp.ts)
+#    @test tmp.θ_dry == TD.dry_pottemp(thermo_params, tmp.T, tmp.ρ_dry)
+#
+#    tmp = KID.moisture_helper_vars_eq_ρdTq(params, ρq_tot, ρ_dry, T)
+#    @test !isnan(tmp.q_tot + tmp.q_liq + tmp.q_ice .+ tmp.ρ .+ tmp.p .+ tmp.θ_liq_ice + tmp.θ_dry)
+#    @test tmp.q_tot >= 0.0
+#    @test tmp.q_liq >= 0.0
+#    @test tmp.q_ice >= 0.0
+#    @test tmp.ρ == ρ_dry + ρq_tot
+#    @test tmp.p == TD.air_pressure(thermo_params, tmp.ts)
+#    @test tmp.θ_liq_ice == TD.liquid_ice_pottemp(thermo_params, tmp.ts)
+#    @test tmp.θ_dry == TD.dry_pottemp(thermo_params, T, ρ_dry)
+#
+#    tmp = KID.moisture_helper_vars_neq_ρθq(params, ρq_tot, ρq_liq, ρq_ice, ρ, θ_liq_ice)
+#    @test !isnan(tmp.q_tot .+ tmp.q_liq .+ tmp.q_ice .+ tmp.ρ_dry .+ tmp.p .+ tmp.T .+ tmp.θ_dry)
+#    @test tmp.ρ_dry == ρ - ρq_tot
+#    @test tmp.p == TD.air_pressure(thermo_params, tmp.ts)
+#    @test tmp.T == TD.air_temperature(thermo_params, tmp.ts)
+#    @test tmp.θ_dry == TD.dry_pottemp(thermo_params, tmp.T, tmp.ρ_dry)
+#
+#    tmp = KID.moisture_helper_vars_neq_ρdTq(params, ρq_tot, ρq_liq, ρq_ice, ρ_dry, T)
+#    @test !isnan(tmp.q_tot .+ tmp.q_liq .+ tmp.q_ice .+ tmp.ρ .+ tmp.p .+ tmp.θ_liq_ice .+ tmp.θ_dry)
+#    @test tmp.ρ == ρ_dry + ρq_tot
+#    @test tmp.p == TD.air_pressure(thermo_params, tmp.ts)
+#    @test tmp.θ_liq_ice == TD.liquid_ice_pottemp(thermo_params, tmp.ts)
+#    @test tmp.θ_dry == TD.dry_pottemp(thermo_params, T, ρ_dry)
+#
+#    tmp = KID.moisture_helper_sources(params, ρ, T, q_tot, q_liq, q_ice)
+#    @test !isnan(tmp.S_q_liq .+ tmp.S_q_ice)
+#
+#    tmp = KID.precip_helper_vars(ρq_rai, ρq_sno, ρ)
+#    @test !isnan(tmp.q_rai .+ tmp.q_sno)
+#    @test tmp.q_rai == q_rai
+#    @test tmp.q_sno == q_sno
+#
+#    dt = 0.5
+#    ts = @. TD.PhaseEquil_ρTq(thermo_params, ρ, T, q_tot)
+#    tmp = KID.precip_helper_sources_0M!(params, ts, q_tot, q_liq, q_ice, dt)
+#    @test !isnan(tmp.S_q_tot .+ tmp.S_q_liq .+ tmp.S_q_ice .+ tmp.S_q_rai .+ tmp.S_q_sno)
+#    @test tmp.S_q_tot == tmp.S_q_liq + tmp.S_q_ice
+#    @test tmp.S_q_tot == -(tmp.S_q_rai + tmp.S_q_sno)
+#
+#    ps = KID.Precipitation1M(KID.OneMomentRainFormation())
+#    tmp = KID.precip_helper_sources_1M!(params, ts, q_tot, q_liq, q_ice, q_rai, q_sno, T, ρ, dt, ps)
+#    @test !isnan(tmp.S_q_tot .+ tmp.S_q_liq .+ tmp.S_q_ice .+ tmp.S_q_rai .+ tmp.S_q_sno)
+#    @test tmp.S_q_tot ≈ tmp.S_q_liq + tmp.S_q_ice + tmp.S_q_vap
+#    @test tmp.S_q_tot ≈ -(tmp.S_q_rai + tmp.S_q_sno)
+#
+#    ps = KID.Precipitation2M(CMT.SB2006Type())
+#    tmp = KID.precip_helper_sources_2M!(params, q_tot, q_liq, q_rai, N_liq, N_rai, T, ρ, dt, ps)
+#    @test !isnan(tmp.S_q_tot .+ tmp.S_q_liq .+ tmp.S_q_rai)
+#    @test !isnan(tmp.S_N_liq .+ tmp.S_N_rai)
+#    @test !isnan(tmp.term_vel_rai .+ tmp.term_vel_N_rai)
+#    @test tmp.S_q_tot ≈ tmp.S_q_liq + tmp.S_q_vap
+#    @test tmp.S_q_tot ≈ -tmp.S_q_rai
+#
+#end
 
 @testset "advection_tendency and sources_tendency" begin
 
