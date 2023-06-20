@@ -105,7 +105,13 @@ end
 
 function generate_ekp(param_ensemble::Matrix{FT}, RS::ReferenceStatistics, process_settings) where {FT <: Real}
     if process_settings["EKP_method"] == "EKI"
-        ekpobj = EnsembleKalmanProcess(param_ensemble, RS.y, RS.Γ, Inversion(), Δt = process_settings["Δt"])
+        ekpobj = EnsembleKalmanProcess(
+            param_ensemble,
+            RS.y,
+            RS.Γ,
+            Inversion(),
+            scheduler = DefaultScheduler(process_settings["Δt"]),
+        )
     elseif process_settings["EKP_method"] == "UKI"
         process = Unscented(
             mean(param_ensemble, dims = 2)[:],
@@ -113,7 +119,7 @@ function generate_ekp(param_ensemble::Matrix{FT}, RS::ReferenceStatistics, proce
             α_reg = process_settings["α_reg"],
             update_freq = process_settings["update_freq"],
         )
-        ekpobj = EnsembleKalmanProcess(RS.y, RS.Γ, process, Δt = process_settings["Δt"])
+        ekpobj = EnsembleKalmanProcess(RS.y, RS.Γ, process, scheduler = DefaultScheduler(process_settings["Δt"]))
     end
     return ekpobj
 end

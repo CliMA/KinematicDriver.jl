@@ -26,11 +26,11 @@ end
 function get_process_config()
     config = Dict()
     config["batch_size"] = 1
-    config["n_iter"] = 10
+    config["n_iter"] = 5
     config["n_ens"] = 10
     config["Δt"] = 1.0
     config["EKP_method"] = "EKI"
-    config["α_reg"] = 0.5
+    config["α_reg"] = 1.0
     config["update_freq"] = 1
     config["tol"] = 1e-8
     config["maxiter"] = 1000

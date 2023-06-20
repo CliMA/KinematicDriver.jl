@@ -1,7 +1,7 @@
 @testset "lwp rwp and rainrate" begin
     #setup
     config = get_config()
-    config["observations"]["data_names"] = ["rho", "rl", "rr", "rain averaged terminal velocity"]
+    config["observations"]["data_names"] = ["rho", "ql", "qr", "rain averaged terminal velocity"]
     (n_c, n_v, n_z, n_t) = KID.get_numbers_from_config(config)
     n_vht = n_v * n_z * n_t
     vec = rand(n_c * n_vht)
@@ -14,14 +14,17 @@
         v_ = vec[((i - 1) * n_vht + 1):(i * n_vht)]
         m_ = reshape(v_, n_v * n_z, n_t)
         ρ = m_[1:n_z, :]
-        rl = m_[(n_z + 1):(2 * n_z), :]
-        rr = m_[(2 * n_z + 1):(3 * n_z), :]
-        _lwp[:, i] = sum(rl .* ρ, dims = 1) .* dz
-        _rwp[:, i] = sum(rr .* ρ, dims = 1) .* dz
-        ρ0 = ρ[1, :]
-        rr0 = rr[1, :]
-        vt0 = m_[3 * n_z + 1, :]
-        _rainrate[:, i] = rr0 .* ρ0 .* vt0 .* 3600
+        ql = m_[(n_z + 1):(2 * n_z), :]
+        qr = m_[(2 * n_z + 1):(3 * n_z), :]
+        _lwp[:, i] = sum(ql .* ρ, dims = 1) .* dz
+        _rwp[:, i] = sum(qr .* ρ, dims = 1) .* dz
+        ρ0 = 1.5 * ρ[1, :] - 0.5 * ρ[2, :]
+        qr0 = 1.5 * qr[1, :] - 0.5 * qr[2, :]
+        vt0 = 1.5 * m_[3 * n_z + 1, :] - 0.5 * m_[3 * n_z + 2, :]
+        ρ0[findall(x -> x < 0, ρ0)] .= Float64(0)
+        qr0[findall(x -> x < 0, qr0)] .= Float64(0)
+        vt0[findall(x -> x < 0, vt0)] .= Float64(0)
+        _rainrate[:, i] = qr0 .* ρ0 .* vt0 .* 3600
     end
 
     #action
