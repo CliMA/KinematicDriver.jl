@@ -6,6 +6,10 @@ function parse_commandline()
     s = AP.ArgParseSettings()
 
     AP.@add_arg_table! s begin
+        "--FLOAT_TYPE"
+        help = "Float type. Can be set to Float64 or Float32"
+        arg_type = String
+        default = "Float64"
         "--moisture_choice"
         help = "Mositure model choice: EquilibriumMoisture, NonEquilibriumMoisture"
         arg_type = String
@@ -45,56 +49,56 @@ function parse_commandline()
         default = false
         "--z_min"
         help = "Bottom of the computational domain [m]"
-        arg_type = Real
-        default = 0.0
+        arg_type = Float64
+        default = Float64(0)
         "--z_max"
         help = "Top of the computational domain [m]"
-        arg_type = Real
-        default = 2000.0
+        arg_type = Float64
+        default = Float64(2000)
         "--n_elem"
         help = "Number of computational elements"
         arg_type = Int
         default = 256
         "--dt"
         help = "Simulation time step [s]"
-        arg_type = Real
-        default = 1.0
+        arg_type = Float64
+        default = Float64(1)
         "--dt_output"
         help = "Output time step [s]"
-        arg_type = Real
-        default = 30.0
+        arg_type = Float64
+        default = Float64(30)
         "--t_ini"
         help = "Time at the beginning of the simulation [s]"
-        arg_type = Real
-        default = 0.0
+        arg_type = Float64
+        default = Float64(0)
         "--t_end"
         help = "Time at the end of the simulation [s]"
-        arg_type = Real
-        default = 3600.0
+        arg_type = Float64
+        default = Float64(3600)
         "--w1"
         help = "Maximum prescribed updraft momentum flux [m/s * kg/m3]"
-        arg_type = Real
-        default = 2.0
+        arg_type = Float64
+        default = Float64(2)
         "--t1"
         help = "Oscillation time of the prescribed momentum flux [s]"
-        arg_type = Real
-        default = 600.0
+        arg_type = Float64
+        default = Float64(600)
         "--p0"
         help = "Pressure at the surface [pa]"
-        arg_type = Real
-        default = 100000.0
+        arg_type = Float64
+        default = Float64(100000)
         "--r_dry"
         help = "aerosol distribution mean radius for aerosol activation calculations in 2M schemes [m]"
-        arg_type = Real
-        default = 0.04 * 1e-6
+        arg_type = Float64
+        default = Float64(0.04 * 1e-6)
         "--std_dry"
         help = "aerosol distribution standard deviation for aerosol activation calucaulations in 2M schemes"
-        arg_type = Real
-        default = 1.4
+        arg_type = Float64
+        default = Float64(1.4)
         "--kappa"
         help = "hygroscopicity of aerosols for aerosol activation calucaulations in 2M schemes"
-        arg_type = Real
-        default = 0.9
+        arg_type = Float64
+        default = Float64(0.9)
     end
 
     return AP.parse_args(s)

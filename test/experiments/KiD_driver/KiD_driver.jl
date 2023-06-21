@@ -28,11 +28,11 @@ const KID = Kinematic1D
 const AP = ArgParse
 const CMT = CloudMicrophysics.CommonTypes
 
-const FT = Float64
-
 # Get the parameter values for the simulation
 include("parse_commandline.jl")
 opts = parse_commandline()
+
+const FT = opts["FLOAT_TYPE"] == "Float64" ? Float64 : Float32
 
 # Equations to solve for mositure and precipitation variables
 moisture_choice = opts["moisture_choice"]
@@ -83,7 +83,7 @@ end
 TS = KID.TimeStepping(FT(opts["dt"]), FT(opts["dt_output"]), FT(opts["t_end"]))
 
 # Create the coordinates
-space, face_space = KID.make_function_space(FT, opts["z_min"], opts["z_max"], opts["n_elem"])
+space, face_space = KID.make_function_space(FT, FT(opts["z_min"]), FT(opts["z_max"]), opts["n_elem"])
 coord = CC.Fields.coordinate_field(space)
 face_coord = CC.Fields.coordinate_field(face_space)
 
@@ -106,9 +106,9 @@ params = create_parameter_set(
     path,
     toml_dict,
     FT,
-    opts["w1"],
-    opts["t1"],
-    opts["p0"],
+    FT(opts["w1"]),
+    FT(opts["t1"]),
+    FT(opts["p0"]),
     Int(opts["precip_sources"]),
     Int(opts["precip_sinks"]),
     Int(opts["qtot_flux_correction"]),
@@ -141,7 +141,7 @@ callbacks = ODE.CallbackSet(callback_io)
 ode_rhs! = KID.make_rhs_function(moisture, precip)
 
 # Solve the ODE operator
-problem = ODE.ODEProblem(ode_rhs!, Y, (opts["t_ini"], opts["t_end"]), aux)
+problem = ODE.ODEProblem(ode_rhs!, Y, (FT(opts["t_ini"]), FT(opts["t_end"])), aux)
 solver = ODE.solve(
     problem,
     ODE.SSPRK33(),
