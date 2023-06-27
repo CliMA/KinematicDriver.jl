@@ -50,7 +50,7 @@ The `KiD_driver.jl` inside `test/experiments/KiD_driver` folder is
 It accepts some command line arguments,
   see the `--help` for details.
 ```bash
-julia --project=test/ test/experiments/KiD_driver.jl --help
+julia --project=test/ test/experiments/KiD_driver/KiD_driver.jl --help
 ```
 
 An example command to run the `Kid_driver.jl` from terminal:
@@ -58,7 +58,7 @@ An example command to run the `Kid_driver.jl` from terminal:
 julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation1M
 ```
 
-In addition to simulating the 1D rainshaft, Kinematic1D.jl provides tools for calibrating microphysics parameters against availabkle data. The main program for running calibrations is given inside `test/experiments/calibrations` folder. This program is accompanied by the `config.jl` file that defines all the settings for the dynamics, observations, optimization process, and parameters to be calibrated. To run calibrations of microphysics schemes by using Kinematic1D the `config.jl` file needs to be adjusted. Then the program can be called from terminal:
+In addition to simulating the 1D rainshaft, Kinematic1D.jl provides tools for calibrating microphysics parameters against available data. The main program for running calibrations is given inside `test/experiments/calibrations` folder. This program is accompanied by the `config.jl` file that defines all the settings for the dynamics, observations, optimization process, and parameters to be calibrated. To run calibrations of microphysics schemes by using Kinematic1D the `config.jl` file needs to be adjusted. Then the program can be called from terminal:
 ```bash
 julia --color=yes --project=test test/experiments/calibrations/run_calibrations.jl
 ```
