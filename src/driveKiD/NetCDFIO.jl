@@ -59,7 +59,7 @@ function NetCDFIO_Stats(
     return NetCDFIO_Stats(output_interval, nc_filename, output_profiles)
 end
 
-function KiD_output(aux, t::Float64)
+function KiD_output(aux, t::FT) where {FT <: Real}
 
     (; Stats) = aux
 
@@ -67,9 +67,9 @@ function KiD_output(aux, t::Float64)
 
         # write simulation time to profiles and timeseries
         profile_t = ds.group["profiles"]["t"]
-        @inbounds profile_t[end + 1] = t::Float64
+        @inbounds profile_t[end + 1] = t::FT
         ts_t = ds.group["timeseries"]["t"]
-        @inbounds ts_t[end + 1] = t::Float64
+        @inbounds ts_t[end + 1] = t::FT
 
         # write profiles
         for field in (aux.moisture_variables, aux.precip_variables)

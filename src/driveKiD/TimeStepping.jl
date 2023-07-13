@@ -5,8 +5,8 @@
     - simulation time `t_max`.
 """
 
-mutable struct TimeStepping
-    dt::Float64
-    dt_io::Float64
-    t_max::Float64
+mutable struct TimeStepping{FT <: Real}
+    dt::FT
+    dt_io::FT
+    t_max::FT
 end

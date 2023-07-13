@@ -189,8 +189,8 @@ end
         else
             error("Unrecognized rain formation scheme")
         end
-        S_qt_rain = -min(max(0, q.liq / dt), tmp)
-        S_qt_snow = -min(max(0, q.ice / dt), CM1.conv_q_ice_to_q_sno(microphys_params, q, ρ, T))
+        S_qt_rain = -min(max(FT(0), q.liq / dt), tmp)
+        S_qt_snow = -min(max(FT(0), q.ice / dt), CM1.conv_q_ice_to_q_sno(microphys_params, q, ρ, T))
         S_q_rai -= S_qt_rain
         S_q_sno -= S_qt_snow
         S_q_tot += S_qt_rain + S_qt_snow
@@ -207,14 +207,15 @@ end
         end
 
         # accretion cloud water + rain
-        S_qr = min(max(0, q.liq / dt), tmp)
+        S_qr = min(max(FT(0), q.liq / dt), tmp)
         S_q_rai += S_qr
         S_q_tot -= S_qr
         S_q_liq -= S_qr
         #θ_liq_ice_tendency += S_qr / Π_m / c_pm * L_v0
 
         # accretion cloud ice + snow
-        S_qs = min(max(0, q.ice / dt), CM1.accretion(microphys_params, CMT.IceType(), CMT.SnowType(), q.ice, q_sno, ρ))
+        S_qs =
+            min(max(FT(0), q.ice / dt), CM1.accretion(microphys_params, CMT.IceType(), CMT.SnowType(), q.ice, q_sno, ρ))
         S_q_sno += S_qs
         S_q_tot -= S_qs
         S_q_ice -= S_qs
@@ -222,7 +223,10 @@ end
 
         # sink of cloud water via accretion cloud water + snow
         S_qt =
-            -min(max(0, q.liq / dt), CM1.accretion(microphys_params, CMT.LiquidType(), CMT.SnowType(), q.liq, q_sno, ρ))
+            -min(
+                max(FT(0), q.liq / dt),
+                CM1.accretion(microphys_params, CMT.LiquidType(), CMT.SnowType(), q.liq, q_sno, ρ),
+            )
         if T < T_fr # cloud droplets freeze to become snow)
             S_q_sno -= S_qt
             S_q_tot += S_qt
@@ -238,9 +242,13 @@ end
         end
 
         # sink of cloud ice via accretion cloud ice - rain
-        S_qt = -min(max(0, q.ice / dt), CM1.accretion(microphys_params, CMT.IceType(), CMT.RainType(), q.ice, q_rai, ρ))
+        S_qt =
+            -min(
+                max(FT(0), q.ice / dt),
+                CM1.accretion(microphys_params, CMT.IceType(), CMT.RainType(), q.ice, q_rai, ρ),
+            )
         # sink of rain via accretion cloud ice - rain
-        S_qr = -min(max(0, q_rai / dt), CM1.accretion_rain_sink(microphys_params, q.ice, q_rai, ρ))
+        S_qr = -min(max(FT(0), q_rai / dt), CM1.accretion_rain_sink(microphys_params, q.ice, q_rai, ρ))
         S_q_tot += S_qt
         S_q_ice += S_qt
         S_q_rai += S_qr
@@ -250,13 +258,13 @@ end
         # accretion rain - snow
         if T < T_fr
             S_qs = min(
-                max(0, q_rai / dt),
+                max(FT(0), q_rai / dt),
                 CM1.accretion_snow_rain(microphys_params, CMT.SnowType(), CMT.RainType(), q_sno, q_rai, ρ),
             )
         else
             S_qs =
                 -min(
-                    max(0, q_sno / dt),
+                    max(FT(0), q_sno / dt),
                     CM1.accretion_snow_rain(microphys_params, CMT.RainType(), CMT.SnowType(), q_rai, q_sno, ρ),
                 )
         end
@@ -267,22 +275,23 @@ end
 
     if Bool(params.precip_sinks)
         # evaporation
-        S_qr = -min(max(0, q_rai / dt), -CM1.evaporation_sublimation(microphys_params, CMT.RainType(), q, q_rai, ρ, T))
+        S_qr =
+            -min(max(FT(0), q_rai / dt), -CM1.evaporation_sublimation(microphys_params, CMT.RainType(), q, q_rai, ρ, T))
         S_q_rai += S_qr
         S_q_tot -= S_qr
         S_q_vap -= S_qr
 
         # melting
-        S_qs = -min(max(0, q_sno / dt), CM1.snow_melt(microphys_params, q_sno, ρ, T))
+        S_qs = -min(max(FT(0), q_sno / dt), CM1.snow_melt(microphys_params, q_sno, ρ, T))
         S_q_rai -= S_qs
         S_q_sno += S_qs
 
         # deposition, sublimation
         tmp = CM1.evaporation_sublimation(microphys_params, CMT.SnowType(), q, q_sno, ρ, T)
         if tmp > 0
-            S_qs = min(max(0, q_vap / dt), tmp)
+            S_qs = min(max(FT(0), q_vap / dt), tmp)
         else
-            S_qs = -min(max(0, q_sno / dt), -tmp)
+            S_qs = -min(max(FT(0), q_sno / dt), -tmp)
         end
         S_q_sno += S_qs
         S_q_tot -= S_qs
@@ -320,43 +329,43 @@ end
 
     # autoconversion liquid to rain
     tmp = CM2.autoconversion(microphys_params, rf, q.liq, q_rai, ρ, N_liq)
-    S_qr = min(max(0, q.liq / dt), tmp.dq_rai_dt)
+    S_qr = min(max(FT(0), q.liq / dt), tmp.dq_rai_dt)
     S_q_rai += S_qr
     S_q_tot -= S_qr
     S_q_liq -= S_qr
-    S_Nr = min(max(0, N_liq / 2 / dt), tmp.dN_rai_dt)
+    S_Nr = min(max(FT(0), N_liq / 2 / dt), tmp.dN_rai_dt)
     S_N_rai += S_Nr
     S_N_liq -= 2 * S_Nr
 
     # self_collection
     tmp_l = CM2.liquid_self_collection(microphys_params, rf, q.liq, ρ, -S_qr)
     tmp_r = CM2.rain_self_collection(microphys_params, rf, q_rai, ρ, N_rai)
-    S_N_liq += -min(max(0, N_liq / dt), -tmp_l)
-    S_N_rai += -min(max(0, N_rai / dt), -tmp_r)
+    S_N_liq += -min(max(FT(0), N_liq / dt), -tmp_l)
+    S_N_rai += -min(max(FT(0), N_rai / dt), -tmp_r)
 
     # rain breakup
     tmp = CM2.rain_breakup(microphys_params, rf, q_rai, ρ, N_rai, tmp_r)
-    S_N_rai += min(max(0, N_rai / dt), tmp_r)
+    S_N_rai += min(max(FT(0), N_rai / dt), tmp_r)
 
     # accretion cloud water + rain
     tmp = CM2.accretion(microphys_params, rf, q.liq, q_rai, ρ, N_liq)
-    S_qr = min(max(0, q.liq / dt), tmp.dq_rai_dt)
+    S_qr = min(max(FT(0), q.liq / dt), tmp.dq_rai_dt)
     S_q_rai += S_qr
     S_q_tot -= S_qr
     S_q_liq -= S_qr
-    S_N_liq += -min(max(0, N_liq / dt), -tmp.dN_liq_dt)
+    S_N_liq += -min(max(FT(0), N_liq / dt), -tmp.dN_liq_dt)
     S_N_rai += FT(0)
 
     # evaporation
     tmp = CM2.rain_evaporation(microphys_params, rf, q, q_rai, ρ, N_rai, T)
-    S_Nr = -min(max(0, N_rai / dt), -tmp[1])
-    S_qr = -min(max(0, q_rai / dt), -tmp[2])
+    S_Nr = -min(max(FT(0), N_rai / dt), -tmp[1])
+    S_qr = -min(max(FT(0), q_rai / dt), -tmp[2])
     S_q_rai += S_qr
     S_q_tot -= S_qr
     S_q_vap -= S_qr
     S_N_rai += S_Nr
 
-    vt = CM2.rain_terminal_velocity(microphys_params, CMT.SB2006Type(), q_rai, ρ, N_rai)
+    vt = CM2.rain_terminal_velocity(microphys_params, rf, q_rai, ρ, N_rai)
     term_vel_N_rai = vt[1]
     term_vel_rai = vt[2]
 
