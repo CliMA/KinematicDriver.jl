@@ -1,6 +1,9 @@
 """
 Plotting utilities
 """
+
+import CloudMicrophysics.PrecipitationSusceptibility as CMPS
+
 ENV["GKSwstype"] = "nul"
 using ClimaCorePlots, Plots
 Plots.GRBackend()
@@ -44,7 +47,7 @@ function plot_initial_profiles_comparison(KM; sdm_case = "dry")
     Plots.png(p, joinpath(path, fig_name))
 end
 
-function plot_final_aux_profiles(z_centers, aux; output = "output")
+function plot_final_aux_profiles(z_centers, aux, precip; output = "output")
 
     path = joinpath(@__DIR__, output)
     mkpath(path)
@@ -55,6 +58,8 @@ function plot_final_aux_profiles(z_centers, aux; output = "output")
     q_ice_end = parent(aux.moisture_variables.q_ice)
     q_rai_end = parent(aux.precip_variables.q_rai)
     q_sno_end = parent(aux.precip_variables.q_sno)
+    N_liq_end = parent(aux.precip_variables.N_liq)
+    ρ_end = parent(aux.moisture_variables.ρ)
 
     p1 = Plots.plot(q_tot_end .* 1e3, z_centers, xlabel = "q_tot [g/kg]", ylabel = "z [m]")
     p2 = Plots.plot(q_liq_end .* 1e3, z_centers, xlabel = "q_liq [g/kg]", ylabel = "z [m]")
@@ -63,6 +68,33 @@ function plot_final_aux_profiles(z_centers, aux; output = "output")
     p5 = Plots.plot(q_rai_end .* 1e3, z_centers, xlabel = "q_rai [g/kg]", ylabel = "z [m]")
     p6 = Plots.plot(q_sno_end .* 1e3, z_centers, xlabel = "q_sno [g/kg]", ylabel = "z [m]")
 
+    p7 = Plots.plot(xlabel = "precipitation susceptibility", ylabel = "z [m]")
+    if precip isa KID.Precipitation2M
+        precip_sus_aut =
+            CMPS.precipitation_susceptibility_autoconversion.(
+                Ref(aux.params.microphys_params),
+                Ref(precip.rain_formation),
+                q_liq_end,
+                q_rai_end,
+                ρ_end,
+                N_liq_end,
+            )
+        precip_sus_acc =
+            CMPS.precipitation_susceptibility_accretion.(
+                Ref(aux.params.microphys_params),
+                Ref(precip.rain_formation),
+                q_liq_end,
+                q_rai_end,
+                ρ_end,
+                N_liq_end,
+            )
+        Plots.plot!([r.d_ln_pp_d_ln_q_liq for r in precip_sus_aut], z_centers, label = "aut, q_liq", color = :red)
+        Plots.plot!([r.d_ln_pp_d_ln_q_rai for r in precip_sus_aut], z_centers, label = "aut, q_rai", color = :brown)
+        Plots.plot!([r.d_ln_pp_d_ln_q_liq for r in precip_sus_acc], z_centers, label = "acc, q_liq", color = :blue)
+        Plots.plot!([r.d_ln_pp_d_ln_q_rai for r in precip_sus_acc], z_centers, label = "acc, q_rai", color = :green)
+        Plots.plot!(legend = :outerright)
+    end
+
     p = Plots.plot(
         p1,
         p2,
@@ -70,6 +102,7 @@ function plot_final_aux_profiles(z_centers, aux; output = "output")
         p4,
         p5,
         p6,
+        p7,
         size = (1200.0, 750.0),
         bottom_margin = 40.0 * Plots.PlotMeasures.px,
         left_margin = 80.0 * Plots.PlotMeasures.px,
@@ -93,7 +126,7 @@ function plot_animation(z_centers, solver, aux, moisture, precip, KiD; output = 
             q_liq = q_tot .* 0.0
         end
 
-        if precip isa KiD.Precipitation1M
+        if !(precip isa Union{KiD.NoPrecipitation, KiD.Precipitation0M})
             q_rai = parent(u.ρq_rai) ./ ρ .* 1e3
         else
             q_rai = q_tot .* 0.0
