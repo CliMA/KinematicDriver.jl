@@ -1,0 +1,3 @@
+┌ Warning: Using arrays or dicts to store parameters of different types can hurt performance.
+│ Consider using tuples instead.
+└ @ SciMLBase ~/.julia/packages/SciMLBase/s9wrq/src/performance_warnings.jl:32

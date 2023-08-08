@@ -3,6 +3,8 @@ Plotting utilities
 """
 ENV["GKSwstype"] = "nul"
 using ClimaCorePlots, Plots
+using CSV, DataFrames
+using Tables
 Plots.GRBackend()
 
 function plot_initial_profiles_comparison(KM; sdm_case = "dry")
@@ -10,7 +12,7 @@ function plot_initial_profiles_comparison(KM; sdm_case = "dry")
     path = joinpath(@__DIR__, "initial_condition_tests/output_init_profiles")
     mkpath(path)
 
-    fig_name = string(sdm_case, "_init_profile.png")
+    fig_name = string(sdm_case, "_init_profile_chen.png")
 
     p1 = Plots.plot(KM.q_vap, KM.z_centers, label = "KM", xlabel = "q_vap [g/kg]", ylabel = "z [m]")
     Plots.plot!(p1, sdm_data.qv_sdm, sdm_data.z_sdm, label = "SDM")
@@ -74,7 +76,7 @@ function plot_final_aux_profiles(z_centers, aux; output = "output")
         bottom_margin = 40.0 * Plots.PlotMeasures.px,
         left_margin = 80.0 * Plots.PlotMeasures.px,
     )
-    Plots.png(p, joinpath(path, "final_aux_profiles.png"))
+    Plots.png(p, joinpath(path, "final_aux_profiles_chen.png"))
 end
 
 function plot_animation(z_centers, solver, aux, moisture, precip, KiD; output = "output")
@@ -114,8 +116,22 @@ function plot_animation(z_centers, solver, aux, moisture, precip, KiD; output = 
         )
     end
 
-    Plots.mp4(anim, joinpath(path, "animation.mp4"), fps = 10)
+    Plots.mp4(anim, joinpath(path, "animation_chen.mp4"), fps = 10)
 end
+
+function plot_precipitation_at_ground_level(z_centers, solver, aux, moisture, precip, KiD; output = "output")
+    path = joinpath(@__DIR__, output)
+    mkpath(path)
+
+    ρ = parent(aux.moisture_variables.ρ)
+
+    if moisture isa KiD.NonEquilibriumMoisture
+        q_liq = parent(u.ρq_liq) ./ ρ .* 1e3
+    else
+        q_liq = q_tot .* 0.0
+    end
+end
+
 
 function plot_timeheight(nc_data_file; output = "output")
     path = joinpath(@__DIR__, output)
@@ -127,6 +143,8 @@ function plot_timeheight(nc_data_file; output = "output")
     q_tot_plt = collect(ds.group["profiles"]["q_tot"])
     q_liq_plt = collect(ds.group["profiles"]["q_liq"])
     q_rai_plt = collect(ds.group["profiles"]["q_rai"])
+    
+    CSV.write("q_rai_plt_chen.csv", Tables.table(q_rai_plt), header=false)
     p1 = Plots.heatmap(t_plt, z_plt, q_tot_plt .* 1e3, title = "q_tot [g/kg]", xlabel = "time [s]", ylabel = "z [m]")
     p2 = Plots.heatmap(t_plt, z_plt, q_liq_plt .* 1e3, title = "q_liq [g/kg]", xlabel = "time [s]", ylabel = "z [m]")
     p3 = Plots.heatmap(t_plt, z_plt, q_rai_plt .* 1e3, title = "q_rai [g/kg]", xlabel = "time [s]", ylabel = "z [m]")
@@ -139,5 +157,7 @@ function plot_timeheight(nc_data_file; output = "output")
         left_margin = 30.0 * Plots.PlotMeasures.px,
         layout = (1, 3),
     )
-    Plots.png(p, joinpath(path, "timeheight.png"))
+    Plots.png(p, joinpath(path, "timeheight_chen.png"))
 end
+
+

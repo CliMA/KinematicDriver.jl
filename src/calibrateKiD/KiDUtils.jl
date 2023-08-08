@@ -211,7 +211,8 @@ function compute_terminal_velocity(
         for j in 1:_n_times
             ρ = ρ_mat[:, j]
             q_rai = q_rai_mat[:, j]
-            term_vel_rai = CM1.terminal_velocity.(microphys_params, CM.CommonTypes.RainType(), ρ, q_rai)
+            term_vel_rai = CM1.terminal_velocity.(microphys_params, CM.CommonTypes.RainType(), CM.CommonTypes.Chen2022Type(), true,  ρ, q_rai)
+            #term_vel_rai = CM1.terminal_velocity.(microphys_params, CM.CommonTypes.RainType(), ρ, q_rai)
             outputs = [outputs; ρ; q_rai; term_vel_rai]
         end
 

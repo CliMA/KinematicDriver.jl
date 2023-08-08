@@ -54,7 +54,7 @@ function parse_commandline()
         "--n_elem"
         help = "Number of computational elements"
         arg_type = Int
-        default = 256
+        default = 60
         "--dt"
         help = "Simulation time step [s]"
         arg_type = Real
@@ -82,7 +82,7 @@ function parse_commandline()
         "--p0"
         help = "Pressure at the surface [pa]"
         arg_type = Real
-        default = 100000.0
+        default = 99400.0 #100000.0
         "--r_dry"
         help = "aerosol distribution mean radius for aerosol activation calculations in 2M schemes [m]"
         arg_type = Real

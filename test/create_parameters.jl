@@ -94,6 +94,10 @@ function create_parameter_set(
         println(io, "alias = \"κ\"")
         println(io, "value = " * string(κ))
         println(io, "type = \"float\"")
+        # println(io, "[rain_terminal_velocity_size_relation_coefficient_chiv]")
+        # println(io, "alias = \"χv_rai\"")
+        # println(io, "value = 0.6")
+        # println(io, "type = \"float\"")
     end
     toml_dict = CP.create_toml_dict(FT; override_file, dict_type="alias")
     isfile(override_file) && rm(override_file; force=true)
