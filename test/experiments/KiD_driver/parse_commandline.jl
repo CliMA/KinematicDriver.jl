@@ -17,11 +17,11 @@ function parse_commandline()
         "--precipitation_choice"
         help = "Precipitation model choice: NoPrecipitation, Precipitation0M, Precipitation1M, Precipitation2M"
         arg_type = String
-        default = "Precipitation1M"
+        default = "Precipitation2M" #"Precipitation1M"
         "--rain_formation_scheme_choice"
         help = "Rain formation scheme choice: CliMA_1M, KK2000, B1994, TC1980, LD2004 for Precipitation1M; and SB2006 for Precipitation2M"
         arg_type = String
-        default = "CliMA_1M"
+        default = "SB2006" #"CliMA_1M"
         "--prescribed_Nd"
         help = "Prescribed number of cloud droplets (used in KK2000, B1994, TC1980, LD2004 and SB2006 rain formation schemes)"
         arg_type = Float64
@@ -54,7 +54,7 @@ function parse_commandline()
         "--n_elem"
         help = "Number of computational elements"
         arg_type = Int
-        default = 60
+        default = 40
         "--dt"
         help = "Simulation time step [s]"
         arg_type = Real

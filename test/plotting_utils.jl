@@ -76,7 +76,11 @@ function plot_final_aux_profiles(z_centers, aux; output = "output")
         bottom_margin = 40.0 * Plots.PlotMeasures.px,
         left_margin = 80.0 * Plots.PlotMeasures.px,
     )
-    Plots.png(p, joinpath(path, "final_aux_profiles_chen.png"))
+    CSV.write("/Users/Apoorva/CLIMA/Kinematic1D.jl/test/Rain_2M/q_rai_end_chen.csv", Tables.table(q_rai_end), header=false)
+    CSV.write("/Users/Apoorva/CLIMA/Kinematic1D.jl/test/Rain_2M/z_centers_end_chen.csv", Tables.table(z_centers), header=false)
+    # CSV.write("q_sno_end_chen.csv", Tables.table(q_sno_end), header=false)
+    # CSV.write("z_centers_sno_end_chen.csv", Tables.table(z_centers), header=false)
+    Plots.png(p, joinpath(path, "Rain/final_aux_profiles_chen.png"))
 end
 
 function plot_animation(z_centers, solver, aux, moisture, precip, KiD; output = "output")
@@ -95,15 +99,30 @@ function plot_animation(z_centers, solver, aux, moisture, precip, KiD; output = 
             q_liq = q_tot .* 0.0
         end
 
+        # if moisture isa KiD.NonEquilibriumMoisture
+        #     q_ice = parent(u.ρq_ice) ./ ρ .* 1e3
+        # else
+        #     q_ice = q_tot .* 0.0
+        # end
+
         if precip isa KiD.Precipitation1M
             q_rai = parent(u.ρq_rai) ./ ρ .* 1e3
         else
             q_rai = q_tot .* 0.0
         end
 
+
+        # if precip isa KiD.Precipitation1M
+        #     q_sno = parent(u.ρq_sno) ./ ρ .* 1e3
+        # else
+        #     q_sno = q_tot .* 0.0
+        # end
+
         p1 = Plots.plot(q_tot, z_centers, xlabel = "q_tot [g/kg]", ylabel = "z [m]")
         p2 = Plots.plot(q_liq, z_centers, xlabel = "q_liq [g/kg]", ylabel = "z [m]")
         p3 = Plots.plot(q_rai, z_centers, xlabel = "q_rai [g/kg]", ylabel = "z [m]")
+        # p2 = Plots.plot(q_ice, z_centers, xlabel = "q_ice [g/kg]", ylabel = "z [m]")
+        # p3 = Plots.plot(q_sno, z_centers, xlabel = "q_sno [g/kg]", ylabel = "z [m]")
 
         p = Plots.plot(
             p1,
@@ -114,22 +133,17 @@ function plot_animation(z_centers, solver, aux, moisture, precip, KiD; output = 
             left_margin = 30.0 * Plots.PlotMeasures.px,
             layout = (1, 3),
         )
+        if u == solver.u[10]
+            println("equal! save here halfway point :)")
+            Plots.png(p, joinpath(path, "Rain/middle_aux_profiles_chen.png"))
+            CSV.write("/Users/Apoorva/CLIMA/Kinematic1D.jl/test/Rain_2M/q_rai_middle_chen.csv", Tables.table(q_rai), header=false)
+            CSV.write("/Users/Apoorva/CLIMA/Kinematic1D.jl/test/Rain_2M/z_centers_middle_chen.csv", Tables.table(z_centers), header=false)
+            # CSV.write("q_sno_middle_chen.csv", Tables.table(q_sno), header=false)
+            # CSV.write("z_centers_sno_middle_chen.csv", Tables.table(z_centers), header=false)
+        end
     end
 
-    Plots.mp4(anim, joinpath(path, "animation_chen.mp4"), fps = 10)
-end
-
-function plot_precipitation_at_ground_level(z_centers, solver, aux, moisture, precip, KiD; output = "output")
-    path = joinpath(@__DIR__, output)
-    mkpath(path)
-
-    ρ = parent(aux.moisture_variables.ρ)
-
-    if moisture isa KiD.NonEquilibriumMoisture
-        q_liq = parent(u.ρq_liq) ./ ρ .* 1e3
-    else
-        q_liq = q_tot .* 0.0
-    end
+    Plots.mp4(anim, joinpath(path, "Rain/animation_chen.mp4"), fps = 10)
 end
 
 
@@ -143,8 +157,18 @@ function plot_timeheight(nc_data_file; output = "output")
     q_tot_plt = collect(ds.group["profiles"]["q_tot"])
     q_liq_plt = collect(ds.group["profiles"]["q_liq"])
     q_rai_plt = collect(ds.group["profiles"]["q_rai"])
+    # q_sno_plt = collect(ds.group["profiles"]["q_sno"])
+    # q_ice_plt = collect(ds.group["profiles"]["q_ice"])
     
-    CSV.write("q_rai_plt_chen.csv", Tables.table(q_rai_plt), header=false)
+    CSV.write("/Users/Apoorva/CLIMA/Kinematic1D.jl/test/Rain_2M/q_rai_plt_chen.csv", Tables.table(q_rai_plt), header=false)
+    CSV.write("/Users/Apoorva/CLIMA/Kinematic1D.jl/test/Rain_2M/t_plt_chen.csv", Tables.table(t_plt), header=false)
+    CSV.write("/Users/Apoorva/CLIMA/Kinematic1D.jl/test/Rain_2M/z_plt_chen.csv", Tables.table(z_plt), header=false)
+    # CSV.write("q_sno_plt_chen.csv", Tables.table(q_sno_plt), header=false)
+    # CSV.write("t_plt_sno_chen.csv", Tables.table(t_plt), header=false)
+    # CSV.write("z_plt_sno_chen.csv", Tables.table(z_plt), header=false)
+    # p1 = Plots.heatmap(t_plt, z_plt, q_tot_plt .* 1e3,  title = "q_tot [g/kg]", xlabel = "time [s]", ylabel = "z [m]")
+    # p2 = Plots.heatmap(t_plt, z_plt, q_ice_plt .* 1e3, title = "q_ice [g/kg]", xlabel = "time [s]", ylabel = "z [m]")
+    # p3 = Plots.heatmap(t_plt, z_plt, q_sno_plt .* 1e3, title = "q_sno [g/kg]", xlabel = "time [s]", ylabel = "z [m]")
     p1 = Plots.heatmap(t_plt, z_plt, q_tot_plt .* 1e3, title = "q_tot [g/kg]", xlabel = "time [s]", ylabel = "z [m]")
     p2 = Plots.heatmap(t_plt, z_plt, q_liq_plt .* 1e3, title = "q_liq [g/kg]", xlabel = "time [s]", ylabel = "z [m]")
     p3 = Plots.heatmap(t_plt, z_plt, q_rai_plt .* 1e3, title = "q_rai [g/kg]", xlabel = "time [s]", ylabel = "z [m]")
@@ -157,7 +181,8 @@ function plot_timeheight(nc_data_file; output = "output")
         left_margin = 30.0 * Plots.PlotMeasures.px,
         layout = (1, 3),
     )
-    Plots.png(p, joinpath(path, "timeheight_chen.png"))
+    Plots.png(p, joinpath(path, "Rain/timeheight_chen.png"))
+    # Plots.png(p, joinpath(path, "Snow/timeheight_chen.png"))
 end
 
 

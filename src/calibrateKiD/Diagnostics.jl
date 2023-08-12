@@ -112,8 +112,8 @@ function rainrate(vec::Vector{FT}, config; height::FT = FT(0), isref = false) wh
             params_calib = create_param_dict(ϕ_values, ϕ_names)
             params = create_parameter_set(Float64, config["model"], params_calib)
             microphys_params = KP.microphysics_params(params)
-            vt_z = CM1.terminal_velocity.(microphys_params, CM.CommonTypes.RainType(), CM.CommonTypes.Chen2022Type(), true,  ρ, q_rai)
-            # vt_z = CM1.terminal_velocity.(microphys_params, CMT.RainType(), ρ_z, qr_z)
+            vt_z = CM1.terminal_velocity.(microphys_params, CM.CommonTypes.RainType(), true, CM.CommonTypes.Chen2022Type(), ρ, q_rai)
+            #vt_z = CM1.terminal_velocity.(microphys_params, CMT.RainType(), ρ_z, qr_z)
         end
         rainrate[:, i] = qr_z .* ρ_z .* vt_z .* 3600
     end

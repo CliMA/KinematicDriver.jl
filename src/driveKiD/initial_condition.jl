@@ -10,7 +10,7 @@ function init_condition(::Type{FT}, params, z; dry = false) where {FT}
     z_0::FT = 0.0
     z_1::FT = 740.0
     z_2::FT = 3260.0
-    rv_0::FT = 0.015
+    rv_0::FT = 0.015 * 0.1 
     rv_1::FT = 0.0138
     rv_2::FT = 0.0024
     θ_0::FT = 297.9
@@ -28,7 +28,7 @@ function init_condition(::Type{FT}, params, z; dry = false) where {FT}
     qv::FT = rv / (1 + rv)
     qv_0::FT = rv_0 / (1 + rv_0)
 
-    # profile of potential temperature
+    # profile of potential temperature -> subtract 15 to get snow
     θ_std::FT = z < z_1 ? θ_0 : θ_1 + (θ_2 - θ_1) / (z_2 - z_1) * (z - z_1)
 
     # density at the surface

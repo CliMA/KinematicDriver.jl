@@ -296,8 +296,8 @@ end
         #)
     end
 
-    term_vel_rai = CM1.terminal_velocity(microphys_params, CMT.RainType(),true, CMT.Chen2022Type(), ρ, q_rai)
-    term_vel_sno = CM1.terminal_velocity(microphys_params, CMT.SnowType(), true, CMT.Chen2022Type(), ρ, q_sno)
+    term_vel_rai = CM1.terminal_velocity(microphys_params, CMT.RainType(), true, CMT.Chen2022Type(), ρ, q_rai)
+    term_vel_sno = CM1.terminal_velocity(microphys_params, CMT.SnowType(), false, CMT.Chen2022Type(), ρ, q_sno)
 
     # term_vel_rai = CM1.terminal_velocity(microphys_params, CMT.RainType(), ρ, q_rai)
     # term_vel_sno = CM1.terminal_velocity(microphys_params, CMT.SnowType(), ρ, q_sno)
@@ -359,9 +359,9 @@ end
     S_q_vap -= S_qr
     S_N_rai += S_Nr
 
+    println("Chen now")
+    #vt = CM2.rain_terminal_velocity(microphys_params, CMT.SB2006Type(), q_rai, ρ, N_rai)
     vt = CM2.rain_terminal_velocity(microphys_params, CMT.Chen2022Type(), q_rai, ρ, N_rai)
-    #CM2.rain_terminal_velocity(microphys_params, CMT.SB2006Type(), q_rai, ρ, N_rai)
-    #CM2.rain_terminal_velocity(microphys_params, CMT.Chen2022Type(), q_rai, ρ, N_rai)
     term_vel_N_rai = vt[1]
     term_vel_rai = vt[2]
 
