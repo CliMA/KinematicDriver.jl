@@ -206,6 +206,8 @@ end
             error("Unrecognized rain formation scheme")
         end
 
+        println("running 1M scheme :(")
+
         # accretion cloud water + rain
         S_qr = min(max(0, q.liq / dt), tmp)
         S_q_rai += S_qr
