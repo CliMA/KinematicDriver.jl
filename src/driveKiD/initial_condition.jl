@@ -49,8 +49,8 @@ function dρ_dz!(ρ, ode_settings, z)
 
     FT = eltype(ρ)
 
-    dry = ode_settings["dry"]
-    params = ode_settings["params"]
+    dry = ode_settings.dry
+    params = ode_settings.params
 
     # initial profiles
     init = init_condition(FT, params, z, dry = dry)
@@ -90,7 +90,7 @@ function ρ_ivp(::Type{FT}, params; dry = false) where {FT}
     z_max::FT = init_surface.z_2
     z_span = (z_0, z_max)
 
-    ode_settings = Dict("dry" => dry, "params" => params)
+    ode_settings = (; dry, params)
 
     prob = ODE.ODEProblem(dρ_dz!, ρ_0, z_span, ode_settings)
     sol = ODE.solve(prob, ODE.Tsit5(), reltol = 1e-10, abstol = 1e-10)
