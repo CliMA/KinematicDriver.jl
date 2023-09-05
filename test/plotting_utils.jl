@@ -110,7 +110,7 @@ function plot_final_aux_profiles(z_centers, aux, precip; output = "output")
     Plots.png(p, joinpath(path, "final_aux_profiles.png"))
 end
 
-function plot_animation(z_centers, solver, aux, moisture, precip, KiD; output = "output")
+function plot_animation(z_centers, solver, aux, moisture, precip; output = "output")
 
     path = joinpath(@__DIR__, output)
     mkpath(path)
@@ -120,13 +120,13 @@ function plot_animation(z_centers, solver, aux, moisture, precip, KiD; output = 
         ρ = parent(aux.moisture_variables.ρ)
         q_tot = parent(u.ρq_tot) ./ ρ .* 1e3
 
-        if moisture isa KiD.NonEquilibriumMoisture
+        if moisture isa KID.NonEquilibriumMoisture
             q_liq = parent(u.ρq_liq) ./ ρ .* 1e3
         else
             q_liq = q_tot .* 0.0
         end
 
-        if !(precip isa Union{KiD.NoPrecipitation, KiD.Precipitation0M})
+        if !(precip isa Union{KID.NoPrecipitation, KID.Precipitation0M})
             q_rai = parent(u.ρq_rai) ./ ρ .* 1e3
         else
             q_rai = q_tot .* 0.0
@@ -136,14 +136,26 @@ function plot_animation(z_centers, solver, aux, moisture, precip, KiD; output = 
         p2 = Plots.plot(q_liq, z_centers, xlabel = "q_liq [g/kg]", ylabel = "z [m]")
         p3 = Plots.plot(q_rai, z_centers, xlabel = "q_rai [g/kg]", ylabel = "z [m]")
 
+        plots = [p1, p2, p3]
+
+        if precip isa KID.Precipitation2M
+            N_aer = parent(u.N_aer)
+            N_liq = parent(u.N_liq)
+            N_rai = parent(u.N_rai)
+            p4 = Plots.plot(N_aer, z_centers, xlabel = "N_aer [m^-3]", ylabel = "z [m]")
+            p5 = Plots.plot(N_liq, z_centers, xlabel = "N_liq [m^-3]", ylabel = "z [m]")
+            p6 = Plots.plot(N_rai, z_centers, xlabel = "N_rai [m^-3]", ylabel = "z [m]")
+            append!(plots, [p4, p5, p6])
+        end
+
+
+
         p = Plots.plot(
-            p1,
-            p2,
-            p3,
+            plots...,
             size = (1000.0, 500.0),
             bottom_margin = 30.0 * Plots.PlotMeasures.px,
             left_margin = 30.0 * Plots.PlotMeasures.px,
-            layout = (1, 3),
+            layout = (2, 3),
         )
     end
 

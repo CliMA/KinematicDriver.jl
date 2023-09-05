@@ -325,47 +325,47 @@ end
     S_N_liq::FT = FT(0)
     S_N_rai::FT = FT(0)
 
-    q = TD.PhasePartition(q_tot, q_liq, FT(0))
+    # q = TD.PhasePartition(q_tot, q_liq, FT(0))
 
-    # autoconversion liquid to rain
-    tmp = CM2.autoconversion(microphys_params, rf, q.liq, q_rai, ρ, N_liq)
-    S_qr = min(max(FT(0), q.liq / dt), tmp.dq_rai_dt)
-    S_q_rai += S_qr
-    S_q_tot -= S_qr
-    S_q_liq -= S_qr
-    S_Nr = min(max(FT(0), N_liq / 2 / dt), tmp.dN_rai_dt)
-    S_N_rai += S_Nr
-    S_N_liq -= 2 * S_Nr
+    # # autoconversion liquid to rain
+    # tmp = CM2.autoconversion(microphys_params, rf, q.liq, q_rai, ρ, N_liq)
+    # S_qr = min(max(FT(0), q.liq / dt), tmp.dq_rai_dt)
+    # S_q_rai += S_qr
+    # S_q_tot -= S_qr
+    # S_q_liq -= S_qr
+    # S_Nr = min(max(FT(0), N_liq / 2 / dt), tmp.dN_rai_dt)
+    # S_N_rai += S_Nr
+    # S_N_liq -= 2 * S_Nr
 
-    # self_collection
-    tmp_l = CM2.liquid_self_collection(microphys_params, rf, q.liq, ρ, -S_qr)
-    tmp_r = CM2.rain_self_collection(microphys_params, rf, q_rai, ρ, N_rai)
-    S_N_liq += -min(max(FT(0), N_liq / dt), -tmp_l)
-    S_N_rai += -min(max(FT(0), N_rai / dt), -tmp_r)
+    # # self_collection
+    # tmp_l = CM2.liquid_self_collection(microphys_params, rf, q.liq, ρ, -S_qr)
+    # tmp_r = CM2.rain_self_collection(microphys_params, rf, q_rai, ρ, N_rai)
+    # S_N_liq += -min(max(FT(0), N_liq / dt), -tmp_l)
+    # S_N_rai += -min(max(FT(0), N_rai / dt), -tmp_r)
 
-    # rain breakup
-    tmp = CM2.rain_breakup(microphys_params, rf, q_rai, ρ, N_rai, tmp_r)
-    S_N_rai += min(max(FT(0), N_rai / dt), tmp_r)
+    # # rain breakup
+    # tmp = CM2.rain_breakup(microphys_params, rf, q_rai, ρ, N_rai, tmp_r)
+    # S_N_rai += min(max(FT(0), N_rai / dt), tmp_r)
 
-    # accretion cloud water + rain
-    tmp = CM2.accretion(microphys_params, rf, q.liq, q_rai, ρ, N_liq)
-    S_qr = min(max(FT(0), q.liq / dt), tmp.dq_rai_dt)
-    S_q_rai += S_qr
-    S_q_tot -= S_qr
-    S_q_liq -= S_qr
-    S_N_liq += -min(max(FT(0), N_liq / dt), -tmp.dN_liq_dt)
-    S_N_rai += FT(0)
+    # # accretion cloud water + rain
+    # tmp = CM2.accretion(microphys_params, rf, q.liq, q_rai, ρ, N_liq)
+    # S_qr = min(max(FT(0), q.liq / dt), tmp.dq_rai_dt)
+    # S_q_rai += S_qr
+    # S_q_tot -= S_qr
+    # S_q_liq -= S_qr
+    # S_N_liq += -min(max(FT(0), N_liq / dt), -tmp.dN_liq_dt)
+    # S_N_rai += FT(0)
 
-    # evaporation
-    tmp = CM2.rain_evaporation(microphys_params, rf, q, q_rai, ρ, N_rai, T)
-    S_Nr = -min(max(FT(0), N_rai / dt), -tmp[1])
-    S_qr = -min(max(FT(0), q_rai / dt), -tmp[2])
-    S_q_rai += S_qr
-    S_q_tot -= S_qr
-    S_q_vap -= S_qr
-    S_N_rai += S_Nr
+    # # evaporation
+    # tmp = CM2.rain_evaporation(microphys_params, rf, q, q_rai, ρ, N_rai, T)
+    # S_Nr = -min(max(FT(0), N_rai / dt), -tmp[1])
+    # S_qr = -min(max(FT(0), q_rai / dt), -tmp[2])
+    # S_q_rai += S_qr
+    # S_q_tot -= S_qr
+    # S_q_vap -= S_qr
+    # S_N_rai += S_Nr
 
-    vt = CM2.rain_terminal_velocity(microphys_params, rf, q_rai, ρ, N_rai)
+    vt = CM2.rain_terminal_velocity(microphys_params, rf, CMT.SB2006VelType(), q_rai, ρ, N_rai)
     term_vel_N_rai = vt[1]
     term_vel_rai = vt[2]
 
@@ -556,6 +556,20 @@ end
     FT = eltype(Y.ρq_rai)
 
     aux.aerosol_variables.N_aer = Y.N_aer
+
+    S =
+        TD.supersaturation.(
+            KP.thermodynamics_params(aux.params),
+            TD.PhasePartition.(aux.moisture_variables.q_tot, aux.moisture_variables.q_liq),
+            aux.moisture_variables.ρ,
+            aux.moisture_variables.T,
+            TD.Liquid(),
+        )
+    ispos(x) = x > FT(0) ? FT(1) : FT(0)
+    act_mask =
+        ispos.(parent(S)) .* ispos.(parent(CC.Operators.InterpolateF2C().(CC.Operators.GradientC2F().(sign.(S)))))
+    copyto!(parent(S), act_mask)
+
     tmp = @. aerosol_activation_helper(
         aux.params,
         aux.moisture_variables.q_tot,
@@ -565,9 +579,11 @@ end
         aux.moisture_variables.T,
         aux.moisture_variables.p,
         aux.moisture_variables.ρ,
-        ClimaCore.Operators.InterpolateF2C().(aux.prescribed_velocity.ρw.components.data.:1),
+        CC.Operators.InterpolateF2C().(aux.prescribed_velocity.ρw.components.data.:1),
         aux.TS.dt,
+        S,
     )
+
     aux.aerosol_variables.S_N_aer = tmp.S_Na
     aux.precip_sources.S_N_liq = tmp.S_Nl
 
@@ -688,6 +704,21 @@ end
     If = CC.Operators.InterpolateC2F()
     ∂ = CC.Operators.DivergenceF2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
 
+    @. dY.N_liq +=
+        -∂(
+            (aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ)) *
+            If(Y.N_liq),
+        )
+    @. dY.ρq_liq +=
+        -∂(
+            (aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ)) *
+            If(Y.ρq_liq),
+        )
+    @. dY.N_aer +=
+        -∂(
+            (aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ)) *
+            If(Y.N_aer),
+        )
     @. dY.N_rai +=
         -∂(
             (aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) + aux.precip_velocities.term_vel_N_rai) *
@@ -700,6 +731,12 @@ end
         )
 
     fcc = CC.Operators.FluxCorrectionC2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
+    @. dY.N_liq +=
+        fcc((aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ)), Y.N_liq)
+    @. dY.ρq_liq +=
+        fcc((aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ)), Y.ρq_liq)
+    @. dY.N_aer +=
+        fcc((aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ)), Y.N_aer)
     @. dY.N_rai +=
         fcc((aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) + aux.precip_velocities.term_vel_N_rai), Y.N_rai)
     @. dY.ρq_rai +=
