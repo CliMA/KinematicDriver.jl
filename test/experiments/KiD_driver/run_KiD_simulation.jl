@@ -22,6 +22,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     prognostics_choice = opts["prognostic_vars"]
     precipitation_choice = opts["precipitation_choice"]
     rain_formation_choice = opts["rain_formation_scheme_choice"]
+    sedimentation_choice = opts["sedimentation_scheme_choice"]
 
     if moisture_choice == "EquilibriumMoisture" && prognostics_choice == "RhoThetaQ"
         moisture = KID.EquilibriumMoisture_ρθq()
@@ -39,22 +40,38 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     elseif precipitation_choice == "Precipitation0M"
         precip = KID.Precipitation0M()
     elseif precipitation_choice == "Precipitation1M"
+        if sedimentation_choice == "CliMA_1M"
+            st = CMT.Blk1MVelType()
+        elseif sedimentation_choice == "Chen2022"
+            st = CMT.Chen2022Type()
+        else
+            error("Invalid sedimentation choice: $sedimentation_choice")
+        end
         if rain_formation_choice == "CliMA_1M"
-            precip = KID.Precipitation1M(KID.OneMomentRainFormation())
+            precip = KID.Precipitation1M(KID.OneMomentRainFormation(), st)
         elseif rain_formation_choice == "KK2000"
-            precip = KID.Precipitation1M(CMT.KK2000Type())
+            precip = KID.Precipitation1M(CMT.KK2000Type(), st)
         elseif rain_formation_choice == "B1994"
-            precip = KID.Precipitation1M(CMT.B1994Type())
+            precip = KID.Precipitation1M(CMT.B1994Type(), st)
         elseif rain_formation_choice == "TC1980"
-            precip = KID.Precipitation1M(CMT.TC1980Type())
+            precip = KID.Precipitation1M(CMT.TC1980Type(), st)
         elseif rain_formation_choice == "LD2004"
-            precip = KID.Precipitation1M(CMT.LD2004Type())
+            precip = KID.Precipitation1M(CMT.LD2004Type(), st)
+        elseif rain_formation_choice == "VarTimeScaleAcnv"
+            precip = KID.Precipitation1M(CMT.VarTimeScaleAcnvType(), st)
         else
             error("Invalid rain formation choice: $rain_formation_choice")
         end
     elseif precipitation_choice == "Precipitation2M"
+        if sedimentation_choice == "Chen2022"
+            st = CMT.Chen2022Type()
+        elseif sedimentation_choice == "SB2006"
+            st = CMT.SB2006VelType()
+        else
+            error("Invalid sedimentation choice: $sedimentation_choice")
+        end
         if rain_formation_choice == "SB2006"
-            precip = KID.Precipitation2M(CMT.SB2006Type())
+            precip = KID.Precipitation2M(CMT.SB2006Type(), st)
         else
             error("Invalid rain formation choice: $rain_formation_choice")
         end
@@ -74,6 +91,9 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     output_folder = string("Output_", moisture_choice, "_", prognostics_choice, "_", precipitation_choice)
     if precipitation_choice in ["Precipitation1M", "Precipitation2M"]
         output_folder = output_folder * "_" * rain_formation_choice
+        if sedimentation_choice == "Chen2022"
+            output_folder = output_folder * "_Chen2022"
+        end
     end
     if opts["qtot_flux_correction"]
         output_folder = output_folder * "_wFC"
@@ -81,7 +101,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     path = joinpath(@__DIR__, output_folder)
     mkpath(path)
     fname = joinpath(path, "Output.nc")
-    Stats = KID.NetCDFIO_Stats(fname, 1.0, vec(face_coord), vec(coord))
+    Stats = KID.NetCDFIO_Stats(fname, 1.0, parent(face_coord), parent(coord))
 
     # Instantiate CliMA Parameters and overwrite the defaults
     toml_dict = CP.create_toml_dict(FT; dict_type = "alias")

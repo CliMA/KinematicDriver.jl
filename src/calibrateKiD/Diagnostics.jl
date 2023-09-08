@@ -107,12 +107,19 @@ function rainrate(vec::Vector{FT}, config; height::FT = FT(0), isref = false) wh
             vt_z = a1 .* vt[ind_z1, :] + a2 .* vt[ind_z2, :]
             vt_z[findall(x -> x < 0, vt_z)] .= FT(0)
         else
+            if config["model"]["sedimentation_choice"] == "CliMA_1M"
+                st = CMT.Blk1MVelType()
+            elseif config["model"]["sedimentation_choice"] == "Chen2022"
+                st = CMT.Chen2022Type()
+            else
+                error("Invalid sedimentation choice")
+            end
             ϕ_names = collect(keys(config["prior"]["parameters"]))
             ϕ_values = collect([v.mean for v in values(config["prior"]["parameters"])])
             params_calib = create_param_dict(ϕ_values, ϕ_names)
             params = create_parameter_set(Float64, config["model"], params_calib)
             microphys_params = KP.microphysics_params(params)
-            vt_z = CM1.terminal_velocity.(microphys_params, CMT.RainType(), ρ_z, qr_z)
+            vt_z = CM1.terminal_velocity.(microphys_params, CMT.RainType(), st, ρ_z, qr_z)
         end
         rainrate[:, i] = qr_z .* ρ_z .* vt_z .* 3600
     end

@@ -63,6 +63,7 @@ function run_KiD(u::Array{FT, 1}, u_names::Array{String, 1}, model_settings::Dic
         model_settings["moisture_choice"],
         model_settings["precipitation_choice"],
         model_settings["rain_formation_choice"],
+        model_settings["sedimentation_choice"],
     )
 
     TS = TimeStepping(model_settings["dt"], model_settings["dt_calib"], model_settings["t_end"])
@@ -211,7 +212,14 @@ function compute_terminal_velocity(
         for j in 1:_n_times
             ρ = ρ_mat[:, j]
             q_rai = q_rai_mat[:, j]
-            term_vel_rai = CM1.terminal_velocity.(microphys_params, CM.CommonTypes.RainType(), ρ, q_rai)
+            term_vel_rai =
+                CM1.terminal_velocity.(
+                    microphys_params,
+                    CM.CommonTypes.RainType(),
+                    CM.CommonTypes.Blk1MVelType(),
+                    ρ,
+                    q_rai,
+                )
             outputs = [outputs; ρ; q_rai; term_vel_rai]
         end
 
@@ -220,7 +228,12 @@ function compute_terminal_velocity(
 end
 
 # Equations to solve for mositure and precipitation variables
-function equation_types(moisture_choice::String, precipitation_choice::String, rain_formation_choice::String)
+function equation_types(
+    moisture_choice::String,
+    precipitation_choice::String,
+    rain_formation_choice::String,
+    sedimentation_choice::String,
+)
     if moisture_choice == "EquilibriumMoisture"
         moisture = EquilibriumMoisture_ρdTq()
     elseif moisture_choice == "NonEquilibriumMoisture"
@@ -233,22 +246,38 @@ function equation_types(moisture_choice::String, precipitation_choice::String, r
     elseif precipitation_choice == "Precipitation0M"
         precip = Precipitation0M()
     elseif precipitation_choice == "Precipitation1M"
+        if sedimentation_choice == "CliMA_1M"
+            st = CMT.Blk1MVelType()
+        elseif sedimentation_choice == "Chen2022"
+            st = CMT.Chen2022Type()
+        else
+            error("Invalid sedimentation choice: $sedimentation_choice")
+        end
         if rain_formation_choice == "CliMA_1M"
-            precip = Precipitation1M(OneMomentRainFormation())
+            precip = Precipitation1M(OneMomentRainFormation(), st)
         elseif rain_formation_choice == "KK2000"
-            precip = Precipitation1M(CMT.KK2000Type())
+            precip = Precipitation1M(CMT.KK2000Type(), st)
         elseif rain_formation_choice == "B1994"
-            precip = Precipitation1M(CMT.B1994Type())
+            precip = Precipitation1M(CMT.B1994Type(), st)
         elseif rain_formation_choice == "TC1980"
-            precip = Precipitation1M(CMT.TC1980Type())
+            precip = Precipitation1M(CMT.TC1980Type(), st)
         elseif rain_formation_choice == "LD2004"
-            precip = Precipitation1M(CMT.LD2004Type())
+            precip = Precipitation1M(CMT.LD2004Type(), st)
+        elseif rain_formation_choice == "VarTimeScaleAcnv"
+            precip = Precipitation1M(CMT.VarTimeScaleAcnvType(), st)
         else
             error("Invalid rain formation choice: $rain_formation_choice")
         end
     elseif precipitation_choice == "Precipitation2M"
+        if sedimentation_choice == "Chen2022"
+            st = CMT.Chen2022Type()
+        elseif sedimentation_choice == "SB2006"
+            st = CMT.SB2006VelType()
+        else
+            error("Invalid sedimentation choice: $sedimentation_choice")
+        end
         if rain_formation_choice == "SB2006"
-            precip = Precipitation2M(CMT.SB2006Type())
+            precip = Precipitation2M(CMT.SB2006Type(), st)
         else
             error("Invalid rain formation choice: $rain_formation_choice")
         end
@@ -270,13 +299,20 @@ function create_parameter_set(FT, model_settings::Dict, params_cal::Dict)
     thermo_params = model_settings["thermo_params"]
     TP = typeof(thermo_params)
 
+    modal_nucleation_params = model_settings["modal_nucleation_params"]
+    MNP = typeof(modal_nucleation_params)
+
     fixed_microphys_pairs = model_settings["fixed_microphys_param_pairs"]
     pairs = []
     for (key, val) in params_cal
         push!(pairs, Pair(Symbol(key), val))
     end
-    microphys_params =
-        CM.Parameters.CloudMicrophysicsParameters{FT, TP}(; fixed_microphys_pairs..., pairs..., thermo_params)
+    microphys_params = CM.Parameters.CloudMicrophysicsParameters{FT, TP, MNP}(;
+        fixed_microphys_pairs...,
+        pairs...,
+        thermo_params,
+        modal_nucleation_params,
+    )
     MP = typeof(microphys_params)
 
     precip_sources = if ("precip_sources" in keys(model_settings))

@@ -61,7 +61,10 @@ end
 
 @testset "Make rhs function" begin
 
-    rhs = KID.make_rhs_function(KID.EquilibriumMoisture_ρθq(), KID.Precipitation1M(KID.OneMomentRainFormation()))
+    rhs = KID.make_rhs_function(
+        KID.EquilibriumMoisture_ρθq(),
+        KID.Precipitation1M(KID.OneMomentRainFormation(), CMT.Blk1MVelType()),
+    )
     @test typeof(rhs) <: Function
 
 end
@@ -82,7 +85,7 @@ end
 
     state = KID.initialise_state(
         KID.EquilibriumMoisture_ρθq(),
-        KID.Precipitation1M(KID.OneMomentRainFormation()),
+        KID.Precipitation1M(KID.OneMomentRainFormation(), CMT.Blk1MVelType()),
         initial_profiles,
     )
     @test state isa CC.Fields.FieldVector
@@ -90,7 +93,11 @@ end
     @test LA.norm(state.ρq_rai) == 0
     @test LA.norm(state.ρq_sno) == 0
 
-    state = KID.initialise_state(KID.EquilibriumMoisture_ρθq(), KID.Precipitation2M(CMT.SB2006Type()), initial_profiles)
+    state = KID.initialise_state(
+        KID.EquilibriumMoisture_ρθq(),
+        KID.Precipitation2M(CMT.SB2006Type(), CMT.SB2006VelType()),
+        initial_profiles,
+    )
     @test state isa CC.Fields.FieldVector
     @test LA.norm(state.ρq_tot) == 0
     @test LA.norm(state.ρq_rai) == 0
@@ -108,7 +115,7 @@ end
 
     state = KID.initialise_state(
         KID.EquilibriumMoisture_ρdTq(),
-        KID.Precipitation1M(KID.OneMomentRainFormation()),
+        KID.Precipitation1M(KID.OneMomentRainFormation(), CMT.Blk1MVelType()),
         initial_profiles,
     )
     @test state isa CC.Fields.FieldVector
@@ -116,8 +123,11 @@ end
     @test LA.norm(state.ρq_rai) == 0
     @test LA.norm(state.ρq_sno) == 0
 
-    state =
-        KID.initialise_state(KID.EquilibriumMoisture_ρdTq(), KID.Precipitation2M(CMT.SB2006Type()), initial_profiles)
+    state = KID.initialise_state(
+        KID.EquilibriumMoisture_ρdTq(),
+        KID.Precipitation2M(CMT.SB2006Type(), CMT.SB2006VelType()),
+        initial_profiles,
+    )
     @test state isa CC.Fields.FieldVector
     @test LA.norm(state.ρq_tot) == 0
     @test LA.norm(state.ρq_rai) == 0
@@ -139,7 +149,7 @@ end
 
     state = KID.initialise_state(
         KID.NonEquilibriumMoisture_ρθq(),
-        KID.Precipitation1M(KID.OneMomentRainFormation()),
+        KID.Precipitation1M(KID.OneMomentRainFormation(), CMT.Blk1MVelType()),
         initial_profiles,
     )
     @test state isa CC.Fields.FieldVector
@@ -149,8 +159,11 @@ end
     @test LA.norm(state.ρq_rai) == 0
     @test LA.norm(state.ρq_sno) == 0
 
-    state =
-        KID.initialise_state(KID.NonEquilibriumMoisture_ρθq(), KID.Precipitation2M(CMT.SB2006Type()), initial_profiles)
+    state = KID.initialise_state(
+        KID.NonEquilibriumMoisture_ρθq(),
+        KID.Precipitation2M(CMT.SB2006Type(), CMT.SB2006VelType()),
+        initial_profiles,
+    )
     @test state isa CC.Fields.FieldVector
     @test LA.norm(state.ρq_tot) == 0
     @test LA.norm(state.ρq_liq) == 0
@@ -174,7 +187,7 @@ end
 
     state = KID.initialise_state(
         KID.NonEquilibriumMoisture_ρdTq(),
-        KID.Precipitation1M(KID.OneMomentRainFormation()),
+        KID.Precipitation1M(KID.OneMomentRainFormation(), CMT.Blk1MVelType()),
         initial_profiles,
     )
     @test state isa CC.Fields.FieldVector
@@ -184,8 +197,11 @@ end
     @test LA.norm(state.ρq_rai) == 0
     @test LA.norm(state.ρq_sno) == 0
 
-    state =
-        KID.initialise_state(KID.NonEquilibriumMoisture_ρdTq(), KID.Precipitation2M(CMT.SB2006Type()), initial_profiles)
+    state = KID.initialise_state(
+        KID.NonEquilibriumMoisture_ρdTq(),
+        KID.Precipitation2M(CMT.SB2006Type(), CMT.SB2006VelType()),
+        initial_profiles,
+    )
     @test state isa CC.Fields.FieldVector
     @test LA.norm(state.ρq_tot) == 0
     @test LA.norm(state.ρq_liq) == 0
@@ -333,7 +349,11 @@ end
     @test LA.norm(dY) == 0
 
     aux = KID.initialise_aux(Float64, ip, params, 0.0, 0.0, face_space, KID.NonEquilibriumMoisture_ρθq())
-    Y = KID.initialise_state(KID.NonEquilibriumMoisture_ρθq(), KID.Precipitation1M(KID.OneMomentRainFormation()), ip)
+    Y = KID.initialise_state(
+        KID.NonEquilibriumMoisture_ρθq(),
+        KID.Precipitation1M(KID.OneMomentRainFormation(), CMT.Blk1MVelType()),
+        ip,
+    )
     dY = (;
         ρq_tot = [10.0, 13.0],
         ρq_liq = [5.0, 10.0],
@@ -342,7 +362,7 @@ end
         ρq_sno = [1.0, 1.0],
     )
     KID.zero_tendencies!(KID.NonEquilibriumMoisture_ρθq(), dY, Y, aux, 1.0)
-    KID.zero_tendencies!(KID.Precipitation1M(KID.OneMomentRainFormation()), dY, Y, aux, 1.0)
+    KID.zero_tendencies!(KID.Precipitation1M(KID.OneMomentRainFormation(), CMT.Blk1MVelType()), dY, Y, aux, 1.0)
     @test LA.norm(dY) == 0
 
     dY = (;
@@ -355,7 +375,7 @@ end
         N_aer = [1e9, 1e8],
     )
     KID.zero_tendencies!(KID.NonEquilibriumMoisture_ρθq(), dY, Y, aux, 1.0)
-    KID.zero_tendencies!(KID.Precipitation2M(CMT.SB2006Type()), dY, Y, aux, 1.0)
+    KID.zero_tendencies!(KID.Precipitation2M(CMT.SB2006Type(), CMT.SB2006VelType()), dY, Y, aux, 1.0)
     @test LA.norm(dY) == 0
 
 end
@@ -424,19 +444,19 @@ end
     @test tmp.q_sno == q_sno
 
     dt = 0.5
-    ts = @. TD.PhaseEquil_ρTq(thermo_params, ρ, T, q_tot)
+    ts = TD.PhaseEquil_ρTq(thermo_params, ρ, T, q_tot)
     tmp = KID.precip_helper_sources_0M!(params, ts, q_tot, q_liq, q_ice, dt)
     @test !isnan(tmp.S_q_tot .+ tmp.S_q_liq .+ tmp.S_q_ice .+ tmp.S_q_rai .+ tmp.S_q_sno)
     @test tmp.S_q_tot == tmp.S_q_liq + tmp.S_q_ice
     @test tmp.S_q_tot == -(tmp.S_q_rai + tmp.S_q_sno)
 
-    ps = KID.Precipitation1M(KID.OneMomentRainFormation())
+    ps = KID.Precipitation1M(KID.OneMomentRainFormation(), CMT.Blk1MVelType())
     tmp = KID.precip_helper_sources_1M!(params, ts, q_tot, q_liq, q_ice, q_rai, q_sno, T, ρ, dt, ps)
     @test !isnan(tmp.S_q_tot .+ tmp.S_q_liq .+ tmp.S_q_ice .+ tmp.S_q_rai .+ tmp.S_q_sno)
     @test tmp.S_q_tot ≈ tmp.S_q_liq + tmp.S_q_ice + tmp.S_q_vap
     @test tmp.S_q_tot ≈ -(tmp.S_q_rai + tmp.S_q_sno)
 
-    ps = KID.Precipitation2M(CMT.SB2006Type())
+    ps = KID.Precipitation2M(CMT.SB2006Type(), CMT.SB2006VelType())
     tmp = KID.precip_helper_sources_2M!(params, q_tot, q_liq, q_rai, N_liq, N_rai, T, ρ, dt, ps)
     @test !isnan(tmp.S_q_tot .+ tmp.S_q_liq .+ tmp.S_q_rai)
     @test !isnan(tmp.S_N_liq .+ tmp.S_N_rai)
@@ -472,9 +492,13 @@ end
     KID.advection_tendency!(KID.EquilibriumMoisture_ρθq(), dY, Y, aux, t)
     @test dY ≈ Y / 10 atol = eps(Float64) * 10
 
-    Y = KID.initialise_state(KID.EquilibriumMoisture_ρθq(), KID.Precipitation2M(CMT.SB2006Type()), init)
+    Y = KID.initialise_state(
+        KID.EquilibriumMoisture_ρθq(),
+        KID.Precipitation2M(CMT.SB2006Type(), CMT.SB2006VelType()),
+        init,
+    )
     dY = Y / 10
-    KID.advection_tendency!(KID.Precipitation2M(CMT.SB2006Type()), dY, Y, aux, t)
+    KID.advection_tendency!(KID.Precipitation2M(CMT.SB2006Type(), CMT.SB2006VelType()), dY, Y, aux, t)
     @test dY ≈ Y / 10 atol = eps(Float64) * 10
 
     # Non-eq
@@ -490,9 +514,13 @@ end
     @test dY ≈ Y / 10 atol = eps(Float64) * 10
 
 
-    Y = KID.initialise_state(KID.NonEquilibriumMoisture_ρθq(), KID.Precipitation2M(CMT.SB2006Type()), init)
+    Y = KID.initialise_state(
+        KID.NonEquilibriumMoisture_ρθq(),
+        KID.Precipitation2M(CMT.SB2006Type(), CMT.SB2006VelType()),
+        init,
+    )
     dY = Y / 10
-    KID.advection_tendency!(KID.Precipitation2M(CMT.SB2006Type()), dY, Y, aux, t)
+    KID.advection_tendency!(KID.Precipitation2M(CMT.SB2006Type(), CMT.SB2006VelType()), dY, Y, aux, t)
     @test dY ≈ Y / 10 atol = eps(Float64) * 10
 
 end
@@ -548,10 +576,14 @@ end
           TD.dry_pottemp.(thermo_params, aux.moisture_variables.T, aux.moisture_variables.ρ_dry)
 
     aux = KID.initialise_aux(Float64, init, params, (; dt = 2.0), 0.0, face_space, KID.NonEquilibriumMoisture_ρθq())
-    Y = KID.initialise_state(KID.NonEquilibriumMoisture_ρθq(), KID.Precipitation2M(CMT.SB2006Type()), init)
+    Y = KID.initialise_state(
+        KID.NonEquilibriumMoisture_ρθq(),
+        KID.Precipitation2M(CMT.SB2006Type(), CMT.SB2006VelType()),
+        init,
+    )
     dY = Y / 10
 
-    KID.precompute_aux_precip!(KID.Precipitation2M(CMT.SB2006Type()), dY, Y, aux, t)
+    KID.precompute_aux_precip!(KID.Precipitation2M(CMT.SB2006Type(), CMT.SB2006VelType()), dY, Y, aux, t)
     tmp = @. KID.precip_helper_sources_2M!(
         aux.params,
         aux.moisture_variables.q_tot,
@@ -562,7 +594,7 @@ end
         aux.moisture_variables.T,
         aux.moisture_variables.ρ,
         aux.TS.dt,
-        KID.Precipitation2M(CMT.SB2006Type()),
+        KID.Precipitation2M(CMT.SB2006Type(), CMT.SB2006VelType()),
     )
     @test aux.precip_sources.S_q_rai ≈ tmp.S_q_rai atol = eps(Float64) * 10
     @test aux.precip_sources.S_q_tot ≈ tmp.S_q_tot atol = eps(Float64) * 10
