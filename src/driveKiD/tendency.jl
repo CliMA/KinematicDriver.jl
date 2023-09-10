@@ -160,6 +160,7 @@ end
     thermo_params = KP.thermodynamics_params(params)
 
     rf = ps.rain_formation
+    st = ps.sedimentation
 
     FT = eltype(q_tot)
 
@@ -184,7 +185,7 @@ end
         # autoconversion liquid to rain and ice to snow
         if rf isa OneMomentRainFormation
             tmp = CM1.conv_q_liq_to_q_rai(microphys_params, q.liq, smooth_transition = true)
-        elseif typeof(rf) in [CMT.KK2000Type, CMT.B1994Type, CMT.TC1980Type, CMT.LD2004Type]
+        elseif typeof(rf) in [CMT.KK2000Type, CMT.B1994Type, CMT.TC1980Type, CMT.LD2004Type, CMT.VarTimeScaleAcnvType]
             tmp = CM2.conv_q_liq_to_q_rai(microphys_params, rf, q.liq, ρ, ; conv_args(rf, params)...)
         else
             error("Unrecognized rain formation scheme")
@@ -198,7 +199,7 @@ end
         S_q_ice += S_qt_snow
         #θ_liq_ice_tendency -= 1 / Π_m / c_pm * (L_v0 * S_qt_rain + L_s0 * S_qt_snow)
 
-        if rf isa OneMomentRainFormation || rf isa CMT.LD2004Type
+        if typeof(rf) in [OneMomentRainFormation, CMT.LD2004Type, CMT.VarTimeScaleAcnvType]
             tmp = CM1.accretion(microphys_params, CMT.LiquidType(), CMT.RainType(), q.liq, q_rai, ρ)
         elseif typeof(rf) in [CMT.KK2000Type, CMT.B1994Type, CMT.TC1980Type]
             tmp = CM2.accretion(microphys_params, accr_args(rf, q.liq, q_rai, ρ)...)
@@ -305,8 +306,8 @@ end
         #)
     end
 
-    term_vel_rai = CM1.terminal_velocity(microphys_params, CMT.RainType(), ρ, q_rai)
-    term_vel_sno = CM1.terminal_velocity(microphys_params, CMT.SnowType(), ρ, q_sno)
+    term_vel_rai = CM1.terminal_velocity(microphys_params, CMT.RainType(), st, ρ, q_rai)
+    term_vel_sno = CM1.terminal_velocity(microphys_params, CMT.SnowType(), st, ρ, q_sno)
 
     return (; S_q_tot, S_q_liq, S_q_ice, S_q_rai, S_q_sno, S_q_vap, term_vel_rai, term_vel_sno)
 end
@@ -315,6 +316,7 @@ end
     microphys_params = KP.microphysics_params(params)
 
     rf = ps.rain_formation
+    st = ps.sedimentation
 
     FT = eltype(q_tot)
 
@@ -369,7 +371,7 @@ end
         S_N_rai += S_Nr
     end
 
-    vt = CM2.rain_terminal_velocity(microphys_params, rf, q_rai, ρ, N_rai)
+    vt = CM2.rain_terminal_velocity(microphys_params, rf, st, q_rai, ρ, N_rai)
     term_vel_N_rai = vt[1]
     term_vel_rai = vt[2]
 

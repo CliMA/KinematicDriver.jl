@@ -33,20 +33,25 @@ end
     rf_3 = "B1994"
     rf_4 = "LD2004"
     rf_5 = "TC1980"
+    rf_6 = "VarTimeScaleAcnv"
+    st_1 = "CliMA_1M"
+    st_2 = "Chen2022"
 
     #action
-    moisture_eq, precip_n = KID.equation_types(eqm, pn, "_")
-    moisture_neq, precip_n = KID.equation_types(neqm, pn, "_")
-    moisture_eq, precip_0m = KID.equation_types(eqm, p0m, "_")
-    moisture_eq, precip_1m_1 = KID.equation_types(eqm, p1m, rf_1)
-    moisture_eq, precip_1m_2 = KID.equation_types(eqm, p1m, rf_2)
-    moisture_eq, precip_1m_3 = KID.equation_types(eqm, p1m, rf_3)
-    moisture_eq, precip_1m_4 = KID.equation_types(eqm, p1m, rf_4)
-    moisture_eq, precip_1m_5 = KID.equation_types(eqm, p1m, rf_5)
+    moisture_eq, precip_n = KID.equation_types(eqm, pn, "_", "_")
+    moisture_neq, precip_n = KID.equation_types(neqm, pn, "_", "_")
+    moisture_eq, precip_0m = KID.equation_types(eqm, p0m, "_", "_")
+    moisture_eq, precip_1m_1 = KID.equation_types(eqm, p1m, rf_1, st_1)
+    moisture_eq, precip_1m_2 = KID.equation_types(eqm, p1m, rf_2, st_1)
+    moisture_eq, precip_1m_3 = KID.equation_types(eqm, p1m, rf_3, st_1)
+    moisture_eq, precip_1m_4 = KID.equation_types(eqm, p1m, rf_4, st_1)
+    moisture_eq, precip_1m_5 = KID.equation_types(eqm, p1m, rf_5, st_1)
+    moisture_eq, precip_1m_6 = KID.equation_types(eqm, p1m, rf_6, st_1)
+    moisture_eq, precip_1m_7 = KID.equation_types(eqm, p1m, rf_6, st_2)
     #setup
-    @test_throws Exception KID.equation_types("_", pn, rf_1)
-    @test_throws Exception KID.equation_types(eqm, "_", rf_1)
-    @test_throws Exception KID.equation_types(eqm, p1m, "_")
+    @test_throws Exception KID.equation_types("_", pn, rf_1, st_1)
+    @test_throws Exception KID.equation_types(eqm, "_", rf_1, st_1)
+    @test_throws Exception KID.equation_types(eqm, p1m, "_", st_1)
     @test moisture_eq isa KID.EquilibriumMoisture_ρdTq
     @test moisture_neq isa KID.NonEquilibriumMoisture_ρdTq
     @test precip_n isa KID.NoPrecipitation
@@ -56,6 +61,8 @@ end
     @test precip_1m_3 isa KID.Precipitation1M
     @test precip_1m_4 isa KID.Precipitation1M
     @test precip_1m_5 isa KID.Precipitation1M
+    @test precip_1m_6 isa KID.Precipitation1M
+    @test precip_1m_7 isa KID.Precipitation1M
 end
 
 @testset "Terminal velocity" begin
@@ -77,7 +84,12 @@ end
 
     fixed_microphys_param_pairs = model_settings["fixed_microphys_param_pairs"]
     thermo_params = model_settings["thermo_params"]
-    microphys_params = CM.Parameters.CloudMicrophysicsParameters(; fixed_microphys_param_pairs..., thermo_params)
+    modal_nucleation_params = model_settings["modal_nucleation_params"]
+    microphys_params = CM.Parameters.CloudMicrophysicsParameters(;
+        fixed_microphys_param_pairs...,
+        thermo_params,
+        modal_nucleation_params,
+    )
     ρ1 = obs[1:2]
     q_rai1 = obs[3:4]
     ρ2 = obs[7:8]
@@ -87,8 +99,22 @@ end
     vel = KID.compute_terminal_velocity(u, u_names, model_settings, obs)
 
     #test
-    @test vel[5:6] == CM.Microphysics1M.terminal_velocity.(microphys_params, CM.CommonTypes.RainType(), ρ1, q_rai1)
-    @test vel[11:12] == CM.Microphysics1M.terminal_velocity.(microphys_params, CM.CommonTypes.RainType(), ρ2, q_rai2)
+    @test vel[5:6] ==
+          CM.Microphysics1M.terminal_velocity.(
+        microphys_params,
+        CM.CommonTypes.RainType(),
+        CM.CommonTypes.Blk1MVelType(),
+        ρ1,
+        q_rai1,
+    )
+    @test vel[11:12] ==
+          CM.Microphysics1M.terminal_velocity.(
+        microphys_params,
+        CM.CommonTypes.RainType(),
+        CM.CommonTypes.Blk1MVelType(),
+        ρ2,
+        q_rai2,
+    )
 end
 
 @testset "Get variable data from ODE" begin

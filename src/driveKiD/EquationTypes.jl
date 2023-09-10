@@ -40,11 +40,13 @@ struct NonEquilibriumMoisture_ρdTq <: NonEquilibriumMoisture end
 
 struct NoPrecipitation <: AbstractPrecipitationStyle end
 struct Precipitation0M <: AbstractPrecipitationStyle end
-struct Precipitation1M{PT} <: AbstractPrecipitationStyle
+struct Precipitation1M{PT, ST} <: AbstractPrecipitationStyle
     rain_formation::PT
+    sedimentation::ST
 end
-struct Precipitation2M{PT} <: AbstractPrecipitationStyle
+struct Precipitation2M{PT, ST} <: AbstractPrecipitationStyle
     rain_formation::PT
+    sedimentation::ST
 end
 
 struct OneMomentRainFormation <: AbstractRainFormationStyle end
