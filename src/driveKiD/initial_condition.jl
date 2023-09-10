@@ -7,15 +7,15 @@
 """
 function init_condition(::Type{FT}, params, z; dry = false) where {FT}
 
-    z_0::FT = 0.0
-    z_1::FT = 740.0
-    z_2::FT = 3260.0
-    rv_0::FT = 0.015
-    rv_1::FT = 0.0138
-    rv_2::FT = 0.0024
-    θ_0::FT = 297.9
-    θ_1::FT = 297.9
-    θ_2::FT = 312.66
+    z_0::FT = params.z_0 #0.0
+    z_1::FT = params.z_1 #740.0
+    z_2::FT = params.z_2 #3260.0
+    rv_0::FT = params.rv_0 #0.015
+    rv_1::FT = params.rv_1 #0.0138
+    rv_2::FT = params.rv_2 #0.0024
+    θ_0::FT = params.tht_0 #297.9
+    θ_1::FT = params.tht_1 #297.9
+    θ_2::FT = params.tht_2 #312.66
 
     if dry
         rv_0 = 0.0

@@ -18,6 +18,15 @@ function create_parameter_set(
     r_dry = 0.04 * 1e-6,
     std_dry = 1.4,
     κ = 0.9,
+    z_0 = 0.0,
+    z_1 = 740.0,
+    z_2 = 3260.0,
+    rv_0 = 0.015,
+    rv_1 = 0.0138,
+    rv_2 = 0.0024,
+    tht_0 = 297.9,
+    tht_1 = 297.9,
+    tht_2 = 312.66,
 )
     FT = CP.float_type(toml_dict)
     override_file = joinpath(out_dir, "override_dict.toml")
@@ -65,6 +74,42 @@ function create_parameter_set(
         println(io, "[surface_pressure]")
         println(io, "alias = \"p0\"")
         println(io, "value = " * string(p0))
+        println(io, "type = \"float\"")
+        println(io, "[init_cond_z0]")
+        println(io, "alias = \"z_0\"")
+        println(io, "value = " * string(z_0))
+        println(io, "type = \"float\"")
+        println(io, "[init_cond_z1]")
+        println(io, "alias = \"z_1\"")
+        println(io, "value = " * string(z_1))
+        println(io, "type = \"float\"")
+        println(io, "[init_cond_z2]")
+        println(io, "alias = \"z_2\"")
+        println(io, "value = " * string(z_2))
+        println(io, "type = \"float\"")
+        println(io, "[init_cond_rv0]")
+        println(io, "alias = \"rv_0\"")
+        println(io, "value = " * string(rv_0))
+        println(io, "type = \"float\"")
+        println(io, "[init_cond_rv1]")
+        println(io, "alias = \"rv_1\"")
+        println(io, "value = " * string(rv_1))
+        println(io, "type = \"float\"")
+        println(io, "[init_cond_rv2]")
+        println(io, "alias = \"rv_2\"")
+        println(io, "value = " * string(rv_2))
+        println(io, "type = \"float\"")
+        println(io, "[init_cond_theta0]")
+        println(io, "alias = \"tht_0\"")
+        println(io, "value = " * string(tht_0))
+        println(io, "type = \"float\"")
+        println(io, "[init_cond_theta1]")
+        println(io, "alias = \"tht_1\"")
+        println(io, "value = " * string(tht_1))
+        println(io, "type = \"float\"")
+        println(io, "[init_cond_theta2]")
+        println(io, "alias = \"tht_2\"")
+        println(io, "value = " * string(tht_2))
         println(io, "type = \"float\"")
         println(io, "[precipitation_sources_flag]")
         println(io, "alias = \"precip_sources\"")
@@ -118,7 +163,7 @@ function create_parameter_set(
     )
     MP = typeof(microphys_params)
 
-    aliases = ["w1", "t1", "p0", "precip_sources", "precip_sinks", "qtot_flux_correction", "prescribed_Nd", "r_dry", "std_dry", "κ"]
+    aliases = ["w1", "t1", "p0", "precip_sources", "precip_sinks", "qtot_flux_correction", "prescribed_Nd", "r_dry", "std_dry", "κ", "z_0", "z_1", "z_2", "rv_0", "rv_1", "rv_2", "tht_0", "tht_1", "tht_2"]
     pairs = CP.get_parameter_values!(toml_dict, aliases, "Kinematic1D")
 
     param_set = KID.Parameters.KinematicParameters{FTD, MP}(; pairs..., microphys_params)

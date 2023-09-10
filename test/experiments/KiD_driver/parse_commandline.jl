@@ -93,6 +93,42 @@ function parse_commandline()
         help = "Pressure at the surface [pa]"
         arg_type = Float64
         default = Float64(100000)
+        "--z_0"
+        help = "Initial condotion z0 [m]"
+        arg_type = Float64
+        default = Float64(0)
+        "--z_1"
+        help = "Initial condotion z1 [m]"
+        arg_type = Float64
+        default = Float64(740)
+        "--z_2"
+        help = "Initial condotion z2 [m]"
+        arg_type = Float64
+        default = Float64(3260)
+        "--rv_0"
+        help = "Initial condotion rv0 [-]"
+        arg_type = Float64
+        default = Float64(0.015)
+        "--rv_1"
+        help = "Initial condotion rv1 [-]"
+        arg_type = Float64
+        default = Float64(0.0138)
+        "--rv_2"
+        help = "Initial condotion rv2 [-]"
+        arg_type = Float64
+        default = Float64(0.0024)
+        "--tht_0"
+        help = "Initial condotion theta0 [K]"
+        arg_type = Float64
+        default = Float64(297.9)
+        "--tht_1"
+        help = "Initial condotion theta1 [K]"
+        arg_type = Float64
+        default = Float64(297.9)
+        "--tht_2"
+        help = "Initial condotion theta2 [K]"
+        arg_type = Float64
+        default = Float64(312.66)
         "--r_dry"
         help = "aerosol distribution mean radius for aerosol activation calculations in 2M schemes [m]"
         arg_type = Float64

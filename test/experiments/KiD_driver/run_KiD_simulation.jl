@@ -119,6 +119,15 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
         FT(opts["r_dry"]),
         FT(opts["std_dry"]),
         FT(opts["kappa"]),
+        FT(opts["z_0"]),
+        FT(opts["z_1"]),
+        FT(opts["z_2"]),
+        FT(opts["rv_0"]),
+        FT(opts["rv_1"]),
+        FT(opts["rv_2"]),
+        FT(opts["tht_0"]),
+        FT(opts["tht_1"]),
+        FT(opts["tht_2"]),
     )
 
     # Solve the initial value problem for density profile
