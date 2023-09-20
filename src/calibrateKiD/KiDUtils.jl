@@ -299,20 +299,13 @@ function create_parameter_set(FT, model_settings::Dict, params_cal::Dict)
     thermo_params = model_settings["thermo_params"]
     TP = typeof(thermo_params)
 
-    modal_nucleation_params = model_settings["modal_nucleation_params"]
-    MNP = typeof(modal_nucleation_params)
-
     fixed_microphys_pairs = model_settings["fixed_microphys_param_pairs"]
     pairs = []
     for (key, val) in params_cal
         push!(pairs, Pair(Symbol(key), val))
     end
-    microphys_params = CM.Parameters.CloudMicrophysicsParameters{FT, TP, MNP}(;
-        fixed_microphys_pairs...,
-        pairs...,
-        thermo_params,
-        modal_nucleation_params,
-    )
+    microphys_params =
+        CM.Parameters.CloudMicrophysicsParameters{FT, TP}(; fixed_microphys_pairs..., pairs..., thermo_params)
     MP = typeof(microphys_params)
 
     precip_sources = if ("precip_sources" in keys(model_settings))
