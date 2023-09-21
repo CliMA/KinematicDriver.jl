@@ -183,7 +183,6 @@ function compute_terminal_velocity(
     return compute_terminal_velocity(u, u_names, model_settings, RS.obs_mean)
 end
 
-Base.broadcastable(ps::CM.CommonTypes.RainType) = Ref(ps)
 Base.broadcastable(ps::CM.Parameters.CloudMicrophysicsParameters) = Ref(ps)
 function compute_terminal_velocity(
     u::Array{FT, 1},
