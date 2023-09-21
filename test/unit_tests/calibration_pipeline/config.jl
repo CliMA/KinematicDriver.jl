@@ -89,7 +89,6 @@ function get_model_config(params_calib_names::Array{String})
     config["filter"] = KD.make_filter_props(config["n_elem"], config["t_calib"]; apply = false)
     fixed_parameters = create_fixed_parameter_set(params_calib_names)
     config["thermo_params"] = fixed_parameters.thermo_params
-    config["modal_nucleation_params"] = fixed_parameters.modal_nucleation_params
     config["fixed_microphys_param_pairs"] = fixed_parameters.fixed_microphys_param_pairs
 
     return config
@@ -102,18 +101,10 @@ function create_fixed_parameter_set(params_calib_names::Array{String})
     pairs = CP.get_parameter_values!(toml_dict, aliases, "Thermodynamics")
     thermo_params = TD.Parameters.ThermodynamicsParameters{FT}(; pairs...)
 
-    aliases = string.(fieldnames(CM.Parameters.ModalNucleationParameters))
-    pairs = CP.get_parameter_values!(toml_dict, aliases, "CloudMicrophysics")
-    modal_nucleation_params = CM.Parameters.ModalNucleationParameters{FT}(; pairs...)
-
     aliases = string.(fieldnames(CM.Parameters.CloudMicrophysicsParameters))
     aliases = setdiff(aliases, params_calib_names)
-    aliases = setdiff(aliases, ["thermo_params, modal_nucleation_params"])
+    aliases = setdiff(aliases, ["thermo_params"])
     fixed_microphys_param_pairs = CP.get_parameter_values!(toml_dict, aliases, "CloudMicrophysics")
 
-    return (
-        thermo_params = thermo_params,
-        modal_nucleation_params = modal_nucleation_params,
-        fixed_microphys_param_pairs = fixed_microphys_param_pairs,
-    )
+    return (thermo_params = thermo_params, fixed_microphys_param_pairs = fixed_microphys_param_pairs)
 end

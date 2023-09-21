@@ -84,12 +84,8 @@ end
 
     fixed_microphys_param_pairs = model_settings["fixed_microphys_param_pairs"]
     thermo_params = model_settings["thermo_params"]
-    modal_nucleation_params = model_settings["modal_nucleation_params"]
-    microphys_params = CM.Parameters.CloudMicrophysicsParameters(;
-        fixed_microphys_param_pairs...,
-        thermo_params,
-        modal_nucleation_params,
-    )
+    microphys_params = CM.Parameters.CloudMicrophysicsParameters(; fixed_microphys_param_pairs..., thermo_params)
+
     ρ1 = obs[1:2]
     q_rai1 = obs[3:4]
     ρ2 = obs[7:8]

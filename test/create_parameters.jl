@@ -103,18 +103,12 @@ function create_parameter_set(
     thermo_params = TD.Parameters.ThermodynamicsParameters{FTD}(; param_pairs...)
     TP = typeof(thermo_params)
 
-    aliases = string.(fieldnames(CM.Parameters.ModalNucleationParameters))
-    pairs = CP.get_parameter_values!(toml_dict, aliases, "CloudMicrophysics")
-    modal_nucleation_params = CM.Parameters.ModalNucleationParameters{FT}(; pairs...)
-    MNP = typeof(modal_nucleation_params)
-
     aliases = string.(fieldnames(CM.Parameters.CloudMicrophysicsParameters))
-    aliases = setdiff(aliases, ["thermo_params, modal_nucleation_params"])
+    aliases = setdiff(aliases, ["thermo_params"])
     pairs = CP.get_parameter_values!(toml_dict, aliases, "CloudMicrophysics")
-    microphys_params = CM.Parameters.CloudMicrophysicsParameters{FTD, TP, MNP}(;
+    microphys_params = CM.Parameters.CloudMicrophysicsParameters{FTD, TP}(;
         pairs...,
         thermo_params,
-        modal_nucleation_params,
     )
     MP = typeof(microphys_params)
 
