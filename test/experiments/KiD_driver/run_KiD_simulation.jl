@@ -1,19 +1,13 @@
 import NCDatasets as NC
 import OrdinaryDiffEq as ODE
-import UnPack
-import ArgParse as AP
 
 import ClimaCore as CC
-import Thermodynamics as TD
 import CloudMicrophysics.CommonTypes as CMT
 import CLIMAParameters as CP
 import Kinematic1D as KID
 
-const kid_dir = pkgdir(KID)
-include(joinpath(kid_dir, "test", "create_parameters.jl"))
-
-include("../../plotting_utils.jl")
-
+include(joinpath(pkgdir(KID), "test", "create_parameters.jl"))
+include(joinpath(pkgdir(KID), "test", "plotting_utils.jl"))
 
 function run_KiD_simulation(::Type{FT}, opts) where {FT}
 
