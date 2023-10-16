@@ -2,7 +2,7 @@
     Create Kinematic1D model parameters.
 
     (Overwriting the default values happens in the driver file.
-    Here we are just creating the KinematicParameters struct)
+    Here we are just creating the Kinematic1DParameters struct)
 """
 module Parameters
 
@@ -10,7 +10,7 @@ abstract type AbstractKinematicParameters end
 const AKP = AbstractKinematicParameters
 
 # Define KiD parameters
-Base.@kwdef struct KinematicParameters{FT} <: AKP
+Base.@kwdef struct Kinematic1DParameters{FT} <: AKP
     w1::FT
     t1::FT
     p0::FT
@@ -33,7 +33,7 @@ r_dry(ps::AKP) = ps.r_dry
 std_dry(ps::AKP) = ps.std_dry
 κ(ps::AKP) = ps.κ
 
-Base.eltype(::KinematicParameters{FT}) where {FT} = FT
+Base.eltype(::Kinematic1DParameters{FT}) where {FT} = FT
 # Magic needed to get rid of length(ps) error
 Base.broadcastable(ps::AKP) = Ref(ps)
 end

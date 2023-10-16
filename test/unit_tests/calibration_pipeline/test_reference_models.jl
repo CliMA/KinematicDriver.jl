@@ -5,17 +5,17 @@
     α = 1 - config["observations"]["true_values_offset"]
 
     #action
-    ϕ, θ = KID.params_validation(config)
+    ϕ, θ = KCP.params_validation(config)
 
     #test
     @test ϕ == α .* vals
     @test θ == 0.0
 
     #setup
-    priors = KID.construct_priors(config["prior"]["parameters"])
+    priors = KCP.construct_priors(config["prior"]["parameters"])
 
     #action
-    ϕ, θ = KID.params_validation(config, priors)
+    ϕ, θ = KCP.params_validation(config, priors)
 
     #test
     @test ϕ == α .* vals
@@ -34,7 +34,7 @@ end
     config["observations"]["scov_G_ratio"] = 0.0
 
     #action
-    y = KID.get_validation_samples(config)
+    y = KCP.get_validation_samples(config)
 
     #test
     @test size(y) == (n_tot, n_samples)
@@ -44,7 +44,7 @@ end
     config["observations"]["scov_G_ratio"] = 0.2
 
     #action
-    y = KID.get_validation_samples(config)
+    y = KCP.get_validation_samples(config)
 
     #test
     @test size(y) == (n_tot, n_samples)
@@ -63,13 +63,13 @@ end
     z_data = [-4, -3, -2, -1, 0.0]
 
     #test
-    @test_throws Exception KID.filter_field(a, t_data, [1.5, 1.25], z_data, [-1.25, -0.5])
-    @test_throws Exception KID.filter_field(a, t_data, [1.5, 1.5], z_data, [-1.25, -0.5])
-    @test_throws Exception KID.filter_field(a, t_data, [1.0, 1.0], z_data, [-1.25, -0.5])
-    @test_throws Exception KID.filter_field(a, t_data, [1.5, 3.25], z_data, [-3.0, -3.0])
-    @test KID.filter_field(a, t_data, [1.5, 3.25], z_data, [-3.25, -0.5]) ≈ [3.3636363636363638] atol =
+    @test_throws Exception KCP.filter_field(a, t_data, [1.5, 1.25], z_data, [-1.25, -0.5])
+    @test_throws Exception KCP.filter_field(a, t_data, [1.5, 1.5], z_data, [-1.25, -0.5])
+    @test_throws Exception KCP.filter_field(a, t_data, [1.0, 1.0], z_data, [-1.25, -0.5])
+    @test_throws Exception KCP.filter_field(a, t_data, [1.5, 3.25], z_data, [-3.0, -3.0])
+    @test KCP.filter_field(a, t_data, [1.5, 3.25], z_data, [-3.25, -0.5]) ≈ [3.3636363636363638] atol =
         eps(Float64) * 10.0
-    @test KID.filter_field(a, t_data, [1, 4, 6.0], z_data, [-3, -2, 0.0]) ≈ [8.0 1.5; -0.5 2.75] atol =
+    @test KCP.filter_field(a, t_data, [1, 4, 6.0], z_data, [-3, -2, 0.0]) ≈ [8.0 1.5; -0.5 2.75] atol =
         eps(Float64) * 10.0
 end
 
@@ -90,13 +90,13 @@ end
     n_multiple_cases = n_single_case * n_cases
 
     #action
-    result = KID.get_single_obs_field(dirs[1] * "output_1.nc", variables, heights, times)
+    result = KCP.get_single_obs_field(dirs[1] * "output_1.nc", variables, heights, times)
 
     #test
     @test result isa Dict
     @test Set(keys(result)) == Set(variables)
     @test size(result["qlr"]) == size(result["rr"]) == (50, 31)
-    @test_throws Exception KID.get_single_obs_field(
+    @test_throws Exception KCP.get_single_obs_field(
         dirs[1] * "output_1.nc",
         variables,
         heights,
@@ -106,21 +106,21 @@ end
 
 
     #action
-    result_vec = KID.get_single_obs_vector(dirs[1] * "output_1.nc", variables, heights, times)
+    result_vec = KCP.get_single_obs_vector(dirs[1] * "output_1.nc", variables, heights, times)
 
     #test
     @test result_vec isa Vector
     @test length(result_vec) == n_single_case
 
     #action
-    result_mat = KID.get_obs_matrix(dirs[1], variables, heights, times)
+    result_mat = KCP.get_obs_matrix(dirs[1], variables, heights, times)
 
     #test
     @test result_mat isa Matrix
     @test size(result_mat) == (n_single_case, n_samples)
 
     #action
-    result_tot = KID.get_obs_matrix(cases, variables, heights, times)
+    result_tot = KCP.get_obs_matrix(cases, variables, heights, times)
 
     #test
     @test result_tot isa Matrix
@@ -135,7 +135,7 @@ end
     n_multiple_cases = n_single_case * n_cases
 
     #action
-    result_tot = KID.get_obs_matrix(cases, variables, heights, times; apply_filter = true)
+    result_tot = KCP.get_obs_matrix(cases, variables, heights, times; apply_filter = true)
 
     #test
     @test result_tot isa Matrix
@@ -155,7 +155,7 @@ end
     n_samples = config["observations"]["number_of_samples"]
 
     #action
-    obs = KID.get_obs!(config)
+    obs = KCP.get_obs!(config)
 
     #test
     @test obs isa Matrix
@@ -167,7 +167,7 @@ end
     generate_fake_pysdm_data(dirs; n_files = 50, z_max = 3000.0, n_z = 60, t_max = 240.0, n_t = 40)
 
     #action
-    truth = KID.get_obs!(config)
+    truth = KCP.get_obs!(config)
 
     #test
     @test obs isa Matrix

@@ -1,13 +1,12 @@
-import NCDatasets as NC
 import OrdinaryDiffEq as ODE
-
 import ClimaCore as CC
 import CLIMAParameters as CP
 import CloudMicrophysics.Parameters as CMP
-import Kinematic1D as KID
+import Kinematic1D
+import Kinematic1D.K1DModel as KID
 
-include(joinpath(pkgdir(KID), "test", "create_parameters.jl"))
-include(joinpath(pkgdir(KID), "test", "plotting_utils.jl"))
+include(joinpath(pkgdir(Kinematic1D), "test", "create_parameters.jl"))
+include(joinpath(pkgdir(Kinematic1D), "test", "plotting_utils.jl"))
 
 function run_KiD_simulation(::Type{FT}, opts) where {FT}
 
@@ -55,71 +54,14 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     air_params = CMP.AirProperties(FT, toml_dict)
     activation_params = CMP.AerosolActivationParameters(FT, toml_dict)
 
-    if moisture_choice == "EquilibriumMoisture" && prognostics_choice == "RhoThetaQ"
-        moisture = KID.EquilibriumMoisture_ρθq()
-    elseif moisture_choice == "EquilibriumMoisture" && prognostics_choice == "RhodTQ"
-        moisture = KID.EquilibriumMoisture_ρdTq()
-    elseif moisture_choice == "NonEquilibriumMoisture" && prognostics_choice == "RhoThetaQ"
-        moisture = KID.NonEquilibriumMoisture_ρθq(CMP.CloudLiquid(FT, toml_dict), CMP.CloudIce(FT, toml_dict))
-    elseif moisture_choice == "NonEquilibriumMoisture" && prognostics_choice == "RhodTQ"
-        moisture = KID.NonEquilibriumMoisture_ρdTq(CMP.CloudLiquid(FT, toml_dict), CMP.CloudIce(FT, toml_dict))
-    else
-        error("Invalid moisture choice: $moisture_choice or invalid prognostic variables choice: $prognostic_vars")
-    end
-
-    if precipitation_choice == "NoPrecipitation"
-        precip = KID.NoPrecipitation()
-    elseif precipitation_choice == "Precipitation0M"
-        precip = KID.Precipitation0M(CMP.Parameters0M(FT, toml_dict))
-    elseif precipitation_choice == "Precipitation1M"
-        if sedimentation_choice == "CliMA_1M"
-            st = CMP.Blk1MVelType(FT, toml_dict)
-        elseif sedimentation_choice == "Chen2022"
-            st = CMP.Chen2022VelType(FT, toml_dict)
-        else
-            error("Invalid sedimentation choice: $sedimentation_choice")
-        end
-        if rain_formation_choice == "CliMA_1M"
-            rain_params = CMP.Rain(FT, toml_dict)
-            rf = rain_params.acnv1M
-        elseif rain_formation_choice == "KK2000"
-            rf = CMP.KK2000(FT, toml_dict)
-        elseif rain_formation_choice == "B1994"
-            rf = CMP.B1994(FT, toml_dict)
-        elseif rain_formation_choice == "TC1980"
-            rf = CMP.TC1980(FT, toml_dict)
-        elseif rain_formation_choice == "LD2004"
-            rf = CMP.LD2004(FT, toml_dict)
-        elseif rain_formation_choice == "VarTimeScaleAcnv"
-            rf = CMP.VarTimescaleAcnv(FT, toml_dict)
-        else
-            error("Invalid rain formation choice: $rain_formation_choice")
-        end
-        precip = KID.Precipitation1M(
-            CMP.CloudLiquid(FT, toml_dict),
-            CMP.CloudIce(FT, toml_dict),
-            CMP.Rain(FT, toml_dict),
-            CMP.Snow(FT, toml_dict),
-            CMP.CollisionEff(FT, toml_dict),
-            rf,
-            st,
-        )
-    elseif precipitation_choice == "Precipitation2M"
-        if sedimentation_choice == "Chen2022"
-            st = CMP.Chen2022VelTypeRain(FT, toml_dict)
-        elseif sedimentation_choice == "SB2006"
-            st = CMP.SB2006VelType(FT, toml_dict)
-        else
-            error("Invalid sedimentation choice: $sedimentation_choice")
-        end
-        if rain_formation_choice == "SB2006"
-            precip = KID.Precipitation2M(CMP.SB2006(FT, toml_dict), st)
-        else
-            error("Invalid rain formation choice: $rain_formation_choice")
-        end
-    else
-        error("Invalid precipitation choice: $precipitation_choice")
-    end
+    moisture, precip = KID.get_moisture_and_precipitation_types(
+        FT,
+        moisture_choice,
+        precipitation_choice,
+        rain_formation_choice,
+        sedimentation_choice,
+        toml_dict,
+    )
 
     # Initialize the timestepping struct
     TS = KID.TimeStepping(FT(opts["dt"]), FT(opts["dt_output"]), FT(opts["t_end"]))

@@ -2,7 +2,7 @@
     #setup
     config = get_config()
     config["observations"]["data_names"] = ["rho", "ql", "qr", "rainrate"]
-    (n_c, n_v, n_z, n_t) = KID.get_numbers_from_config(config)
+    (n_c, n_v, n_z, n_t) = KCP.get_numbers_from_config(config)
     n_vht = n_v * n_z * n_t
     vec = rand(n_c * n_vht)
     dz = (config["model"]["z_max"] - config["model"]["z_min"]) / n_z
@@ -25,9 +25,9 @@
     end
 
     #action
-    lwp = KID.lwp(vec, config)
-    rwp = KID.rwp(vec, config)
-    rainrate = KID.rainrate(vec, config, height = 0.0)
+    lwp = KCP.lwp(vec, config)
+    rwp = KCP.rwp(vec, config)
+    rainrate = KCP.rainrate(vec, config, height = 0.0)
 
     #test
     @test lwp == _lwp
@@ -38,12 +38,12 @@
     config["observations"]["data_names"] = ["rho", "ql", "qr"]
 
     #test
-    @test_throws Exception KID.rainrate(vec, config, height = 0.0)
+    @test_throws Exception KCP.rainrate(vec, config, height = 0.0)
 
     #action
     config["observations"]["data_names"] = ["ql", "qr", "rainrate"]
 
     #test
-    @test_throws Exception KID.lwp(vec, config)
-    @test_throws Exception KID.rwp(vec, config)
+    @test_throws Exception KCP.lwp(vec, config)
+    @test_throws Exception KCP.rwp(vec, config)
 end

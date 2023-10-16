@@ -9,9 +9,9 @@
     tmp_file = pwd() * tmp_dir * "tmp_params.jld2"
 
     #action
-    KID.make_output_directories(tmp_dir)
-    KID.save_data(res, u_values, u_names, config, file_name = tmp_file)
-    tmp_data = KID.load_data(tmp_file)
+    KCP.make_output_directories(tmp_dir)
+    KCP.save_data(res, u_values, u_names, config, file_name = tmp_file)
+    tmp_data = KCP.load_data(tmp_file)
 
     #test
     @test isdir(pwd() * tmp_dir)
@@ -30,7 +30,7 @@ end
     tmp_filename = "tmp.png"
 
     #action
-    KID.plot_correlation_map(u_names, u_cov; output_filename = tmp_filename)
+    KCP.plot_correlation_map(u_names, u_cov; output_filename = tmp_filename)
 
     #test
     @test isfile(tmp_filename)

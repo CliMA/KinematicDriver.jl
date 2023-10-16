@@ -5,14 +5,14 @@
     allowed_var_loss = 0.1
 
     #action
-    λ_pca, P_pca = KID.pca(covmat, allowed_var_loss)
+    λ_pca, P_pca = KCP.pca(covmat, allowed_var_loss)
 
     #test
     @test λ_pca == collect(range(0.3, 1.0, 8))
     @test maximum(P_pca, dims = 1) == maximum(P_pca, dims = 1) == ones(1, 8)
 
     #action
-    y_pca, covmat_pca, P_pca = KID.obs_PCA(y_mean, covmat, allowed_var_loss)
+    y_pca, covmat_pca, P_pca = KCP.obs_PCA(y_mean, covmat, allowed_var_loss)
 
     #action
     @test length(y_pca) == 8
@@ -41,7 +41,7 @@ end
     covmat = cov(obs, dims = 2)
 
     #action
-    ref_stats = KID.ReferenceStatistics(obs, stats_config, case_number, n_variables, n_heights, n_times)
+    ref_stats = KCP.ReferenceStatistics(obs, stats_config, case_number, n_variables, n_heights, n_times)
 
     #test
     @test length(ref_stats.y_full) == n_tot
@@ -71,7 +71,7 @@ end
     )
 
     #action
-    ref_stats = KID.ReferenceStatistics(obs, stats_config, case_number, n_variables, n_heights, n_times)
+    ref_stats = KCP.ReferenceStatistics(obs, stats_config, case_number, n_variables, n_heights, n_times)
 
     #test
     @test length(ref_stats.y_full) == n_tot
@@ -99,7 +99,7 @@ end
     )
 
     #action
-    ref_stats = KID.ReferenceStatistics(obs, stats_config, case_number, n_variables, n_heights, n_times)
+    ref_stats = KCP.ReferenceStatistics(obs, stats_config, case_number, n_variables, n_heights, n_times)
 
     #test
     @test ref_stats.y_norm == ref_stats.var_std_max
@@ -130,7 +130,7 @@ end
     )
 
     #action
-    ref_stats = KID.combine_ref_stats(KID.make_ref_stats_list(obs, stats_config, n_cases, n_vars, n_heights, n_times))
+    ref_stats = KCP.combine_ref_stats(KCP.make_ref_stats_list(obs, stats_config, n_cases, n_vars, n_heights, n_times))
 
     #test
     @test ref_stats.y_norm == ref_stats.var_mean_max == norm_vecs

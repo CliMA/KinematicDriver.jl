@@ -1,6 +1,5 @@
 using Combinatorics, Statistics
-import Kinematic1D
-const KID = Kinematic1D
+import Kinematic1D.CalibrateCMP as KCP
 
 include("../config.jl")
 
@@ -25,9 +24,9 @@ param_names = collect(keys(parameters))
 model_settings = get_model_config(param_names)
 config["model"] = model_settings
 param_names = collect(keys(parameters))
-truth = KID.get_obs!(config)
-ref_stats_list = KID.make_ref_stats_list(truth, config["statistics"], KID.get_numbers_from_config(config)...)
-ref_stats = KID.combine_ref_stats(ref_stats_list)
+truth = KCP.get_obs!(config)
+ref_stats_list = KCP.make_ref_stats_list(truth, config["statistics"], KCP.get_numbers_from_config(config)...)
+ref_stats = KCP.combine_ref_stats(ref_stats_list)
 
 NC.Dataset(output_file_name, "c") do ds
     for (combination_num, (param_name_1, param_name_2)) in enumerate(combinations(param_names, 2))
@@ -47,7 +46,7 @@ NC.Dataset(output_file_name, "c") do ds
                 tmp_value_dict[param_name_2] = v2
                 ϕ_names = collect(keys(tmp_value_dict))
                 ϕ_values = collect(values(tmp_value_dict))
-                loss_2D_sec[i, j, 1, 1] = KID.compute_loss(ϕ_values, ϕ_names, config, ref_stats)
+                loss_2D_sec[i, j, 1, 1] = KCP.compute_loss(ϕ_values, ϕ_names, config, ref_stats)
                 println("\t i ", i, ", j ", j, " -->  loss = ", loss_2D_sec[i, j])
             end
         end

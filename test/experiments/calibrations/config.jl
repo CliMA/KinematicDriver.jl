@@ -1,7 +1,7 @@
 import CLIMAParameters as CP
 import CloudMicrophysics as CM
 import Thermodynamics as TD
-import Kinematic1D as KD
+import Kinematic1D.CalibrateKiD as CKD
 
 function get_config()
     config = Dict()
@@ -118,7 +118,7 @@ function get_model_config()
     config["r_dry"] = 0.04 * 1e-6
     config["std_dry"] = 1.4
     config["κ"] = 0.9
-    config["filter"] = KD.make_filter_props(
+    config["filter"] = CKD.make_filter_props(
         config["n_elem"],
         config["t_calib"];
         apply = true,

@@ -1,25 +1,24 @@
 using Plots
 
-import Kinematic1D
-const KiD = Kinematic1D
+import Kinematic1D.CalibrateCMP as KCP
 
 include("./config.jl")
 
-data_save_directory = KiD.make_output_directories()
+data_save_directory = KCP.make_output_directories()
 output_file_name_base = "model_vs_obs_contours"
 
 config = get_config()
 u_names = collect(keys(config["prior"]["parameters"]))
 u_values = collect([v.mean for v in values(config["prior"]["parameters"])])
 
-obs = KiD.get_obs!(config)
+obs = KCP.get_obs!(config)
 config["statistics"]["normalization"] = "mean_normalized"
-ref_stats_list = KiD.make_ref_stats_list(obs, config["statistics"], KiD.get_numbers_from_config(config)...)
-ref_stats = KiD.combine_ref_stats(ref_stats_list)
-G = KiD.run_dyn_model(u_values, u_names, config)
-Gn = KiD.normalize_sim(G, ref_stats)
+ref_stats_list = KCP.make_ref_stats_list(obs, config["statistics"], KCP.get_numbers_from_config(config)...)
+ref_stats = KCP.combine_ref_stats(ref_stats_list)
+G = KCP.run_dyn_model(u_values, u_names, config)
+Gn = KCP.normalize_sim(G, ref_stats)
 
-KiD.compare_model_and_obs_contours(
+KCP.compare_model_and_obs_contours(
     Gn,
     ref_stats.y_full,
     config,
@@ -32,7 +31,7 @@ KiD.compare_model_and_obs_contours(
     file_base = output_file_name_base,
 )
 
-model_error = KiD.compute_error_metrics(u_values, u_names, config, ref_stats)
+model_error = KCP.compute_error_metrics(u_values, u_names, config, ref_stats)
 println("loss = ", model_error.loss, ",\t mse_m = ", model_error.mse_m, ",\t mse_s = ", model_error.mse_s)
 
 plot(ref_stats.y_full)

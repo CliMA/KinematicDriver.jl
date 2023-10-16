@@ -4,24 +4,17 @@
 
 using Test
 
-import LinearAlgebra
+import LinearAlgebra as LA
 
-import CLIMAParameters
-import ClimaCore
-import Thermodynamics
+import CLIMAParameters as CP
+import ClimaCore as CC
+import Thermodynamics as TD
 import Kinematic1D
-import CloudMicrophysics
+import Kinematic1D.K1DModel as KID
+import CloudMicrophysics.Parameters as CMP
 
 const kid_dir = pkgdir(Kinematic1D)
 include(joinpath(kid_dir, "test", "create_parameters.jl"))
-
-const LA = LinearAlgebra
-const CP = CLIMAParameters
-const CC = ClimaCore
-const TD = Thermodynamics
-const KID = Kinematic1D
-const KP = KID.Parameters
-const CMP = CloudMicrophysics.Parameters
 
 const FT = Float64
 
@@ -638,6 +631,52 @@ end
     @test tmp.S_Nl ≈ 0.0 atol = eps(FT)
     @test tmp.S_Na ≈ 0.0 atol = eps(FT)
 
+end
+
+
+@testset "Moisture and precipitation types" begin
+    #setup
+    toml_dict = CP.create_toml_dict(FT; dict_type = "alias")
+    eqm = "EquilibriumMoisture"
+    neqm = "NonEquilibriumMoisture"
+    pn = "NoPrecipitation"
+    p0m = "Precipitation0M"
+    p1m = "Precipitation1M"
+    rf_1 = "CliMA_1M"
+    rf_2 = "KK2000"
+    rf_3 = "B1994"
+    rf_4 = "LD2004"
+    rf_5 = "TC1980"
+    rf_6 = "VarTimeScaleAcnv"
+    st_1 = "CliMA_1M"
+    st_2 = "Chen2022"
+
+    #action
+    moisture_eq, precip_n = KID.get_moisture_and_precipitation_types(FT, eqm, pn, "_", "_", toml_dict)
+    moisture_neq, precip_n = KID.get_moisture_and_precipitation_types(FT, neqm, pn, "_", "_", toml_dict)
+    moisture_eq, precip_0m = KID.get_moisture_and_precipitation_types(FT, eqm, p0m, "_", "_", toml_dict)
+    moisture_eq, precip_1m_1 = KID.get_moisture_and_precipitation_types(FT, eqm, p1m, rf_1, st_1, toml_dict)
+    moisture_eq, precip_1m_2 = KID.get_moisture_and_precipitation_types(FT, eqm, p1m, rf_2, st_1, toml_dict)
+    moisture_eq, precip_1m_3 = KID.get_moisture_and_precipitation_types(FT, eqm, p1m, rf_3, st_1, toml_dict)
+    moisture_eq, precip_1m_4 = KID.get_moisture_and_precipitation_types(FT, eqm, p1m, rf_4, st_1, toml_dict)
+    moisture_eq, precip_1m_5 = KID.get_moisture_and_precipitation_types(FT, eqm, p1m, rf_5, st_1, toml_dict)
+    moisture_eq, precip_1m_6 = KID.get_moisture_and_precipitation_types(FT, eqm, p1m, rf_6, st_1, toml_dict)
+    moisture_eq, precip_1m_7 = KID.get_moisture_and_precipitation_types(FT, eqm, p1m, rf_6, st_2, toml_dict)
+    #setup
+    @test_throws Exception KID.get_moisture_and_precipitation_types(FT, "_", pn, rf_1, st_1, toml_dict)
+    @test_throws Exception KID.get_moisture_and_precipitation_types(FT, eqm, "_", rf_1, st_1, toml_dict)
+    @test_throws Exception KID.get_moisture_and_precipitation_types(FT, eqm, p1m, "_", st_1, toml_dict)
+    @test moisture_eq isa KID.EquilibriumMoisture_ρdTq
+    @test moisture_neq isa KID.NonEquilibriumMoisture_ρdTq
+    @test precip_n isa KID.NoPrecipitation
+    @test precip_0m isa KID.Precipitation0M
+    @test precip_1m_1 isa KID.Precipitation1M
+    @test precip_1m_2 isa KID.Precipitation1M
+    @test precip_1m_3 isa KID.Precipitation1M
+    @test precip_1m_4 isa KID.Precipitation1M
+    @test precip_1m_5 isa KID.Precipitation1M
+    @test precip_1m_6 isa KID.Precipitation1M
+    @test precip_1m_7 isa KID.Precipitation1M
 end
 
 # calibration pipeline unit tests
