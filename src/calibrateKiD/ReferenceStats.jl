@@ -73,6 +73,9 @@ Base.@kwdef struct ReferenceStatistics{FT <: Real}
         else
             error("normalization not recognized!!!")
         end
+        weights =
+            "weights" in keys(stats_config) ? reshape(stats_config["weights"], 1, n_variables) : ones(1, n_variables)
+        y_norm = y_norm ./ weights
         obs_normalized = normalize_obs(obs, y_norm, _n_cases, n_variables, n_heights, n_times, centered = centered)
         obs_mean = mean(obs, dims = 2)[:]
         y_full = mean(obs_normalized, dims = 2)[:]

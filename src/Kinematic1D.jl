@@ -1,22 +1,16 @@
 module Kinematic1D
 
-import OrdinaryDiffEq
-import NCDatasets
+import OrdinaryDiffEq as ODE
+import NCDatasets as NC
 import UnPack
 import Logging
 import TerminalLoggers
 
-import ClimaCore
-import Thermodynamics
-import CloudMicrophysics
+import ClimaCore as CC
+import Thermodynamics as TD
+import CloudMicrophysics as CM
 
-const CC = ClimaCore
-const TD = Thermodynamics
-const CM = CloudMicrophysics
-const NC = NCDatasets
-const ODE = OrdinaryDiffEq
-
-const CMT = CM.CommonTypes
+const CMP = CM.Parameters
 const CMNe = CM.MicrophysicsNonEq
 const CM0 = CM.Microphysics0M
 const CM1 = CM.Microphysics1M

@@ -105,10 +105,20 @@ end
    The auxiliary state is created as a ClimaCore FieldVector
    and passed to ODE solver via the `p` parameter of the ODEProblem.
 """
-function initialise_aux(FT, ip, params, TS, Stats, face_space, moisture)
-    thermo_params = KP.thermodynamics_params(params)
+function initialise_aux(
+    FT,
+    ip,
+    kid_params,
+    thermo_params,
+    air_params,
+    activation_params,
+    TS,
+    Stats,
+    face_space,
+    moisture,
+)
 
-    q_surf = init_condition(FT, params, 0.0).qv
+    q_surf = init_condition(FT, kid_params, thermo_params, 0.0).qv
 
     ρw = CC.Geometry.WVector.(zeros(FT, face_space))
     ρw0 = 0.0
@@ -162,7 +172,10 @@ function initialise_aux(FT, ip, params, TS, Stats, face_space, moisture)
             term_vel_N_rai = term_vel_rai,
         ),
         prescribed_velocity = CC.Fields.FieldVector(; ρw = ρw, ρw0 = ρw0),
-        params = params,
+        thermo_params = thermo_params,
+        kid_params = kid_params,
+        air_params = air_params,
+        activation_params,
         q_surf = q_surf,
         Stats = Stats,
         TS = TS,

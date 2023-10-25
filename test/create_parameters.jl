@@ -4,10 +4,9 @@ import CloudMicrophysics as CM
 import Thermodynamics as TD
 
 #! format: off
-function create_parameter_set(
+function override_toml_dict(
     out_dir::String,
     toml_dict::CP.AbstractTOMLDict,
-    FTD = CP.float_type(toml_dict),
     w1 = 2.0,
     t1 = 600.0,
     p0 = 100700.0,
@@ -97,29 +96,27 @@ function create_parameter_set(
     end
     toml_dict = CP.create_toml_dict(FT; override_file, dict_type="alias")
     isfile(override_file) && rm(override_file; force=true)
+    return toml_dict
+end
 
+function create_thermodynamics_parameters(toml_dict)
+    FTD = CP.float_type(toml_dict)
     aliases = string.(fieldnames(TD.Parameters.ThermodynamicsParameters))
     param_pairs = CP.get_parameter_values!(toml_dict, aliases, "Thermodynamics")
     thermo_params = TD.Parameters.ThermodynamicsParameters{FTD}(; param_pairs...)
-    TP = typeof(thermo_params)
+    return thermo_params
+end
 
-    aliases = string.(fieldnames(CM.Parameters.CloudMicrophysicsParameters))
-    aliases = setdiff(aliases, ["thermo_params"])
-    pairs = CP.get_parameter_values!(toml_dict, aliases, "CloudMicrophysics")
-    microphys_params = CM.Parameters.CloudMicrophysicsParameters{FTD, TP}(;
-        pairs...,
-        thermo_params,
-    )
-    MP = typeof(microphys_params)
-
+function create_kid_parameters(toml_dict)
+    FTD = CP.float_type(toml_dict)
     aliases = ["w1", "t1", "p0", "precip_sources", "precip_sinks", "qtot_flux_correction", "prescribed_Nd", "r_dry", "std_dry", "κ"]
     pairs = CP.get_parameter_values!(toml_dict, aliases, "Kinematic1D")
-
-    param_set = KID.Parameters.KinematicParameters{FTD, MP}(; pairs..., microphys_params)
-    if !isbits(param_set)
-        print(param_set)
+    kid_params = KID.Parameters.KinematicParameters{FTD}(; pairs...)
+    if !isbits(kid_params)
+        print(kid_params)
         @warn "The parameter set SHOULD be isbits in order to be stack-allocated."
     end
-    return param_set
+    return kid_params
 end
+Base.broadcastable(x::KID.Parameters.KinematicParameters) = Ref(x)
 #! format: on

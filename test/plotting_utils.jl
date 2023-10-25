@@ -72,7 +72,6 @@ function plot_final_aux_profiles(z_centers, aux, precip; output = "output")
     if precip isa KID.Precipitation2M
         precip_sus_aut =
             CMPS.precipitation_susceptibility_autoconversion.(
-                Ref(aux.params.microphys_params),
                 Ref(precip.rain_formation),
                 q_liq_end,
                 q_rai_end,
@@ -81,7 +80,6 @@ function plot_final_aux_profiles(z_centers, aux, precip; output = "output")
             )
         precip_sus_acc =
             CMPS.precipitation_susceptibility_accretion.(
-                Ref(aux.params.microphys_params),
                 Ref(precip.rain_formation),
                 q_liq_end,
                 q_rai_end,
