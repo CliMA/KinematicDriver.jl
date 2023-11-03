@@ -14,7 +14,7 @@
     u_true = [v.mean for v in values(config["prior"]["parameters"])] .* α
 
     #action
-    res = KID.calibrate(KID.EKPStyle(), priors, config, ref_stats_list, verbose = false)
+    res = KID.calibrate(KID.EKPStyle(), priors, config, ref_stats_list, verbose = 0)
     u = KID.get_results(res, priors)
 
     #test
@@ -30,7 +30,7 @@
     config["process"]["Δt"] = n_cases / batch_size
 
     #action
-    res = KID.calibrate(KID.EKPStyle(), priors, config, ref_stats_list, verbose = false)
+    res = KID.calibrate(KID.EKPStyle(), priors, config, ref_stats_list, verbose = 0)
     u = KID.get_results(res, priors)
 
     #test
@@ -77,7 +77,7 @@ end
     ref_stats_list = KID.make_ref_stats_list(obs, config["statistics"], KID.get_numbers_from_config(config)...)
 
     #action
-    res = KID.calibrate(KID.EKPStyle(), priors, config, ref_stats_list, verbose = false)
+    res = KID.calibrate(KID.EKPStyle(), priors, config, ref_stats_list, verbose = 0)
     u = KID.get_results(res, priors)
 
     #test
@@ -88,7 +88,7 @@ end
     config["process"]["Δt"] = 10.0
 
     #action
-    res = KID.calibrate(KID.EKPStyle(), priors, config, ref_stats_list, verbose = false)
+    res = KID.calibrate(KID.EKPStyle(), priors, config, ref_stats_list, verbose = 0)
     u = KID.get_results(res, priors)
 
     #test
@@ -107,7 +107,7 @@ end
     u_true = [v.mean for v in values(config["prior"]["parameters"])] .* α
 
     #action
-    res = KID.calibrate(KID.OptimStyle(), priors, config, ref_stats, verbose = false)
+    res = KID.calibrate(KID.OptimStyle(), priors, config, ref_stats, verbose = 0)
     f = KID.make_optim_loss_function(u_names, priors, config, ref_stats)
     u = KID.get_results(res, priors)
 
@@ -128,7 +128,7 @@ end
     ref_stats = KID.combine_ref_stats(ref_stats_list)
 
     #test
-    @test_throws Exception KID.calibrate(DummyStyle(), priors, config, ref_stats, verbose = false)
+    @test_throws Exception KID.calibrate(DummyStyle(), priors, config, ref_stats, verbose = 0)
 end
 
 @testset "Compute loss" begin

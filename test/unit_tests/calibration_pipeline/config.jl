@@ -8,8 +8,7 @@ function get_config()
     config["prior"] = get_prior_config()
     config["observations"] = get_observations_config()
     config["process"] = get_process_config()
-    params_calib_names = collect(keys(config["prior"]["parameters"]))
-    config["model"] = get_model_config(params_calib_names)
+    config["model"] = get_model_config()
     config["statistics"] = get_stats_config()
     return config
 end
@@ -63,7 +62,7 @@ function get_stats_config()
     return config
 end
 
-function get_model_config(params_calib_names::Array{String})
+function get_model_config()
     config = Dict()
     config["model"] = "KiD"
     config["moisture_choice"] = "NonEquilibriumMoisture"
@@ -87,24 +86,23 @@ function get_model_config(params_calib_names::Array{String})
     config["std_dry"] = 1.4
     config["κ"] = 0.9
     config["filter"] = KD.make_filter_props(config["n_elem"], config["t_calib"]; apply = false)
-    fixed_parameters = create_fixed_parameter_set(params_calib_names)
-    config["thermo_params"] = fixed_parameters.thermo_params
-    config["fixed_microphys_param_pairs"] = fixed_parameters.fixed_microphys_param_pairs
+    # Define default parameters
+    params = create_parameter_set()
+    config["toml_dict"] = params.toml_dict
+    config["thermo_params"] = params.thermo_params
+    config["air_params"] = params.air_params
+    config["activation_params"] = params.activation_params
 
     return config
 end
 
-function create_fixed_parameter_set(params_calib_names::Array{String})
+function create_parameter_set()
     FT = Float64
     toml_dict = CP.create_toml_dict(FT; dict_type = "alias")
     aliases = string.(fieldnames(TD.Parameters.ThermodynamicsParameters))
     pairs = CP.get_parameter_values!(toml_dict, aliases, "Thermodynamics")
     thermo_params = TD.Parameters.ThermodynamicsParameters{FT}(; pairs...)
-
-    aliases = string.(fieldnames(CM.Parameters.CloudMicrophysicsParameters))
-    aliases = setdiff(aliases, params_calib_names)
-    aliases = setdiff(aliases, ["thermo_params"])
-    fixed_microphys_param_pairs = CP.get_parameter_values!(toml_dict, aliases, "CloudMicrophysics")
-
-    return (thermo_params = thermo_params, fixed_microphys_param_pairs = fixed_microphys_param_pairs)
+    air_params = CM.Parameters.AirProperties(FT, toml_dict)
+    activation_params = CM.Parameters.AerosolActivationParameters(FT, toml_dict)
+    return (; toml_dict, thermo_params, air_params, activation_params)
 end

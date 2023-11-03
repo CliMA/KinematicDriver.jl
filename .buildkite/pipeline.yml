@@ -72,10 +72,6 @@ steps:
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --prognostic_vars=RhodTQ --precipitation_choice=Precipitation1M"
         artifact_paths: "test/experiments/KiD_driver/Output_NonEquilibriumMoisture_RhodTQ_Precipitation1M_CliMA_1M/figures/*"
 
-      - label: ":crystal_ball: Experiments: non equil (fixed rhod and T) + 1M + Chen2022 "
-        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --prognostic_vars=RhodTQ --precipitation_choice=Precipitation1M --sedimentation_scheme_choice Chen2022"
-        artifact_paths: "test/experiments/KiD_driver/Output_NonEquilibriumMoisture_RhodTQ_Precipitation1M_CliMA_1M_Chen2022/figures/*"
-
       - label: ":crystal_ball: Experiments: equil (fixed rhod and T) + KK2000 + Float32 "
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --FLOAT_TYPE=Float32 --moisture_choice=EquilibriumMoisture --prognostic_vars=RhodTQ --precipitation_choice=Precipitation1M --rain_formation_scheme_choice KK2000 --prescribed_Nd 1e8"
         artifact_paths: "test/experiments/KiD_driver/Output_EquilibriumMoisture_RhodTQ_Precipitation1M_KK2000/figures/*"

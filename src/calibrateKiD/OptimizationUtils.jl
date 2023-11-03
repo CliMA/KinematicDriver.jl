@@ -10,12 +10,12 @@ function compute_loss(u::Array{Float64, 1}, u_names::Array{String, 1}, config::D
     return loss
 end
 
-function calibrate(os::AbstractOptimizationStyle, priors, config, RS::ReferenceStatistics; verbose::Bool)
+function calibrate(os::AbstractOptimizationStyle, priors, config, RS::ReferenceStatistics; verbose::Int)
     error("calibrate not implemented for a given $os")
 end
 
 # Optim
-function calibrate(::OptimStyle, priors, config, RS::ReferenceStatistics; verbose::Bool = true)
+function calibrate(::OptimStyle, priors, config, RS::ReferenceStatistics; verbose::Int = 1)
     _u_names = collect(keys(config["prior"]["parameters"]))
     _u_inits = collect([v.mean for v in values(config["prior"]["parameters"])])
     _θ_inits = mapslices(x -> transform_constrained_to_unconstrained(priors, x), _u_inits; dims = 1)
@@ -26,7 +26,7 @@ function calibrate(::OptimStyle, priors, config, RS::ReferenceStatistics; verbos
         _θ_inits;
         g_abstol = config["process"]["tol"],
         iterations = config["process"]["maxiter"],
-        show_trace = verbose,
+        show_trace = verbose > 0,
     )
 end
 
@@ -46,7 +46,7 @@ function get_results(optres::Optim.MultivariateOptimizationResults, priors::Para
 end
 
 # EKP
-function calibrate(::EKPStyle, priors, config, ref_stats_list::Vector{ReferenceStatistics}; verbose::Bool = true)
+function calibrate(::EKPStyle, priors, config, ref_stats_list::Vector{ReferenceStatistics}; verbose::Int = 3)
     @assert config["process"]["EKP_method"] == "EKI" || config["process"]["EKP_method"] == "UKI"
 
     u_names = collect(keys(config["prior"]["parameters"]))
@@ -58,28 +58,12 @@ function calibrate(::EKPStyle, priors, config, ref_stats_list::Vector{ReferenceS
     n_batches = floor(Int, n_cases / batch_size)
     for n in 1:n_iter
 
-        if verbose
+        if verbose >= 1
             println("==========================================================================================")
             println("iteration: ", n)
-            RS = combine_ref_stats(ref_stats_list)
-            ϕ_mean = get_ϕ_mean_final(param_ensemble, priors)
-            model_error = compute_error_metrics(ϕ_mean, u_names, config, RS)
-            println("loss = ", model_error.loss, ",\t mse_m = ", model_error.mse_m, ",\t mse_s = ", model_error.mse_s)
-        end
-
-        cases_indices_shuffled = shuffle!(collect(1:n_cases))
-        for j in 1:n_batches
-            batch_indices = cases_indices_shuffled[((j - 1) * batch_size + 1):(j * batch_size)]
-            RS = combine_ref_stats(ref_stats_list[batch_indices])
-
-            ϕ_mean = get_ϕ_mean_final(param_ensemble, priors)
-            if verbose
-                println("---------------------------")
-                println("batch: ", j, ", cases: ", batch_indices)
-                for (i, name) in enumerate(u_names)
-                    print(name, " = ", round(ϕ_mean[i], sigdigits = 4), ", ")
-                end
-                print("\n")
+            if verbose >= 3
+                RS = combine_ref_stats(ref_stats_list)
+                ϕ_mean = get_ϕ_mean_final(param_ensemble, priors)
                 model_error = compute_error_metrics(ϕ_mean, u_names, config, RS)
                 println(
                     "loss = ",
@@ -89,6 +73,33 @@ function calibrate(::EKPStyle, priors, config, ref_stats_list::Vector{ReferenceS
                     ",\t mse_s = ",
                     model_error.mse_s,
                 )
+            end
+        end
+
+        cases_indices_shuffled = shuffle!(collect(1:n_cases))
+        for j in 1:n_batches
+            batch_indices = cases_indices_shuffled[((j - 1) * batch_size + 1):(j * batch_size)]
+            RS = combine_ref_stats(ref_stats_list[batch_indices])
+
+            ϕ_mean = get_ϕ_mean_final(param_ensemble, priors)
+            if verbose >= 1
+                println("---------------------------")
+                println("batch: ", j, ", cases: ", batch_indices)
+                for (i, name) in enumerate(u_names)
+                    print(name, " = ", round(ϕ_mean[i], sigdigits = 4), ", ")
+                end
+                print("\n")
+                if verbose >= 2
+                    model_error = compute_error_metrics(ϕ_mean, u_names, config, RS)
+                    println(
+                        "loss = ",
+                        model_error.loss,
+                        ",\t mse_m = ",
+                        model_error.mse_m,
+                        ",\t mse_s = ",
+                        model_error.mse_s,
+                    )
+                end
             end
 
             ekpobj = generate_ekp(param_ensemble[end], RS, config["process"])

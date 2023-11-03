@@ -1,7 +1,7 @@
 name = "Kinematic1D"
 uuid = "a8a3bb05-6cc5-4342-abf6-5cc636bd2b35"
 authors = ["Climate Modeling Alliance"]
-version = "0.3.4"
+version = "0.4.0"
 
 [deps]
 ClimaCore = "d414da3d-4745-48bb-8d80-42e94e092884"
@@ -27,7 +27,7 @@ UnPack = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
 [compat]
 ClimaCore = "0.10"
 ClimaCorePlots = "0.2"
-CloudMicrophysics = "0.14"
+CloudMicrophysics = "0.15"
 DiffEqBase = "6.75"
 Distributions = "0.25"
 EnsembleKalmanProcesses = "1.1"

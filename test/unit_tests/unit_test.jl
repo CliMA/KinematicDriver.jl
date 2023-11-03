@@ -21,12 +21,38 @@ const CC = ClimaCore
 const TD = Thermodynamics
 const KID = Kinematic1D
 const KP = KID.Parameters
-const CMT = CloudMicrophysics.CommonTypes
+const CMP = CloudMicrophysics.Parameters
 
-# Create all the params boxes and overwrite the defaults to match PySDM
-toml_dict = CP.create_toml_dict(Float64; dict_type = "alias")
-params = create_parameter_set(@__DIR__, toml_dict, Float64)
-thermo_params = KP.thermodynamics_params(params)
+const FT = Float64
+
+# override the defaults
+default_toml_dict = CP.create_toml_dict(FT, dict_type = "alias")
+toml_dict = override_toml_dict(@__DIR__, default_toml_dict)
+
+# create all the parameters structs ...
+thermo_params = create_thermodynamics_parameters(toml_dict)
+kid_params = create_kid_parameters(toml_dict)
+air_params = CMP.AirProperties(FT, toml_dict)
+activation_params = CMP.AerosolActivationParameters(FT, toml_dict)
+params = (kid_params, thermo_params, air_params, activation_params)
+# ... for cloud condensate options ...
+equil_moist_ρθq = KID.EquilibriumMoisture_ρθq()
+equil_moist_ρdTq = KID.EquilibriumMoisture_ρdTq()
+nequil_moist_ρθq = KID.NonEquilibriumMoisture_ρθq(CMP.CloudLiquid(FT, toml_dict), CMP.CloudIce(FT, toml_dict))
+nequil_moist_ρdTq = KID.NonEquilibriumMoisture_ρdTq(CMP.CloudLiquid(FT, toml_dict), CMP.CloudIce(FT, toml_dict))
+# ... and precipitation options
+no_precip = KID.NoPrecipitation()
+precip_0m = KID.Precipitation0M(CMP.Parameters0M(FT, toml_dict))
+precip_1m = KID.Precipitation1M(
+    CMP.CloudLiquid(FT, toml_dict),
+    CMP.CloudIce(FT, toml_dict),
+    CMP.Rain(FT, toml_dict),
+    CMP.Snow(FT, toml_dict),
+    CMP.CollisionEff(FT, toml_dict),
+    CMP.KK2000(FT, toml_dict),
+    CMP.Blk1MVelType(FT, toml_dict),
+)
+precip_2m = KID.Precipitation2M(CMP.SB2006(FT, toml_dict), CMP.SB2006VelType(FT, toml_dict))
 
 @testset "Moisture and precipitation types" begin
 
@@ -46,27 +72,23 @@ end
 
 @testset "Parameter overwrites" begin
 
-    @test KP.R_d(params) == 8.314462618 / 0.02896998
-    @test KP.R_v(params) == 8.314462618 / 0.018015
+    @test TD.Parameters.R_d(thermo_params) == 8.314462618 / 0.02896998
+    @test TD.Parameters.R_v(thermo_params) == 8.314462618 / 0.018015
 
-    @test KP.MSLP(params) == 100000.0
+    @test TD.Parameters.MSLP(thermo_params) == 100000.0
 
 end
 
 @testset "Make space" begin
 
-    @test KID.make_function_space(Float64, 0, 100, 10) isa
+    @test KID.make_function_space(FT, 0, 100, 10) isa
           Tuple{CC.Spaces.CenterFiniteDifferenceSpace, CC.Spaces.FaceFiniteDifferenceSpace}
 end
 
 @testset "Make rhs function" begin
 
-    rhs = KID.make_rhs_function(
-        KID.EquilibriumMoisture_ρθq(),
-        KID.Precipitation1M(KID.OneMomentRainFormation(), CMT.Blk1MVelType()),
-    )
+    rhs = KID.make_rhs_function(equil_moist_ρθq, precip_1m)
     @test typeof(rhs) <: Function
-
 end
 
 @testset "Initialise state" begin
@@ -75,29 +97,21 @@ end
 
     initial_profiles = (; ρq_tot = 0, ρq_liq = 0, ρq_ice = 0, ρq_rai = 0, ρq_sno = 0, N_liq = 0, N_rai = 0, N_aer = 0)
 
-    state = KID.initialise_state(KID.EquilibriumMoisture_ρθq(), KID.NoPrecipitation(), initial_profiles)
+    state = KID.initialise_state(equil_moist_ρθq, no_precip, initial_profiles)
     @test state isa CC.Fields.FieldVector
     @test LA.norm(state.ρq_tot) == 0
 
-    state = KID.initialise_state(KID.EquilibriumMoisture_ρθq(), KID.Precipitation0M(), initial_profiles)
+    state = KID.initialise_state(equil_moist_ρθq, precip_0m, initial_profiles)
     @test state isa CC.Fields.FieldVector
     @test LA.norm(state.ρq_tot) == 0
 
-    state = KID.initialise_state(
-        KID.EquilibriumMoisture_ρθq(),
-        KID.Precipitation1M(KID.OneMomentRainFormation(), CMT.Blk1MVelType()),
-        initial_profiles,
-    )
+    state = KID.initialise_state(equil_moist_ρθq, precip_1m, initial_profiles)
     @test state isa CC.Fields.FieldVector
     @test LA.norm(state.ρq_tot) == 0
     @test LA.norm(state.ρq_rai) == 0
     @test LA.norm(state.ρq_sno) == 0
 
-    state = KID.initialise_state(
-        KID.EquilibriumMoisture_ρθq(),
-        KID.Precipitation2M(CMT.SB2006Type(), CMT.SB2006VelType()),
-        initial_profiles,
-    )
+    state = KID.initialise_state(equil_moist_ρθq, precip_2m, initial_profiles)
     @test state isa CC.Fields.FieldVector
     @test LA.norm(state.ρq_tot) == 0
     @test LA.norm(state.ρq_rai) == 0
@@ -105,29 +119,21 @@ end
     @test LA.norm(state.N_rai) == 0
     @test LA.norm(state.N_aer) == 0
 
-    state = KID.initialise_state(KID.EquilibriumMoisture_ρdTq(), KID.NoPrecipitation(), initial_profiles)
+    state = KID.initialise_state(equil_moist_ρdTq, no_precip, initial_profiles)
     @test state isa CC.Fields.FieldVector
     @test LA.norm(state.ρq_tot) == 0
 
-    state = KID.initialise_state(KID.EquilibriumMoisture_ρdTq(), KID.Precipitation0M(), initial_profiles)
+    state = KID.initialise_state(equil_moist_ρdTq, precip_0m, initial_profiles)
     @test state isa CC.Fields.FieldVector
     @test LA.norm(state.ρq_tot) == 0
 
-    state = KID.initialise_state(
-        KID.EquilibriumMoisture_ρdTq(),
-        KID.Precipitation1M(KID.OneMomentRainFormation(), CMT.Blk1MVelType()),
-        initial_profiles,
-    )
+    state = KID.initialise_state(equil_moist_ρdTq, precip_1m, initial_profiles)
     @test state isa CC.Fields.FieldVector
     @test LA.norm(state.ρq_tot) == 0
     @test LA.norm(state.ρq_rai) == 0
     @test LA.norm(state.ρq_sno) == 0
 
-    state = KID.initialise_state(
-        KID.EquilibriumMoisture_ρdTq(),
-        KID.Precipitation2M(CMT.SB2006Type(), CMT.SB2006VelType()),
-        initial_profiles,
-    )
+    state = KID.initialise_state(equil_moist_ρdTq, precip_2m, initial_profiles)
     @test state isa CC.Fields.FieldVector
     @test LA.norm(state.ρq_tot) == 0
     @test LA.norm(state.ρq_rai) == 0
@@ -135,23 +141,19 @@ end
     @test LA.norm(state.N_rai) == 0
     @test LA.norm(state.N_aer) == 0
 
-    state = KID.initialise_state(KID.NonEquilibriumMoisture_ρθq(), KID.NoPrecipitation(), initial_profiles)
+    state = KID.initialise_state(nequil_moist_ρθq, no_precip, initial_profiles)
     @test state isa CC.Fields.FieldVector
     @test LA.norm(state.ρq_tot) == 0
     @test LA.norm(state.ρq_liq) == 0
     @test LA.norm(state.ρq_ice) == 0
 
-    state = KID.initialise_state(KID.NonEquilibriumMoisture_ρθq(), KID.Precipitation0M(), initial_profiles)
+    state = KID.initialise_state(nequil_moist_ρθq, precip_0m, initial_profiles)
     @test state isa CC.Fields.FieldVector
     @test LA.norm(state.ρq_tot) == 0
     @test LA.norm(state.ρq_liq) == 0
     @test LA.norm(state.ρq_ice) == 0
 
-    state = KID.initialise_state(
-        KID.NonEquilibriumMoisture_ρθq(),
-        KID.Precipitation1M(KID.OneMomentRainFormation(), CMT.Blk1MVelType()),
-        initial_profiles,
-    )
+    state = KID.initialise_state(nequil_moist_ρθq, precip_1m, initial_profiles)
     @test state isa CC.Fields.FieldVector
     @test LA.norm(state.ρq_tot) == 0
     @test LA.norm(state.ρq_liq) == 0
@@ -159,11 +161,7 @@ end
     @test LA.norm(state.ρq_rai) == 0
     @test LA.norm(state.ρq_sno) == 0
 
-    state = KID.initialise_state(
-        KID.NonEquilibriumMoisture_ρθq(),
-        KID.Precipitation2M(CMT.SB2006Type(), CMT.SB2006VelType()),
-        initial_profiles,
-    )
+    state = KID.initialise_state(nequil_moist_ρθq, precip_2m, initial_profiles)
     @test state isa CC.Fields.FieldVector
     @test LA.norm(state.ρq_tot) == 0
     @test LA.norm(state.ρq_liq) == 0
@@ -173,23 +171,19 @@ end
     @test LA.norm(state.N_rai) == 0
     @test LA.norm(state.N_aer) == 0
 
-    state = KID.initialise_state(KID.NonEquilibriumMoisture_ρdTq(), KID.NoPrecipitation(), initial_profiles)
+    state = KID.initialise_state(nequil_moist_ρdTq, no_precip, initial_profiles)
     @test state isa CC.Fields.FieldVector
     @test LA.norm(state.ρq_tot) == 0
     @test LA.norm(state.ρq_liq) == 0
     @test LA.norm(state.ρq_ice) == 0
 
-    state = KID.initialise_state(KID.NonEquilibriumMoisture_ρdTq(), KID.Precipitation0M(), initial_profiles)
+    state = KID.initialise_state(nequil_moist_ρdTq, precip_0m, initial_profiles)
     @test state isa CC.Fields.FieldVector
     @test LA.norm(state.ρq_tot) == 0
     @test LA.norm(state.ρq_liq) == 0
     @test LA.norm(state.ρq_ice) == 0
 
-    state = KID.initialise_state(
-        KID.NonEquilibriumMoisture_ρdTq(),
-        KID.Precipitation1M(KID.OneMomentRainFormation(), CMT.Blk1MVelType()),
-        initial_profiles,
-    )
+    state = KID.initialise_state(nequil_moist_ρdTq, precip_1m, initial_profiles)
     @test state isa CC.Fields.FieldVector
     @test LA.norm(state.ρq_tot) == 0
     @test LA.norm(state.ρq_liq) == 0
@@ -197,11 +191,7 @@ end
     @test LA.norm(state.ρq_rai) == 0
     @test LA.norm(state.ρq_sno) == 0
 
-    state = KID.initialise_state(
-        KID.NonEquilibriumMoisture_ρdTq(),
-        KID.Precipitation2M(CMT.SB2006Type(), CMT.SB2006VelType()),
-        initial_profiles,
-    )
+    state = KID.initialise_state(nequil_moist_ρdTq, precip_2m, initial_profiles)
     @test state isa CC.Fields.FieldVector
     @test LA.norm(state.ρq_tot) == 0
     @test LA.norm(state.ρq_liq) == 0
@@ -242,13 +232,13 @@ end
         S_Nr_precip = [0.0, 0.0],
         S_Na = [0.0, 0.0],
     )
-    space, face_space = KID.make_function_space(Float64, 0, 100, 10)
+    space, face_space = KID.make_function_space(FT, 0, 100, 10)
 
-    @test_throws Exception KID.initialise_aux(Float64, ip, params, 0.0, 0.0, face_space, KID.NoPrecipitation())
-    @test_throws Exception KID.initialise_aux(Float64, ip, params, 0.0, 0.0, face_space, KID.EquilibriumMoisture())
-    @test_throws Exception KID.initialise_aux(Float64, ip, params, 0.0, 0.0, face_space, KID.NonEquilibriumMoisture())
+    @test_throws Exception KID.initialise_aux(FT, ip, params..., 0.0, 0.0, face_space, no_precip)
+    @test_throws Exception KID.initialise_aux(FT, ip, params..., 0.0, 0.0, face_space, KID.EquilibriumMoisture())
+    @test_throws Exception KID.initialise_aux(FT, ip, params..., 0.0, 0.0, face_space, KID.NonEquilibriumMoisture())
 
-    aux = KID.initialise_aux(Float64, ip, params, 0.0, 0.0, face_space, KID.EquilibriumMoisture_ρθq())
+    aux = KID.initialise_aux(FT, ip, params..., 0.0, 0.0, face_space, equil_moist_ρθq)
     @test aux isa NamedTuple
     @test aux.moisture_variables isa CC.Fields.FieldVector
     @test aux.precip_variables isa CC.Fields.FieldVector
@@ -261,7 +251,7 @@ end
     @test LA.norm(aux.precip_sources) == 0
     @test LA.norm(aux.moisture_sources) == 0
 
-    aux = KID.initialise_aux(Float64, ip, params, 0.0, 0.0, face_space, KID.EquilibriumMoisture_ρdTq())
+    aux = KID.initialise_aux(FT, ip, params..., 0.0, 0.0, face_space, equil_moist_ρdTq)
     @test aux isa NamedTuple
     @test aux.moisture_variables isa CC.Fields.FieldVector
     @test aux.precip_variables isa CC.Fields.FieldVector
@@ -274,7 +264,7 @@ end
     @test LA.norm(aux.precip_sources) == 0
     @test LA.norm(aux.moisture_sources) == 0
 
-    aux = KID.initialise_aux(Float64, ip, params, 0.0, 0.0, face_space, KID.NonEquilibriumMoisture_ρθq())
+    aux = KID.initialise_aux(FT, ip, params..., 0.0, 0.0, face_space, nequil_moist_ρθq)
     @test aux isa NamedTuple
     @test aux.moisture_variables isa CC.Fields.FieldVector
     @test aux.precip_variables isa CC.Fields.FieldVector
@@ -287,7 +277,7 @@ end
     @test LA.norm(aux.precip_sources) == 0
     @test LA.norm(aux.moisture_sources) == 0
 
-    aux = KID.initialise_aux(Float64, ip, params, 0.0, 0.0, face_space, KID.NonEquilibriumMoisture_ρdTq())
+    aux = KID.initialise_aux(FT, ip, params..., 0.0, 0.0, face_space, nequil_moist_ρdTq)
     @test aux isa NamedTuple
     @test aux.moisture_variables isa CC.Fields.FieldVector
     @test aux.precip_variables isa CC.Fields.FieldVector
@@ -336,24 +326,20 @@ end
         S_Nr_precip = [0.0, 0.0],
         S_Na = [0.0, 0.0],
     )
-    space, face_space = KID.make_function_space(Float64, 0, 100, 10)
-    aux = KID.initialise_aux(Float64, ip, params, 0.0, 0.0, face_space, KID.EquilibriumMoisture_ρθq())
-    Y = KID.initialise_state(KID.EquilibriumMoisture_ρθq(), KID.NoPrecipitation(), ip)
+    space, face_space = KID.make_function_space(FT, 0, 100, 10)
+    aux = KID.initialise_aux(FT, ip, params..., 0.0, 0.0, face_space, equil_moist_ρθq)
+    Y = KID.initialise_state(equil_moist_ρθq, no_precip, ip)
 
     dY = (; ρq_tot = [10.0, 13.0])
     @test_throws Exception KID.zero_tendencies!(KID.AbstractMoistureStyle(), dY, Y, aux, 1.0)
     @test_throws Exception KID.zero_tendencies!(KID.AbstractPrecipitationStyle(), dY, Y, aux, 1.0)
 
     dY = (; ρq_tot = [10.0, 13.0])
-    KID.zero_tendencies!(KID.EquilibriumMoisture_ρθq(), dY, Y, aux, 1.0)
+    KID.zero_tendencies!(equil_moist_ρθq, dY, Y, aux, 1.0)
     @test LA.norm(dY) == 0
 
-    aux = KID.initialise_aux(Float64, ip, params, 0.0, 0.0, face_space, KID.NonEquilibriumMoisture_ρθq())
-    Y = KID.initialise_state(
-        KID.NonEquilibriumMoisture_ρθq(),
-        KID.Precipitation1M(KID.OneMomentRainFormation(), CMT.Blk1MVelType()),
-        ip,
-    )
+    aux = KID.initialise_aux(FT, ip, params..., 0.0, 0.0, face_space, nequil_moist_ρθq)
+    Y = KID.initialise_state(nequil_moist_ρθq, precip_1m, ip)
     dY = (;
         ρq_tot = [10.0, 13.0],
         ρq_liq = [5.0, 10.0],
@@ -361,8 +347,8 @@ end
         ρq_rai = [1.0, 2.0],
         ρq_sno = [1.0, 1.0],
     )
-    KID.zero_tendencies!(KID.NonEquilibriumMoisture_ρθq(), dY, Y, aux, 1.0)
-    KID.zero_tendencies!(KID.Precipitation1M(KID.OneMomentRainFormation(), CMT.Blk1MVelType()), dY, Y, aux, 1.0)
+    KID.zero_tendencies!(nequil_moist_ρθq, dY, Y, aux, 1.0)
+    KID.zero_tendencies!(precip_1m, dY, Y, aux, 1.0)
     @test LA.norm(dY) == 0
 
     dY = (;
@@ -374,8 +360,8 @@ end
         N_rai = [1e4, 1e4],
         N_aer = [1e9, 1e8],
     )
-    KID.zero_tendencies!(KID.NonEquilibriumMoisture_ρθq(), dY, Y, aux, 1.0)
-    KID.zero_tendencies!(KID.Precipitation2M(CMT.SB2006Type(), CMT.SB2006VelType()), dY, Y, aux, 1.0)
+    KID.zero_tendencies!(nequil_moist_ρθq, dY, Y, aux, 1.0)
+    KID.zero_tendencies!(precip_2m, dY, Y, aux, 1.0)
     @test LA.norm(dY) == 0
 
 end
@@ -401,7 +387,7 @@ end
 
     q = TD.PhasePartition(q_tot, q_liq, q_ice)
 
-    tmp = KID.moisture_helper_vars_eq_ρθq(params, ρq_tot, ρ, θ_liq_ice)
+    tmp = KID.moisture_helper_vars_eq_ρθq(thermo_params, ρq_tot, ρ, θ_liq_ice)
     @test !isnan(tmp.q_tot + tmp.q_liq + tmp.q_ice .+ tmp.ρ_dry .+ tmp.p .+ tmp.T + tmp.θ_dry)
     @test tmp.q_tot >= 0.0
     @test tmp.q_liq >= 0.0
@@ -411,7 +397,7 @@ end
     @test tmp.T == TD.air_temperature(thermo_params, tmp.ts)
     @test tmp.θ_dry == TD.dry_pottemp(thermo_params, tmp.T, tmp.ρ_dry)
 
-    tmp = KID.moisture_helper_vars_eq_ρdTq(params, ρq_tot, ρ_dry, T)
+    tmp = KID.moisture_helper_vars_eq_ρdTq(thermo_params, ρq_tot, ρ_dry, T)
     @test !isnan(tmp.q_tot + tmp.q_liq + tmp.q_ice .+ tmp.ρ .+ tmp.p .+ tmp.θ_liq_ice + tmp.θ_dry)
     @test tmp.q_tot >= 0.0
     @test tmp.q_liq >= 0.0
@@ -421,21 +407,21 @@ end
     @test tmp.θ_liq_ice == TD.liquid_ice_pottemp(thermo_params, tmp.ts)
     @test tmp.θ_dry == TD.dry_pottemp(thermo_params, T, ρ_dry)
 
-    tmp = KID.moisture_helper_vars_neq_ρθq(params, ρq_tot, ρq_liq, ρq_ice, ρ, θ_liq_ice)
+    tmp = KID.moisture_helper_vars_neq_ρθq(thermo_params, ρq_tot, ρq_liq, ρq_ice, ρ, θ_liq_ice)
     @test !isnan(tmp.q_tot .+ tmp.q_liq .+ tmp.q_ice .+ tmp.ρ_dry .+ tmp.p .+ tmp.T .+ tmp.θ_dry)
     @test tmp.ρ_dry == ρ - ρq_tot
     @test tmp.p == TD.air_pressure(thermo_params, tmp.ts)
     @test tmp.T == TD.air_temperature(thermo_params, tmp.ts)
     @test tmp.θ_dry == TD.dry_pottemp(thermo_params, tmp.T, tmp.ρ_dry)
 
-    tmp = KID.moisture_helper_vars_neq_ρdTq(params, ρq_tot, ρq_liq, ρq_ice, ρ_dry, T)
+    tmp = KID.moisture_helper_vars_neq_ρdTq(thermo_params, ρq_tot, ρq_liq, ρq_ice, ρ_dry, T)
     @test !isnan(tmp.q_tot .+ tmp.q_liq .+ tmp.q_ice .+ tmp.ρ .+ tmp.p .+ tmp.θ_liq_ice .+ tmp.θ_dry)
     @test tmp.ρ == ρ_dry + ρq_tot
     @test tmp.p == TD.air_pressure(thermo_params, tmp.ts)
     @test tmp.θ_liq_ice == TD.liquid_ice_pottemp(thermo_params, tmp.ts)
     @test tmp.θ_dry == TD.dry_pottemp(thermo_params, T, ρ_dry)
 
-    tmp = KID.moisture_helper_sources(params, ρ, T, q_tot, q_liq, q_ice)
+    tmp = KID.moisture_helper_sources(thermo_params, nequil_moist_ρθq, ρ, T, q_tot, q_liq, q_ice)
     @test !isnan(tmp.S_q_liq .+ tmp.S_q_ice)
 
     tmp = KID.precip_helper_vars(ρq_rai, ρq_sno, ρ)
@@ -445,19 +431,44 @@ end
 
     dt = 0.5
     ts = TD.PhaseEquil_ρTq(thermo_params, ρ, T, q_tot)
-    tmp = KID.precip_helper_sources_0M!(params, ts, q_tot, q_liq, q_ice, dt)
+    tmp = KID.precip_helper_sources!(precip_0m, thermo_params, ts, q_tot, q_liq, q_ice, dt)
     @test !isnan(tmp.S_q_tot .+ tmp.S_q_liq .+ tmp.S_q_ice .+ tmp.S_q_rai .+ tmp.S_q_sno)
     @test tmp.S_q_tot == tmp.S_q_liq + tmp.S_q_ice
     @test tmp.S_q_tot == -(tmp.S_q_rai + tmp.S_q_sno)
 
-    ps = KID.Precipitation1M(KID.OneMomentRainFormation(), CMT.Blk1MVelType())
-    tmp = KID.precip_helper_sources_1M!(params, ts, q_tot, q_liq, q_ice, q_rai, q_sno, T, ρ, dt, ps)
+    tmp = KID.precip_helper_sources!(
+        precip_1m,
+        thermo_params,
+        kid_params,
+        air_params,
+        ts,
+        q_tot,
+        q_liq,
+        q_ice,
+        q_rai,
+        q_sno,
+        T,
+        ρ,
+        dt,
+    )
     @test !isnan(tmp.S_q_tot .+ tmp.S_q_liq .+ tmp.S_q_ice .+ tmp.S_q_rai .+ tmp.S_q_sno)
     @test tmp.S_q_tot ≈ tmp.S_q_liq + tmp.S_q_ice + tmp.S_q_vap
     @test tmp.S_q_tot ≈ -(tmp.S_q_rai + tmp.S_q_sno)
 
-    ps = KID.Precipitation2M(CMT.SB2006Type(), CMT.SB2006VelType())
-    tmp = KID.precip_helper_sources_2M!(params, q_tot, q_liq, q_rai, N_liq, N_rai, T, ρ, dt, ps)
+    tmp = KID.precip_helper_sources!(
+        precip_2m,
+        thermo_params,
+        kid_params,
+        air_params,
+        q_tot,
+        q_liq,
+        q_rai,
+        N_liq,
+        N_rai,
+        T,
+        ρ,
+        dt,
+    )
     @test !isnan(tmp.S_q_tot .+ tmp.S_q_liq .+ tmp.S_q_rai)
     @test !isnan(tmp.S_N_liq .+ tmp.S_N_rai)
     @test !isnan(tmp.term_vel_rai .+ tmp.term_vel_N_rai)
@@ -468,19 +479,19 @@ end
 
 @testset "advection_tendency and sources_tendency" begin
 
-    space, face_space = KID.make_function_space(Float64, 0, 100, 5)
+    space, face_space = KID.make_function_space(FT, 0, 100, 5)
     coord = CC.Fields.coordinate_field(space)
-    ρ_profile = KID.ρ_ivp(Float64, params)
-    init = map(coord -> KID.init_1d_column(Float64, params, ρ_profile, coord.z), coord)
+    ρ_profile = KID.ρ_ivp(FT, kid_params, thermo_params)
+    init = map(coord -> KID.init_1d_column(FT, kid_params, thermo_params, ρ_profile, coord.z), coord)
     t = 13.0
 
     # eq
-    aux = KID.initialise_aux(Float64, init, params, 0.0, 0.0, face_space, KID.EquilibriumMoisture_ρθq())
+    aux = KID.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, equil_moist_ρθq)
     ρw = 0.0
     @. aux.prescribed_velocity.ρw = CC.Geometry.WVector.(ρw)
     aux.prescribed_velocity.ρw0 = ρw
 
-    Y = KID.initialise_state(KID.EquilibriumMoisture_ρθq(), KID.NoPrecipitation(), init)
+    Y = KID.initialise_state(equil_moist_ρθq, no_precip, init)
     dY = Y / 10
 
     @test_throws Exception advection_tendency!(KID.AbstractMoistureStyle(), dY, Y, aux, t)
@@ -489,67 +500,58 @@ end
     @test_throws Exception KID.sources_tendency!(KID.AbstractMoistureStyle(), dY, Y, aux, t)
     @test_throws Exception KID.sources_tendency!(KID.AbstractPrecipitationStyle(), dY, Y, aux, t)
 
-    KID.advection_tendency!(KID.EquilibriumMoisture_ρθq(), dY, Y, aux, t)
-    @test dY ≈ Y / 10 atol = eps(Float64) * 10
+    KID.advection_tendency!(equil_moist_ρθq, dY, Y, aux, t)
+    @test dY ≈ Y / 10 atol = eps(FT) * 10
 
-    Y = KID.initialise_state(
-        KID.EquilibriumMoisture_ρθq(),
-        KID.Precipitation2M(CMT.SB2006Type(), CMT.SB2006VelType()),
-        init,
-    )
+    Y = KID.initialise_state(equil_moist_ρθq, precip_2m, init)
     dY = Y / 10
-    KID.advection_tendency!(KID.Precipitation2M(CMT.SB2006Type(), CMT.SB2006VelType()), dY, Y, aux, t)
-    @test dY ≈ Y / 10 atol = eps(Float64) * 10
+    KID.advection_tendency!(precip_2m, dY, Y, aux, t)
+    @test dY ≈ Y / 10 atol = eps(FT) * 10
 
     # Non-eq
-    aux = KID.initialise_aux(Float64, init, params, 0.0, 0.0, face_space, KID.NonEquilibriumMoisture_ρθq())
+    aux = KID.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, nequil_moist_ρθq)
     ρw = 0.0
     @. aux.prescribed_velocity.ρw = CC.Geometry.WVector.(ρw)
     aux.prescribed_velocity.ρw0 = ρw
 
-    Y = KID.initialise_state(KID.NonEquilibriumMoisture_ρθq(), KID.NoPrecipitation(), init)
+    Y = KID.initialise_state(nequil_moist_ρθq, no_precip, init)
     dY = Y / 10
 
-    KID.advection_tendency!(KID.NonEquilibriumMoisture_ρθq(), dY, Y, aux, t)
-    @test dY ≈ Y / 10 atol = eps(Float64) * 10
+    KID.advection_tendency!(nequil_moist_ρθq, dY, Y, aux, t)
+    @test dY ≈ Y / 10 atol = eps(FT) * 10
 
-
-    Y = KID.initialise_state(
-        KID.NonEquilibriumMoisture_ρθq(),
-        KID.Precipitation2M(CMT.SB2006Type(), CMT.SB2006VelType()),
-        init,
-    )
+    Y = KID.initialise_state(nequil_moist_ρθq, precip_2m, init)
     dY = Y / 10
-    KID.advection_tendency!(KID.Precipitation2M(CMT.SB2006Type(), CMT.SB2006VelType()), dY, Y, aux, t)
-    @test dY ≈ Y / 10 atol = eps(Float64) * 10
+    KID.advection_tendency!(precip_2m, dY, Y, aux, t)
+    @test dY ≈ Y / 10 atol = eps(FT) * 10
 
 end
 
 @testset "precompute aux" begin
 
-    space, face_space = KID.make_function_space(Float64, 0, 100, 5)
+    space, face_space = KID.make_function_space(FT, 0, 100, 5)
     coord = CC.Fields.coordinate_field(space)
-    ρ_profile = KID.ρ_ivp(Float64, params)
-    init = map(coord -> KID.init_1d_column(Float64, params, ρ_profile, coord.z), coord)
+    ρ_profile = KID.ρ_ivp(FT, kid_params, thermo_params)
+    init = map(coord -> KID.init_1d_column(FT, kid_params, thermo_params, ρ_profile, coord.z), coord)
     t = 13.0
 
     # eq
-    aux = KID.initialise_aux(Float64, init, params, 0.0, 0.0, face_space, KID.EquilibriumMoisture_ρθq())
+    aux = KID.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, equil_moist_ρθq)
 
-    Y = KID.initialise_state(KID.EquilibriumMoisture_ρθq(), KID.NoPrecipitation(), init)
+    Y = KID.initialise_state(equil_moist_ρθq, no_precip, init)
     dY = Y / 10
 
     @test_throws Exception KID.precompute_aux_thermo!(KID.AbstractMoistureStyle(), dY, Y, aux, t)
     @test_throws Exception KID.precompute_aux_precip!(KID.AbstractPrecipitationStyle(), dY, Y, aux, t)
 
-    KID.precompute_aux_thermo!(KID.EquilibriumMoisture_ρθq(), dY, Y, aux, t)
+    KID.precompute_aux_thermo!(equil_moist_ρθq, dY, Y, aux, t)
     @test aux.moisture_variables.ρ_dry == aux.moisture_variables.ρ .- Y.ρq_tot
     @test aux.moisture_variables.p == TD.air_pressure.(thermo_params, aux.moisture_variables.ts)
     @test aux.moisture_variables.T == TD.air_temperature.(thermo_params, aux.moisture_variables.ts)
     @test aux.moisture_variables.θ_dry ==
           TD.dry_pottemp.(thermo_params, aux.moisture_variables.T, aux.moisture_variables.ρ_dry)
 
-    KID.precompute_aux_thermo!(KID.EquilibriumMoisture_ρdTq(), dY, Y, aux, t)
+    KID.precompute_aux_thermo!(equil_moist_ρdTq, dY, Y, aux, t)
     @test aux.moisture_variables.ρ == aux.moisture_variables.ρ_dry .+ Y.ρq_tot
     @test aux.moisture_variables.p == TD.air_pressure.(thermo_params, aux.moisture_variables.ts)
     @test aux.moisture_variables.θ_liq_ice == TD.liquid_ice_pottemp.(thermo_params, aux.moisture_variables.ts)
@@ -557,35 +559,34 @@ end
           TD.dry_pottemp.(thermo_params, aux.moisture_variables.T, aux.moisture_variables.ρ_dry)
 
     # Non-eq
-    aux = KID.initialise_aux(Float64, init, params, 0.0, 0.0, face_space, KID.NonEquilibriumMoisture_ρθq())
-    Y = KID.initialise_state(KID.NonEquilibriumMoisture_ρθq(), KID.NoPrecipitation(), init)
+    aux = KID.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, nequil_moist_ρθq)
+    Y = KID.initialise_state(nequil_moist_ρθq, no_precip, init)
     dY = Y / 10
 
-    KID.precompute_aux_thermo!(KID.NonEquilibriumMoisture_ρθq(), dY, Y, aux, t)
+    KID.precompute_aux_thermo!(nequil_moist_ρθq, dY, Y, aux, t)
     @test aux.moisture_variables.ρ_dry == aux.moisture_variables.ρ .- Y.ρq_tot
     @test aux.moisture_variables.p == TD.air_pressure.(thermo_params, aux.moisture_variables.ts)
     @test aux.moisture_variables.T == TD.air_temperature.(thermo_params, aux.moisture_variables.ts)
     @test aux.moisture_variables.θ_dry ==
           TD.dry_pottemp.(thermo_params, aux.moisture_variables.T, aux.moisture_variables.ρ_dry)
 
-    KID.precompute_aux_thermo!(KID.NonEquilibriumMoisture_ρdTq(), dY, Y, aux, t)
+    KID.precompute_aux_thermo!(nequil_moist_ρdTq, dY, Y, aux, t)
     @test aux.moisture_variables.ρ == aux.moisture_variables.ρ_dry .+ Y.ρq_tot
     @test aux.moisture_variables.p == TD.air_pressure.(thermo_params, aux.moisture_variables.ts)
     @test aux.moisture_variables.θ_liq_ice == TD.liquid_ice_pottemp.(thermo_params, aux.moisture_variables.ts)
     @test aux.moisture_variables.θ_dry ==
           TD.dry_pottemp.(thermo_params, aux.moisture_variables.T, aux.moisture_variables.ρ_dry)
 
-    aux = KID.initialise_aux(Float64, init, params, (; dt = 2.0), 0.0, face_space, KID.NonEquilibriumMoisture_ρθq())
-    Y = KID.initialise_state(
-        KID.NonEquilibriumMoisture_ρθq(),
-        KID.Precipitation2M(CMT.SB2006Type(), CMT.SB2006VelType()),
-        init,
-    )
+    aux = KID.initialise_aux(FT, init, params..., (; dt = 2.0), 0.0, face_space, nequil_moist_ρθq)
+    Y = KID.initialise_state(nequil_moist_ρθq, precip_2m, init)
     dY = Y / 10
 
-    KID.precompute_aux_precip!(KID.Precipitation2M(CMT.SB2006Type(), CMT.SB2006VelType()), dY, Y, aux, t)
-    tmp = @. KID.precip_helper_sources_2M!(
-        aux.params,
+    KID.precompute_aux_precip!(precip_2m, dY, Y, aux, t)
+    tmp = @. KID.precip_helper_sources!(
+        precip_2m,
+        aux.thermo_params,
+        aux.kid_params,
+        aux.air_params,
         aux.moisture_variables.q_tot,
         aux.moisture_variables.q_liq,
         aux.precip_variables.q_rai,
@@ -594,14 +595,13 @@ end
         aux.moisture_variables.T,
         aux.moisture_variables.ρ,
         aux.TS.dt,
-        KID.Precipitation2M(CMT.SB2006Type(), CMT.SB2006VelType()),
     )
-    @test aux.precip_sources.S_q_rai ≈ tmp.S_q_rai atol = eps(Float64) * 10
-    @test aux.precip_sources.S_q_tot ≈ tmp.S_q_tot atol = eps(Float64) * 10
-    @test aux.precip_sources.S_q_liq ≈ tmp.S_q_liq atol = eps(Float64) * 10
-    @test aux.precip_sources.S_N_liq ≈ tmp.S_N_liq atol = eps(Float64) * 10
-    @test aux.precip_sources.S_N_rai ≈ tmp.S_N_rai atol = eps(Float64) * 10
 
+    @test aux.precip_sources.S_q_rai ≈ tmp.S_q_rai atol = eps(FT) * 10
+    @test aux.precip_sources.S_q_tot ≈ tmp.S_q_tot atol = eps(FT) * 10
+    @test aux.precip_sources.S_q_liq ≈ tmp.S_q_liq atol = eps(FT) * 10
+    @test aux.precip_sources.S_N_liq ≈ tmp.S_N_liq atol = eps(FT) * 10
+    @test aux.precip_sources.S_N_rai ≈ tmp.S_N_rai atol = eps(FT) * 10
 end
 
 @testset "aerosol activation for 2M schemes" begin
@@ -617,7 +617,7 @@ end
     dt = 1.0
 
     #action
-    tmp = KID.aerosol_activation_helper(params, q_tot, q_liq, N_aer, N_aer_0, T, p, ρ, ρw, dt)
+    tmp = KID.aerosol_activation_helper(params..., q_tot, q_liq, N_aer, N_aer_0, T, p, ρ, ρw, dt)
 
     #test
     @test tmp isa NamedTuple
@@ -625,18 +625,18 @@ end
     @test 0 < tmp.S_Nl < N_aer_0
 
     #action
-    tmp = KID.aerosol_activation_helper(params, q_tot, q_liq, N_aer, N_aer_0, 290.0, p, ρ, ρw, dt)
+    tmp = KID.aerosol_activation_helper(params..., q_tot, q_liq, N_aer, N_aer_0, 290.0, p, ρ, ρw, dt)
 
     #test
-    @test tmp.S_Nl ≈ 0.0 atol = eps(Float64)
-    @test tmp.S_Na ≈ 0.0 atol = eps(Float64)
+    @test tmp.S_Nl ≈ 0.0 atol = eps(FT)
+    @test tmp.S_Na ≈ 0.0 atol = eps(FT)
 
     #action
-    tmp = KID.aerosol_activation_helper(params, q_tot, q_liq, N_aer, N_aer_0, T, p, ρ, 0.0, dt)
+    tmp = KID.aerosol_activation_helper(params..., q_tot, q_liq, N_aer, N_aer_0, T, p, ρ, 0.0, dt)
 
     #test
-    @test tmp.S_Nl ≈ 0.0 atol = eps(Float64)
-    @test tmp.S_Na ≈ 0.0 atol = eps(Float64)
+    @test tmp.S_Nl ≈ 0.0 atol = eps(FT)
+    @test tmp.S_Na ≈ 0.0 atol = eps(FT)
 
 end
 

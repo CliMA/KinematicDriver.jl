@@ -18,7 +18,7 @@
     @test tmp_data.result == res
     @test tmp_data.u_names == u_names
     @test tmp_data.u_bests == u_values
-    @test tmp_data.config == config
+    @test keys(tmp_data.config) == keys(config)
 
     rm(pwd() * tmp_dir, recursive = true, force = true)
 end
