@@ -2,6 +2,7 @@
 Plotting utilities
 """
 
+import NCDatasets as NC
 import CloudMicrophysics.PrecipitationSusceptibility as CMPS
 
 ENV["GKSwstype"] = "nul"
