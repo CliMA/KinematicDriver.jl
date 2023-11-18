@@ -11,6 +11,9 @@ function run_box_simulation(::Type{FT}, model_settings) where {FT}
 
     # Instantiate CliMA Parameters and overwrite the defaults
     toml_dict = CP.create_toml_dict(FT; dict_type = "alias")
+    for (k, v) in model_settings["microphys_params"]
+        toml_dict[k]["value"] = v
+    end
     box_params = BX.Parameters.BoxModelParameters(
         FT(model_settings["rho_air"]),
         Int(model_settings["precip_sources"]),
