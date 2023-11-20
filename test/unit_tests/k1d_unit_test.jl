@@ -59,7 +59,7 @@ precip_2m = K1D.Precipitation2M(CMP.SB2006(FT, toml_dict), CMP.SB2006VelType(FT,
     moisture_eq, precip_1m_5 = K1D.get_moisture_and_precipitation_types(FT, eqm, p1m, rf_5, st_1, toml_dict)
     moisture_eq, precip_1m_6 = K1D.get_moisture_and_precipitation_types(FT, eqm, p1m, rf_6, st_1, toml_dict)
     moisture_eq, precip_1m_7 = K1D.get_moisture_and_precipitation_types(FT, eqm, p1m, rf_6, st_2, toml_dict)
-    
+
     #setup
     @test K1D.EquilibriumMoisture <: K1D.AbstractMoistureStyle
     @test K1D.NonEquilibriumMoisture <: K1D.AbstractMoistureStyle

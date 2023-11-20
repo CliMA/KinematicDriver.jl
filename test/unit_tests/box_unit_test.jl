@@ -37,7 +37,7 @@ precip_2m = BX.Precipitation2M(CMP.SB2006(FT, toml_dict))
     precip_1m_5 = BX.get_precipitation_type(FT, p1m, rf_5, toml_dict)
     precip_1m_6 = BX.get_precipitation_type(FT, p1m, rf_6, toml_dict)
     precip_2m = BX.get_precipitation_type(FT, p2m, rf_7, toml_dict)
-    
+
     #setup
     @test BX.Precipitation1M <: BX.AbstractPrecipitationStyle
     @test BX.Precipitation2M <: BX.AbstractPrecipitationStyle
@@ -52,7 +52,7 @@ precip_2m = BX.Precipitation2M(CMP.SB2006(FT, toml_dict))
     @test precip_1m_5 isa BX.Precipitation1M
     @test precip_1m_6 isa BX.Precipitation1M
     @test precip_2m isa BX.Precipitation2M
-    
+
 end
 
 @testset "Make rhs function" begin
@@ -118,7 +118,7 @@ end
     Y = BX.initialise_state(precip_1m, model_settings)
     dY = Y ./ 10
     ρ = BX.Parameters.ρ_air(aux.box_params) / (1 - Y[1])
-    
+
     # action
     BX.precompute_aux_precip!(precip_1m, dY, Y, aux, t)
     tmp = BX.precip_helper_sources!(precip_1m, aux.box_params, Y[1], Y[2], ρ, aux.TS.dt)
