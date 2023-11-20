@@ -1,5 +1,5 @@
 """
-    Returns mositure and precipitation types
+    Returns precipitation types
 """
 function get_precipitation_type(FT, precipitation_choice::String, rain_formation_choice::String, toml_dict)
     if precipitation_choice == "Precipitation1M"

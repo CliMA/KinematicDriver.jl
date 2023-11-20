@@ -1,12 +1,7 @@
-# using LinearAlgebra
 import OrdinaryDiffEq as ODE
 import ClimaCore as CC
-# using ClimaCore.Geometry
 import CLIMAParameters as CP
 import CloudMicrophysics.Parameters as CMP
-# import Logging
-# import TerminalLoggers
-# Logging.global_logger(TerminalLoggers.TerminalLogger())
 import Kinematic1D
 import Kinematic1D.K1DModel as K1D
 import Kinematic1D.K2DModel as K2D

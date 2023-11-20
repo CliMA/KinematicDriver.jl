@@ -182,9 +182,9 @@ end
         if rf isa CMP.Acnv1M{FT}
             tmp = CM1.conv_q_liq_to_q_rai(rf, q.liq, smooth_transition = true)
         elseif typeof(rf) in [CMP.LD2004{FT}, CMP.VarTimescaleAcnv{FT}]
-            tmp = CM2.conv_q_liq_to_q_rai(rf, q.liq, ρ, ; conv_args(rf, kid_params)...)
+            tmp = CM2.conv_q_liq_to_q_rai(rf, q.liq, ρ; N_d = kid_params.prescribed_Nd)
         elseif typeof(rf.acnv) in [CMP.AcnvKK2000{FT}, CMP.AcnvB1994{FT}, CMP.AcnvTC1980{FT}]
-            tmp = CM2.conv_q_liq_to_q_rai(rf, q.liq, ρ, ; conv_args(rf, kid_params)...)
+            tmp = CM2.conv_q_liq_to_q_rai(rf, q.liq, ρ; N_d = kid_params.prescribed_Nd)
         else
             error("Unrecognized rain formation scheme")
         end
@@ -200,8 +200,10 @@ end
         # accretion cloud water + rain
         if typeof(rf) in [CMP.Acnv1M{FT}, CMP.LD2004{FT}, CMP.VarTimescaleAcnv{FT}]
             tmp = CM1.accretion(ps.liquid, ps.rain, ps.sedimentation.rain, ps.ce, q.liq, q_rai, ρ)
-        elseif typeof(rf.accr) in [CMP.AccrKK2000{FT}, CMP.AccrB1994{FT}, CMP.AccrTC1980{FT}]
-            tmp = CM2.accretion(accr_args(rf, q.liq, q_rai, ρ)...)
+        elseif typeof(rf.accr) in [CMP.AccrKK2000{FT}, CMP.AccrB1994{FT}]
+            tmp = CM2.accretion(rf, q.liq, q_rai, ρ)
+        elseif rf.accr isa CMP.AccrTC1980{FT}
+            tmp = CM2.accretion(rf, q.liq, q_rai)
         else
             error("Unrecognized rain formation scheme")
         end

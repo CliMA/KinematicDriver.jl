@@ -23,6 +23,7 @@ model_settings = Dict(
     "t_ini" => Float64(0),
     "t_end" => Float64(3600),
     "rho_air" => Float64(1.22),
+    "microphys_params" => Dict(),
 )
 
 FT = Float64
