@@ -18,6 +18,8 @@ function run_dyn_model(
 
     if config["model"]["model"] == "KiD"
         sim_vec = run_KiD_multiple_cases(u, u_names, config, case_numbers)
+    elseif config["model"]["model"] == "KiD_col_sed"
+        sim_vec = run_KiD_col_sed_multiple_cases(u, u_names, config, case_numbers)
     elseif config["model"]["model"] == "test_model" # for testing
         @assert config["observations"]["data_names"] == ["test data"]
         sim_vec = test_model(u, u_names, config, case_numbers)
@@ -53,7 +55,19 @@ end
 function run_KiD(u::Array{FT, 1}, u_names::Array{String, 1}, model_settings::Dict)
 
     update_parameters!(model_settings, u, u_names)
-    kid_params = create_kid_parameters(FT, model_settings)
+    kid_params = create_kid_parameters(
+        FT, 
+        w1 = model_settings["w1"],
+        t1 = model_settings["t1"],
+        p0 = model_settings["p0"],
+        precip_sources = model_settings["precip_sources"],
+        precip_sinks = model_settings["precip_sinks"],
+        Nd = model_settings["Nd"],
+        qtot_flux_correction = model_settings["qtot_flux_correction"],
+        r_dry = model_settings["r_dry"],
+        std_dry = model_settings["std_dry"],
+        κ = model_settings["κ"],
+        )
 
     moisture, precip = KD.get_moisture_and_precipitation_types(
         FT,
@@ -92,6 +106,73 @@ function run_KiD(u::Array{FT, 1}, u_names::Array{String, 1}, model_settings::Dic
     return solution, aux, precip
 end
 
+"""
+    Run 1D rainshaft simulation with only collisions and sedimentation
+"""
+function run_KiD_col_sed_multiple_cases(u::Array{FT, 1}, u_names::Array{String, 1}, config::Dict, case_numbers::Vector{Int})
+
+    @assert !isempty(case_numbers)
+
+    outputs = Float64[]
+    for case in config["observations"]["cases"][case_numbers]
+        config["model"]["qt"] = case.qt
+        config["model"]["Nd"] = case.Nd
+        config["model"]["k"] = case.k
+        ode_sol, aux, precip = run_KiD_col_sed(u, u_names, config["model"])
+        single_case_Gvector =
+            config["model"]["filter"]["apply"] ?
+            ODEsolution2Gvector(ode_sol, aux, precip, config["observations"]["data_names"], config["model"]["filter"]) :
+            ODEsolution2Gvector(ode_sol, aux, precip, config["observations"]["data_names"])
+        outputs = [outputs; single_case_Gvector]
+    end
+
+    return outputs
+end
+
+function run_KiD_col_sed(u::Array{FT, 1}, u_names::Array{String, 1}, model_settings::Dict)
+
+    update_parameters!(model_settings, u, u_names)
+    kid_params = create_kid_parameters(
+        FT,
+        precip_sources = model_settings["precip_sources"],
+        precip_sinks = model_settings["precip_sinks"],
+        Nd = model_settings["Nd"],
+        )
+
+    precip = KCS.get_precipitation_type(
+        FT,
+        model_settings["precipitation_choice"],
+        model_settings["rain_formation_choice"],
+        model_settings["sedimentation_choice"],
+        model_settings["toml_dict"],
+    )
+
+    TS = KD.TimeStepping(model_settings["dt"], model_settings["dt_calib"], model_settings["t_end"])
+    space, face_space =
+        KD.make_function_space(FT, model_settings["z_min"], model_settings["z_max"], model_settings["n_elem"])
+    coord = CC.Fields.coordinate_field(space)
+
+    init = map(coord -> KCS.init_1d_column(FT, model_settings["qt"], model_settings["Nd"], model_settings["rhod"], coord.z), coord)
+    Y = KCS.initialise_state(precip, init)
+    aux = KCS.initialise_aux(
+        FT,
+        init,
+        kid_params,
+        TS,
+        nothing,
+        face_space,
+    )
+    ode_rhs! = KCS.make_rhs_function(precip)
+    problem = ODE.ODEProblem(ode_rhs!, Y, (model_settings["t_ini"], model_settings["t_end"]), aux)
+    saveat = model_settings["filter"]["apply"] ? model_settings["filter"]["saveat_t"] : model_settings["t_calib"]
+    solution = ODE.solve(problem, ODE.SSPRK33(), dt = model_settings["dt"], saveat = saveat)
+
+    return solution, aux, precip
+end
+
+"""
+    General functions for converting ode results to vector of values
+"""
 function ODEsolution2Gvector(ODEsol, aux, precip, variables)
 
     outputs = Float64[]
@@ -139,40 +220,27 @@ function update_parameters!(model_settings::Dict, u::Array{FT, 1}, u_names::Arra
     end
 end
 
-function create_kid_parameters(FT, model_settings::Dict)
-    precip_sources = if ("precip_sources" in keys(model_settings))
-        model_settings["precip_sources"]
-    else
-        1
-    end
-    precip_sinks = if ("precip_sinks" in keys(model_settings))
-        model_settings["precip_sinks"]
-    else
-        1
-    end
-    r_dry = if ("r_dry" in keys(model_settings))
-        model_settings["r_dry"]
-    else
-        0.04 * 1e-6
-    end
-    std_dry = if ("std_dry" in keys(model_settings))
-        model_settings["std_dry"]
-    else
-        1.4
-    end
-    κ = if ("κ" in keys(model_settings))
-        model_settings["κ"]
-    else
-        0.9
-    end
+function create_kid_parameters(
+    FT;
+    w1 = 2.0,
+    t1 = 600,
+    p0 = 100000,
+    precip_sources = 1,
+    precip_sinks = 1,
+    Nd = 1e8,
+    qtot_flux_correction = true,
+    r_dry = 0.04 * 1e-6,
+    std_dry = 1.4,
+    κ = 0.9,
+    )
     kid_params = KD.Parameters.Kinematic1DParameters{FT}(;
-        w1 = model_settings["w1"],
-        t1 = model_settings["t1"],
-        p0 = model_settings["p0"],
+        w1 = w1,
+        t1 = t1,
+        p0 = p0,
         precip_sources = precip_sources,
         precip_sinks = precip_sinks,
-        prescribed_Nd = model_settings["Nd"],
-        qtot_flux_correction = Int(model_settings["qtot_flux_correction"]),
+        prescribed_Nd = Nd,
+        qtot_flux_correction = Int(qtot_flux_correction),
         r_dry = r_dry,
         std_dry = std_dry,
         κ = κ,

@@ -20,6 +20,7 @@ const DS = Distributions
 const FT = Float64
 
 import ..K1DModel as KD
+import ..K1DColSedModel as KCS
 
 include("ReferenceStats.jl")
 include("ReferenceModels.jl")
