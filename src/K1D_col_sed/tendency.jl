@@ -43,14 +43,7 @@ end
 
     return (; S_q_tot, S_q_liq, S_q_rai)
 end
-@inline function precip_helper_sources!(
-    ps::K1D.Precipitation1M,
-    kid_params,
-    q_liq,
-    q_rai,
-    ρ,
-    dt,
-)
+@inline function precip_helper_sources!(ps::K1D.Precipitation1M, kid_params, q_liq, q_rai, ρ, dt)
 
     FT = eltype(q_liq)
     S_q_tot::FT = FT(0)
@@ -73,7 +66,7 @@ end
         S_q_tot += S_qt_rain
         S_q_liq += S_qt_rain
         S_q_rai -= S_qt_rain
-        
+
         # accretion cloud water + rain
         if typeof(rf) in [CMP.Acnv1M{FT}, CMP.LD2004{FT}, CMP.VarTimescaleAcnv{FT}]
             tmp = CM1.accretion(ps.liquid, ps.rain, ps.sedimentation.rain, ps.ce, q_liq, q_rai, ρ)
@@ -94,16 +87,7 @@ end
 
     return (; S_q_tot, S_q_liq, S_q_rai, term_vel_rai)
 end
-@inline function precip_helper_sources!(
-    ps::K1D.Precipitation2M,
-    kid_params,
-    q_liq,
-    q_rai,
-    N_liq,
-    N_rai,
-    ρ,
-    dt,
-)
+@inline function precip_helper_sources!(ps::K1D.Precipitation2M, kid_params, q_liq, q_rai, N_liq, N_rai, ρ, dt)
 
     sb2006 = ps.rain_formation
     vel_scheme = ps.sedimentation
@@ -179,11 +163,7 @@ end
 
     aux.precip_variables.q_rai = FT(0)
 
-    tmp = @. precip_helper_sources!(
-        ps,
-        aux.moisture_variables.q_liq,
-        aux.TS.dt,
-    )
+    tmp = @. precip_helper_sources!(ps, aux.moisture_variables.q_liq, aux.TS.dt)
     aux.precip_sources.S_q_tot = tmp.S_q_tot
     aux.precip_sources.S_q_liq = tmp.S_q_liq
     aux.precip_sources.S_q_rai = tmp.S_q_rai
@@ -249,10 +229,10 @@ end
 
     If = CC.Operators.InterpolateC2F()
     ∂ = CC.Operators.DivergenceF2C(
-        bottom = CC.Operators.Extrapolate(), 
-        top = CC.Operators.SetValue(CC.Geometry.WVector(0.0))
-        )
-    @. dY.ρq_rai += -∂(aux.precip_velocities.term_vel_rai * If(Y.ρq_rai),)
+        bottom = CC.Operators.Extrapolate(),
+        top = CC.Operators.SetValue(CC.Geometry.WVector(0.0)),
+    )
+    @. dY.ρq_rai += -∂(aux.precip_velocities.term_vel_rai * If(Y.ρq_rai))
 
     fcc = CC.Operators.FluxCorrectionC2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
     @. dY.ρq_rai += fcc(aux.precip_velocities.term_vel_rai, Y.ρq_rai)
@@ -264,11 +244,11 @@ end
 
     If = CC.Operators.InterpolateC2F()
     ∂ = CC.Operators.DivergenceF2C(
-        bottom = CC.Operators.Extrapolate(), 
-        top = CC.Operators.SetValue(CC.Geometry.WVector(0.0))
-        )
-    @. dY.N_rai += -∂(aux.precip_velocities.term_vel_N_rai * If(Y.N_rai),)
-    @. dY.ρq_rai += -∂(aux.precip_velocities.term_vel_rai * If(Y.ρq_rai),)
+        bottom = CC.Operators.Extrapolate(),
+        top = CC.Operators.SetValue(CC.Geometry.WVector(0.0)),
+    )
+    @. dY.N_rai += -∂(aux.precip_velocities.term_vel_N_rai * If(Y.N_rai))
+    @. dY.ρq_rai += -∂(aux.precip_velocities.term_vel_rai * If(Y.ρq_rai))
 
     fcc = CC.Operators.FluxCorrectionC2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
     @. dY.N_rai += fcc(aux.precip_velocities.term_vel_N_rai, Y.N_rai)

@@ -40,13 +40,8 @@ function run_KiD_col_sed_simulation(::Type{FT}, opts) where {FT}
     # (some of the CloudMicrophysics.jl parameters structs are created later based on model choices)
     kid_params = create_kid_parameters(toml_dict)
 
-    precip = KCS.get_precipitation_type(
-        FT,
-        precipitation_choice,
-        rain_formation_choice,
-        sedimentation_choice,
-        toml_dict,
-    )
+    precip =
+        KCS.get_precipitation_type(FT, precipitation_choice, rain_formation_choice, sedimentation_choice, toml_dict)
 
     # Initialize the timestepping struct
     TS = KID.TimeStepping(FT(opts["dt"]), FT(opts["dt_output"]), FT(opts["t_end"]))
@@ -58,14 +53,19 @@ function run_KiD_col_sed_simulation(::Type{FT}, opts) where {FT}
 
     # Initialize the netcdf output Stats struct
     fname = joinpath(path, "Output.nc")
-    Stats = KID.NetCDFIO_Stats(fname, 1.0, parent(face_coord), parent(coord), 
+    Stats = KID.NetCDFIO_Stats(
+        fname,
+        1.0,
+        parent(face_coord),
+        parent(coord),
         output_profiles = Dict(
-        :ρ => "density",
-        :q_liq => "q_liq",
-        :q_rai => "q_rai",
-        :N_liq => "N_liq",
-        :N_rai => "N_rai",
-    ),)
+            :ρ => "density",
+            :q_liq => "q_liq",
+            :q_rai => "q_rai",
+            :N_liq => "N_liq",
+            :N_rai => "N_rai",
+        ),
+    )
 
     # Create the initial condition profiles
     init = map(coord -> KCS.init_1d_column(FT, opts["qt"], opts["prescribed_Nd"], opts["rhod"], coord.z), coord)
@@ -74,14 +74,7 @@ function run_KiD_col_sed_simulation(::Type{FT}, opts) where {FT}
     Y = KCS.initialise_state(precip, init)
 
     # Create aux vector and apply initial condition
-    aux = KCS.initialise_aux(
-        FT,
-        init,
-        kid_params,
-        TS,
-        Stats,
-        face_space,
-    )
+    aux = KCS.initialise_aux(FT, init, kid_params, TS, Stats, face_space)
 
     # Output the initial condition
     KID.KiD_output(aux, 0.0)
@@ -107,7 +100,8 @@ function run_KiD_col_sed_simulation(::Type{FT}, opts) where {FT}
     )
 
     # Some basic plots
-    plot_folder = joinpath(pkgdir(Kinematic1D), string("test/experiments/KiD_col_sed_driver/", output_folder, "/figures/"))
+    plot_folder =
+        joinpath(pkgdir(Kinematic1D), string("test/experiments/KiD_col_sed_driver/", output_folder, "/figures/"))
     plot_timeheight(string(output_folder, "/Output.nc"), output = plot_folder)
 
     return solver
@@ -121,7 +115,7 @@ opts = Dict(
     "rain_formation_choice" => "CliMA_1M",
     "sedimentation_choice" => "CliMA_1M",
     "precip_sources" => true,
-    "precip_sinks" => true,
+    "precip_sinks" => false,
     "z_min" => 0.0,
     "z_max" => 3000.0,
     "n_elem" => 60,

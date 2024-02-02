@@ -56,7 +56,7 @@ function run_KiD(u::Array{FT, 1}, u_names::Array{String, 1}, model_settings::Dic
 
     update_parameters!(model_settings, u, u_names)
     kid_params = create_kid_parameters(
-        FT, 
+        FT,
         w1 = model_settings["w1"],
         t1 = model_settings["t1"],
         p0 = model_settings["p0"],
@@ -67,7 +67,7 @@ function run_KiD(u::Array{FT, 1}, u_names::Array{String, 1}, model_settings::Dic
         r_dry = model_settings["r_dry"],
         std_dry = model_settings["std_dry"],
         κ = model_settings["κ"],
-        )
+    )
 
     moisture, precip = KD.get_moisture_and_precipitation_types(
         FT,
@@ -109,7 +109,12 @@ end
 """
     Run 1D rainshaft simulation with only collisions and sedimentation
 """
-function run_KiD_col_sed_multiple_cases(u::Array{FT, 1}, u_names::Array{String, 1}, config::Dict, case_numbers::Vector{Int})
+function run_KiD_col_sed_multiple_cases(
+    u::Array{FT, 1},
+    u_names::Array{String, 1},
+    config::Dict,
+    case_numbers::Vector{Int},
+)
 
     @assert !isempty(case_numbers)
 
@@ -137,7 +142,7 @@ function run_KiD_col_sed(u::Array{FT, 1}, u_names::Array{String, 1}, model_setti
         precip_sources = model_settings["precip_sources"],
         precip_sinks = model_settings["precip_sinks"],
         Nd = model_settings["Nd"],
-        )
+    )
 
     precip = KCS.get_precipitation_type(
         FT,
@@ -152,16 +157,13 @@ function run_KiD_col_sed(u::Array{FT, 1}, u_names::Array{String, 1}, model_setti
         KD.make_function_space(FT, model_settings["z_min"], model_settings["z_max"], model_settings["n_elem"])
     coord = CC.Fields.coordinate_field(space)
 
-    init = map(coord -> KCS.init_1d_column(FT, model_settings["qt"], model_settings["Nd"], model_settings["rhod"], coord.z), coord)
-    Y = KCS.initialise_state(precip, init)
-    aux = KCS.initialise_aux(
-        FT,
-        init,
-        kid_params,
-        TS,
-        nothing,
-        face_space,
+    init = map(
+        coord ->
+            KCS.init_1d_column(FT, model_settings["qt"], model_settings["Nd"], model_settings["rhod"], coord.z),
+        coord,
     )
+    Y = KCS.initialise_state(precip, init)
+    aux = KCS.initialise_aux(FT, init, kid_params, TS, nothing, face_space)
     ode_rhs! = KCS.make_rhs_function(precip)
     problem = ODE.ODEProblem(ode_rhs!, Y, (model_settings["t_ini"], model_settings["t_end"]), aux)
     saveat = model_settings["filter"]["apply"] ? model_settings["filter"]["saveat_t"] : model_settings["t_calib"]
@@ -232,7 +234,7 @@ function create_kid_parameters(
     r_dry = 0.04 * 1e-6,
     std_dry = 1.4,
     κ = 0.9,
-    )
+)
     kid_params = KD.Parameters.Kinematic1DParameters{FT}(;
         w1 = w1,
         t1 = t1,

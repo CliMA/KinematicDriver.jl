@@ -113,9 +113,15 @@ function get_single_obs_field(
     elseif "water_vapour_mixing_ratio" in keys(_data_pysdm)
         _rv = _data_pysdm["water_vapour_mixing_ratio"]
     else
-        _rv = similar(_data_pysdm["qc"]) .* FT(0)
+        _rv = zeros(FT, size(_data_pysdm["qc"]))
     end
-    
+    if ~("rhod" in keys(_data_pysdm))
+        attr = read_pysdm_data(filename).attributes
+        if "rhod" in keys(attr)
+            _data_pysdm["rhod"] = attr["rhod"]
+        end
+    end
+
     for var in variables
         if var == "qt"
             _r_tot = _rv .+ _data_pysdm["qc"] .* 1e-3

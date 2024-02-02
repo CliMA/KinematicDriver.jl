@@ -69,6 +69,8 @@ function get_model_config()
     config["precipitation_choice"] = "Precipitation1M"
     config["rain_formation_choice"] = "CliMA_1M"
     config["sedimentation_choice"] = "CliMA_1M"
+    config["precip_sources"] = true
+    config["precip_sinks"] = true
     config["z_min"] = 0.0
     config["z_max"] = 3000.0
     config["n_elem"] = 10

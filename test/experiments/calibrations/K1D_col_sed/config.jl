@@ -22,8 +22,13 @@ function get_prior_config()
     config = Dict()
     # Define prior mean and bounds on the parameters.
     config["parameters"] = Dict(
-        "χv_rai" => (mean = 0.1, var = 0.03, lbound = 0.0, ubound = 1.0),
-        "χa_rai" => (mean = 4.0, var = 1.0, lbound = 0.0, ubound = 10.0),
+        "kcc_SB2006" => (mean = 4.44e9, var = 1.11e9, lbound = 0.0, ubound = Inf),
+        "A_phi_au_SB2006" => (mean = 400.0, var = 100.0, lbound = 0.0, ubound = Inf),
+        "kcr_SB2006" => (mean = 5.25, var = 1.3125, lbound = 0.0, ubound = Inf),
+        "krr_SB2006" => (mean = 7.12, var = 1.78, lbound = 0.0, ubound = Inf),
+        "aR_tv_SB2006" => (mean = 9.65, var = 2.4125, lbound = 0.0, ubound = Inf),
+        "bR_tv_SB2006" => (mean = 10.3, var = 2.575, lbound = 0.0, ubound = Inf),
+        "cR_tv_SB2006" => (mean = 600.0, var = 150.0, lbound = 0.0, ubound = Inf),
     )
     return config
 end
@@ -59,7 +64,7 @@ end
 function get_observations_config()
     config = Dict()
     # Define data names.
-    config["data_names"] = ["rl", "rr", "Nl", "Nr"]
+    config["data_names"] = ["ql", "qr", "Nl", "Nr", "rainrate"]
     # Define source of data: "file" or "perfect_model"
     config["data_source"] = "file"
     # Define number of samples for validation

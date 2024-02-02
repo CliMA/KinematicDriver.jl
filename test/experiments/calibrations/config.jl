@@ -103,7 +103,7 @@ function get_model_config()
     # Define sedimentation choice: "CliMA_1M", "Chen2022", "SB2006"
     config["sedimentation_choice"] = "CliMA_1M"
     config["precip_sources"] = true
-    config["precip_sinks"] = false
+    config["precip_sinks"] = true
     config["z_min"] = 0.0
     config["z_max"] = 3000.0
     config["n_elem"] = 64

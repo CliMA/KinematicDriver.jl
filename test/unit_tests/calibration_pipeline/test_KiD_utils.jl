@@ -12,7 +12,20 @@
     #setup
     model_settings["w1"] = 2.25
     #action
-    kid_params = KCP.create_kid_parameters(Float64, model_settings)
+    kid_params = KCP.create_kid_parameters(
+        Float64,
+        w1 = model_settings["w1"],
+        t1 = model_settings["t1"],
+        p0 = model_settings["p0"],
+        precip_sources = model_settings["precip_sources"],
+        precip_sinks = model_settings["precip_sinks"],
+        Nd = model_settings["Nd"],
+        qtot_flux_correction = model_settings["qtot_flux_correction"],
+        r_dry = model_settings["r_dry"],
+        std_dry = model_settings["std_dry"],
+        κ = model_settings["κ"],
+    )
+
     #test
     @test kid_params isa Kinematic1D.K1DModel.Parameters.Kinematic1DParameters
     @test kid_params.w1 == 2.25

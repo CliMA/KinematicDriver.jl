@@ -171,8 +171,8 @@ function get_variable_data_from_ODE(u, aux, precip, var::String)
             vt = CM1.terminal_velocity.(precip.rain, precip.sedimentation.rain, ρ, qr)
         elseif precip isa Precipitation2M
             Nr = parent(u.N_rai)
-            ff(xx, yy, zz) = CM2.rain_terminal_velocity(precip.rain_formation, precip.sedimentation, xx, yy, zz)[2]
-            vt = ff.(qr, ρ, Nr)
+            f1(xx, yy, zz) = CM2.rain_terminal_velocity(precip.rain_formation, precip.sedimentation, xx, yy, zz)[2]
+            vt = f1.(qr, ρ, Nr)
         else
             error("Computing rain averaged terminal velocity for the given precipitation style is invalid!!")
         end
@@ -183,8 +183,8 @@ function get_variable_data_from_ODE(u, aux, precip, var::String)
             vt = CM1.terminal_velocity.(precip.rain, precip.sedimentation.rain, ρ, qr)
         elseif precip isa Precipitation2M
             Nr = parent(u.N_rai)
-            ff(xx, yy, zz) = CM2.rain_terminal_velocity(precip.rain_formation, precip.sedimentation, xx, yy, zz)[2]
-            vt = ff.(qr, ρ, Nr)
+            f2(xx, yy, zz) = CM2.rain_terminal_velocity(precip.rain_formation, precip.sedimentation, xx, yy, zz)[2]
+            vt = f2.(qr, ρ, Nr)
         else
             error("Computing rainrate for the given precipitation style is invalid!!")
         end

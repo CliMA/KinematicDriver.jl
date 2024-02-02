@@ -7,8 +7,8 @@
 """
 function init_1d_column(::Type{FT}, qt::FT, Nd::FT, ρ_dry::FT, z) where {FT}
 
-    ρ = ρ_dry / (1-qt)
-    
+    ρ = ρ_dry / (1 - qt)
+
     q_tot::FT = qt
     q_liq::FT = qt
     q_rai::FT = FT(0)
@@ -25,21 +25,5 @@ function init_1d_column(::Type{FT}, qt::FT, Nd::FT, ρ_dry::FT, z) where {FT}
     S_Nl::FT = FT(0)
     S_Nr::FT = FT(0)
 
-    return (;
-        ρ,
-        ρ_dry,
-        ρq_tot,
-        ρq_liq,
-        ρq_rai,
-        q_tot,
-        q_liq,
-        q_rai,
-        N_liq,
-        N_rai,
-        S_qt,
-        S_ql,
-        S_qr,
-        S_Nl,
-        S_Nr,
-    )
+    return (; ρ, ρ_dry, ρq_tot, ρq_liq, ρq_rai, q_tot, q_liq, q_rai, N_liq, N_rai, S_qt, S_ql, S_qr, S_Nl, S_Nr)
 end
