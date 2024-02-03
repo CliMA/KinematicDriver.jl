@@ -137,6 +137,7 @@ end
 function run_KiD_col_sed(u::Array{FT, 1}, u_names::Array{String, 1}, model_settings::Dict)
 
     update_parameters!(model_settings, u, u_names)
+    model_settings["toml_dict"]["νc_SB2006"]["value"] = model_settings["k"]
     kid_params = create_kid_parameters(
         FT,
         precip_sources = model_settings["precip_sources"],
@@ -158,8 +159,14 @@ function run_KiD_col_sed(u::Array{FT, 1}, u_names::Array{String, 1}, model_setti
     coord = CC.Fields.coordinate_field(space)
 
     init = map(
-        coord ->
-            KCS.init_1d_column(FT, model_settings["qt"], model_settings["Nd"], model_settings["rhod"], coord.z),
+        coord -> KCS.init_1d_column(
+            FT,
+            model_settings["qt"],
+            model_settings["Nd"],
+            model_settings["k"],
+            model_settings["rhod"],
+            coord.z,
+        ),
         coord,
     )
     Y = KCS.initialise_state(precip, init)

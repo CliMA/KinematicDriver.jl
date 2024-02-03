@@ -36,6 +36,7 @@ function run_KiD_col_sed_simulation(::Type{FT}, opts) where {FT}
         Int(opts["precip_sinks"]),
         FT(opts["prescribed_Nd"]),
     )
+    toml_dict["νc_SB2006"]["value"] = opts["k"]
     # Create Kinematic1D model parameters
     # (some of the CloudMicrophysics.jl parameters structs are created later based on model choices)
     kid_params = create_kid_parameters(toml_dict)
@@ -68,7 +69,8 @@ function run_KiD_col_sed_simulation(::Type{FT}, opts) where {FT}
     )
 
     # Create the initial condition profiles
-    init = map(coord -> KCS.init_1d_column(FT, opts["qt"], opts["prescribed_Nd"], opts["rhod"], coord.z), coord)
+    init =
+        map(coord -> KCS.init_1d_column(FT, opts["qt"], opts["prescribed_Nd"], opts["k"], opts["rhod"], coord.z), coord)
 
     # Create state vector and apply initial condition
     Y = KCS.initialise_state(precip, init)
@@ -110,6 +112,7 @@ end
 opts = Dict(
     "qt" => 1e-3,
     "prescribed_Nd" => 1e8,
+    "k" => 2.0,
     "rhod" => 1.0,
     "precipitation_choice" => "Precipitation1M",
     "rain_formation_choice" => "CliMA_1M",

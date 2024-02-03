@@ -2,6 +2,7 @@ module K1DColSedModel
 
 import OrdinaryDiffEq
 import NCDatasets
+import SpecialFunctions as SF
 import ClimaCore
 import CloudMicrophysics as CM
 

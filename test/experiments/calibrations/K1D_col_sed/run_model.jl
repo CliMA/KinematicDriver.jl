@@ -34,6 +34,4 @@ KCP.compare_model_and_obs_contours(
 model_error = KCP.compute_error_metrics(u_values, u_names, config, ref_stats)
 println("loss = ", model_error.loss, ",\t mse_m = ", model_error.mse_m, ",\t mse_s = ", model_error.mse_s)
 
-# plot(ref_stats.y_full)
-# plot!(Gn, legend = false)
 plot!()
