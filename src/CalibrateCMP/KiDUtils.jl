@@ -137,6 +137,7 @@ end
 function run_KiD_col_sed(u::Array{FT, 1}, u_names::Array{String, 1}, model_settings::Dict)
 
     update_parameters!(model_settings, u, u_names)
+    apply_param_dependency!(model_settings)
     model_settings["toml_dict"]["νc_SB2006"]["value"] = model_settings["k"]
     kid_params = create_kid_parameters(
         FT,
@@ -226,6 +227,15 @@ end
 function update_parameters!(model_settings::Dict, u::Array{FT, 1}, u_names::Array{String, 1})
     for (i, name) in enumerate(u_names)
         model_settings["toml_dict"][name]["value"] = u[i]
+    end
+end
+
+function apply_param_dependency!(model_settings::Dict)
+    if "param_dependencies" in keys(model_settings)
+        for dep in model_settings["param_dependencies"]
+            model_settings["toml_dict"][dep.dependant]["value"] =
+                model_settings["toml_dict"][dep.base]["value"] * dep.ratio
+        end
     end
 end
 

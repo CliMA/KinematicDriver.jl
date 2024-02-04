@@ -27,8 +27,6 @@ function get_prior_config()
         "kcr_SB2006" => (mean = 5.25, var = 1.3125, lbound = 0.0, ubound = Inf),
         "krr_SB2006" => (mean = 7.12, var = 1.78, lbound = 0.0, ubound = Inf),
         "aR_tv_SB2006" => (mean = 9.65, var = 2.4125, lbound = 0.0, ubound = Inf),
-        "bR_tv_SB2006" => (mean = 10.3, var = 2.575, lbound = 0.0, ubound = Inf),
-        "cR_tv_SB2006" => (mean = 600.0, var = 150.0, lbound = 0.0, ubound = Inf),
     )
     return config
 end
@@ -130,6 +128,7 @@ function get_model_config()
     # Define default parameters
     FT = Float64
     config["toml_dict"] = CP.create_toml_dict(FT, dict_type = "alias")
+    config["param_dependencies"] = [(base = "aR_tv_SB2006", dependant = "bR_tv_SB2006", ratio = 10.3 / 9.65)]
 
     return config
 end
