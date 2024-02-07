@@ -10,6 +10,7 @@ import LinearAlgebra
 import CLIMAParameters
 import ClimaCore
 import Thermodynamics
+import CloudMicrophysics
 import Kinematic1D
 
 const kid_dir = pkgdir(Kinematic1D)
@@ -20,12 +21,18 @@ include(joinpath(kid_dir, "test", "create_parameters.jl"))
 const IP = Interpolations
 const CC = ClimaCore
 const KID = Kinematic1D
+const CMP = CloudMicrophysics.Parameters
 
 const FT = Float64
 
 # Create parameters overwrite the defaults to match PySDM
-toml_dict = CP.create_toml_dict(FT; dict_type = "alias")
-params = create_parameter_set(@__DIR__, toml_dict, FT)
+default_toml_dict = CP.create_toml_dict(FT, dict_type = "alias")
+toml_dict = override_toml_dict(@__DIR__, default_toml_dict)
+thermo_params = create_thermodynamics_parameters(toml_dict)
+kid_params = create_kid_parameters(toml_dict)
+air_params = CMP.AirProperties(FT, toml_dict)
+activation_params = CMP.AerosolActivationParameters(FT, toml_dict)
+params = (kid_params, thermo_params, air_params, activation_params)
 
 function compare_profiles(; is_dry_flag::Bool)
     # Computational domain ...
@@ -38,9 +45,9 @@ function compare_profiles(; is_dry_flag::Bool)
     face_coord = CC.Fields.coordinate_field(face_space)
 
     # Solve the initial value problem for density profile
-    ρ_profile = KID.ρ_ivp(FT, params, dry = is_dry_flag)
+    ρ_profile = KID.ρ_ivp(FT, kid_params, thermo_params, dry = is_dry_flag)
     # Create the initial condition profiles
-    init = map(coord -> KID.init_1d_column(FT, params, ρ_profile, coord.z, dry = is_dry_flag), coord)
+    init = map(coord -> KID.init_1d_column(FT, kid_params, thermo_params, ρ_profile, coord.z, dry = is_dry_flag), coord)
 
     # Store the CliMA KID initial profiles
     z_centers = parent(CC.Fields.coordinate_field(space))

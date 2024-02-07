@@ -15,10 +15,6 @@ steps:
   - label: "Init environment :computer:"
     key: "init_cpu_env"
     command:
-      - "julia --project -e 'using Pkg; Pkg.instantiate(;verbose=true)'"
-      - "julia --project -e 'using Pkg; Pkg.precompile()'"
-      - "julia --project -e 'using Pkg; Pkg.status()'"
-
       - "julia --project=test -e 'using Pkg; Pkg.develop(path = \".\")'"
       - "julia --project=test -e 'using Pkg; Pkg.instantiate(;verbose=true)'"
       - "julia --project=test -e 'using Pkg; Pkg.precompile()'"
@@ -92,13 +88,21 @@ steps:
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=EquilibriumMoisture --prognostic_vars=RhodTQ --precipitation_choice=Precipitation1M --rain_formation_scheme_choice LD2004 --prescribed_Nd 1e8"
         artifact_paths: "test/experiments/KiD_driver/Output_EquilibriumMoisture_RhodTQ_Precipitation1M_LD2004/figures/*"
 
+      - label: ":crystal_ball: Experiments: non equil (fixed rhod and T) + VarTimeScaleAcnv "
+        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --prognostic_vars=RhodTQ --precipitation_choice=Precipitation1M --rain_formation_scheme_choice VarTimeScaleAcnv --prescribed_Nd 1e8"
+        artifact_paths: "test/experiments/KiD_driver/Output_EquilibriumMoisture_RhodTQ_Precipitation1M_VarTimeScaleAcnv/figures/*"
+
       - label: ":crystal_ball: Experiments: equil (fixed rhod and T) + SB2006 "
-        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=EquilibriumMoisture --prognostic_vars=RhodTQ --precipitation_choice=Precipitation2M --rain_formation_scheme_choice SB2006 --prescribed_Nd 1e8"
+        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=EquilibriumMoisture --prognostic_vars=RhodTQ --precipitation_choice=Precipitation2M --rain_formation_scheme_choice SB2006 --sedimentation_scheme_choice SB2006 --prescribed_Nd 1e8"
         artifact_paths: "test/experiments/KiD_driver/Output_EquilibriumMoisture_RhodTQ_Precipitation2M_SB2006/figures/*"
 
       - label: ":crystal_ball: Experiments: non equil (fixed rhod and T) + SB2006 "
-        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --prognostic_vars=RhodTQ --precipitation_choice=Precipitation2M --rain_formation_scheme_choice SB2006 --prescribed_Nd 1e8"
+        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --prognostic_vars=RhodTQ --precipitation_choice=Precipitation2M --rain_formation_scheme_choice SB2006 --sedimentation_scheme_choice SB2006 --prescribed_Nd 1e8"
         artifact_paths: "test/experiments/KiD_driver/Output_NonEquilibriumMoisture_RhodTQ_Precipitation2M_SB2006/figures/*"
+
+      - label: ":crystal_ball: Experiments: non equil (fixed rhod and T) + SB2006 + Chen2022 "
+        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --prognostic_vars=RhodTQ --precipitation_choice=Precipitation2M --rain_formation_scheme_choice SB2006 --sedimentation_scheme_choice Chen2022 --prescribed_Nd 1e8"
+        artifact_paths: "test/experiments/KiD_driver/Output_NonEquilibriumMoisture_RhodTQ_Precipitation2M_SB2006_Chen2022/figures/*"
 
       - label: ":crystal_ball: Experiments: perfect-model calibration + EKP "
         command: "julia --color=yes --project=test test/experiments/calibrations/run_calibration.jl"

@@ -25,11 +25,15 @@ function parse_commandline()
         arg_type = String
         default = "Precipitation1M"
         "--rain_formation_scheme_choice"
-        help = "Rain formation scheme choice: CliMA_1M, KK2000, B1994, TC1980, LD2004 for Precipitation1M; and SB2006 for Precipitation2M"
+        help = "Rain formation scheme choice: CliMA_1M, KK2000, B1994, TC1980, LD2004, VarTimeScaleAcnv for Precipitation1M; and SB2006 for Precipitation2M"
+        arg_type = String
+        default = "CliMA_1M"
+        "--sedimentation_scheme_choice"
+        help = "Sedimentation scheme choice: CliMA_1M, Chen2022 for Precipitation1M; and Chen2022, SB2006 for Precipitation2M"
         arg_type = String
         default = "CliMA_1M"
         "--prescribed_Nd"
-        help = "Prescribed number of cloud droplets (used in KK2000, B1994, TC1980, LD2004 and SB2006 rain formation schemes)"
+        help = "Prescribed number of cloud droplets (used in KK2000, B1994, TC1980, LD2004, VarTimeScaleAcnv and SB2006 rain formation schemes)"
         arg_type = Float64
         default = Float64(1e8)
         "--plotting_flag"

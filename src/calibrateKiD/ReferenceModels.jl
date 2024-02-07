@@ -109,32 +109,34 @@ function get_single_obs_field(
 
     _output = Dict()
 
+    rv_name = "qv" in keys(_data_pysdm) ? "qv" : "water_vapour_mixing_ratio"
+
     for var in variables
         if var == "qt"
-            _r_tot = _data_pysdm["qv"] .+ _data_pysdm["qc"] .* 1e-3
+            _r_tot = _data_pysdm[rv_name] .+ _data_pysdm["qc"] .* 1e-3
             _data = _r_tot ./ (1 .+ _r_tot)
         elseif var == "qv"
-            _r_tot = _data_pysdm["qv"] .+ _data_pysdm["qc"] .* 1e-3
-            _data = _data_pysdm["qv"] ./ (1 .+ _r_tot)
+            _r_tot = _data_pysdm[rv_name] .+ _data_pysdm["qc"] .* 1e-3
+            _data = _data_pysdm[rv_name] ./ (1 .+ _r_tot)
         elseif var == "ql"
-            _r_tot = _data_pysdm["qv"] .+ _data_pysdm["qc"] .* 1e-3
+            _r_tot = _data_pysdm[rv_name] .+ _data_pysdm["qc"] .* 1e-3
             _data = _data_pysdm["qc"] .* 1e-3 ./ (1 .+ _r_tot)
         elseif var == "qr"
-            _r_tot = _data_pysdm["qv"] .+ _data_pysdm["qc"] .* 1e-3
+            _r_tot = _data_pysdm[rv_name] .+ _data_pysdm["qc"] .* 1e-3
             _data = _data_pysdm["qr"] .* 1e-3 ./ (1 .+ _r_tot)
         elseif var == "qlr"
-            _r_tot = _data_pysdm["qv"] .+ _data_pysdm["qc"] .* 1e-3
+            _r_tot = _data_pysdm[rv_name] .+ _data_pysdm["qc"] .* 1e-3
             _data = (_data_pysdm["qc"] .+ _data_pysdm["qr"]) .* 1e-3 ./ (1 .+ _r_tot)
         elseif var == "qtr"
-            _r_tot = _data_pysdm["qv"] .+ _data_pysdm["qc"] .* 1e-3
+            _r_tot = _data_pysdm[rv_name] .+ _data_pysdm["qc"] .* 1e-3
             _data = (_r_tot .+ _data_pysdm["qr"] .* 1e-3) ./ (1 .+ _r_tot)
         elseif var == "rho"
-            _r_tot = _data_pysdm["qv"] .+ _data_pysdm["qc"] .* 1e-3
+            _r_tot = _data_pysdm[rv_name] .+ _data_pysdm["qc"] .* 1e-3
             _data = _data_pysdm["rhod"] .* (1 .+ _r_tot)
         elseif var == "rt"
-            _data = _data_pysdm["qv"] .+ _data_pysdm["qc"] .* 1e-3
+            _data = _data_pysdm[rv_name] .+ _data_pysdm["qc"] .* 1e-3
         elseif var == "rv"
-            _data = _data_pysdm["qv"]
+            _data = _data_pysdm[rv_name]
         elseif var == "rl"
             _data = _data_pysdm["qc"] .* 1e-3
         elseif var == "rr"
@@ -142,13 +144,17 @@ function get_single_obs_field(
         elseif var == "rlr"
             _data = (_data_pysdm["qc"] .+ _data_pysdm["qr"]) .* 1e-3
         elseif var == "rtr"
-            _data = _data_pysdm["qv"] .+ (_data_pysdm["qc"] .+ _data_pysdm["qr"]) .* 1e-3
+            _data = _data_pysdm[rv_name] .+ (_data_pysdm["qc"] .+ _data_pysdm["qr"]) .* 1e-3
         elseif var == "Nl"
             _data = _data_pysdm["nc"]
         elseif var == "Nr"
             _data = _data_pysdm["nr"]
         elseif var == "Na"
             _data = _data_pysdm["na"]
+        elseif var == "rainrate"
+            _data =
+                _data_pysdm["qr"] .* 1e-3 .* _data_pysdm["rhod"] .* _data_pysdm["rain averaged terminal velocity"] .*
+                FT(3600)
         else
             _data = _data_pysdm[var]
         end
