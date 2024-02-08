@@ -2,7 +2,8 @@
     Prescribed momentum flux as a function of time
 """
 @inline function ρw_helper(t, w1, t1)
-    return t < t1 ? w1 * sin(pi * t / t1) : 0.0
+    return t < t1 ? w1 : 0.0
+    # return t < t1 ? w1 * sin(pi * t / t1) : 0.0
 end
 
 """
@@ -22,8 +23,8 @@ end
     ρ,
     ρw,
     dt,
+    act_mask,
 )
-
     FT = eltype(q_tot)
     S_Nl::FT = FT(0)
     S_Na::FT = FT(0)
@@ -31,21 +32,34 @@ end
     q = TD.PhasePartition(q_tot, q_liq, FT(0))
     S::FT = TD.supersaturation(thermo_params, q, ρ, T, TD.Liquid())
 
-    if (S < FT(0))
+    r_dry = kid_params.r_dry
+    std_dry = kid_params.std_dry
+    κ = kid_params.kappa
+
+    # TODO
+    ρw_c = CC.Operators.InterpolateF2C().(ρw).w
+    w = ρw_c / ρ
+
+    if (S < FT(0) || w <= FT(0) || N_aer <= FT(0) || act_mask == FT(0))
         return (; S_Nl, S_Na)
     end
 
-    (; r_dry, std_dry, κ) = kid_params
-    w = ρw / ρ
+    # scheme = CMT.ARG2000Type()
+    #scheme = CMAA.MLEmulatedAerosolActivation(joinpath(pkgdir(CM), "aerosol_activation_emulators", "1modal_nn_machine_naive.jls"))
 
-    aerosol_distribution = CMAM.AerosolDistribution((CMAM.Mode_κ(r_dry, std_dry, N_aer_0, FT(1), FT(1), FT(0), κ, 1),))
-    N_act = CMAA.N_activated_per_mode(activation_params, aerosol_distribution, air_params, thermo_params, T, p, w, q)[1]
+    aerosol_distribution =
+        CMAM.AerosolDistribution(
+            (CMAM.Mode_κ(r_dry, std_dry, N_aer_0, FT(1), FT(1), FT(0), κ, 1),))
+    N_act = CMAA.N_activated_per_mode(
+        activation_params, aerosol_distribution, air_params, thermo_params,
+        T, p, w, q)#[1]
 
     if isnan(N_act)
         return (; S_Nl, S_Na)
     end
 
     S_Nl = max(0, N_act - (N_aer_0 - N_aer)) / dt
+    # S_Nl = min(N_act, N_aer) / dt
     S_Na = -S_Nl
 
     return (; S_Nl, S_Na)

@@ -609,23 +609,41 @@ end
     FT = eltype(Y.ρq_rai)
 
     aux.aerosol_variables.N_aer = Y.N_aer
-    tmp = @. aerosol_activation_helper(
-        aux.kid_params,
-        aux.thermo_params,
-        aux.air_params,
-        aux.activation_params,
-        aux.moisture_variables.q_tot,
-        aux.moisture_variables.q_liq,
-        aux.aerosol_variables.N_aer,
-        aux.aerosol_variables.N_aer_0,
-        aux.moisture_variables.T,
-        aux.moisture_variables.p,
-        aux.moisture_variables.ρ,
-        CC.Operators.InterpolateF2C().(aux.prescribed_velocity.ρw.components.data.:1),
-        aux.TS.dt,
-    )
-    aux.aerosol_variables.S_N_aer = tmp.S_Na
-    aux.precip_sources.S_N_liq = tmp.S_Nl
+
+    S =
+        TD.supersaturation.(
+            aux.thermo_params,
+            TD.PhasePartition.(aux.moisture_variables.q_tot, aux.moisture_variables.q_liq),
+            aux.moisture_variables.ρ,
+            aux.moisture_variables.T,
+            TD.Liquid(),
+        )
+    ispos(x) = x > FT(0) ? FT(1) : FT(0)
+    act_mask =
+        ispos.(parent(S)) .* ispos.(parent(CC.Operators.InterpolateF2C().(CC.Operators.GradientC2F().(sign.(S)))))
+    copyto!(parent(S), act_mask)
+
+    #@info("***********************************00")
+    #tmp = @. aerosol_activation_helper(
+    #    aux.kid_params,
+    #    aux.thermo_params,
+    #    aux.air_params,
+    #    aux.activation_params,
+    #    aux.moisture_variables.q_tot,
+    #    aux.moisture_variables.q_liq,
+    #    aux.aerosol_variables.N_aer,
+    #    aux.aerosol_variables.N_aer_0,
+    #    aux.moisture_variables.T,
+    #    aux.moisture_variables.p,
+    #    aux.moisture_variables.ρ,
+    #    aux.prescribed_velocity.ρw,
+    #    aux.TS.dt,
+    #    S,
+    #)
+    #@info("***********************************1")
+
+    aux.aerosol_variables.S_N_aer = FT(0)#tmp.S_Na
+    aux.precip_sources.S_N_liq = FT(0)#tmp.S_Nl
 
     aux.precip_variables.q_rai = Y.ρq_rai ./ aux.moisture_variables.ρ
     aux.precip_variables.N_liq = Y.N_liq
@@ -746,6 +764,22 @@ end
     If = CC.Operators.InterpolateC2F()
     ∂ = CC.Operators.DivergenceF2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
 
+    # TODO - liq is not a prognostic variable in equilibrium moisture models
+    #@. dY.N_liq +=
+    #    -∂(
+    #        (aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ)) *
+    #        If(Y.N_liq),
+    #    )
+    #@. dY.ρq_liq +=
+    #    -∂(
+    #        (aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ)) *
+    #        If(Y.ρq_liq),
+    #    )
+    @. dY.N_aer +=
+        -∂(
+            (aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ)) *
+            If(Y.N_aer),
+        )
     @. dY.N_rai +=
         -∂(
             (aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) + aux.precip_velocities.term_vel_N_rai) *
@@ -758,6 +792,12 @@ end
         )
 
     fcc = CC.Operators.FluxCorrectionC2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
+    #@. dY.N_liq +=
+    #    fcc((aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ)), Y.N_liq)
+    #@. dY.ρq_liq +=
+    #    fcc((aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ)), Y.ρq_liq)
+    @. dY.N_aer +=
+        fcc((aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ)), Y.N_aer)
     @. dY.N_rai +=
         fcc((aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) + aux.precip_velocities.term_vel_N_rai), Y.N_rai)
     @. dY.ρq_rai +=

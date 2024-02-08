@@ -24,6 +24,9 @@ function NetCDFIO_Stats(
         :q_ice => "q_ice",
         :q_rai => "q_rai",
         :q_sno => "q_sno",
+        :N_aer => "N_aer",
+        :N_liq => "N_liq",
+        :N_rai => "N_rai",
     ),
 )
     FT = Float64
@@ -72,7 +75,7 @@ function KiD_output(aux, t::FT) where {FT <: Real}
         @inbounds ts_t[end + 1] = t::FT
 
         # write profiles
-        for field in (aux.moisture_variables, aux.precip_variables)
+        for field in (aux.moisture_variables, aux.precip_variables, aux.aerosol_variables)
             for var in keys(Stats.output_profiles)
                 if var in propertynames(field)
                     prop = getproperty(field, var)

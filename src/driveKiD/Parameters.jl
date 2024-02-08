@@ -6,6 +6,8 @@
 """
 module Parameters
 
+import CLIMAParameters as CP
+
 abstract type AbstractKinematicParameters end
 const AKP = AbstractKinematicParameters
 
@@ -23,17 +25,26 @@ Base.@kwdef struct KinematicParameters{FT} <: AKP
     κ::FT
 end
 
-w1(ps::AKP) = ps.w1
-t1(ps::AKP) = ps.t1
-precip_sources(ps::AKP) = ps.precip_sources
-precip_sinks(ps::AKP) = ps.precip_sinks
-prescribed_Nd(ps::AKP) = ps.prescribed_Nd
-#aerosol parameters for 2M scheme
-r_dry(ps::AKP) = ps.r_dry
-std_dry(ps::AKP) = ps.std_dry
-κ(ps::AKP) = ps.κ
-
+function KinematicParameters(
+    ::Type{FT},
+    toml_dict::CP.AbstractTOMLDict = CP.create_toml_dict(FT),
+) where {FT}
+    (; data) = toml_dict
+    return KinematicParameters(
+        FT(data["prescribed_flow_w1"]["value"]),
+        FT(data["prescribed_flow_t1"]["value"]),
+        FT(data["surface_pressure"]["value"]),
+        Int(data["precipitation_sources_flag"]["value"]),
+        Int(data["precipitation_sinks_flag"]["value"]),
+        FT(data["prescribed_Nd"]["value"]),
+        Int(data["qtot_flux_correction_flag"]["value"]),
+        FT(data["r_dry"]["value"]),
+        FT(data["std_dry"]["value"]),
+        FT(data["kappa"]["value"]),
+    )
+end
 Base.eltype(::KinematicParameters{FT}) where {FT} = FT
 # Magic needed to get rid of length(ps) error
 Base.broadcastable(ps::AKP) = Ref(ps)
-end
+
+end #module
