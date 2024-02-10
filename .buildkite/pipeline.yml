@@ -1,5 +1,5 @@
 env:
-  JULIA_VERSION: "1.8.1"
+  JULIA_VERSION: "1.9.0"
   OPENMPI_VERSION: "4.0.4"
   CUDA_VERSION: "11.2"
   OPENBLAS_NUM_THREADS: 1
@@ -122,4 +122,5 @@ steps:
 
       - label: ":crystal_ball: Experiments: 2D setup"
         command: "julia --color=yes --project=test test/experiments/Ki2D_driver/run_kinematic2d_simulations.jl"
-        artifact_paths: "test/experiments/Ki2D_driver/Output_NonEquilibriumMoisture_RhodTQ_Precipitation1M_CliMA_1M/figures/*"
+        artifact_paths: "test/experiments/Ki2D_driver/Output_NonEquilibriumMoisture_RhodTQ_Precipitation1M_CliMA_1M/*"
+        Output_NonEquilibriumMoisture_RhodTQ_Precipitation1M_CliMA_1M
