@@ -8,7 +8,6 @@ Kinematic 1D driver
 | **Documentation**    | [![dev][docs-dev-img]][docs-dev-url]          |
 | **GHA CI**           | [![gha ci][gha-ci-img]][gha-ci-url]           |
 | **Code Coverage**    | [![codecov][codecov-img]][codecov-url]        |
-| **Bors enabled**     | [![bors][bors-img]][bors-url]                 |
 
 [docs-bld-img]: https://github.com/CliMA/Kinematic1D.jl/actions/workflows/docs.yml/badge.svg
 [docs-bld-url]: https://github.com/CliMA/Kinematic1D.jl/actions/workflows/docs.yml
@@ -21,9 +20,6 @@ Kinematic 1D driver
 
 [codecov-img]: https://codecov.io/gh/CliMA/Kinematic1D.jl/branch/main/graph/badge.svg
 [codecov-url]: https://codecov.io/gh/CliMA/Kinematic1D.jl
-
-[bors-img]: https://bors.tech/images/badge_small.svg
-[bors-url]: https://app.bors.tech/repositories/45132
 
 ## Installation and running instructions
 
