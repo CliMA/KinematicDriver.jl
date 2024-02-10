@@ -110,7 +110,7 @@ function get_model_config()
     config["t_end"] = 3600.0
     config["dt_calib"] = 600.0
     config["t_calib"] = config["t_ini"]:config["dt_calib"]:config["t_end"]
-    config["w1"] = 3.0
+    config["w1"] = 3.1
     config["t1"] = 600.0
     config["p0"] = 100000.0
     config["Nd"] = 100 * 1e6
