@@ -50,3 +50,7 @@ elseif model_settings["precipitation_choice"] == "Precipitation2M"
     p2 = plot!(legend = false, right_margin = 3Plots.mm)
     plot(p1, p2, size = (800, 300))
 end
+
+path = joinpath(@__DIR__, "output")
+mkpath(path)
+savefig(path * "/result.pdf")
