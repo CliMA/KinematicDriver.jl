@@ -4,24 +4,20 @@ Test that initial profiles match between CliMA and PySDM
 
 using Test
 
-import Interpolations
+import Interpolations as IP
 import LinearAlgebra
 
 import CLIMAParameters
-import ClimaCore
+import ClimaCore as CC
 import Thermodynamics
-import CloudMicrophysics
+import CloudMicrophysics.Parameters as CMP
 import Kinematic1D
+import Kinematic1D.K1DModel as KID
 
 const kid_dir = pkgdir(Kinematic1D)
 include(joinpath(kid_dir, "test", "data_utils.jl"))
 include(joinpath(kid_dir, "test", "plotting_utils.jl"))
 include(joinpath(kid_dir, "test", "create_parameters.jl"))
-
-const IP = Interpolations
-const CC = ClimaCore
-const KID = Kinematic1D
-const CMP = CloudMicrophysics.Parameters
 
 const FT = Float64
 

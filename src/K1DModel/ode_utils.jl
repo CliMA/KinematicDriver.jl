@@ -1,6 +1,19 @@
 """
-  Main building blocks of the KiD model
+  Main buliding blocks for the ODE solver
 """
+
+"""
+   Struct for storing the:
+    - timestepping timestep `dt`,
+    - output timestep `dt_io` and
+    - simulation time `t_max`.
+"""
+
+mutable struct TimeStepping{FT <: Real}
+    dt::FT
+    dt_io::FT
+    t_max::FT
+end
 
 """
    Interface to ClimaCore.jl Returns an instance of space and face space
@@ -175,7 +188,7 @@ function initialise_aux(
         thermo_params = thermo_params,
         kid_params = kid_params,
         air_params = air_params,
-        activation_params,
+        activation_params = activation_params,
         q_surf = q_surf,
         Stats = Stats,
         TS = TS,

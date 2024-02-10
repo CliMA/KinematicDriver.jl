@@ -4,7 +4,7 @@
     param_names = keys(priors_config["parameters"])
 
     #action
-    priors = KID.construct_priors(priors_config["parameters"])
+    priors = KCP.construct_priors(priors_config["parameters"])
 
     #test
     @test priors isa ParameterDistribution{Parameterized, Constraint, String}
@@ -15,12 +15,12 @@ end
 @testset "Initial parameter ensemble" begin
     #setup
     priors_config = get_prior_config()
-    priors = KID.construct_priors(priors_config["parameters"])
+    priors = KCP.construct_priors(priors_config["parameters"])
     n_params = length(keys(priors_config["parameters"]))
     n_ensemble = 20
 
     #action
-    ensemble = KID.initial_parameter_ensemble(priors, n_ensemble, rng_seed = 15)
+    ensemble = KCP.initial_parameter_ensemble(priors, n_ensemble, rng_seed = 15)
 
     #test
     @test ensemble isa Matrix

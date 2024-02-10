@@ -1,9 +1,9 @@
 @testset "Calibrate by Ensemble Kalman Processes and Get results" begin
     #setup
     config = get_config()
-    priors = KID.construct_priors(config["prior"]["parameters"])
-    obs = KID.get_obs!(config)
-    ref_stats_list = KID.make_ref_stats_list(obs, config["statistics"], KID.get_numbers_from_config(config)...)
+    priors = KCP.construct_priors(config["prior"]["parameters"])
+    obs = KCP.get_obs!(config)
+    ref_stats_list = KCP.make_ref_stats_list(obs, config["statistics"], KCP.get_numbers_from_config(config)...)
     n_iter = config["process"]["n_iter"]
     n_cases = length(ref_stats_list)
     batch_size = config["process"]["batch_size"]
@@ -14,8 +14,8 @@
     u_true = [v.mean for v in values(config["prior"]["parameters"])] .* α
 
     #action
-    res = KID.calibrate(KID.EKPStyle(), priors, config, ref_stats_list, verbose = 0)
-    u = KID.get_results(res, priors)
+    res = KCP.calibrate(KCP.EKPStyle(), priors, config, ref_stats_list, verbose = 0)
+    u = KCP.get_results(res, priors)
 
     #test
     @test res isa Vector
@@ -30,8 +30,8 @@
     config["process"]["Δt"] = n_cases / batch_size
 
     #action
-    res = KID.calibrate(KID.EKPStyle(), priors, config, ref_stats_list, verbose = 0)
-    u = KID.get_results(res, priors)
+    res = KCP.calibrate(KCP.EKPStyle(), priors, config, ref_stats_list, verbose = 0)
+    u = KCP.get_results(res, priors)
 
     #test
     @test res isa Vector
@@ -45,7 +45,7 @@
     config["process"]["EKP_method"] = "UKP_"
 
     #test
-    @test_throws Exception KID.calibrate(KID.EKPStyle(), priors, config, ref_stats_list)
+    @test_throws Exception KCP.calibrate(KCP.EKPStyle(), priors, config, ref_stats_list)
 end
 
 @testset "EKP with mini-batching" begin
@@ -72,13 +72,13 @@ end
     α = (1 - config["observations"]["true_values_offset"])
     u_true = [v.mean for v in values(config["prior"]["parameters"])] .* α
 
-    priors = KID.construct_priors(config["prior"]["parameters"])
-    obs = KID.get_obs!(config)
-    ref_stats_list = KID.make_ref_stats_list(obs, config["statistics"], KID.get_numbers_from_config(config)...)
+    priors = KCP.construct_priors(config["prior"]["parameters"])
+    obs = KCP.get_obs!(config)
+    ref_stats_list = KCP.make_ref_stats_list(obs, config["statistics"], KCP.get_numbers_from_config(config)...)
 
     #action
-    res = KID.calibrate(KID.EKPStyle(), priors, config, ref_stats_list, verbose = 0)
-    u = KID.get_results(res, priors)
+    res = KCP.calibrate(KCP.EKPStyle(), priors, config, ref_stats_list, verbose = 0)
+    u = KCP.get_results(res, priors)
 
     #test
     @test norm((u.ϕ_optim .- u_true) ./ u_true) < 0.1
@@ -88,8 +88,8 @@ end
     config["process"]["Δt"] = 10.0
 
     #action
-    res = KID.calibrate(KID.EKPStyle(), priors, config, ref_stats_list, verbose = 0)
-    u = KID.get_results(res, priors)
+    res = KCP.calibrate(KCP.EKPStyle(), priors, config, ref_stats_list, verbose = 0)
+    u = KCP.get_results(res, priors)
 
     #test
     @test norm((u.ϕ_optim .- u_true) ./ u_true) < 0.1
@@ -98,18 +98,18 @@ end
 @testset "Calibrate by Optim and Get results" begin
     #setup
     config = get_config()
-    priors = KID.construct_priors(config["prior"]["parameters"])
-    obs = KID.get_obs!(config)
-    ref_stats_list = KID.make_ref_stats_list(obs, config["statistics"], KID.get_numbers_from_config(config)...)
-    ref_stats = KID.combine_ref_stats(ref_stats_list)
+    priors = KCP.construct_priors(config["prior"]["parameters"])
+    obs = KCP.get_obs!(config)
+    ref_stats_list = KCP.make_ref_stats_list(obs, config["statistics"], KCP.get_numbers_from_config(config)...)
+    ref_stats = KCP.combine_ref_stats(ref_stats_list)
     u_names = collect(keys(config["prior"]["parameters"]))
     α = (1 - config["observations"]["true_values_offset"])
     u_true = [v.mean for v in values(config["prior"]["parameters"])] .* α
 
     #action
-    res = KID.calibrate(KID.OptimStyle(), priors, config, ref_stats, verbose = 0)
-    f = KID.make_optim_loss_function(u_names, priors, config, ref_stats)
-    u = KID.get_results(res, priors)
+    res = KCP.calibrate(KCP.OptimStyle(), priors, config, ref_stats, verbose = 0)
+    f = KCP.make_optim_loss_function(u_names, priors, config, ref_stats)
+    u = KCP.get_results(res, priors)
 
     #test
     @test res isa Optim.MultivariateOptimizationResults
@@ -122,30 +122,30 @@ end
 @testset "Calibrate function for abstract optimization style" begin
     #setup
     config = get_config()
-    priors = KID.construct_priors(config["prior"]["parameters"])
-    obs = KID.get_obs!(config)
-    ref_stats_list = KID.make_ref_stats_list(obs, config["statistics"], KID.get_numbers_from_config(config)...)
-    ref_stats = KID.combine_ref_stats(ref_stats_list)
+    priors = KCP.construct_priors(config["prior"]["parameters"])
+    obs = KCP.get_obs!(config)
+    ref_stats_list = KCP.make_ref_stats_list(obs, config["statistics"], KCP.get_numbers_from_config(config)...)
+    ref_stats = KCP.combine_ref_stats(ref_stats_list)
 
     #test
-    @test_throws Exception KID.calibrate(DummyStyle(), priors, config, ref_stats, verbose = 0)
+    @test_throws Exception KCP.calibrate(DummyStyle(), priors, config, ref_stats, verbose = 0)
 end
 
 @testset "Compute loss" begin
     #setup
     config = get_config()
     config["observations"]["scov_G_ratio"] = 0.0
-    obs = KID.get_obs!(config)
-    ref_stats_list = KID.make_ref_stats_list(obs, config["statistics"], KID.get_numbers_from_config(config)...)
-    ref_stats = KID.combine_ref_stats(ref_stats_list)
+    obs = KCP.get_obs!(config)
+    ref_stats_list = KCP.make_ref_stats_list(obs, config["statistics"], KCP.get_numbers_from_config(config)...)
+    ref_stats = KCP.combine_ref_stats(ref_stats_list)
     u_names = collect(keys(config["prior"]["parameters"]))
     u = [v.mean for v in values(config["prior"]["parameters"])]
     α = (1 - config["observations"]["true_values_offset"])
     u_true = u .* α
 
     #action
-    loss_u = KID.compute_loss(u, u_names, config, ref_stats)
-    loss_u_true = KID.compute_loss(u_true, u_names, config, ref_stats)
+    loss_u = KCP.compute_loss(u, u_names, config, ref_stats)
+    loss_u_true = KCP.compute_loss(u_true, u_names, config, ref_stats)
 
     #test
     @test eps(Float64) * 10.0 < loss_u

@@ -1,4 +1,4 @@
-import Kinematic1D as KID
+import Kinematic1D.K1DModel as KID
 import CLIMAParameters as CP
 import CloudMicrophysics as CM
 import Thermodynamics as TD
@@ -111,12 +111,12 @@ function create_kid_parameters(toml_dict)
     FTD = CP.float_type(toml_dict)
     aliases = ["w1", "t1", "p0", "precip_sources", "precip_sinks", "qtot_flux_correction", "prescribed_Nd", "r_dry", "std_dry", "κ"]
     pairs = CP.get_parameter_values!(toml_dict, aliases, "Kinematic1D")
-    kid_params = KID.Parameters.KinematicParameters{FTD}(; pairs...)
+    kid_params = KID.Parameters.Kinematic1DParameters{FTD}(; pairs...)
     if !isbits(kid_params)
         print(kid_params)
         @warn "The parameter set SHOULD be isbits in order to be stack-allocated."
     end
     return kid_params
 end
-Base.broadcastable(x::KID.Parameters.KinematicParameters) = Ref(x)
+Base.broadcastable(x::KID.Parameters.Kinematic1DParameters) = Ref(x)
 #! format: on

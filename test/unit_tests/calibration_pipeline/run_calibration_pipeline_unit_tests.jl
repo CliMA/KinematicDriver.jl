@@ -3,6 +3,9 @@ using EnsembleKalmanProcesses
 using EnsembleKalmanProcesses.Observations
 using EnsembleKalmanProcesses.ParameterDistributions
 
+import Kinematic1D
+import Kinematic1D.CalibrateCMP as KCP
+
 include("./config.jl")
 include("./generate_fake_pysdm_data.jl")
 include("./test_reference_models.jl")

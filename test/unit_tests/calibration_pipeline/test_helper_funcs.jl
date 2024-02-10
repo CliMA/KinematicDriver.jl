@@ -9,7 +9,7 @@
     maxima = maximum(ensemble_matrix, dims = 2) .+ (n_iter - 1)
 
     #action
-    ext = KID.get_limits(u::Vector{Matrix{Float64}})
+    ext = KCP.get_limits(u::Vector{Matrix{Float64}})
     ext_min = [e[1] for e in ext]
     ext_max = [e[2] for e in ext]
 
@@ -26,7 +26,7 @@ end
     t_calib = [0, 100, 500]
 
     #action
-    filter = KID.make_filter_props(n_elem, t_calib; apply = true, nz_per_filtered_cell = 2, nt_per_filtered_cell = 2)
+    filter = KCP.make_filter_props(n_elem, t_calib; apply = true, nz_per_filtered_cell = 2, nt_per_filtered_cell = 2)
 
     #test
     @test filter["apply"] == true
@@ -40,7 +40,7 @@ end
     config = get_config()
 
     #action
-    nums = KID.get_numbers_from_config(config)
+    nums = KCP.get_numbers_from_config(config)
 
     #test
     @test length(nums) == 4
@@ -53,7 +53,7 @@ end
     b = [5.0 6 7]
 
     #action
-    c = KID.make_block_diagonal_matrix(a, b)
+    c = KCP.make_block_diagonal_matrix(a, b)
 
     #test
     @test size(c) == (3, 5)
@@ -68,13 +68,13 @@ end
     config = get_config()
     ϕ_names = collect(keys(config["prior"]["parameters"]))
     ϕ_values = collect([v.mean for v in values(config["prior"]["parameters"])])
-    obs = KID.get_obs!(config)
-    ref_stats_list = KID.make_ref_stats_list(obs, config["statistics"], KID.get_numbers_from_config(config)...)
-    ref_stats = KID.combine_ref_stats(ref_stats_list)
+    obs = KCP.get_obs!(config)
+    ref_stats_list = KCP.make_ref_stats_list(obs, config["statistics"], KCP.get_numbers_from_config(config)...)
+    ref_stats = KCP.combine_ref_stats(ref_stats_list)
 
     #action
-    me_1 = KID.compute_error_metrics(ϕ_values, ϕ_names, config, obs)
-    me_2 = KID.compute_error_metrics(ϕ_values, ϕ_names, config, ref_stats)
+    me_1 = KCP.compute_error_metrics(ϕ_values, ϕ_names, config, obs)
+    me_2 = KCP.compute_error_metrics(ϕ_values, ϕ_names, config, ref_stats)
 
     #test
     @test me_1.loss ≈ me_2.loss rtol = eps(Float64) * 10.0

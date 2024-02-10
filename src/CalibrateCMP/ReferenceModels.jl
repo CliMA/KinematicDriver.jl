@@ -10,8 +10,7 @@ function get_obs!(config::Dict)
     _times::Array{FT} = collect(config["model"]["t_calib"])
 
     if config["observations"]["data_source"] == "file"
-        _cases::Vector{NamedTuple{(:w1, :p0, :Nd, :dir), Tuple{Float64, Float64, Float64, String}}} =
-            config["observations"]["cases"]
+        _cases::Vector{<:Any} = config["observations"]["cases"]
         _obs::Matrix{FT} =
             get_obs_matrix(_cases, _variables, _heights, _times; apply_filter = config["model"]["filter"]["apply"])
     elseif config["observations"]["data_source"] == "perfect_model"
@@ -25,7 +24,7 @@ function get_obs!(config::Dict)
 end
 
 function get_obs_matrix(
-    cases::Vector{NamedTuple{(:w1, :p0, :Nd, :dir), Tuple{Float64, Float64, Float64, String}}},
+    cases::Vector{<:Any},
     variables::Array{String},
     heights::Array{FT},
     times::Array{FT};
@@ -109,34 +108,46 @@ function get_single_obs_field(
 
     _output = Dict()
 
-    rv_name = "qv" in keys(_data_pysdm) ? "qv" : "water_vapour_mixing_ratio"
+    if "qv" in keys(_data_pysdm)
+        _rv = _data_pysdm["qv"]
+    elseif "water_vapour_mixing_ratio" in keys(_data_pysdm)
+        _rv = _data_pysdm["water_vapour_mixing_ratio"]
+    else
+        _rv = zeros(FT, size(_data_pysdm["qc"]))
+    end
+    if ~("rhod" in keys(_data_pysdm))
+        attr = read_pysdm_data(filename).attributes
+        if "rhod" in keys(attr)
+            _data_pysdm["rhod"] = attr["rhod"]
+        end
+    end
 
     for var in variables
         if var == "qt"
-            _r_tot = _data_pysdm[rv_name] .+ _data_pysdm["qc"] .* 1e-3
+            _r_tot = _rv .+ _data_pysdm["qc"] .* 1e-3
             _data = _r_tot ./ (1 .+ _r_tot)
         elseif var == "qv"
-            _r_tot = _data_pysdm[rv_name] .+ _data_pysdm["qc"] .* 1e-3
-            _data = _data_pysdm[rv_name] ./ (1 .+ _r_tot)
+            _r_tot = _rv .+ _data_pysdm["qc"] .* 1e-3
+            _data = _rv ./ (1 .+ _r_tot)
         elseif var == "ql"
-            _r_tot = _data_pysdm[rv_name] .+ _data_pysdm["qc"] .* 1e-3
+            _r_tot = _rv .+ _data_pysdm["qc"] .* 1e-3
             _data = _data_pysdm["qc"] .* 1e-3 ./ (1 .+ _r_tot)
         elseif var == "qr"
-            _r_tot = _data_pysdm[rv_name] .+ _data_pysdm["qc"] .* 1e-3
+            _r_tot = _rv .+ _data_pysdm["qc"] .* 1e-3
             _data = _data_pysdm["qr"] .* 1e-3 ./ (1 .+ _r_tot)
         elseif var == "qlr"
-            _r_tot = _data_pysdm[rv_name] .+ _data_pysdm["qc"] .* 1e-3
+            _r_tot = _rv .+ _data_pysdm["qc"] .* 1e-3
             _data = (_data_pysdm["qc"] .+ _data_pysdm["qr"]) .* 1e-3 ./ (1 .+ _r_tot)
         elseif var == "qtr"
-            _r_tot = _data_pysdm[rv_name] .+ _data_pysdm["qc"] .* 1e-3
+            _r_tot = _rv .+ _data_pysdm["qc"] .* 1e-3
             _data = (_r_tot .+ _data_pysdm["qr"] .* 1e-3) ./ (1 .+ _r_tot)
         elseif var == "rho"
-            _r_tot = _data_pysdm[rv_name] .+ _data_pysdm["qc"] .* 1e-3
+            _r_tot = _rv .+ _data_pysdm["qc"] .* 1e-3
             _data = _data_pysdm["rhod"] .* (1 .+ _r_tot)
         elseif var == "rt"
-            _data = _data_pysdm[rv_name] .+ _data_pysdm["qc"] .* 1e-3
+            _data = _rv .+ _data_pysdm["qc"] .* 1e-3
         elseif var == "rv"
-            _data = _data_pysdm[rv_name]
+            _data = _rv
         elseif var == "rl"
             _data = _data_pysdm["qc"] .* 1e-3
         elseif var == "rr"
@@ -144,7 +155,7 @@ function get_single_obs_field(
         elseif var == "rlr"
             _data = (_data_pysdm["qc"] .+ _data_pysdm["qr"]) .* 1e-3
         elseif var == "rtr"
-            _data = _data_pysdm[rv_name] .+ (_data_pysdm["qc"] .+ _data_pysdm["qr"]) .* 1e-3
+            _data = _rv .+ (_data_pysdm["qc"] .+ _data_pysdm["qr"]) .* 1e-3
         elseif var == "Nl"
             _data = _data_pysdm["nc"]
         elseif var == "Nr"

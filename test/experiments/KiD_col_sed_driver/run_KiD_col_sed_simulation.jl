@@ -4,29 +4,25 @@ import CLIMAParameters as CP
 import CloudMicrophysics.Parameters as CMP
 import Kinematic1D
 import Kinematic1D.K1DModel as KID
+import Kinematic1D.K1DColSedModel as KCS
 
 include(joinpath(pkgdir(Kinematic1D), "test", "create_parameters.jl"))
-include(joinpath(pkgdir(Kinematic1D), "test", "plotting_utils.jl"))
+include("plotting_utils.jl")
 
-function run_KiD_simulation(::Type{FT}, opts) where {FT}
+function run_KiD_col_sed_simulation(::Type{FT}, opts) where {FT}
 
-    # Equations to solve for mositure and precipitation variables
-    moisture_choice = opts["moisture_choice"]
-    prognostics_choice = opts["prognostic_vars"]
+    # Equations to solve for precipitation variables
     precipitation_choice = opts["precipitation_choice"]
-    rain_formation_choice = opts["rain_formation_scheme_choice"]
-    sedimentation_choice = opts["sedimentation_scheme_choice"]
+    rain_formation_choice = opts["rain_formation_choice"]
+    sedimentation_choice = opts["sedimentation_choice"]
 
     # Decide the output flder name based on options
-    output_folder = string("Output_", moisture_choice, "_", prognostics_choice, "_", precipitation_choice)
+    output_folder = string("Output_", precipitation_choice)
     if precipitation_choice in ["Precipitation1M", "Precipitation2M"]
         output_folder = output_folder * "_" * rain_formation_choice
         if sedimentation_choice == "Chen2022"
             output_folder = output_folder * "_Chen2022"
         end
-    end
-    if opts["qtot_flux_correction"]
-        output_folder = output_folder * "_wFC"
     end
     path = joinpath(@__DIR__, output_folder)
     mkpath(path)
@@ -36,32 +32,17 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     toml_dict = override_toml_dict(
         path,
         default_toml_dict,
-        FT(opts["w1"]),
-        FT(opts["t1"]),
-        FT(opts["p0"]),
         Int(opts["precip_sources"]),
         Int(opts["precip_sinks"]),
-        Int(opts["qtot_flux_correction"]),
         FT(opts["prescribed_Nd"]),
-        FT(opts["r_dry"]),
-        FT(opts["std_dry"]),
-        FT(opts["kappa"]),
     )
-    # Create Thermodynamics.jl and Kinematic1D model parameters
+    toml_dict["νc_SB2006"]["value"] = opts["k"]
+    # Create Kinematic1D model parameters
     # (some of the CloudMicrophysics.jl parameters structs are created later based on model choices)
-    thermo_params = create_thermodynamics_parameters(toml_dict)
     kid_params = create_kid_parameters(toml_dict)
-    air_params = CMP.AirProperties(FT, toml_dict)
-    activation_params = CMP.AerosolActivationParameters(FT, toml_dict)
 
-    moisture, precip = KID.get_moisture_and_precipitation_types(
-        FT,
-        moisture_choice,
-        precipitation_choice,
-        rain_formation_choice,
-        sedimentation_choice,
-        toml_dict,
-    )
+    precip =
+        KCS.get_precipitation_type(FT, precipitation_choice, rain_formation_choice, sedimentation_choice, toml_dict)
 
     # Initialize the timestepping struct
     TS = KID.TimeStepping(FT(opts["dt"]), FT(opts["dt_output"]), FT(opts["t_end"]))
@@ -73,29 +54,29 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
 
     # Initialize the netcdf output Stats struct
     fname = joinpath(path, "Output.nc")
-    Stats = KID.NetCDFIO_Stats(fname, 1.0, parent(face_coord), parent(coord))
+    Stats = KID.NetCDFIO_Stats(
+        fname,
+        1.0,
+        parent(face_coord),
+        parent(coord),
+        output_profiles = Dict(
+            :ρ => "density",
+            :q_liq => "q_liq",
+            :q_rai => "q_rai",
+            :N_liq => "N_liq",
+            :N_rai => "N_rai",
+        ),
+    )
 
-    # Solve the initial value problem for density profile
-    ρ_profile = KID.ρ_ivp(FT, kid_params, thermo_params)
     # Create the initial condition profiles
-    init = map(coord -> KID.init_1d_column(FT, kid_params, thermo_params, ρ_profile, coord.z), coord)
+    init =
+        map(coord -> KCS.init_1d_column(FT, opts["qt"], opts["prescribed_Nd"], opts["k"], opts["rhod"], coord.z), coord)
 
     # Create state vector and apply initial condition
-    Y = KID.initialise_state(moisture, precip, init)
+    Y = KCS.initialise_state(precip, init)
 
     # Create aux vector and apply initial condition
-    aux = KID.initialise_aux(
-        FT,
-        init,
-        kid_params,
-        thermo_params,
-        air_params,
-        activation_params,
-        TS,
-        Stats,
-        face_space,
-        moisture,
-    )
+    aux = KCS.initialise_aux(FT, init, kid_params, TS, Stats, face_space)
 
     # Output the initial condition
     KID.KiD_output(aux, 0.0)
@@ -106,7 +87,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
 
     # Collect all the tendencies into rhs function for ODE solver
     # based on model choices for the solved equations
-    ode_rhs! = KID.make_rhs_function(moisture, precip)
+    ode_rhs! = KCS.make_rhs_function(precip)
 
     # Solve the ODE operator
     problem = ODE.ODEProblem(ode_rhs!, Y, (FT(opts["t_ini"]), FT(opts["t_end"])), aux)
@@ -121,16 +102,29 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     )
 
     # Some basic plots
-    if opts["plotting_flag"] == true
-
-        plot_folder = string("experiments/KiD_driver/", output_folder, "/figures/")
-
-        z_centers = parent(CC.Fields.coordinate_field(space))
-        plot_final_aux_profiles(z_centers, aux, precip, output = plot_folder)
-        plot_animation(z_centers, solver, aux, moisture, precip, KID, output = plot_folder)
-        plot_timeheight(string("experiments/KiD_driver/", output_folder, "/Output.nc"), output = plot_folder)
-    end
+    plot_folder =
+        joinpath(pkgdir(Kinematic1D), string("test/experiments/KiD_col_sed_driver/", output_folder, "/figures/"))
+    plot_timeheight(string(output_folder, "/Output.nc"), output = plot_folder)
 
     return solver
-
 end
+
+opts = Dict(
+    "qt" => 1e-3,
+    "prescribed_Nd" => 1e8,
+    "k" => 2.0,
+    "rhod" => 1.0,
+    "precipitation_choice" => "Precipitation1M",
+    "rain_formation_choice" => "CliMA_1M",
+    "sedimentation_choice" => "CliMA_1M",
+    "precip_sources" => true,
+    "precip_sinks" => false,
+    "z_min" => 0.0,
+    "z_max" => 3000.0,
+    "n_elem" => 60,
+    "dt" => 1.0,
+    "dt_output" => 30.0,
+    "t_ini" => 0.0,
+    "t_end" => 3600.0,
+)
+run_KiD_col_sed_simulation(Float64, opts);
