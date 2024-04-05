@@ -1,4 +1,4 @@
-import CLIMAParameters as CP
+import ClimaParams as CP
 import CloudMicrophysics as CM
 import Thermodynamics as TD
 import Kinematic1D.CalibrateCMP as KCP

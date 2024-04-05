@@ -1,7 +1,7 @@
 name = "Kinematic1D"
 uuid = "a8a3bb05-6cc5-4342-abf6-5cc636bd2b35"
 authors = ["Climate Modeling Alliance"]
-version = "0.5.0"
+version = "0.5.1"
 
 [deps]
 ClimaCore = "d414da3d-4745-48bb-8d80-42e94e092884"

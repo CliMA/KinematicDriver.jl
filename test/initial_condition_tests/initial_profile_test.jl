@@ -7,7 +7,7 @@ using Test
 import Interpolations as IP
 import LinearAlgebra
 
-import CLIMAParameters
+import ClimaParams
 import ClimaCore as CC
 import Thermodynamics
 import CloudMicrophysics.Parameters as CMP

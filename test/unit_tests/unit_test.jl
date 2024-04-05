@@ -5,7 +5,7 @@
 using Test
 import LinearAlgebra as LA
 
-import CLIMAParameters as CP
+import ClimaParams as CP
 import ClimaCore as CC
 import Thermodynamics as TD
 import Kinematic1D
