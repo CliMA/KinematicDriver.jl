@@ -17,6 +17,9 @@ import CloudMicrophysics.Parameters as CMP
 
 const FT = Float64
 
+# common unit tests
+include("./common_unit_test.jl")
+
 # box model unit tests
 include("./box_unit_test.jl")
 

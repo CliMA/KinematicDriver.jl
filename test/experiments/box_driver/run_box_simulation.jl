@@ -21,7 +21,7 @@ function run_box_simulation(::Type{FT}, model_settings) where {FT}
         FT(model_settings["init_N_liq"]),
     )
 
-    precip = BX.get_precipitation_type(FT, precipitation_choice, rain_formation_choice, toml_dict)
+    precip = CO.get_precipitation_type(FT, precipitation_choice, toml_dict; rain_formation_choice = rain_formation_choice)
 
     # Initialize the timestepping struct
     TS = BX.TimeStepping(FT(model_settings["dt"]), FT(model_settings["dt_output"]), FT(model_settings["t_end"]))

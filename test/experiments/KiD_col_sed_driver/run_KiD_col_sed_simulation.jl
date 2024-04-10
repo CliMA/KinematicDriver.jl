@@ -41,8 +41,12 @@ function run_KiD_col_sed_simulation(::Type{FT}, opts) where {FT}
     # (some of the CloudMicrophysics.jl parameters structs are created later based on model choices)
     kid_params = create_kid_parameters(toml_dict)
 
-    precip =
-        KCS.get_precipitation_type(FT, precipitation_choice, rain_formation_choice, sedimentation_choice, toml_dict)
+    precip = CO.get_precipitation_type(
+        FT, 
+        precipitation_choice, 
+        toml_dict, 
+        rain_formation_choice = rain_formation_choice, 
+        sedimentation_choice = sedimentation_choice)
 
     # Initialize the timestepping struct
     TS = KID.TimeStepping(FT(opts["dt"]), FT(opts["dt_output"]), FT(opts["t_end"]))

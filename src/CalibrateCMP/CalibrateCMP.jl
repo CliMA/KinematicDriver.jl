@@ -19,6 +19,7 @@ const EKP = EnsembleKalmanProcesses
 const DS = Distributions
 const FT = Float64
 
+import ..Common as CO
 import ..K1DModel as KD
 import ..K1DColSedModel as KCS
 

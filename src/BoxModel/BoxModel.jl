@@ -12,7 +12,6 @@ include("parameters.jl")
 import .Parameters as BP
 
 include("ode_utils.jl")
-include("helper_functions.jl")
 include("tendency.jl")
 
 end

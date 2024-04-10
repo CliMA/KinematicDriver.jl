@@ -17,43 +17,6 @@ precip_1m = CO.Precipitation1M(
 )
 precip_2m = CO.Precipitation2M(CMP.SB2006(FT, toml_dict), CMP.SB2006VelType(FT, toml_dict))
 
-@testset "Precipitation types" begin
-
-    #setup
-    toml_dict = CP.create_toml_dict(FT; dict_type = "alias")
-    p1m = "Precipitation1M"
-    p2m = "Precipitation2M"
-    rf_1 = "CliMA_1M"
-    rf_2 = "KK2000"
-    rf_3 = "B1994"
-    rf_4 = "LD2004"
-    rf_5 = "TC1980"
-    rf_6 = "VarTimeScaleAcnv"
-    rf_7 = "SB2006"
-
-    #action
-    precip_1m_1 = BX.get_precipitation_type(FT, p1m, rf_1, toml_dict)
-    precip_1m_2 = BX.get_precipitation_type(FT, p1m, rf_2, toml_dict)
-    precip_1m_3 = BX.get_precipitation_type(FT, p1m, rf_3, toml_dict)
-    precip_1m_4 = BX.get_precipitation_type(FT, p1m, rf_4, toml_dict)
-    precip_1m_5 = BX.get_precipitation_type(FT, p1m, rf_5, toml_dict)
-    precip_1m_6 = BX.get_precipitation_type(FT, p1m, rf_6, toml_dict)
-    precip_2m = BX.get_precipitation_type(FT, p2m, rf_7, toml_dict)
-
-    #test
-    @test_throws Exception BX.get_precipitation_type(FT, "_", rf_1, toml_dict)
-    @test_throws Exception BX.get_precipitation_type(FT, p1m, "_", toml_dict)
-    @test_throws Exception BX.get_precipitation_type(FT, p2m, rf_1, toml_dict)
-    @test precip_1m_1 isa CO.Precipitation1M
-    @test precip_1m_2 isa CO.Precipitation1M
-    @test precip_1m_3 isa CO.Precipitation1M
-    @test precip_1m_4 isa CO.Precipitation1M
-    @test precip_1m_5 isa CO.Precipitation1M
-    @test precip_1m_6 isa CO.Precipitation1M
-    @test precip_2m isa CO.Precipitation2M
-
-end
-
 @testset "Make rhs function" begin
 
     rhs = BX.make_rhs_function(precip_1m)

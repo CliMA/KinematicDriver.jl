@@ -30,66 +30,6 @@ precip_1m = CO.Precipitation1M(
 )
 precip_2m = CO.Precipitation2M(CMP.SB2006(FT, toml_dict), CMP.SB2006VelType(FT, toml_dict))
 
-@testset "Moisture and precipitation types" begin
-
-    #setup
-    toml_dict = CP.create_toml_dict(FT; dict_type = "alias")
-    eqm = "EquilibriumMoisture"
-    neqm = "NonEquilibriumMoisture"
-    pn = "NoPrecipitation"
-    p0m = "Precipitation0M"
-    p1m = "Precipitation1M"
-    rf_1 = "CliMA_1M"
-    rf_2 = "KK2000"
-    rf_3 = "B1994"
-    rf_4 = "LD2004"
-    rf_5 = "TC1980"
-    rf_6 = "VarTimeScaleAcnv"
-    st_1 = "CliMA_1M"
-    st_2 = "Chen2022"
-
-    #action
-    moisture_eq, precip_n = K1D.get_moisture_and_precipitation_types(FT, eqm, pn, "_", "_", toml_dict)
-    moisture_neq, precip_n = K1D.get_moisture_and_precipitation_types(FT, neqm, pn, "_", "_", toml_dict)
-    moisture_eq, precip_0m = K1D.get_moisture_and_precipitation_types(FT, eqm, p0m, "_", "_", toml_dict)
-    moisture_eq, precip_1m_1 = K1D.get_moisture_and_precipitation_types(FT, eqm, p1m, rf_1, st_1, toml_dict)
-    moisture_eq, precip_1m_2 = K1D.get_moisture_and_precipitation_types(FT, eqm, p1m, rf_2, st_1, toml_dict)
-    moisture_eq, precip_1m_3 = K1D.get_moisture_and_precipitation_types(FT, eqm, p1m, rf_3, st_1, toml_dict)
-    moisture_eq, precip_1m_4 = K1D.get_moisture_and_precipitation_types(FT, eqm, p1m, rf_4, st_1, toml_dict)
-    moisture_eq, precip_1m_5 = K1D.get_moisture_and_precipitation_types(FT, eqm, p1m, rf_5, st_1, toml_dict)
-    moisture_eq, precip_1m_6 = K1D.get_moisture_and_precipitation_types(FT, eqm, p1m, rf_6, st_1, toml_dict)
-    moisture_eq, precip_1m_7 = K1D.get_moisture_and_precipitation_types(FT, eqm, p1m, rf_6, st_2, toml_dict)
-
-    #setup
-    @test CO.EquilibriumMoisture <: CO.AbstractMoistureStyle
-    @test CO.NonEquilibriumMoisture <: CO.AbstractMoistureStyle
-    @test CO.EquilibriumMoisture_ρθq <: CO.EquilibriumMoisture
-    @test CO.EquilibriumMoisture_ρdTq <: CO.EquilibriumMoisture
-    @test CO.NonEquilibriumMoisture_ρθq <: CO.NonEquilibriumMoisture
-    @test CO.NonEquilibriumMoisture_ρdTq <: CO.NonEquilibriumMoisture
-
-    @test CO.NoPrecipitation <: CO.AbstractPrecipitationStyle
-    @test CO.Precipitation0M <: CO.AbstractPrecipitationStyle
-    @test CO.Precipitation1M <: CO.AbstractPrecipitationStyle
-    @test CO.Precipitation2M <: CO.AbstractPrecipitationStyle
-
-    @test_throws Exception K1D.get_moisture_and_precipitation_types(FT, "_", pn, rf_1, st_1, toml_dict)
-    @test_throws Exception K1D.get_moisture_and_precipitation_types(FT, eqm, "_", rf_1, st_1, toml_dict)
-    @test_throws Exception K1D.get_moisture_and_precipitation_types(FT, eqm, p1m, "_", st_1, toml_dict)
-    @test moisture_eq isa CO.EquilibriumMoisture_ρdTq
-    @test moisture_neq isa CO.NonEquilibriumMoisture_ρdTq
-    @test precip_n isa CO.NoPrecipitation
-    @test precip_0m isa CO.Precipitation0M
-    @test precip_1m_1 isa CO.Precipitation1M
-    @test precip_1m_2 isa CO.Precipitation1M
-    @test precip_1m_3 isa CO.Precipitation1M
-    @test precip_1m_4 isa CO.Precipitation1M
-    @test precip_1m_5 isa CO.Precipitation1M
-    @test precip_1m_6 isa CO.Precipitation1M
-    @test precip_1m_7 isa CO.Precipitation1M
-
-end
-
 @testset "Parameter overwrites" begin
 
     @test TD.Parameters.R_d(thermo_params) == 8.314462618 / 0.02896998

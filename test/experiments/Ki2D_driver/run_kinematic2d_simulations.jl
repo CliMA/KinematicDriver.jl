@@ -55,13 +55,13 @@ function run_K2D_simulation(::Type{FT}, opts) where {FT}
     air_params = CMP.AirProperties(FT, toml_dict)
     activation_params = CMP.AerosolActivationParameters(FT, toml_dict)
 
-    moisture, precip = K1D.get_moisture_and_precipitation_types(
+    moisture = CO.get_moisture_type(FT, moisture_choice, toml_dict)
+    precip = CO.get_precipitation_type(
         FT,
-        moisture_choice,
         precipitation_choice,
-        rain_formation_choice,
-        sedimentation_choice,
         toml_dict,
+        rain_formation_choice = rain_formation_choice,
+        sedimentation_choice = sedimentation_choice,
     )
 
     # Initialize the timestepping struct

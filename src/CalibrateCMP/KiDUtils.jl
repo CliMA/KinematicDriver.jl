@@ -69,13 +69,13 @@ function run_KiD(u::Array{FT, 1}, u_names::Array{String, 1}, model_settings::Dic
         κ = model_settings["κ"],
     )
 
-    moisture, precip = KD.get_moisture_and_precipitation_types(
-        FT,
-        model_settings["moisture_choice"],
+    moisture = CO.get_moisture_type(FT, model_settings["moisture_choice"], model_settings["toml_dict"])
+    precip = CO.get_precipitation_type(
+        FT, 
         model_settings["precipitation_choice"],
-        model_settings["rain_formation_choice"],
-        model_settings["sedimentation_choice"],
-        model_settings["toml_dict"],
+        model_settings["toml_dict"];
+        rain_formation_choice = model_settings["rain_formation_choice"],
+        sedimentation_choice = model_settings["sedimentation_choice"],
     )
 
     TS = KD.TimeStepping(model_settings["dt"], model_settings["dt_calib"], model_settings["t_end"])
@@ -188,7 +188,7 @@ function ODEsolution2Gvector(ODEsol, aux, precip, variables)
     outputs = Float64[]
     for u in ODEsol.u
         for var in variables
-            outputs = [outputs; KD.get_variable_data_from_ODE(u, aux, precip, var)]
+            outputs = [outputs; CO.get_variable_data_from_ODE(u, aux, precip, var)]
         end
     end
 
@@ -211,7 +211,7 @@ function ODEsolution2Gvector(ODEsol, aux, precip, variables, filter)
             u = ODEsol[(i - 1) * _nt_per_filtered_cell + j]
             for (k, var) in enumerate(variables)
                 _single_filtered_cell_data[((k - 1) * _nz + 1):(k * _nz), j] =
-                    KD.get_variable_data_from_ODE(u, aux, precip, var)
+                    CO.get_variable_data_from_ODE(u, aux, precip, var)
             end
         end
         single_var_filtered_vec = [
