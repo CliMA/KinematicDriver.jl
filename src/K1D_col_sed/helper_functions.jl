@@ -9,9 +9,9 @@ function get_precipitation_type(
     toml_dict,
 )
     if precipitation_choice == "NoPrecipitation"
-        precip = K1D.NoPrecipitation()
+        precip = CO.NoPrecipitation()
     elseif precipitation_choice == "Precipitation0M"
-        precip = K1D.Precipitation0M(CMP.Parameters0M(FT, toml_dict))
+        precip = CO.Precipitation0M(CMP.Parameters0M(FT, toml_dict))
     elseif precipitation_choice == "Precipitation1M"
         if sedimentation_choice == "CliMA_1M"
             st = CMP.Blk1MVelType(FT, toml_dict)
@@ -36,7 +36,7 @@ function get_precipitation_type(
         else
             error("Invalid rain formation choice: $rain_formation_choice")
         end
-        precip = K1D.Precipitation1M(
+        precip = CO.Precipitation1M(
             CMP.CloudLiquid(FT, toml_dict),
             CMP.CloudIce(FT, toml_dict),
             CMP.Rain(FT, toml_dict),
@@ -54,7 +54,7 @@ function get_precipitation_type(
             error("Invalid sedimentation choice: $sedimentation_choice")
         end
         if rain_formation_choice == "SB2006"
-            precip = K1D.Precipitation2M(CMP.SB2006(FT, toml_dict), st)
+            precip = CO.Precipitation2M(CMP.SB2006(FT, toml_dict), st)
         else
             error("Invalid rain formation choice: $rain_formation_choice")
         end

@@ -6,7 +6,7 @@
 """
      Helper functions for broadcasting and populating the auxiliary state
 """
-@inline function precip_helper_sources!(ps::Precipitation1M, box_params, q_liq, q_rai, ρ, dt)
+@inline function precip_helper_sources!(ps::CO.Precipitation1M, box_params, q_liq, q_rai, ρ, dt)
 
     rf = ps.rain_formation
 
@@ -45,7 +45,7 @@
 
     return (; S_q_liq, S_q_rai)
 end
-@inline function precip_helper_sources!(ps::Precipitation2M, box_params, q_liq, q_rai, N_liq, N_rai, ρ, dt)
+@inline function precip_helper_sources!(ps::CO.Precipitation2M, box_params, q_liq, q_rai, N_liq, N_rai, ρ, dt)
 
     sb2006 = ps.rain_formation
 
@@ -93,17 +93,17 @@ end
 """
      Precompute the auxiliary values
 """
-@inline function precompute_aux_precip!(sp::AbstractPrecipitationStyle, dY, Y, aux, t)
+@inline function precompute_aux_precip!(sp::CO.AbstractPrecipitationStyle, dY, Y, aux, t)
     error("precompute_aux not implemented for a given $sp")
 end
-@inline function precompute_aux_precip!(ps::Precipitation1M, dY, Y, aux, t)
+@inline function precompute_aux_precip!(ps::CO.Precipitation1M, dY, Y, aux, t)
 
     ρ = BP.ρ_air(aux.box_params) / (1 - Y[1])
     tmp = precip_helper_sources!(ps, aux.box_params, Y[1], Y[2], ρ, aux.TS.dt)
     dY[1] = tmp.S_q_liq
     dY[2] = tmp.S_q_rai
 end
-@inline function precompute_aux_precip!(ps::Precipitation2M, dY, Y, aux, t)
+@inline function precompute_aux_precip!(ps::CO.Precipitation2M, dY, Y, aux, t)
 
     ρ = BP.ρ_air(aux.box_params) / (1 - Y[1])
     tmp = precip_helper_sources!(ps, aux.box_params, Y[1], Y[2], Y[3], Y[4], ρ, aux.TS.dt)

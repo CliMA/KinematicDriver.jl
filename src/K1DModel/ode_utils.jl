@@ -38,7 +38,7 @@ end
    right hand side of the solved ODE. The rhs is assembled via dispatch
    based on the moisture and precipitation types.
 """
-function make_rhs_function(ms::AbstractMoistureStyle, ps::AbstractPrecipitationStyle)
+function make_rhs_function(ms::CO.AbstractMoistureStyle, ps::CO.AbstractPrecipitationStyle)
     function rhs!(dY, Y, aux, t)
 
         for eq_style in [ms, ps]
@@ -63,27 +63,27 @@ end
     ODE solver state variables. The state is created via dispatching
     on different moisture and precipitation types
 """
-function initialise_state(sm::AbstractMoistureStyle, sp::AbstractPrecipitationStyle, initial_profiles)
+function initialise_state(sm::CO.AbstractMoistureStyle, sp::CO.AbstractPrecipitationStyle, initial_profiles)
     error("initailisation not implemented for a given $sm and $sp")
 end
-function initialise_state(::EquilibriumMoisture, ::Union{NoPrecipitation, Precipitation0M}, initial_profiles)
+function initialise_state(::CO.EquilibriumMoisture, ::Union{CO.NoPrecipitation, CO.Precipitation0M}, initial_profiles)
     return CC.Fields.FieldVector(; ρq_tot = initial_profiles.ρq_tot)
 end
-function initialise_state(::NonEquilibriumMoisture, ::Union{NoPrecipitation, Precipitation0M}, initial_profiles)
+function initialise_state(::CO.NonEquilibriumMoisture, ::Union{CO.NoPrecipitation, CO.Precipitation0M}, initial_profiles)
     return CC.Fields.FieldVector(;
         ρq_tot = initial_profiles.ρq_tot,
         ρq_liq = initial_profiles.ρq_liq,
         ρq_ice = initial_profiles.ρq_ice,
     )
 end
-function initialise_state(::EquilibriumMoisture, ::Precipitation1M, initial_profiles)
+function initialise_state(::CO.EquilibriumMoisture, ::CO.Precipitation1M, initial_profiles)
     return CC.Fields.FieldVector(;
         ρq_tot = initial_profiles.ρq_tot,
         ρq_rai = initial_profiles.ρq_rai,
         ρq_sno = initial_profiles.ρq_sno,
     )
 end
-function initialise_state(::NonEquilibriumMoisture, ::Precipitation1M, initial_profiles)
+function initialise_state(::CO.NonEquilibriumMoisture, ::CO.Precipitation1M, initial_profiles)
     return CC.Fields.FieldVector(;
         ρq_tot = initial_profiles.ρq_tot,
         ρq_liq = initial_profiles.ρq_liq,
@@ -92,7 +92,7 @@ function initialise_state(::NonEquilibriumMoisture, ::Precipitation1M, initial_p
         ρq_sno = initial_profiles.ρq_sno,
     )
 end
-function initialise_state(::EquilibriumMoisture, ::Precipitation2M, initial_profiles)
+function initialise_state(::CO.EquilibriumMoisture, ::CO.Precipitation2M, initial_profiles)
     return CC.Fields.FieldVector(;
         ρq_tot = initial_profiles.ρq_tot,
         ρq_rai = initial_profiles.ρq_rai,
@@ -101,7 +101,7 @@ function initialise_state(::EquilibriumMoisture, ::Precipitation2M, initial_prof
         N_aer = initial_profiles.N_aer,
     )
 end
-function initialise_state(::NonEquilibriumMoisture, ::Precipitation2M, initial_profiles)
+function initialise_state(::CO.NonEquilibriumMoisture, ::CO.Precipitation2M, initial_profiles)
     return CC.Fields.FieldVector(;
         ρq_tot = initial_profiles.ρq_tot,
         ρq_liq = initial_profiles.ρq_liq,
@@ -138,9 +138,9 @@ function initialise_aux(
     term_vel_rai = CC.Geometry.WVector.(zeros(FT, face_space))
     term_vel_sno = CC.Geometry.WVector.(zeros(FT, face_space))
 
-    if moisture isa EquilibriumMoisture
+    if moisture isa CO.EquilibriumMoisture
         ts = @. TD.PhaseEquil_ρθq(thermo_params, ip.ρ, ip.θ_liq_ice, ip.q_tot)
-    elseif moisture isa NonEquilibriumMoisture
+    elseif moisture isa CO.NonEquilibriumMoisture
         q = @. TD.PhasePartition(ip.q_tot, ip.q_liq, ip.q_ice)
         ts = @. TD.PhaseNonEquil_ρθq(thermo_params, ip.ρ, ip.θ_liq_ice, q)
     else

@@ -9,6 +9,7 @@ import CLIMAParameters as CP
 import ClimaCore as CC
 import Thermodynamics as TD
 import Kinematic1D
+import Kinematic1D.Common as CO
 import Kinematic1D.BoxModel as BX
 import Kinematic1D.K1DModel as K1D
 import Kinematic1D.K2DModel as K2D

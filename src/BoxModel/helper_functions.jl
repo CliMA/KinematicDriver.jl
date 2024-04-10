@@ -19,16 +19,18 @@ function get_precipitation_type(FT, precipitation_choice::String, rain_formation
         else
             error("Invalid rain formation choice: $rain_formation_choice")
         end
-        precip = Precipitation1M(
+        precip = CO.Precipitation1M(
             CMP.CloudLiquid(FT, toml_dict),
+            CMP.CloudIce(FT, toml_dict),
             CMP.Rain(FT, toml_dict),
+            CMP.Snow(FT, toml_dict),
             CMP.CollisionEff(FT, toml_dict),
             rf,
             CMP.Blk1MVelType(FT, toml_dict),
         )
     elseif precipitation_choice == "Precipitation2M"
         if rain_formation_choice == "SB2006"
-            precip = Precipitation2M(CMP.SB2006(FT, toml_dict))
+            precip = CO.Precipitation2M(CMP.SB2006(FT, toml_dict), CMP.SB2006VelType(FT, toml_dict))
         else
             error("Invalid rain formation choice: $rain_formation_choice")
         end

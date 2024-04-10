@@ -33,10 +33,10 @@ function init_condition(::Type{FT}, kid_params, thermo_params, z; dry = false) w
 
     # density at the surface
     p_0 = kid_params.p0
-    SDM_θ_dry_0 = SDM_θ_dry(thermo_params, θ_0, qv_0)
-    SDM_ρ_dry_0 = SDM_ρ_dry(thermo_params, p_0, qv_0, θ_0)
-    SDM_T_0 = SDM_T(thermo_params, SDM_θ_dry_0, SDM_ρ_dry_0)
-    SDM_ρ_0 = SDM_ρ_of_ρ_dry(SDM_ρ_dry_0, qv_0)
+    SDM_θ_dry_0 = CO.SDM_θ_dry(thermo_params, θ_0, qv_0)
+    SDM_ρ_dry_0 = CO.SDM_ρ_dry(thermo_params, p_0, qv_0, θ_0)
+    SDM_T_0 = CO.SDM_T(thermo_params, SDM_θ_dry_0, SDM_ρ_dry_0)
+    SDM_ρ_0 = CO.SDM_ρ_of_ρ_dry(SDM_ρ_dry_0, qv_0)
 
     return (qv = qv, θ_std = θ_std, ρ_0 = SDM_ρ_0, z_0 = z_0, z_2 = z_2)
 end
@@ -62,10 +62,10 @@ function dρ_dz!(ρ, ode_settings, z)
     cp_d::FT = TD.Parameters.cp_d(thermo_params)
     cp_v::FT = TD.Parameters.cp_v(thermo_params)
 
-    θ_dry::FT = SDM_θ_dry(thermo_params, θ_std, q_vap)
-    ρ_dry::FT = SDM_ρ_dry_of_ρ(ρ, q_vap)
-    T::FT = SDM_T(thermo_params, θ_dry, ρ_dry)
-    p::FT = SDM_p(thermo_params, ρ_dry, T, q_vap)
+    θ_dry::FT = CO.SDM_θ_dry(thermo_params, θ_std, q_vap)
+    ρ_dry::FT = CO.SDM_ρ_dry_of_ρ(ρ, q_vap)
+    T::FT = CO.SDM_T(thermo_params, θ_dry, ρ_dry)
+    p::FT = CO.SDM_p(thermo_params, ρ_dry, T, q_vap)
 
     r_vap::FT = q_vap / (1 - q_vap)
     R_m = R_v / (1 / r_vap + 1) + R_d / (1 + r_vap)
@@ -106,7 +106,7 @@ function init_1d_column(::Type{FT}, kid_params, thermo_params, ρ_profile, z; dr
     θ_std::FT = init_condition(FT, kid_params, thermo_params, z, dry = dry).θ_std
 
     ρ::FT = ρ_profile(z)
-    ρ_dry::FT = SDM_ρ_dry_of_ρ(ρ, q_vap)
+    ρ_dry::FT = CO.SDM_ρ_dry_of_ρ(ρ, q_vap)
     ρ_SDP = 1.225
 
     # assuming no cloud condensate in the initial profile
@@ -114,8 +114,8 @@ function init_1d_column(::Type{FT}, kid_params, thermo_params, ρ_profile, z; dr
     q_tot::FT = q_vap
     ρq_tot::FT = q_tot * ρ
 
-    θ_dry::FT = SDM_θ_dry(thermo_params, θ_std, q_vap)
-    T::FT = SDM_T(thermo_params, θ_dry, ρ_dry)
+    θ_dry::FT = CO.SDM_θ_dry(thermo_params, θ_std, q_vap)
+    T::FT = CO.SDM_T(thermo_params, θ_dry, ρ_dry)
 
     ts = TD.PhaseEquil_ρTq(thermo_params, ρ, T, q_tot)
     p::FT = TD.air_pressure(thermo_params, ts)

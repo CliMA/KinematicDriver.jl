@@ -12,11 +12,11 @@ air_params = CMP.AirProperties(FT, toml_dict)
 activation_params = CMP.AerosolActivationParameters(FT, toml_dict)
 params = (kid_params, thermo_params, air_params, activation_params)
 # ... for cloud condensate options ...
-equil_moist_ρθq = K1D.EquilibriumMoisture_ρθq()
-nequil_moist_ρθq = K1D.NonEquilibriumMoisture_ρθq(CMP.CloudLiquid(FT, toml_dict), CMP.CloudIce(FT, toml_dict))
+equil_moist_ρθq = CO.EquilibriumMoisture_ρθq()
+nequil_moist_ρθq = CO.NonEquilibriumMoisture_ρθq(CMP.CloudLiquid(FT, toml_dict), CMP.CloudIce(FT, toml_dict))
 # # ... and precipitation options
-no_precip = K1D.NoPrecipitation()
-precip_1m = K1D.Precipitation1M(
+no_precip = CO.NoPrecipitation()
+precip_1m = CO.Precipitation1M(
     CMP.CloudLiquid(FT, toml_dict),
     CMP.CloudIce(FT, toml_dict),
     CMP.Rain(FT, toml_dict),
@@ -25,7 +25,7 @@ precip_1m = K1D.Precipitation1M(
     CMP.KK2000(FT, toml_dict),
     CMP.Blk1MVelType(FT, toml_dict),
 )
-precip_2m = K1D.Precipitation2M(CMP.SB2006(FT, toml_dict), CMP.SB2006VelType(FT, toml_dict))
+precip_2m = CO.Precipitation2M(CMP.SB2006(FT, toml_dict), CMP.SB2006VelType(FT, toml_dict))
 
 @testset "Make space" begin
 

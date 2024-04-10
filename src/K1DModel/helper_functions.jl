@@ -63,16 +63,16 @@ function get_moisture_and_precipitation_types(
     toml_dict,
 )
     if moisture_choice == "EquilibriumMoisture"
-        moisture = EquilibriumMoisture_ρdTq()
+        moisture = CO.EquilibriumMoisture_ρdTq()
     elseif moisture_choice == "NonEquilibriumMoisture"
-        moisture = NonEquilibriumMoisture_ρdTq(CMP.CloudLiquid(FT, toml_dict), CMP.CloudIce(FT, toml_dict))
+        moisture = CO.NonEquilibriumMoisture_ρdTq(CMP.CloudLiquid(FT, toml_dict), CMP.CloudIce(FT, toml_dict))
     else
         error("Invalid moisture choice: $moisture_choice")
     end
     if precipitation_choice == "NoPrecipitation"
-        precip = NoPrecipitation()
+        precip = CO.NoPrecipitation()
     elseif precipitation_choice == "Precipitation0M"
-        precip = Precipitation0M(CMP.Parameters0M(FT, toml_dict))
+        precip = CO.Precipitation0M(CMP.Parameters0M(FT, toml_dict))
     elseif precipitation_choice == "Precipitation1M"
         if sedimentation_choice == "CliMA_1M"
             st = CMP.Blk1MVelType(FT, toml_dict)
@@ -97,7 +97,7 @@ function get_moisture_and_precipitation_types(
         else
             error("Invalid rain formation choice: $rain_formation_choice")
         end
-        precip = Precipitation1M(
+        precip = CO.Precipitation1M(
             CMP.CloudLiquid(FT, toml_dict),
             CMP.CloudIce(FT, toml_dict),
             CMP.Rain(FT, toml_dict),
@@ -115,7 +115,7 @@ function get_moisture_and_precipitation_types(
             error("Invalid sedimentation choice: $sedimentation_choice")
         end
         if rain_formation_choice == "SB2006"
-            precip = Precipitation2M(CMP.SB2006(FT, toml_dict), st)
+            precip = CO.Precipitation2M(CMP.SB2006(FT, toml_dict), st)
         else
             error("Invalid rain formation choice: $rain_formation_choice")
         end

@@ -6,17 +6,17 @@
 """
     Zero out previous timestep tendencies and aux.S source terms
 """
-@inline function zero_tendencies!(sp::K1D.AbstractPrecipitationStyle, dY, Y, aux, t)
+@inline function zero_tendencies!(sp::CO.AbstractPrecipitationStyle, dY, Y, aux, t)
     error("zero_tendecies not implemented for a given $sp")
 end
-@inline function zero_tendencies!(::Union{K1D.NoPrecipitation, K1D.Precipitation0M}, dY, Y, aux, t) end
-@inline function zero_tendencies!(::K1D.Precipitation1M, dY, Y, aux, t)
+@inline function zero_tendencies!(::Union{CO.NoPrecipitation, CO.Precipitation0M}, dY, Y, aux, t) end
+@inline function zero_tendencies!(::CO.Precipitation1M, dY, Y, aux, t)
     FT = eltype(Y.ρq_tot)
     @. dY.ρq_tot = FT(0)
     @. dY.ρq_liq = FT(0)
     @. dY.ρq_rai = FT(0)
 end
-@inline function zero_tendencies!(::K1D.Precipitation2M, dY, Y, aux, t)
+@inline function zero_tendencies!(::CO.Precipitation2M, dY, Y, aux, t)
     FT = eltype(Y.ρq_tot)
     @. dY.ρq_tot = FT(0)
     @. dY.ρq_liq = FT(0)
@@ -33,7 +33,7 @@ end
     aux.moisture_variables.ρ = aux.moisture_variables.ρ_dry .+ Y.ρq_tot
 end
 
-@inline function precip_helper_sources!(ps::K1D.Precipitation0M, q_liq, dt)
+@inline function precip_helper_sources!(ps::CO.Precipitation0M, q_liq, dt)
 
     q = TD.PhasePartition(q_liq, q_liq, 0.0)
     S_qt = -min(max(0, (q_liq) / dt), -CM0.remove_precipitation(ps.params, q))
@@ -43,7 +43,7 @@ end
 
     return (; S_q_tot, S_q_liq, S_q_rai)
 end
-@inline function precip_helper_sources!(ps::K1D.Precipitation1M, kid_params, q_liq, q_rai, ρ, dt)
+@inline function precip_helper_sources!(ps::CO.Precipitation1M, kid_params, q_liq, q_rai, ρ, dt)
 
     FT = eltype(q_liq)
     S_q_tot::FT = FT(0)
@@ -87,7 +87,7 @@ end
 
     return (; S_q_tot, S_q_liq, S_q_rai, term_vel_rai)
 end
-@inline function precip_helper_sources!(ps::K1D.Precipitation2M, kid_params, q_liq, q_rai, N_liq, N_rai, ρ, dt)
+@inline function precip_helper_sources!(ps::CO.Precipitation2M, kid_params, q_liq, q_rai, N_liq, N_rai, ρ, dt)
 
     sb2006 = ps.rain_formation
     vel_scheme = ps.sedimentation
@@ -146,10 +146,10 @@ end
 """
      Precompute the auxiliary values
 """
-@inline function precompute_aux_precip!(sp::K1D.AbstractPrecipitationStyle, dY, Y, aux, t)
+@inline function precompute_aux_precip!(sp::CO.AbstractPrecipitationStyle, dY, Y, aux, t)
     error("precompute_aux not implemented for a given $sp")
 end
-@inline function precompute_aux_precip!(::K1D.NoPrecipitation, dY, Y, aux, t)
+@inline function precompute_aux_precip!(::CO.NoPrecipitation, dY, Y, aux, t)
     FT = eltype(Y.ρq_liq)
 
     aux.precip_variables.q_rai = FT(0)
@@ -158,7 +158,7 @@ end
     aux.precip_sources.S_q_liq = FT(0)
     aux.precip_sources.S_q_rai = FT(0)
 end
-@inline function precompute_aux_precip!(ps::K1D.Precipitation0M, dY, Y, aux, t)
+@inline function precompute_aux_precip!(ps::CO.Precipitation0M, dY, Y, aux, t)
     FT = eltype(Y.ρq_liq)
 
     aux.precip_variables.q_rai = FT(0)
@@ -168,7 +168,7 @@ end
     aux.precip_sources.S_q_liq = tmp.S_q_liq
     aux.precip_sources.S_q_rai = tmp.S_q_rai
 end
-@inline function precompute_aux_precip!(ps::K1D.Precipitation1M, dY, Y, aux, t)
+@inline function precompute_aux_precip!(ps::CO.Precipitation1M, dY, Y, aux, t)
     FT = eltype(Y.ρq_liq)
 
     aux.moisture_variables.q_liq = Y.ρq_liq ./ aux.moisture_variables.ρ
@@ -189,7 +189,7 @@ end
     If = CC.Operators.InterpolateC2F(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
     @. aux.precip_velocities.term_vel_rai = CC.Geometry.WVector(If(tmp.term_vel_rai) * FT(-1))
 end
-@inline function precompute_aux_precip!(ps::K1D.Precipitation2M, dY, Y, aux, t)
+@inline function precompute_aux_precip!(ps::CO.Precipitation2M, dY, Y, aux, t)
     FT = eltype(Y.ρq_liq)
 
     aux.moisture_variables.q_liq = Y.ρq_liq ./ aux.moisture_variables.ρ
@@ -220,11 +220,11 @@ end
 """
    Advection Equation: ∂ϕ/dt = -∂(vΦ)
 """
-@inline function advection_tendency!(sp::K1D.AbstractPrecipitationStyle, dY, Y, aux, t)
+@inline function advection_tendency!(sp::CO.AbstractPrecipitationStyle, dY, Y, aux, t)
     error("advection_tendency not implemented for a given $sp")
 end
-@inline function advection_tendency!(::Union{K1D.NoPrecipitation, K1D.Precipitation0M}, dY, Y, aux, t) end
-@inline function advection_tendency!(::K1D.Precipitation1M, dY, Y, aux, t)
+@inline function advection_tendency!(::Union{CO.NoPrecipitation, CO.Precipitation0M}, dY, Y, aux, t) end
+@inline function advection_tendency!(::CO.Precipitation1M, dY, Y, aux, t)
     FT = eltype(Y.ρq_liq)
 
     If = CC.Operators.InterpolateC2F()
@@ -239,7 +239,7 @@ end
 
     return dY
 end
-@inline function advection_tendency!(::K1D.Precipitation2M, dY, Y, aux, t)
+@inline function advection_tendency!(::CO.Precipitation2M, dY, Y, aux, t)
     FT = eltype(Y.ρq_liq)
 
     If = CC.Operators.InterpolateC2F()
@@ -260,11 +260,11 @@ end
 """
    Additional source terms
 """
-@inline function sources_tendency!(sp::K1D.AbstractPrecipitationStyle, dY, Y, aux, t)
+@inline function sources_tendency!(sp::CO.AbstractPrecipitationStyle, dY, Y, aux, t)
     error("sources_tendency not implemented for a given $sp")
 end
-@inline function sources_tendency!(::Union{K1D.NoPrecipitation, K1D.Precipitation0M}, dY, Y, aux, t) end
-@inline function sources_tendency!(::K1D.Precipitation1M, dY, Y, aux, t)
+@inline function sources_tendency!(::Union{CO.NoPrecipitation, CO.Precipitation0M}, dY, Y, aux, t) end
+@inline function sources_tendency!(::CO.Precipitation1M, dY, Y, aux, t)
 
     @. dY.ρq_tot += aux.moisture_variables.ρ * aux.precip_sources.S_q_tot
     @. dY.ρq_liq += aux.moisture_variables.ρ * aux.precip_sources.S_q_liq
@@ -272,7 +272,7 @@ end
 
     return dY
 end
-@inline function sources_tendency!(::K1D.Precipitation2M, dY, Y, aux, t)
+@inline function sources_tendency!(::CO.Precipitation2M, dY, Y, aux, t)
 
     @. dY.ρq_tot += aux.moisture_variables.ρ * aux.precip_sources.S_q_tot
     @. dY.ρq_liq += aux.moisture_variables.ρ * aux.precip_sources.S_q_liq

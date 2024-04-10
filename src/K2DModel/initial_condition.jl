@@ -12,7 +12,7 @@ function init_2d_domain(::Type{FT}, kid_params, thermo_params, ρ_profile, x, z;
     θ_std::FT = K1D.init_condition(FT, kid_params, thermo_params, z, dry = dry).θ_std
 
     ρ::FT = ρ_profile(z)
-    ρ_dry::FT = K1D.SDM_ρ_dry_of_ρ(ρ, q_vap)
+    ρ_dry::FT = CO.SDM_ρ_dry_of_ρ(ρ, q_vap)
     ρ_SDP::FT = 1.225
 
     # assuming no cloud condensate in the initial profile
@@ -20,8 +20,8 @@ function init_2d_domain(::Type{FT}, kid_params, thermo_params, ρ_profile, x, z;
     q_tot::FT = q_vap
     ρq_tot::FT = q_tot * ρ
 
-    θ_dry::FT = K1D.SDM_θ_dry(thermo_params, θ_std, q_vap)
-    T::FT = K1D.SDM_T(thermo_params, θ_dry, ρ_dry)
+    θ_dry::FT = CO.SDM_θ_dry(thermo_params, θ_std, q_vap)
+    T::FT = CO.SDM_T(thermo_params, θ_dry, ρ_dry)
 
     ts = TD.PhaseEquil_ρTq(thermo_params, ρ, T, q_tot)
     p::FT = TD.air_pressure(thermo_params, ts)

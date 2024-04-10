@@ -53,13 +53,13 @@ end
 """
    Advection Equation: ∂ϕ/dt = -∂(vΦ)
 """
-@inline function advection_tendency!(sm::K1D.AbstractMoistureStyle, dY, Y, aux, t)
+@inline function advection_tendency!(sm::CO.AbstractMoistureStyle, dY, Y, aux, t)
     error("advection_tendency not implemented for a given $sm")
 end
-@inline function advection_tendency!(sp::K1D.AbstractPrecipitationStyle, dY, Y, aux, t)
+@inline function advection_tendency!(sp::CO.AbstractPrecipitationStyle, dY, Y, aux, t)
     error("advection_tendency not implemented for a given $sp")
 end
-@inline function advection_tendency!(::K1D.EquilibriumMoisture, dY, Y, aux, t)
+@inline function advection_tendency!(::CO.EquilibriumMoisture, dY, Y, aux, t)
 
     If = CC.Operators.InterpolateC2F()
     ∂ = CC.Operators.DivergenceF2C(
@@ -76,7 +76,7 @@ end
 
     return dY
 end
-@inline function advection_tendency!(::K1D.NonEquilibriumMoisture, dY, Y, aux, t)
+@inline function advection_tendency!(::CO.NonEquilibriumMoisture, dY, Y, aux, t)
     FT = eltype(Y.ρq_tot)
 
     If = CC.Operators.InterpolateC2F()
@@ -115,8 +115,8 @@ end
 
     return dY
 end
-@inline function advection_tendency!(::Union{K1D.NoPrecipitation, K1D.Precipitation0M}, dY, Y, aux, t) end
-@inline function advection_tendency!(::K1D.Precipitation1M, dY, Y, aux, t)
+@inline function advection_tendency!(::Union{CO.NoPrecipitation, CO.Precipitation0M}, dY, Y, aux, t) end
+@inline function advection_tendency!(::CO.Precipitation1M, dY, Y, aux, t)
     FT = eltype(Y.ρq_tot)
 
     If = CC.Operators.InterpolateC2F()
@@ -147,7 +147,7 @@ end
 
     return dY
 end
-@inline function advection_tendency!(::K1D.Precipitation2M, dY, Y, aux, t)
+@inline function advection_tendency!(::CO.Precipitation2M, dY, Y, aux, t)
     FT = eltype(Y.ρq_tot)
 
     If = CC.Operators.InterpolateC2F()

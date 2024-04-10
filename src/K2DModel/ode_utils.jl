@@ -33,7 +33,7 @@ end
    right hand side of the solved ODE. The rhs is assembled via dispatch
    based on the moisture and precipitation types.
 """
-function make_rhs_function(ms::K1D.AbstractMoistureStyle, ps::K1D.AbstractPrecipitationStyle)
+function make_rhs_function(ms::CO.AbstractMoistureStyle, ps::CO.AbstractPrecipitationStyle)
     function rhs!(dY, Y, aux, t)
 
         for eq_style in [ms, ps]
@@ -82,9 +82,9 @@ function initialise_aux(
     term_vel_rai = CC.Geometry.WVector.(zeros(FT, face_space))
     term_vel_sno = CC.Geometry.WVector.(zeros(FT, face_space))
 
-    if moisture isa K1D.EquilibriumMoisture
+    if moisture isa CO.EquilibriumMoisture
         ts = @. TD.PhaseEquil_ρθq(thermo_params, ic.ρ, ic.θ_liq_ice, ic.q_tot)
-    elseif moisture isa K1D.NonEquilibriumMoisture
+    elseif moisture isa CO.NonEquilibriumMoisture
         q = @. TD.PhasePartition(ic.q_tot, ic.q_liq, ic.q_ice)
         ts = @. TD.PhaseNonEquil_ρθq(thermo_params, ic.ρ, ic.θ_liq_ice, q)
     else

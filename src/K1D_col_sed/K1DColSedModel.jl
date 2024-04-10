@@ -13,6 +13,7 @@ const CM0 = CM.Microphysics0M
 const CM1 = CM.Microphysics1M
 const CM2 = CM.Microphysics2M
 
+import ..Common as CO
 import ..K1DModel as K1D
 
 include("./ode_utils.jl")

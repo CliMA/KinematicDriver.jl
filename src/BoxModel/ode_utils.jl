@@ -20,7 +20,7 @@ end
    right hand side of the solved ODE. The rhs is assembled via dispatch
    based on the precipitation types.
 """
-function make_rhs_function(ps::AbstractPrecipitationStyle)
+function make_rhs_function(ps::CO.AbstractPrecipitationStyle)
     function rhs!(dY, Y, aux, t)
         precompute_aux_precip!(ps, dY, Y, aux, t)
     end
@@ -32,13 +32,13 @@ end
     ODE solver state variables. The state is created via dispatching
     on different precipitation types
 """
-function initialise_state(sp::AbstractPrecipitationStyle, model_settings)
+function initialise_state(sp::CO.AbstractPrecipitationStyle, model_settings)
     error("initailisation not implemented for a given $sp")
 end
-function initialise_state(::Precipitation1M, model_settings)
+function initialise_state(::CO.Precipitation1M, model_settings)
     return [model_settings["init_q_liq"], model_settings["init_q_rai"]]
 end
-function initialise_state(::Precipitation2M, model_settings)
+function initialise_state(::CO.Precipitation2M, model_settings)
     return [
         model_settings["init_q_liq"],
         model_settings["init_q_rai"],

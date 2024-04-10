@@ -7,7 +7,7 @@
    right hand side of the solved ODE. The rhs is assembled via dispatch
    based on the moisture and precipitation types.
 """
-function make_rhs_function(ps::K1D.AbstractPrecipitationStyle)
+function make_rhs_function(ps::CO.AbstractPrecipitationStyle)
     function rhs!(dY, Y, aux, t)
 
         zero_tendencies!(ps, dY, Y, aux, t)
@@ -25,20 +25,20 @@ end
     ODE solver state variables. The state is created via dispatching
     on different moisture and precipitation types
 """
-function initialise_state(sp::K1D.AbstractPrecipitationStyle, initial_profiles)
+function initialise_state(sp::CO.AbstractPrecipitationStyle, initial_profiles)
     error("initailisation not implemented for a given $sp")
 end
-function initialise_state(::Union{K1D.NoPrecipitation, K1D.Precipitation0M}, initial_profiles)
+function initialise_state(::Union{CO.NoPrecipitation, CO.Precipitation0M}, initial_profiles)
     return CC.Fields.FieldVector(; ρq_tot = initial_profiles.ρq_tot, ρq_liq = initial_profiles.ρq_liq)
 end
-function initialise_state(::K1D.Precipitation1M, initial_profiles)
+function initialise_state(::CO.Precipitation1M, initial_profiles)
     return CC.Fields.FieldVector(;
         ρq_tot = initial_profiles.ρq_tot,
         ρq_liq = initial_profiles.ρq_liq,
         ρq_rai = initial_profiles.ρq_rai,
     )
 end
-function initialise_state(::K1D.Precipitation2M, initial_profiles)
+function initialise_state(::CO.Precipitation2M, initial_profiles)
     return CC.Fields.FieldVector(;
         ρq_tot = initial_profiles.ρq_tot,
         ρq_liq = initial_profiles.ρq_liq,

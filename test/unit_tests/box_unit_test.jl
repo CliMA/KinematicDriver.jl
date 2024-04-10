@@ -6,14 +6,16 @@ box_params = BX.Parameters.BoxModelParameters(FT(1.22), Int(true), Int(true), FT
 time_stepping = BX.TimeStepping(FT(1), FT(10), FT(100))
 model_settings = Dict("init_q_liq" => 1e-3, "init_q_rai" => FT(0), "init_N_liq" => 1e8, "init_N_rai" => FT(0))
 # precipitation options
-precip_1m = BX.Precipitation1M(
+precip_1m = CO.Precipitation1M(
     CMP.CloudLiquid(FT, toml_dict),
+    CMP.CloudIce(FT, toml_dict),
     CMP.Rain(FT, toml_dict),
+    CMP.Snow(FT, toml_dict),
     CMP.CollisionEff(FT, toml_dict),
     CMP.KK2000(FT, toml_dict),
     CMP.Blk1MVelType(FT, toml_dict),
 )
-precip_2m = BX.Precipitation2M(CMP.SB2006(FT, toml_dict))
+precip_2m = CO.Precipitation2M(CMP.SB2006(FT, toml_dict), CMP.SB2006VelType(FT, toml_dict))
 
 @testset "Precipitation types" begin
 
@@ -38,20 +40,17 @@ precip_2m = BX.Precipitation2M(CMP.SB2006(FT, toml_dict))
     precip_1m_6 = BX.get_precipitation_type(FT, p1m, rf_6, toml_dict)
     precip_2m = BX.get_precipitation_type(FT, p2m, rf_7, toml_dict)
 
-    #setup
-    @test BX.Precipitation1M <: BX.AbstractPrecipitationStyle
-    @test BX.Precipitation2M <: BX.AbstractPrecipitationStyle
-
+    #test
     @test_throws Exception BX.get_precipitation_type(FT, "_", rf_1, toml_dict)
     @test_throws Exception BX.get_precipitation_type(FT, p1m, "_", toml_dict)
     @test_throws Exception BX.get_precipitation_type(FT, p2m, rf_1, toml_dict)
-    @test precip_1m_1 isa BX.Precipitation1M
-    @test precip_1m_2 isa BX.Precipitation1M
-    @test precip_1m_3 isa BX.Precipitation1M
-    @test precip_1m_4 isa BX.Precipitation1M
-    @test precip_1m_5 isa BX.Precipitation1M
-    @test precip_1m_6 isa BX.Precipitation1M
-    @test precip_2m isa BX.Precipitation2M
+    @test precip_1m_1 isa CO.Precipitation1M
+    @test precip_1m_2 isa CO.Precipitation1M
+    @test precip_1m_3 isa CO.Precipitation1M
+    @test precip_1m_4 isa CO.Precipitation1M
+    @test precip_1m_5 isa CO.Precipitation1M
+    @test precip_1m_6 isa CO.Precipitation1M
+    @test precip_2m isa CO.Precipitation2M
 
 end
 

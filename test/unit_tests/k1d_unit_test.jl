@@ -12,14 +12,14 @@ air_params = CMP.AirProperties(FT, toml_dict)
 activation_params = CMP.AerosolActivationParameters(FT, toml_dict)
 params = (kid_params, thermo_params, air_params, activation_params)
 # ... for cloud condensate options ...
-equil_moist_ρθq = K1D.EquilibriumMoisture_ρθq()
-equil_moist_ρdTq = K1D.EquilibriumMoisture_ρdTq()
-nequil_moist_ρθq = K1D.NonEquilibriumMoisture_ρθq(CMP.CloudLiquid(FT, toml_dict), CMP.CloudIce(FT, toml_dict))
-nequil_moist_ρdTq = K1D.NonEquilibriumMoisture_ρdTq(CMP.CloudLiquid(FT, toml_dict), CMP.CloudIce(FT, toml_dict))
+equil_moist_ρθq = CO.EquilibriumMoisture_ρθq()
+equil_moist_ρdTq = CO.EquilibriumMoisture_ρdTq()
+nequil_moist_ρθq = CO.NonEquilibriumMoisture_ρθq(CMP.CloudLiquid(FT, toml_dict), CMP.CloudIce(FT, toml_dict))
+nequil_moist_ρdTq = CO.NonEquilibriumMoisture_ρdTq(CMP.CloudLiquid(FT, toml_dict), CMP.CloudIce(FT, toml_dict))
 # ... and precipitation options
-no_precip = K1D.NoPrecipitation()
-precip_0m = K1D.Precipitation0M(CMP.Parameters0M(FT, toml_dict))
-precip_1m = K1D.Precipitation1M(
+no_precip = CO.NoPrecipitation()
+precip_0m = CO.Precipitation0M(CMP.Parameters0M(FT, toml_dict))
+precip_1m = CO.Precipitation1M(
     CMP.CloudLiquid(FT, toml_dict),
     CMP.CloudIce(FT, toml_dict),
     CMP.Rain(FT, toml_dict),
@@ -28,7 +28,7 @@ precip_1m = K1D.Precipitation1M(
     CMP.KK2000(FT, toml_dict),
     CMP.Blk1MVelType(FT, toml_dict),
 )
-precip_2m = K1D.Precipitation2M(CMP.SB2006(FT, toml_dict), CMP.SB2006VelType(FT, toml_dict))
+precip_2m = CO.Precipitation2M(CMP.SB2006(FT, toml_dict), CMP.SB2006VelType(FT, toml_dict))
 
 @testset "Moisture and precipitation types" begin
 
@@ -61,32 +61,32 @@ precip_2m = K1D.Precipitation2M(CMP.SB2006(FT, toml_dict), CMP.SB2006VelType(FT,
     moisture_eq, precip_1m_7 = K1D.get_moisture_and_precipitation_types(FT, eqm, p1m, rf_6, st_2, toml_dict)
 
     #setup
-    @test K1D.EquilibriumMoisture <: K1D.AbstractMoistureStyle
-    @test K1D.NonEquilibriumMoisture <: K1D.AbstractMoistureStyle
-    @test K1D.EquilibriumMoisture_ρθq <: K1D.EquilibriumMoisture
-    @test K1D.EquilibriumMoisture_ρdTq <: K1D.EquilibriumMoisture
-    @test K1D.NonEquilibriumMoisture_ρθq <: K1D.NonEquilibriumMoisture
-    @test K1D.NonEquilibriumMoisture_ρdTq <: K1D.NonEquilibriumMoisture
+    @test CO.EquilibriumMoisture <: CO.AbstractMoistureStyle
+    @test CO.NonEquilibriumMoisture <: CO.AbstractMoistureStyle
+    @test CO.EquilibriumMoisture_ρθq <: CO.EquilibriumMoisture
+    @test CO.EquilibriumMoisture_ρdTq <: CO.EquilibriumMoisture
+    @test CO.NonEquilibriumMoisture_ρθq <: CO.NonEquilibriumMoisture
+    @test CO.NonEquilibriumMoisture_ρdTq <: CO.NonEquilibriumMoisture
 
-    @test K1D.NoPrecipitation <: K1D.AbstractPrecipitationStyle
-    @test K1D.Precipitation0M <: K1D.AbstractPrecipitationStyle
-    @test K1D.Precipitation1M <: K1D.AbstractPrecipitationStyle
-    @test K1D.Precipitation2M <: K1D.AbstractPrecipitationStyle
+    @test CO.NoPrecipitation <: CO.AbstractPrecipitationStyle
+    @test CO.Precipitation0M <: CO.AbstractPrecipitationStyle
+    @test CO.Precipitation1M <: CO.AbstractPrecipitationStyle
+    @test CO.Precipitation2M <: CO.AbstractPrecipitationStyle
 
     @test_throws Exception K1D.get_moisture_and_precipitation_types(FT, "_", pn, rf_1, st_1, toml_dict)
     @test_throws Exception K1D.get_moisture_and_precipitation_types(FT, eqm, "_", rf_1, st_1, toml_dict)
     @test_throws Exception K1D.get_moisture_and_precipitation_types(FT, eqm, p1m, "_", st_1, toml_dict)
-    @test moisture_eq isa K1D.EquilibriumMoisture_ρdTq
-    @test moisture_neq isa K1D.NonEquilibriumMoisture_ρdTq
-    @test precip_n isa K1D.NoPrecipitation
-    @test precip_0m isa K1D.Precipitation0M
-    @test precip_1m_1 isa K1D.Precipitation1M
-    @test precip_1m_2 isa K1D.Precipitation1M
-    @test precip_1m_3 isa K1D.Precipitation1M
-    @test precip_1m_4 isa K1D.Precipitation1M
-    @test precip_1m_5 isa K1D.Precipitation1M
-    @test precip_1m_6 isa K1D.Precipitation1M
-    @test precip_1m_7 isa K1D.Precipitation1M
+    @test moisture_eq isa CO.EquilibriumMoisture_ρdTq
+    @test moisture_neq isa CO.NonEquilibriumMoisture_ρdTq
+    @test precip_n isa CO.NoPrecipitation
+    @test precip_0m isa CO.Precipitation0M
+    @test precip_1m_1 isa CO.Precipitation1M
+    @test precip_1m_2 isa CO.Precipitation1M
+    @test precip_1m_3 isa CO.Precipitation1M
+    @test precip_1m_4 isa CO.Precipitation1M
+    @test precip_1m_5 isa CO.Precipitation1M
+    @test precip_1m_6 isa CO.Precipitation1M
+    @test precip_1m_7 isa CO.Precipitation1M
 
 end
 
@@ -255,8 +255,8 @@ end
     space, face_space = K1D.make_function_space(FT, 0, 100, 10)
 
     @test_throws Exception K1D.initialise_aux(FT, ip, params..., 0.0, 0.0, face_space, no_precip)
-    @test_throws Exception K1D.initialise_aux(FT, ip, params..., 0.0, 0.0, face_space, K1D.EquilibriumMoisture())
-    @test_throws Exception K1D.initialise_aux(FT, ip, params..., 0.0, 0.0, face_space, K1D.NonEquilibriumMoisture())
+    @test_throws Exception K1D.initialise_aux(FT, ip, params..., 0.0, 0.0, face_space, CO.EquilibriumMoisture())
+    @test_throws Exception K1D.initialise_aux(FT, ip, params..., 0.0, 0.0, face_space, CO.NonEquilibriumMoisture())
 
     aux = K1D.initialise_aux(FT, ip, params..., 0.0, 0.0, face_space, equil_moist_ρθq)
     @test aux isa NamedTuple
@@ -351,8 +351,8 @@ end
     Y = K1D.initialise_state(equil_moist_ρθq, no_precip, ip)
 
     dY = (; ρq_tot = [10.0, 13.0])
-    @test_throws Exception K1D.zero_tendencies!(K1D.AbstractMoistureStyle(), dY, Y, aux, 1.0)
-    @test_throws Exception K1D.zero_tendencies!(K1D.AbstractPrecipitationStyle(), dY, Y, aux, 1.0)
+    @test_throws Exception K1D.zero_tendencies!(CO.AbstractMoistureStyle(), dY, Y, aux, 1.0)
+    @test_throws Exception K1D.zero_tendencies!(CO.AbstractPrecipitationStyle(), dY, Y, aux, 1.0)
 
     dY = (; ρq_tot = [10.0, 13.0])
     K1D.zero_tendencies!(equil_moist_ρθq, dY, Y, aux, 1.0)

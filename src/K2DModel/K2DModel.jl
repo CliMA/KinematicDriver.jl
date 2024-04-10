@@ -11,6 +11,7 @@ const TD = Thermodynamics
 const NC = NCDatasets
 const ODE = OrdinaryDiffEq
 
+import ..Common as CO
 import ..K1DModel as K1D
 
 include("./ode_utils.jl")
