@@ -2,6 +2,7 @@ module K1DModel
 
 import OrdinaryDiffEq as ODE
 import NCDatasets as NC
+import SpecialFunctions as SF
 import UnPack
 import Logging
 import TerminalLoggers
@@ -21,12 +22,9 @@ const CMAA = CM.AerosolActivation
 import ..Common as CO
 
 include("parameters.jl")
-import .Parameters as KP
-
 include("ode_utils.jl")
 include("netcdf_io.jl")
 include("callbacks.jl")
-include("helper_functions.jl")
 include("initial_condition.jl")
 include("tendency.jl")
 

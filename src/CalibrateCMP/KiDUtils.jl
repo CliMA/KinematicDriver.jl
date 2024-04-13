@@ -55,14 +55,17 @@ end
 function run_KiD(u::Array{FT, 1}, u_names::Array{String, 1}, model_settings::Dict)
 
     update_parameters!(model_settings, u, u_names)
+    common_params = create_common_parameters(
+        FT,
+        precip_sources = model_settings["precip_sources"],
+        precip_sinks = model_settings["precip_sinks"],
+        Nd = model_settings["Nd"]
+    )
     kid_params = create_kid_parameters(
         FT,
         w1 = model_settings["w1"],
         t1 = model_settings["t1"],
         p0 = model_settings["p0"],
-        precip_sources = model_settings["precip_sources"],
-        precip_sinks = model_settings["precip_sinks"],
-        Nd = model_settings["Nd"],
         qtot_flux_correction = model_settings["qtot_flux_correction"],
         r_dry = model_settings["r_dry"],
         std_dry = model_settings["std_dry"],
@@ -78,17 +81,18 @@ function run_KiD(u::Array{FT, 1}, u_names::Array{String, 1}, model_settings::Dic
         sedimentation_choice = model_settings["sedimentation_choice"],
     )
 
-    TS = KD.TimeStepping(model_settings["dt"], model_settings["dt_calib"], model_settings["t_end"])
+    TS = CO.TimeStepping(model_settings["dt"], model_settings["dt_calib"], model_settings["t_end"])
     space, face_space =
         KD.make_function_space(FT, model_settings["z_min"], model_settings["z_max"], model_settings["n_elem"])
     coord = CC.Fields.coordinate_field(space)
 
     ρ_profile = KD.ρ_ivp(FT, kid_params, model_settings["thermo_params"])
-    init = map(coord -> KD.init_1d_column(FT, kid_params, model_settings["thermo_params"], ρ_profile, coord.z), coord)
-    Y = KD.initialise_state(moisture, precip, init)
+    init = map(coord -> KD.init_1d_column(FT, common_params, kid_params, model_settings["thermo_params"], ρ_profile, coord.z), coord)
+    Y = CO.initialise_state(moisture, precip, init)
     aux = KD.initialise_aux(
         FT,
         init,
+        common_params,
         kid_params,
         model_settings["thermo_params"],
         model_settings["air_params"],
@@ -139,19 +143,21 @@ function run_KiD_col_sed(u::Array{FT, 1}, u_names::Array{String, 1}, model_setti
     update_parameters!(model_settings, u, u_names)
     apply_param_dependency!(model_settings)
     model_settings["toml_dict"]["νc_SB2006"]["value"] = model_settings["k"]
-    kid_params = create_kid_parameters(
+    common_params = create_common_parameters(
         FT,
         precip_sources = model_settings["precip_sources"],
         precip_sinks = model_settings["precip_sinks"],
         Nd = model_settings["Nd"],
     )
+    kid_params = create_kid_parameters(FT)
 
-    precip = KCS.get_precipitation_type(
-        FT,
+    moisture = CO.get_moisture_type(FT, "NonEquilibriumMoisture", model_settings["toml_dict"])
+    precip = CO.get_precipitation_type(
+        FT, 
         model_settings["precipitation_choice"],
-        model_settings["rain_formation_choice"],
-        model_settings["sedimentation_choice"],
-        model_settings["toml_dict"],
+        model_settings["toml_dict"];
+        rain_formation_choice = model_settings["rain_formation_choice"],
+        sedimentation_choice = model_settings["sedimentation_choice"],
     )
 
     TS = KD.TimeStepping(model_settings["dt"], model_settings["dt_calib"], model_settings["t_end"])
@@ -160,8 +166,9 @@ function run_KiD_col_sed(u::Array{FT, 1}, u_names::Array{String, 1}, model_setti
     coord = CC.Fields.coordinate_field(space)
 
     init = map(
-        coord -> KCS.init_1d_column(
+        coord -> KD.init_1d_column(
             FT,
+            model_settings["thermo_params"],
             model_settings["qt"],
             model_settings["Nd"],
             model_settings["k"],
@@ -170,9 +177,21 @@ function run_KiD_col_sed(u::Array{FT, 1}, u_names::Array{String, 1}, model_setti
         ),
         coord,
     )
-    Y = KCS.initialise_state(precip, init)
-    aux = KCS.initialise_aux(FT, init, kid_params, TS, nothing, face_space)
-    ode_rhs! = KCS.make_rhs_function(precip)
+    Y = CO.initialise_state(moisture, precip, init)
+    aux = KD.initialise_aux(
+        FT, 
+        init, 
+        common_params, 
+        kid_params, 
+        model_settings["thermo_params"],
+        model_settings["air_params"],
+        model_settings["activation_params"],
+        TS, 
+        nothing, 
+        face_space,
+        moisture,
+    )
+    ode_rhs! = KCS.make_rhs_function_col_sed(moisture, precip)
     problem = ODE.ODEProblem(ode_rhs!, Y, (model_settings["t_ini"], model_settings["t_end"]), aux)
     saveat = model_settings["filter"]["apply"] ? model_settings["filter"]["saveat_t"] : model_settings["t_calib"]
     solution = ODE.solve(problem, ODE.SSPRK33(), dt = model_settings["dt"], saveat = saveat)
@@ -239,14 +258,25 @@ function apply_param_dependency!(model_settings::Dict)
     end
 end
 
+function create_common_parameters(
+    FT;
+    precip_sources = 1,
+    precip_sinks = 1,
+    Nd = 1e8,
+)
+    common_params = CO.Parameters.CommonParameters{FT}(;
+        precip_sources = precip_sources,
+        precip_sinks = precip_sinks,
+        prescribed_Nd = Nd,
+    )
+    return common_params
+end
+
 function create_kid_parameters(
     FT;
     w1 = 2.0,
     t1 = 600,
     p0 = 100000,
-    precip_sources = 1,
-    precip_sinks = 1,
-    Nd = 1e8,
     qtot_flux_correction = true,
     r_dry = 0.04 * 1e-6,
     std_dry = 1.4,
@@ -256,9 +286,6 @@ function create_kid_parameters(
         w1 = w1,
         t1 = t1,
         p0 = p0,
-        precip_sources = precip_sources,
-        precip_sinks = precip_sinks,
-        prescribed_Nd = Nd,
         qtot_flux_correction = Int(qtot_flux_correction),
         r_dry = r_dry,
         std_dry = std_dry,

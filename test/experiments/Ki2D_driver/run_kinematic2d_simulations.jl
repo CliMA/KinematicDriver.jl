@@ -51,6 +51,7 @@ function run_K2D_simulation(::Type{FT}, opts) where {FT}
     # Create Thermodynamics.jl and Kinematic1D model parameters
     # (some of the CloudMicrophysics.jl parameters structs are created later based on model choices)
     thermo_params = create_thermodynamics_parameters(toml_dict)
+    common_params = create_common_parameters(toml_dict)
     kid_params = create_kid_parameters(toml_dict)
     air_params = CMP.AirProperties(FT, toml_dict)
     activation_params = CMP.AerosolActivationParameters(FT, toml_dict)
@@ -65,7 +66,7 @@ function run_K2D_simulation(::Type{FT}, opts) where {FT}
     )
 
     # Initialize the timestepping struct
-    TS = K1D.TimeStepping(FT(opts["dt"]), FT(opts["dt_output"]), FT(opts["t_end"]))
+    TS = CO.TimeStepping(FT(opts["dt"]), FT(opts["dt_output"]), FT(opts["t_end"]))
 
     # set up function space
     hv_center_space, hv_face_space = K2D.make_function_space(
@@ -92,15 +93,16 @@ function run_K2D_simulation(::Type{FT}, opts) where {FT}
     # Solve the initial value problem for density profile
     ρ_profile = K1D.ρ_ivp(FT, kid_params, thermo_params)
     # Create the initial condition profiles
-    init = map(coord -> K2D.init_2d_domain(FT, kid_params, thermo_params, ρ_profile, coord.x, coord.z), coords)
+    init = map(coord -> K2D.init_2d_domain(FT, common_params, kid_params, thermo_params, ρ_profile, coord.x, coord.z), coords)
 
     # Create state vector and apply initial condition
-    Y = K1D.initialise_state(moisture, precip, init)
+    Y = CO.initialise_state(moisture, precip, init)
 
     # Create aux vector and apply initial condition
     aux = K2D.initialise_aux(
         FT,
         init,
+        common_params,
         kid_params,
         thermo_params,
         air_params,

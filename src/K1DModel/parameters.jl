@@ -14,9 +14,6 @@ Base.@kwdef struct Kinematic1DParameters{FT} <: AKP
     w1::FT
     t1::FT
     p0::FT
-    precip_sources::Int
-    precip_sinks::Int
-    prescribed_Nd::FT
     qtot_flux_correction::Int
     r_dry::FT
     std_dry::FT
@@ -25,9 +22,7 @@ end
 
 w1(ps::AKP) = ps.w1
 t1(ps::AKP) = ps.t1
-precip_sources(ps::AKP) = ps.precip_sources
-precip_sinks(ps::AKP) = ps.precip_sinks
-prescribed_Nd(ps::AKP) = ps.prescribed_Nd
+p0(ps::AKP) = ps.p0
 #aerosol parameters for 2M scheme
 r_dry(ps::AKP) = ps.r_dry
 std_dry(ps::AKP) = ps.std_dry

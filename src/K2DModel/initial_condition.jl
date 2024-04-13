@@ -6,7 +6,7 @@
     Populate the remaining profiles based on the KiD initial condition
     and the density profile
 """
-function init_2d_domain(::Type{FT}, kid_params, thermo_params, ρ_profile, x, z; dry = false) where {FT}
+function init_2d_domain(::Type{FT}, common_params, kid_params, thermo_params, ρ_profile, x, z; dry = false) where {FT}
 
     q_vap::FT = K1D.init_condition(FT, kid_params, thermo_params, z, dry = dry).qv
     θ_std::FT = K1D.init_condition(FT, kid_params, thermo_params, z, dry = dry).θ_std
@@ -37,7 +37,7 @@ function init_2d_domain(::Type{FT}, kid_params, thermo_params, ρ_profile, x, z;
     ρq_sno::FT = q_sno * ρ
     N_liq::FT = FT(0)
     N_rai::FT = FT(0)
-    N_aer_0::FT = kid_params.prescribed_Nd * ρ_dry / ρ_SDP
+    N_aer_0::FT = common_params.prescribed_Nd * ρ_dry / ρ_SDP
     N_aer::FT = N_aer_0
 
     S_ql_moisture::FT = FT(0.0)
@@ -50,7 +50,13 @@ function init_2d_domain(::Type{FT}, kid_params, thermo_params, ρ_profile, x, z;
     S_qs_precip::FT = FT(0.0)
     S_Nl_precip::FT = FT(0)
     S_Nr_precip::FT = FT(0)
-    S_Na::FT = FT(0)
+    
+    S_Na_activation::FT = FT(0)
+    S_Nl_activation::FT = FT(0)
+
+    term_vel_rai::FT = FT(0)
+    term_vel_sno::FT = FT(0)
+    term_vel_N_rai::FT = FT(0)
 
     return (;
         ρ,
@@ -82,6 +88,10 @@ function init_2d_domain(::Type{FT}, kid_params, thermo_params, ρ_profile, x, z;
         S_qs_precip,
         S_Nl_precip,
         S_Nr_precip,
-        S_Na,
+        S_Na_activation,
+        S_Nl_activation,
+        term_vel_rai,
+        term_vel_sno,
+        term_vel_N_rai,
     )
 end

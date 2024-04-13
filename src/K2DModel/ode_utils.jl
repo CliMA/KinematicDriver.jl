@@ -37,16 +37,18 @@ function make_rhs_function(ms::CO.AbstractMoistureStyle, ps::CO.AbstractPrecipit
     function rhs!(dY, Y, aux, t)
 
         for eq_style in [ms, ps]
-            K1D.zero_tendencies!(eq_style, dY, Y, aux, t)
+            CO.zero_tendencies!(eq_style, dY, Y, aux, t)
         end
 
         precompute_aux_prescribed_velocity!(aux, t)
-        K1D.precompute_aux_thermo!(ms, dY, Y, aux, t)
-        K1D.precompute_aux_precip!(ps, dY, Y, aux, t)
+        CO.precompute_aux_thermo!(ms, dY, Y, aux, t)
+        CO.precompute_aux_moisture_sources!(ms, dY, Y, aux, t)
+        K1D.precompute_aux_activation!(ps, dY, Y, aux, t)
+        CO.precompute_aux_precip!(ps, dY, Y, aux, t)
 
         for eq_style in [ms, ps]
             advection_tendency!(eq_style, dY, Y, aux, t)
-            K1D.sources_tendency!(eq_style, dY, Y, aux, t)
+            CO.sources_tendency!(eq_style, dY, Y, aux, t)
         end
 
     end
@@ -60,7 +62,8 @@ end
 """
 function initialise_aux(
     FT,
-    ic,
+    ip,
+    common_params,
     kid_params,
     thermo_params,
     air_params,
@@ -79,64 +82,15 @@ function initialise_aux(
     ρu = CC.Geometry.UVector.(zeros(FT, space))
     ρw = CC.Geometry.WVector.(zeros(FT, face_space))
     ρw0 = 0.0
-    term_vel_rai = CC.Geometry.WVector.(zeros(FT, face_space))
-    term_vel_sno = CC.Geometry.WVector.(zeros(FT, face_space))
 
-    if moisture isa CO.EquilibriumMoisture
-        ts = @. TD.PhaseEquil_ρθq(thermo_params, ic.ρ, ic.θ_liq_ice, ic.q_tot)
-    elseif moisture isa CO.NonEquilibriumMoisture
-        q = @. TD.PhasePartition(ic.q_tot, ic.q_liq, ic.q_ice)
-        ts = @. TD.PhaseNonEquil_ρθq(thermo_params, ic.ρ, ic.θ_liq_ice, q)
-    else
-        error(
-            "Wrong moisture choise $moisture. The supported options are EquilibriumMoisture and NonEquilibriumMoisture",
+    return merge(
+        CO.initialise_aux(FT, ip, common_params, thermo_params, air_params, activation_params, TS, Stats, moisture), 
+        (;
+            prescribed_velocity = CC.Fields.FieldVector(; ρu = ρu, ρw = ρw, ρw0 = ρw0),
+            kid_params = kid_params,
+            domain_width = domain_width,
+            domain_height = domain_height,
+            q_surf = q_surf,
         )
-    end
-
-    return (;
-        moisture_variables = CC.Fields.FieldVector(;
-            ρ = ic.ρ,
-            ρ_dry = ic.ρ_dry,
-            p = ic.p,
-            T = ic.T,
-            θ_liq_ice = ic.θ_liq_ice,
-            θ_dry = ic.θ_dry,
-            q_tot = ic.q_tot,
-            q_liq = ic.q_liq,
-            q_ice = ic.q_ice,
-            ts = ts,
-        ),
-        precip_variables = CC.Fields.FieldVector(;
-            q_rai = ic.q_rai,
-            q_sno = ic.q_sno,
-            N_liq = ic.N_liq,
-            N_rai = ic.N_rai,
-        ),
-        aerosol_variables = CC.Fields.FieldVector(; N_aer = ic.N_aer, N_aer_0 = ic.N_aer_0, S_N_aer = ic.S_Na),
-        moisture_sources = CC.Fields.FieldVector(; S_q_liq = ic.S_ql_moisture, S_q_ice = ic.S_qi_moisture),
-        precip_sources = CC.Fields.FieldVector(;
-            S_q_tot = ic.S_qt_precip,
-            S_q_liq = ic.S_ql_precip,
-            S_q_ice = ic.S_qi_precip,
-            S_q_rai = ic.S_qr_precip,
-            S_q_sno = ic.S_qs_precip,
-            S_N_liq = ic.S_Nl_precip,
-            S_N_rai = ic.S_Nr_precip,
-        ),
-        precip_velocities = CC.Fields.FieldVector(;
-            term_vel_rai = term_vel_rai,
-            term_vel_sno = term_vel_sno,
-            term_vel_N_rai = term_vel_rai,
-        ),
-        prescribed_velocity = CC.Fields.FieldVector(; ρu = ρu, ρw = ρw, ρw0 = ρw0),
-        thermo_params = thermo_params,
-        kid_params = kid_params,
-        air_params = air_params,
-        activation_params = activation_params,
-        domain_width = domain_width,
-        domain_height = domain_height,
-        q_surf = q_surf,
-        Stats = Stats,
-        TS = TS,
     )
 end

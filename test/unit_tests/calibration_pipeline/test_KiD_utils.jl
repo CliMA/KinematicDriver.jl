@@ -1,4 +1,4 @@
-@testset "creating KiD parameters object" begin
+@testset "creating parameters object" begin
     #setup
     u = [1e-4, 12345.0]
     u_names = ["q_liq_threshold", "τ_acnv_rai"]
@@ -12,14 +12,17 @@
     #setup
     model_settings["w1"] = 2.25
     #action
+    common_params = KCP.create_common_parameters(
+        Float64,
+        precip_sources = model_settings["precip_sources"],
+        precip_sinks = model_settings["precip_sinks"],
+        Nd = model_settings["Nd"],
+    )
     kid_params = KCP.create_kid_parameters(
         Float64,
         w1 = model_settings["w1"],
         t1 = model_settings["t1"],
         p0 = model_settings["p0"],
-        precip_sources = model_settings["precip_sources"],
-        precip_sinks = model_settings["precip_sinks"],
-        Nd = model_settings["Nd"],
         qtot_flux_correction = model_settings["qtot_flux_correction"],
         r_dry = model_settings["r_dry"],
         std_dry = model_settings["std_dry"],
@@ -27,6 +30,7 @@
     )
 
     #test
+    @test common_params isa Kinematic1D.Common.Parameters.CommonParameters
     @test kid_params isa Kinematic1D.K1DModel.Parameters.Kinematic1DParameters
     @test kid_params.w1 == 2.25
 end
