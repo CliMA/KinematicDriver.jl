@@ -82,12 +82,12 @@ function run_K2D_simulation(::Type{FT}, opts) where {FT}
 
     # Initialize the netcdf output Stats struct
     fname = joinpath(path, "Output.nc")
-    Stats = K2D.NetCDFIO_Stats(
+    Stats = CO.NetCDFIO_Stats(
         fname,
         1.0,
-        parent(coords.x)[1, 1, 1, :],
         parent(face_coords.z)[:, 1, 1, 1],
         parent(coords.z)[:, 1, 1, 1],
+        x = parent(coords.x)[1, 1, 1, :]
     )
 
     # Solve the initial value problem for density profile
@@ -117,10 +117,10 @@ function run_K2D_simulation(::Type{FT}, opts) where {FT}
     )
 
     # Output the initial condition
-    K2D.Kinematic2D_output(aux, 0.0)
+    CO.simulation_output(aux, 0.0)
 
     # Define callbacks for output
-    callback_io = ODE.DiscreteCallback(K1D.condition_io, K2D.affect_io!; save_positions = (false, false))
+    callback_io = ODE.DiscreteCallback(CO.condition_io, CO.affect_io!; save_positions = (false, false))
     callbacks = ODE.CallbackSet(callback_io)
 
     # Collect all the tendencies into rhs function for ODE solver

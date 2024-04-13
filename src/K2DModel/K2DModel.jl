@@ -1,6 +1,5 @@
 module K2DModel
 
-import OrdinaryDiffEq as ODE
 import NCDatasets as NC
 
 import ClimaCore as CC
@@ -10,7 +9,6 @@ import ..Common as CO
 import ..K1DModel as K1D
 
 include("./ode_utils.jl")
-include("./netcdf_io.jl")
 include("./initial_condition.jl")
 include("./tendency.jl")
 

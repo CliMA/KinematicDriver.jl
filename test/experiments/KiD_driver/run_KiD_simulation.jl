@@ -75,7 +75,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
 
     # Initialize the netcdf output Stats struct
     fname = joinpath(path, "Output.nc")
-    Stats = K1D.NetCDFIO_Stats(fname, 1.0, parent(face_coord), parent(coord))
+    Stats = CO.NetCDFIO_Stats(fname, 1.0, parent(face_coord), parent(coord))
 
     # Solve the initial value problem for density profile
     ρ_profile = K1D.ρ_ivp(FT, kid_params, thermo_params)
@@ -101,10 +101,10 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     )
 
     # Output the initial condition
-    K1D.KiD_output(aux, 0.0)
+    CO.simulation_output(aux, 0.0)
 
     # Define callbacks for output
-    callback_io = ODE.DiscreteCallback(K1D.condition_io, K1D.affect_io!; save_positions = (false, false))
+    callback_io = ODE.DiscreteCallback(CO.condition_io, CO.affect_io!; save_positions = (false, false))
     callbacks = ODE.CallbackSet(callback_io)
 
     # Collect all the tendencies into rhs function for ODE solver
