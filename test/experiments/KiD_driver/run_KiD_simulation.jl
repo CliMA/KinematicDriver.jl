@@ -46,7 +46,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
         prescribed_Nd = FT(opts["prescribed_Nd"]),
         r_dry = FT(opts["r_dry"]),
         std_dry = FT(opts["std_dry"]),
-        kappa = FT(opts["kappa"]),
+        κ = FT(opts["kappa"]),
     )
     # Create Thermodynamics.jl and Kinematic1D model parameters
     # (some of the CloudMicrophysics.jl parameters structs are created later based on model choices)

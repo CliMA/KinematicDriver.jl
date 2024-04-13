@@ -1,15 +1,10 @@
 module K2DModel
 
-import OrdinaryDiffEq
-import NCDatasets
+import OrdinaryDiffEq as ODE
+import NCDatasets as NC
 
-import ClimaCore
-import Thermodynamics
-
-const CC = ClimaCore
-const TD = Thermodynamics
-const NC = NCDatasets
-const ODE = OrdinaryDiffEq
+import ClimaCore as CC
+import Thermodynamics as TD
 
 import ..Common as CO
 import ..K1DModel as K1D

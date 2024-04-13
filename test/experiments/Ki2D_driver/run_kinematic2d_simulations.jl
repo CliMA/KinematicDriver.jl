@@ -37,16 +37,16 @@ function run_K2D_simulation(::Type{FT}, opts) where {FT}
     toml_dict = override_toml_dict(
         path,
         default_toml_dict,
-        FT(opts["w1"]),
-        FT(opts["t1"]),
-        FT(opts["p0"]),
-        Int(opts["precip_sources"]),
-        Int(opts["precip_sinks"]),
-        1,
-        FT(opts["prescribed_Nd"]),
-        FT(opts["r_dry"]),
-        FT(opts["std_dry"]),
-        FT(opts["kappa"]),
+        w1 = FT(opts["w1"]),
+        t1 = FT(opts["t1"]),
+        p0 = FT(opts["p0"]),
+        precip_sources = Int(opts["precip_sources"]),
+        precip_sinks = Int(opts["precip_sinks"]),
+        qtot_flux_correction = 1,
+        prescribed_Nd = FT(opts["prescribed_Nd"]),
+        r_dry = FT(opts["r_dry"]),
+        std_dry = FT(opts["std_dry"]),
+        κ = FT(opts["kappa"]),
     )
     # Create Thermodynamics.jl and Kinematic1D model parameters
     # (some of the CloudMicrophysics.jl parameters structs are created later based on model choices)
