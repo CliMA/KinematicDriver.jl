@@ -1,6 +1,7 @@
 module Common
 
 import OrdinaryDiffEq as ODE
+import SpecialFunctions as SF
 import NCDatasets as NC
 import UnPack
 
@@ -21,6 +22,7 @@ include("equation_types.jl")
 include("helper_functions.jl")
 include("ode_utils.jl")
 include("netcdf_io.jl")
+include("initial_condition.jl")
 include("pysdm_functions.jl")
 include("tendency.jl")
 

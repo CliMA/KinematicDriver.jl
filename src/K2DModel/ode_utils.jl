@@ -77,7 +77,7 @@ function initialise_aux(
     moisture,
 )
 
-    q_surf = K1D.init_condition(FT, kid_params, thermo_params, 0.0).qv
+    q_surf = CO.init_profile(FT, kid_params, thermo_params, 0.0).qv
 
     ρu = CC.Geometry.UVector.(zeros(FT, space))
     ρw = CC.Geometry.WVector.(zeros(FT, face_space))

@@ -86,8 +86,8 @@ function run_KiD(u::Array{FT, 1}, u_names::Array{String, 1}, model_settings::Dic
         KD.make_function_space(FT, model_settings["z_min"], model_settings["z_max"], model_settings["n_elem"])
     coord = CC.Fields.coordinate_field(space)
 
-    ρ_profile = KD.ρ_ivp(FT, kid_params, model_settings["thermo_params"])
-    init = map(coord -> KD.init_1d_column(FT, common_params, kid_params, model_settings["thermo_params"], ρ_profile, coord.z), coord)
+    ρ_profile = CO.ρ_ivp(FT, kid_params, model_settings["thermo_params"])
+    init = map(coord -> CO.initial_condition_1d(FT, common_params, kid_params, model_settings["thermo_params"], ρ_profile, coord.z), coord)
     Y = CO.initialise_state(moisture, precip, init)
     aux = KD.initialise_aux(
         FT,
@@ -166,7 +166,7 @@ function run_KiD_col_sed(u::Array{FT, 1}, u_names::Array{String, 1}, model_setti
     coord = CC.Fields.coordinate_field(space)
 
     init = map(
-        coord -> KD.init_1d_column(
+        coord -> CO.initial_condition(
             FT,
             model_settings["thermo_params"],
             model_settings["qt"],

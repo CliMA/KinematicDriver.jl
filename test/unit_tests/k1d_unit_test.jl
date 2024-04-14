@@ -118,8 +118,8 @@ end
 
     space, face_space = K1D.make_function_space(FT, 0, 100, 5)
     coord = CC.Fields.coordinate_field(space)
-    ρ_profile = K1D.ρ_ivp(FT, kid_params, thermo_params)
-    init = map(coord -> K1D.init_1d_column(FT, common_params, kid_params, thermo_params, ρ_profile, coord.z), coord)
+    ρ_profile = CO.ρ_ivp(FT, kid_params, thermo_params)
+    init = map(coord -> CO.initial_condition_1d(FT, common_params, kid_params, thermo_params, ρ_profile, coord.z), coord)
     t = 13.0
 
     # eq

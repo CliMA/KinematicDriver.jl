@@ -78,9 +78,9 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     Stats = CO.NetCDFIO_Stats(fname, 1.0, parent(face_coord), parent(coord))
 
     # Solve the initial value problem for density profile
-    ρ_profile = K1D.ρ_ivp(FT, kid_params, thermo_params)
+    ρ_profile = CO.ρ_ivp(FT, kid_params, thermo_params)
     # Create the initial condition profiles
-    init = map(coord -> K1D.init_1d_column(FT, common_params, kid_params, thermo_params, ρ_profile, coord.z), coord)
+    init = map(coord -> CO.initial_condition_1d(FT, common_params, kid_params, thermo_params, ρ_profile, coord.z), coord)
 
     # Create state vector and apply initial condition
     Y = CO.initialise_state(moisture, precip, init)

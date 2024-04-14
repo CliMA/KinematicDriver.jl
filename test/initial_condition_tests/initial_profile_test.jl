@@ -42,9 +42,9 @@ function compare_profiles(; is_dry_flag::Bool)
     face_coord = CC.Fields.coordinate_field(face_space)
 
     # Solve the initial value problem for density profile
-    ρ_profile = KID.ρ_ivp(FT, kid_params, thermo_params, dry = is_dry_flag)
+    ρ_profile = CO.ρ_ivp(FT, kid_params, thermo_params, dry = is_dry_flag)
     # Create the initial condition profiles
-    init = map(coord -> KID.init_1d_column(FT, common_params, kid_params, thermo_params, ρ_profile, coord.z, dry = is_dry_flag), coord)
+    init = map(coord -> CO.initial_condition_1d(FT, common_params, kid_params, thermo_params, ρ_profile, coord.z, dry = is_dry_flag), coord)
 
     # Store the CliMA KID initial profiles
     z_centers = parent(CC.Fields.coordinate_field(space))

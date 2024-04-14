@@ -69,8 +69,8 @@ end
     space, face_space = K2D.make_function_space(FT)
     coords = CC.Fields.coordinate_field(space)
     face_coords = CC.Fields.coordinate_field(face_space)
-    ρ_profile = K1D.ρ_ivp(FT, kid_params, thermo_params)
-    init = map(coord -> K2D.init_2d_domain(FT, common_params, kid_params, thermo_params, ρ_profile, coord.x, coord.z), coords)
+    ρ_profile = CO.ρ_ivp(FT, kid_params, thermo_params)
+    init = map(coord -> CO.initial_condition_1d(FT, common_params, kid_params, thermo_params, ρ_profile, coord.z), coords)
     t = 1.1 * kid_params.t1
 
     @test_throws Exception K2D.advection_tendency!(K1D.AbstractMoistureStyle(), dY, Y, aux, t)

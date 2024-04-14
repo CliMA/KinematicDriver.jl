@@ -52,9 +52,6 @@ precip_2m = CO.Precipitation2M(CMP.SB2006(FT, toml_dict), CMP.SB2006VelType(FT, 
 # common unit tests
 include("./common_unit_test.jl")
 
-# box model unit tests
-include("./box_unit_test.jl")
-
 # kinematic1d unit tests
 include("./k1d_unit_test.jl")
 

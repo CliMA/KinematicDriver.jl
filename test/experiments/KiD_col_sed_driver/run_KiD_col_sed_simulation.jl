@@ -8,7 +8,6 @@ import Kinematic1D.K1DModel as K1D
 
 include(joinpath(pkgdir(Kinematic1D), "test", "create_parameters.jl"))
 include(joinpath(pkgdir(Kinematic1D), "test", "plotting_utils.jl"))
-# include("plotting_utils.jl")
 
 function run_KiD_col_sed_simulation(::Type{FT}, opts) where {FT}
 
@@ -33,8 +32,8 @@ function run_KiD_col_sed_simulation(::Type{FT}, opts) where {FT}
     toml_dict = override_toml_dict(
         path,
         default_toml_dict,
-        precip_sources = Int(opts["precip_sources"]),
-        precip_sinks = Int(opts["precip_sinks"]),
+        precip_sources = 1,
+        precip_sinks = 0,
         prescribed_Nd = FT(opts["prescribed_Nd"]),
     )
     toml_dict["νc_SB2006"]["value"] = opts["k"]
@@ -80,8 +79,7 @@ function run_KiD_col_sed_simulation(::Type{FT}, opts) where {FT}
     )
 
     # Create the initial condition profiles
-    init =
-        map(coord -> K1D.init_1d_column(FT, thermo_params, opts["qt"], opts["prescribed_Nd"], opts["k"], opts["rhod"], coord.z), coord)
+    init = map(coord -> CO.initial_condition(FT, thermo_params, opts["qt"], opts["prescribed_Nd"], opts["k"], opts["rhod"], coord.z), coord)
 
     # Create state vector and apply initial condition
     Y = CO.initialise_state(moisture, precip, init)
@@ -139,8 +137,6 @@ opts = Dict(
     "precipitation_choice" => "Precipitation1M",
     "rain_formation_choice" => "CliMA_1M",
     "sedimentation_choice" => "CliMA_1M",
-    "precip_sources" => true,
-    "precip_sinks" => false,
     "z_min" => 0.0,
     "z_max" => 3000.0,
     "n_elem" => 60,
