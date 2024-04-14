@@ -84,13 +84,13 @@ function initialise_aux(
     ρw0 = 0.0
 
     return merge(
-        CO.initialise_aux(FT, ip, common_params, thermo_params, air_params, activation_params, TS, Stats, moisture), 
+        CO.initialise_aux(FT, ip, common_params, thermo_params, air_params, activation_params, TS, Stats, moisture),
         (;
             prescribed_velocity = CC.Fields.FieldVector(; ρu = ρu, ρw = ρw, ρw0 = ρw0),
             kid_params = kid_params,
             domain_width = domain_width,
             domain_height = domain_height,
             q_surf = q_surf,
-        )
+        ),
     )
 end

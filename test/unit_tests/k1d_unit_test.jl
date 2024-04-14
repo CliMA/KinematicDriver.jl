@@ -119,7 +119,8 @@ end
     space, face_space = K1D.make_function_space(FT, 0, 100, 5)
     coord = CC.Fields.coordinate_field(space)
     ρ_profile = CO.ρ_ivp(FT, kid_params, thermo_params)
-    init = map(coord -> CO.initial_condition_1d(FT, common_params, kid_params, thermo_params, ρ_profile, coord.z), coord)
+    init =
+        map(coord -> CO.initial_condition_1d(FT, common_params, kid_params, thermo_params, ρ_profile, coord.z), coord)
     t = 13.0
 
     # eq
@@ -174,7 +175,21 @@ end
     dt = 1.0
 
     #action
-    tmp = K1D.aerosol_activation_helper(kid_params, thermo_params, air_params, activation_params, q_tot, q_liq, N_aer, N_aer_0, T, p, ρ, ρw, dt)
+    tmp = K1D.aerosol_activation_helper(
+        kid_params,
+        thermo_params,
+        air_params,
+        activation_params,
+        q_tot,
+        q_liq,
+        N_aer,
+        N_aer_0,
+        T,
+        p,
+        ρ,
+        ρw,
+        dt,
+    )
 
     #test
     @test tmp isa NamedTuple
@@ -182,14 +197,42 @@ end
     @test 0 < tmp.S_Nl < N_aer_0
 
     #action
-    tmp = K1D.aerosol_activation_helper(kid_params, thermo_params, air_params, activation_params, q_tot, q_liq, N_aer, N_aer_0, 290.0, p, ρ, ρw, dt)
+    tmp = K1D.aerosol_activation_helper(
+        kid_params,
+        thermo_params,
+        air_params,
+        activation_params,
+        q_tot,
+        q_liq,
+        N_aer,
+        N_aer_0,
+        290.0,
+        p,
+        ρ,
+        ρw,
+        dt,
+    )
 
     #test
     @test tmp.S_Nl ≈ 0.0 atol = eps(FT)
     @test tmp.S_Na ≈ 0.0 atol = eps(FT)
 
     #action
-    tmp = K1D.aerosol_activation_helper(kid_params, thermo_params, air_params, activation_params, q_tot, q_liq, N_aer, N_aer_0, T, p, ρ, 0.0, dt)
+    tmp = K1D.aerosol_activation_helper(
+        kid_params,
+        thermo_params,
+        air_params,
+        activation_params,
+        q_tot,
+        q_liq,
+        N_aer,
+        N_aer_0,
+        T,
+        p,
+        ρ,
+        0.0,
+        dt,
+    )
 
     #test
     @test tmp.S_Nl ≈ 0.0 atol = eps(FT)

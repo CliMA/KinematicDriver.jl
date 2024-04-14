@@ -59,7 +59,7 @@ function run_KiD(u::Array{FT, 1}, u_names::Array{String, 1}, model_settings::Dic
         FT,
         precip_sources = model_settings["precip_sources"],
         precip_sinks = model_settings["precip_sinks"],
-        Nd = model_settings["Nd"]
+        Nd = model_settings["Nd"],
     )
     kid_params = create_kid_parameters(
         FT,
@@ -74,7 +74,7 @@ function run_KiD(u::Array{FT, 1}, u_names::Array{String, 1}, model_settings::Dic
 
     moisture = CO.get_moisture_type(FT, model_settings["moisture_choice"], model_settings["toml_dict"])
     precip = CO.get_precipitation_type(
-        FT, 
+        FT,
         model_settings["precipitation_choice"],
         model_settings["toml_dict"];
         rain_formation_choice = model_settings["rain_formation_choice"],
@@ -87,7 +87,17 @@ function run_KiD(u::Array{FT, 1}, u_names::Array{String, 1}, model_settings::Dic
     coord = CC.Fields.coordinate_field(space)
 
     ρ_profile = CO.ρ_ivp(FT, kid_params, model_settings["thermo_params"])
-    init = map(coord -> CO.initial_condition_1d(FT, common_params, kid_params, model_settings["thermo_params"], ρ_profile, coord.z), coord)
+    init = map(
+        coord -> CO.initial_condition_1d(
+            FT,
+            common_params,
+            kid_params,
+            model_settings["thermo_params"],
+            ρ_profile,
+            coord.z,
+        ),
+        coord,
+    )
     Y = CO.initialise_state(moisture, precip, init)
     aux = KD.initialise_aux(
         FT,
@@ -153,7 +163,7 @@ function run_KiD_col_sed(u::Array{FT, 1}, u_names::Array{String, 1}, model_setti
 
     moisture = CO.get_moisture_type(FT, "NonEquilibriumMoisture", model_settings["toml_dict"])
     precip = CO.get_precipitation_type(
-        FT, 
+        FT,
         model_settings["precipitation_choice"],
         model_settings["toml_dict"];
         rain_formation_choice = model_settings["rain_formation_choice"],
@@ -179,15 +189,15 @@ function run_KiD_col_sed(u::Array{FT, 1}, u_names::Array{String, 1}, model_setti
     )
     Y = CO.initialise_state(moisture, precip, init)
     aux = KD.initialise_aux(
-        FT, 
-        init, 
-        common_params, 
-        kid_params, 
+        FT,
+        init,
+        common_params,
+        kid_params,
         model_settings["thermo_params"],
         model_settings["air_params"],
         model_settings["activation_params"],
-        TS, 
-        nothing, 
+        TS,
+        nothing,
         face_space,
         moisture,
     )
@@ -258,12 +268,7 @@ function apply_param_dependency!(model_settings::Dict)
     end
 end
 
-function create_common_parameters(
-    FT;
-    precip_sources = 1,
-    precip_sinks = 1,
-    Nd = 1e8,
-)
+function create_common_parameters(FT; precip_sources = 1, precip_sinks = 1, Nd = 1e8)
     common_params = CO.Parameters.CommonParameters{FT}(;
         precip_sources = precip_sources,
         precip_sinks = precip_sinks,

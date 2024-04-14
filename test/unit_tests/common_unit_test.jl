@@ -26,8 +26,10 @@ params = (common_params, thermo_params, air_params, activation_params)
     precip_1m_3 = CO.get_precipitation_type(FT, p1m, toml_dict, rain_formation_choice = rf_3)
     precip_1m_4 = CO.get_precipitation_type(FT, p1m, toml_dict, rain_formation_choice = rf_4)
     precip_1m_5 = CO.get_precipitation_type(FT, p1m, toml_dict, rain_formation_choice = rf_5)
-    precip_1m_6 = CO.get_precipitation_type(FT, p1m, toml_dict, rain_formation_choice = rf_6, sedimentation_choice = st_1)
-    precip_1m_7 = CO.get_precipitation_type(FT, p1m, toml_dict, rain_formation_choice = rf_6, sedimentation_choice = st_2)
+    precip_1m_6 =
+        CO.get_precipitation_type(FT, p1m, toml_dict, rain_formation_choice = rf_6, sedimentation_choice = st_1)
+    precip_1m_7 =
+        CO.get_precipitation_type(FT, p1m, toml_dict, rain_formation_choice = rf_6, sedimentation_choice = st_2)
     precip_2m = CO.get_precipitation_type(FT, p2m, toml_dict, rain_formation_choice = rf_7)
 
     #test
@@ -508,16 +510,13 @@ end
         term_vel_sno = 0.0,
         term_vel_N_rai = 0.0,
     )
-    domain = CC.Domains.IntervalDomain(
-        CC.Geometry.ZPoint{FT}(0),
-        CC.Geometry.ZPoint{FT}(1),
-        boundary_tags = (:bottom, :top),
-    )
+    domain =
+        CC.Domains.IntervalDomain(CC.Geometry.ZPoint{FT}(0), CC.Geometry.ZPoint{FT}(1), boundary_tags = (:bottom, :top))
     mesh = CC.Meshes.IntervalMesh(domain, nelems = 1)
     space = CC.Spaces.CenterFiniteDifferenceSpace(mesh)
     coord = CC.Fields.coordinate_field(space)
     ip = map(coord -> _ip, coord)
-    
+
     t = 13.0
 
     # eq

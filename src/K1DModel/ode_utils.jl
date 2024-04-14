@@ -54,7 +54,7 @@ end
    processes. The rhs is assembled via dispatch based on precipitation type.
 """
 function make_rhs_function_col_sed(ms::CO.AbstractMoistureStyle, ps::CO.AbstractPrecipitationStyle)
-    
+
     function rhs!(dY, Y, aux, t)
 
         for eq_style in [ms, ps]
@@ -98,11 +98,7 @@ function initialise_aux(
     ρw0 = 0.0
 
     return merge(
-        CO.initialise_aux(FT, ip, common_params, thermo_params, air_params, activation_params, TS, Stats, moisture), 
-        (;
-            prescribed_velocity = CC.Fields.FieldVector(; ρw = ρw, ρw0 = ρw0),
-            kid_params = kid_params,
-            q_surf = q_surf,
-        )
+        CO.initialise_aux(FT, ip, common_params, thermo_params, air_params, activation_params, TS, Stats, moisture),
+        (; prescribed_velocity = CC.Fields.FieldVector(; ρw = ρw, ρw0 = ρw0), kid_params = kid_params, q_surf = q_surf),
     )
 end

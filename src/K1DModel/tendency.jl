@@ -50,7 +50,13 @@ Aerosol activation tendencies
 @inline function precompute_aux_activation!(sp::CO.AbstractPrecipitationStyle, dY, Y, aux, t)
     error("activation_tendency not implemented for a given $sp")
 end
-@inline function precompute_aux_activation!(::Union{CO.NoPrecipitation, CO.Precipitation0M, CO.Precipitation1M}, dY, Y, aux, t) end
+@inline function precompute_aux_activation!(
+    ::Union{CO.NoPrecipitation, CO.Precipitation0M, CO.Precipitation1M},
+    dY,
+    Y,
+    aux,
+    t,
+) end
 @inline function precompute_aux_activation!(ps::CO.Precipitation2M, dY, Y, aux, t)
 
     aux.aerosol_variables.N_aer = Y.N_aer
@@ -160,20 +166,34 @@ end
 
     @. dY.ρq_rai +=
         -∂(
-            (aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) + CC.Geometry.WVector(If(aux.precip_velocities.term_vel_rai) * FT(-1))) *
-            If(Y.ρq_rai),
+            (
+                aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) +
+                CC.Geometry.WVector(If(aux.precip_velocities.term_vel_rai) * FT(-1))
+            ) * If(Y.ρq_rai),
         )
     @. dY.ρq_sno +=
         -∂(
-            (aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) + CC.Geometry.WVector(If(aux.precip_velocities.term_vel_sno) * FT(-1))) *
-            If(Y.ρq_sno),
+            (
+                aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) +
+                CC.Geometry.WVector(If(aux.precip_velocities.term_vel_sno) * FT(-1))
+            ) * If(Y.ρq_sno),
         )
 
     fcc = CC.Operators.FluxCorrectionC2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
-    @. dY.ρq_rai +=
-        fcc((aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) + CC.Geometry.WVector(If(aux.precip_velocities.term_vel_rai) * FT(-1))), Y.ρq_rai)
-    @. dY.ρq_sno +=
-        fcc((aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) + CC.Geometry.WVector(If(aux.precip_velocities.term_vel_sno) * FT(-1))), Y.ρq_sno)
+    @. dY.ρq_rai += fcc(
+        (
+            aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) +
+            CC.Geometry.WVector(If(aux.precip_velocities.term_vel_rai) * FT(-1))
+        ),
+        Y.ρq_rai,
+    )
+    @. dY.ρq_sno += fcc(
+        (
+            aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) +
+            CC.Geometry.WVector(If(aux.precip_velocities.term_vel_sno) * FT(-1))
+        ),
+        Y.ρq_sno,
+    )
 
 
     return dY
@@ -186,23 +206,37 @@ end
         bottom = CC.Operators.Extrapolate(),
         top = CC.Operators.SetValue(CC.Geometry.WVector(0.0)),
     )
-    
+
     @. dY.N_rai +=
         -∂(
-            (aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) + CC.Geometry.WVector(If(aux.precip_velocities.term_vel_N_rai) * FT(-1))) *
-            If(Y.N_rai),
+            (
+                aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) +
+                CC.Geometry.WVector(If(aux.precip_velocities.term_vel_N_rai) * FT(-1))
+            ) * If(Y.N_rai),
         )
     @. dY.ρq_rai +=
         -∂(
-            (aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) + CC.Geometry.WVector(If(aux.precip_velocities.term_vel_rai) * FT(-1))) *
-            If(Y.ρq_rai),
+            (
+                aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) +
+                CC.Geometry.WVector(If(aux.precip_velocities.term_vel_rai) * FT(-1))
+            ) * If(Y.ρq_rai),
         )
 
     fcc = CC.Operators.FluxCorrectionC2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
-    @. dY.N_rai +=
-        fcc((aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) + CC.Geometry.WVector(If(aux.precip_velocities.term_vel_N_rai) * FT(-1))), Y.N_rai)
-    @. dY.ρq_rai +=
-        fcc((aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) + CC.Geometry.WVector(If(aux.precip_velocities.term_vel_rai) * FT(-1))), Y.ρq_rai)
+    @. dY.N_rai += fcc(
+        (
+            aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) +
+            CC.Geometry.WVector(If(aux.precip_velocities.term_vel_N_rai) * FT(-1))
+        ),
+        Y.N_rai,
+    )
+    @. dY.ρq_rai += fcc(
+        (
+            aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) +
+            CC.Geometry.WVector(If(aux.precip_velocities.term_vel_rai) * FT(-1))
+        ),
+        Y.ρq_rai,
+    )
 
     return dY
 end

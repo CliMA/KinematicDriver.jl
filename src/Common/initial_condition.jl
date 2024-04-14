@@ -100,7 +100,15 @@ end
     Populate the remaining profiles based on the KiD initial condition
     and the density profile
 """
-function initial_condition_1d(::Type{FT}, common_params, kid_params, thermo_params, ρ_profile, z; dry = false) where {FT}
+function initial_condition_1d(
+    ::Type{FT},
+    common_params,
+    kid_params,
+    thermo_params,
+    ρ_profile,
+    z;
+    dry = false,
+) where {FT}
 
     q_vap::FT = init_profile(FT, kid_params, thermo_params, z, dry = dry).qv
     θ_std::FT = init_profile(FT, kid_params, thermo_params, z, dry = dry).θ_std
@@ -144,7 +152,7 @@ function initial_condition_1d(::Type{FT}, common_params, kid_params, thermo_para
     S_qs_precip::FT = FT(0.0)
     S_Nl_precip::FT = FT(0)
     S_Nr_precip::FT = FT(0)
-    
+
     S_Na_activation::FT = FT(0)
     S_Nl_activation::FT = FT(0)
 
@@ -206,7 +214,7 @@ function initial_condition(::Type{FT}, thermo_params, qt::FT, Nd::FT, k::FT, ρ_
     rhow = FT(1000)
     radius_th::FT = 40 * 1e-6
     thrshld::FT = 4 / 3 * pi * (radius_th)^3 * rhow / (L_tr / Nd / k)
-    
+
     mass_ratio = SF.gamma_inc(thrshld, k + 1)[2]
     ρq_liq::FT = mass_ratio * L_tr
     ρq_rai::FT = L_tr - ρq_liq
@@ -253,7 +261,7 @@ function initial_condition(::Type{FT}, thermo_params, qt::FT, Nd::FT, k::FT, ρ_
     term_vel_sno::FT = FT(0)
     term_vel_N_rai::FT = FT(0)
 
-    return (; 
+    return (;
         ρ,
         ρ_dry,
         T,

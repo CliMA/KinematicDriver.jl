@@ -119,20 +119,34 @@ end
 
     @. dY.ρq_rai +=
         -∂(
-            (aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) + CC.Geometry.WVector(If(aux.precip_velocities.term_vel_rai) * FT(-1))) *
-            If(Y.ρq_rai),
+            (
+                aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) +
+                CC.Geometry.WVector(If(aux.precip_velocities.term_vel_rai) * FT(-1))
+            ) * If(Y.ρq_rai),
         )
     @. dY.ρq_sno +=
         -∂(
-            (aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) + CC.Geometry.WVector(If(aux.precip_velocities.term_vel_sno) * FT(-1))) *
-            If(Y.ρq_sno),
+            (
+                aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) +
+                CC.Geometry.WVector(If(aux.precip_velocities.term_vel_sno) * FT(-1))
+            ) * If(Y.ρq_sno),
         )
 
     fcc = CC.Operators.FluxCorrectionC2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
-    @. dY.ρq_rai +=
-        fcc((aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) + CC.Geometry.WVector(If(aux.precip_velocities.term_vel_rai) * FT(-1))), Y.ρq_rai)
-    @. dY.ρq_sno +=
-        fcc((aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) + CC.Geometry.WVector(If(aux.precip_velocities.term_vel_sno) * FT(-1))), Y.ρq_sno)
+    @. dY.ρq_rai += fcc(
+        (
+            aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) +
+            CC.Geometry.WVector(If(aux.precip_velocities.term_vel_rai) * FT(-1))
+        ),
+        Y.ρq_rai,
+    )
+    @. dY.ρq_sno += fcc(
+        (
+            aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) +
+            CC.Geometry.WVector(If(aux.precip_velocities.term_vel_sno) * FT(-1))
+        ),
+        Y.ρq_sno,
+    )
 
     hdiv = CC.Operators.WeakDivergence()
     @. dY.ρq_rai += -hdiv(aux.prescribed_velocity.ρu / aux.moisture_variables.ρ * Y.ρq_rai)
@@ -150,20 +164,34 @@ end
 
     @. dY.N_rai +=
         -∂(
-            (aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) + CC.Geometry.WVector(If(aux.precip_velocities.term_vel_N_rai) * FT(-1))) *
-            If(Y.N_rai),
+            (
+                aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) +
+                CC.Geometry.WVector(If(aux.precip_velocities.term_vel_N_rai) * FT(-1))
+            ) * If(Y.N_rai),
         )
     @. dY.ρq_rai +=
         -∂(
-            (aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) + CC.Geometry.WVector(If(aux.precip_velocities.term_vel_rai) * FT(-1))) *
-            If(Y.ρq_rai),
+            (
+                aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) +
+                CC.Geometry.WVector(If(aux.precip_velocities.term_vel_rai) * FT(-1))
+            ) * If(Y.ρq_rai),
         )
 
     fcc = CC.Operators.FluxCorrectionC2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
-    @. dY.N_rai +=
-        fcc((aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) + CC.Geometry.WVector(If(aux.precip_velocities.term_vel_N_rai) * FT(-1))), Y.N_rai)
-    @. dY.ρq_rai +=
-        fcc((aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) + CC.Geometry.WVector(If(aux.precip_velocities.term_vel_rai) * FT(-1))), Y.ρq_rai)
+    @. dY.N_rai += fcc(
+        (
+            aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) +
+            CC.Geometry.WVector(If(aux.precip_velocities.term_vel_N_rai) * FT(-1))
+        ),
+        Y.N_rai,
+    )
+    @. dY.ρq_rai += fcc(
+        (
+            aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) +
+            CC.Geometry.WVector(If(aux.precip_velocities.term_vel_rai) * FT(-1))
+        ),
+        Y.ρq_rai,
+    )
 
 
     hdiv = CC.Operators.WeakDivergence()

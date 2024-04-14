@@ -8,7 +8,7 @@
    based on the precipitation types.
 """
 function make_rhs_function(ms::CO.AbstractMoistureStyle, ps::CO.AbstractPrecipitationStyle)
-    
+
     function rhs!(dY, Y, aux, t)
 
         for eq_style in [ms, ps]

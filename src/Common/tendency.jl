@@ -422,7 +422,7 @@ end
     error("precompute_aux not implemented for a given $sm")
 end
 @inline function precompute_aux_thermo!(::EquilibriumMoisture_ρθq, dY, Y, aux, t)
-    
+
     tmp = @. moisture_helper_vars_eq_ρθq(
         aux.thermo_params,
         Y.ρq_tot,
@@ -458,7 +458,7 @@ end
 
 end
 @inline function precompute_aux_thermo!(::NonEquilibriumMoisture_ρθq, dY, Y, aux, t)
-    
+
     tmp = @. moisture_helper_vars_neq_ρθq(
         aux.thermo_params,
         Y.ρq_tot,
@@ -478,7 +478,7 @@ end
 
 end
 @inline function precompute_aux_thermo!(::NonEquilibriumMoisture_ρdTq, dY, Y, aux, t)
-    
+
     tmp = @. moisture_helper_vars_neq_ρdTq(
         aux.thermo_params,
         Y.ρq_tot,

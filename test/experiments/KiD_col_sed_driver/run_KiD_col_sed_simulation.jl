@@ -47,11 +47,12 @@ function run_KiD_col_sed_simulation(::Type{FT}, opts) where {FT}
 
     moisture = CO.get_moisture_type(FT, "NonEquilibriumMoisture", toml_dict)
     precip = CO.get_precipitation_type(
-        FT, 
-        precipitation_choice, 
-        toml_dict, 
-        rain_formation_choice = rain_formation_choice, 
-        sedimentation_choice = sedimentation_choice)
+        FT,
+        precipitation_choice,
+        toml_dict,
+        rain_formation_choice = rain_formation_choice,
+        sedimentation_choice = sedimentation_choice,
+    )
 
     # Initialize the timestepping struct
     TS = CO.TimeStepping(FT(opts["dt"]), FT(opts["dt_output"]), FT(opts["t_end"]))
@@ -79,7 +80,18 @@ function run_KiD_col_sed_simulation(::Type{FT}, opts) where {FT}
     )
 
     # Create the initial condition profiles
-    init = map(coord -> CO.initial_condition(FT, thermo_params, opts["qt"], opts["prescribed_Nd"], opts["k"], opts["rhod"], coord.z), coord)
+    init = map(
+        coord -> CO.initial_condition(
+            FT,
+            thermo_params,
+            opts["qt"],
+            opts["prescribed_Nd"],
+            opts["k"],
+            opts["rhod"],
+            coord.z,
+        ),
+        coord,
+    )
 
     # Create state vector and apply initial condition
     Y = CO.initialise_state(moisture, precip, init)

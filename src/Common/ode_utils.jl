@@ -77,17 +77,7 @@ end
    The auxiliary state is created as a ClimaCore FieldVector
    and passed to ODE solver via the `p` parameter of the ODEProblem.
 """
-function initialise_aux(
-    FT,
-    ip,
-    common_params,
-    thermo_params,
-    air_params,
-    activation_params,
-    TS,
-    Stats,
-    moisture,
-)
+function initialise_aux(FT, ip, common_params, thermo_params, air_params, activation_params, TS, Stats, moisture)
 
     if moisture isa EquilibriumMoisture
         ts = @. TD.PhaseEquil_ρθq(thermo_params, ip.ρ, ip.θ_liq_ice, ip.q_tot)
@@ -132,10 +122,10 @@ function initialise_aux(
             S_N_rai = ip.S_Nr_precip,
         ),
         precip_velocities = CC.Fields.FieldVector(;
-                term_vel_rai = ip.term_vel_rai,
-                term_vel_sno = ip.term_vel_sno,
-                term_vel_N_rai = ip.term_vel_N_rai,
-            ),
+            term_vel_rai = ip.term_vel_rai,
+            term_vel_sno = ip.term_vel_sno,
+            term_vel_N_rai = ip.term_vel_N_rai,
+        ),
         common_params = common_params,
         thermo_params = thermo_params,
         air_params = air_params,

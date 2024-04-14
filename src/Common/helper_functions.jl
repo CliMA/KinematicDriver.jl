@@ -1,11 +1,7 @@
 """
     Returns moisture type
 """
-function get_moisture_type(
-    FT,
-    moisture_choice::String,
-    toml_dict,
-)
+function get_moisture_type(FT, moisture_choice::String, toml_dict)
     if moisture_choice == "EquilibriumMoisture"
         moisture = EquilibriumMoisture_ρdTq()
     elseif moisture_choice == "NonEquilibriumMoisture"
@@ -24,7 +20,7 @@ function get_precipitation_type(
     precipitation_choice::String,
     toml_dict;
     rain_formation_choice::Union{Nothing, String} = nothing,
-    sedimentation_choice::Union{Nothing, String} = nothing
+    sedimentation_choice::Union{Nothing, String} = nothing,
 )
     if precipitation_choice == "NoPrecipitation"
         precip = NoPrecipitation()
