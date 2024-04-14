@@ -23,7 +23,7 @@ Below figure shows an example prescribed vertical momentum as a function of time
 
 ```@example example_figure
 using Plots
-import ..Kinematic1D.K1DModel as K1D
+import Kinematic1D.K1DModel as K1D
 
 t_range = range(0, 15 * 60, length=100)
 w1 = 2.0
