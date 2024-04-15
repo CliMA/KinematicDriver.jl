@@ -1,7 +1,10 @@
 import OrdinaryDiffEq as ODE
 using Plots
 
+import ClimaCore as CC
 import CLIMAParameters as CP
+import CloudMicrophysics.Parameters as CMP
+import Kinematic1D
 import Kinematic1D.BoxModel as BX
 
 include(joinpath(pkgdir(Kinematic1D), "test", "create_parameters.jl"))
@@ -34,6 +37,8 @@ function run_box_simulation(::Type{FT}, opts) where {FT}
     end
     common_params = create_common_parameters(toml_dict)
     thermo_params = create_thermodynamics_parameters(toml_dict)
+    air_params = CMP.AirProperties(FT, toml_dict)
+    activation_params = CMP.AerosolActivationParameters(FT, toml_dict)
 
     moisture = CO.get_moisture_type(FT, "NonEquilibriumMoisture", toml_dict)
     precip =

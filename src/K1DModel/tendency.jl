@@ -61,7 +61,7 @@ end
 
     aux.aerosol_variables.N_aer = Y.N_aer
     tmp = @. aerosol_activation_helper(
-        aux.common_params,
+        aux.kid_params,
         aux.thermo_params,
         aux.air_params,
         aux.activation_params,
