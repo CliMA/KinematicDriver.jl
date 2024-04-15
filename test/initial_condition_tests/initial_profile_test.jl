@@ -25,10 +25,11 @@ const FT = Float64
 default_toml_dict = CP.create_toml_dict(FT, dict_type = "alias")
 toml_dict = override_toml_dict(@__DIR__, default_toml_dict)
 thermo_params = create_thermodynamics_parameters(toml_dict)
+common_params = create_common_parameters(toml_dict)
 kid_params = create_kid_parameters(toml_dict)
 air_params = CMP.AirProperties(FT, toml_dict)
 activation_params = CMP.AerosolActivationParameters(FT, toml_dict)
-params = (kid_params, thermo_params, air_params, activation_params)
+params = (common_params, kid_params, thermo_params, air_params, activation_params)
 
 function compare_profiles(; is_dry_flag::Bool)
     # Computational domain ...
@@ -41,9 +42,20 @@ function compare_profiles(; is_dry_flag::Bool)
     face_coord = CC.Fields.coordinate_field(face_space)
 
     # Solve the initial value problem for density profile
-    ρ_profile = KID.ρ_ivp(FT, kid_params, thermo_params, dry = is_dry_flag)
+    ρ_profile = CO.ρ_ivp(FT, kid_params, thermo_params, dry = is_dry_flag)
     # Create the initial condition profiles
-    init = map(coord -> KID.init_1d_column(FT, kid_params, thermo_params, ρ_profile, coord.z, dry = is_dry_flag), coord)
+    init = map(
+        coord -> CO.initial_condition_1d(
+            FT,
+            common_params,
+            kid_params,
+            thermo_params,
+            ρ_profile,
+            coord.z,
+            dry = is_dry_flag,
+        ),
+        coord,
+    )
 
     # Store the CliMA KID initial profiles
     z_centers = parent(CC.Fields.coordinate_field(space))

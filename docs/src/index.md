@@ -23,12 +23,12 @@ Below figure shows an example prescribed vertical momentum as a function of time
 
 ```@example example_figure
 using Plots
-include("../../src/K1DModel/helper_functions.jl")
+import Kinematic1D.K1DModel as K1D
 
 t_range = range(0, 15 * 60, length=100)
 w1 = 2.0
 t1 = 600.0
-plot(t_range / 60.0, [ρw_helper(t, w1, t1) for t in t_range], linewidth=3, xlabel="t [min]", ylabel="updraft momentum flux [m/s kg/m3]")
+plot(t_range / 60.0, [K1D.ρw_helper(t, w1, t1) for t in t_range], linewidth=3, xlabel="t [min]", ylabel="updraft momentum flux [m/s kg/m3]")
 savefig("prescribed_momentum_flux.svg") #hide
 ```
 ![](prescribed_momentum_flux.svg)

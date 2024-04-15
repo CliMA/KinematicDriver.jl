@@ -37,35 +37,36 @@ function run_K2D_simulation(::Type{FT}, opts) where {FT}
     toml_dict = override_toml_dict(
         path,
         default_toml_dict,
-        FT(opts["w1"]),
-        FT(opts["t1"]),
-        FT(opts["p0"]),
-        Int(opts["precip_sources"]),
-        Int(opts["precip_sinks"]),
-        1,
-        FT(opts["prescribed_Nd"]),
-        FT(opts["r_dry"]),
-        FT(opts["std_dry"]),
-        FT(opts["kappa"]),
+        w1 = FT(opts["w1"]),
+        t1 = FT(opts["t1"]),
+        p0 = FT(opts["p0"]),
+        precip_sources = Int(opts["precip_sources"]),
+        precip_sinks = Int(opts["precip_sinks"]),
+        qtot_flux_correction = 1,
+        prescribed_Nd = FT(opts["prescribed_Nd"]),
+        r_dry = FT(opts["r_dry"]),
+        std_dry = FT(opts["std_dry"]),
+        κ = FT(opts["kappa"]),
     )
     # Create Thermodynamics.jl and Kinematic1D model parameters
     # (some of the CloudMicrophysics.jl parameters structs are created later based on model choices)
     thermo_params = create_thermodynamics_parameters(toml_dict)
+    common_params = create_common_parameters(toml_dict)
     kid_params = create_kid_parameters(toml_dict)
     air_params = CMP.AirProperties(FT, toml_dict)
     activation_params = CMP.AerosolActivationParameters(FT, toml_dict)
 
-    moisture, precip = K1D.get_moisture_and_precipitation_types(
+    moisture = CO.get_moisture_type(FT, moisture_choice, toml_dict)
+    precip = CO.get_precipitation_type(
         FT,
-        moisture_choice,
         precipitation_choice,
-        rain_formation_choice,
-        sedimentation_choice,
         toml_dict,
+        rain_formation_choice = rain_formation_choice,
+        sedimentation_choice = sedimentation_choice,
     )
 
     # Initialize the timestepping struct
-    TS = K1D.TimeStepping(FT(opts["dt"]), FT(opts["dt_output"]), FT(opts["t_end"]))
+    TS = CO.TimeStepping(FT(opts["dt"]), FT(opts["dt_output"]), FT(opts["t_end"]))
 
     # set up function space
     hv_center_space, hv_face_space = K2D.make_function_space(
@@ -81,26 +82,28 @@ function run_K2D_simulation(::Type{FT}, opts) where {FT}
 
     # Initialize the netcdf output Stats struct
     fname = joinpath(path, "Output.nc")
-    Stats = K2D.NetCDFIO_Stats(
+    Stats = CO.NetCDFIO_Stats(
         fname,
         1.0,
-        parent(coords.x)[1, 1, 1, :],
         parent(face_coords.z)[:, 1, 1, 1],
         parent(coords.z)[:, 1, 1, 1],
+        x = parent(coords.x)[1, 1, 1, :],
     )
 
     # Solve the initial value problem for density profile
-    ρ_profile = K1D.ρ_ivp(FT, kid_params, thermo_params)
+    ρ_profile = CO.ρ_ivp(FT, kid_params, thermo_params)
     # Create the initial condition profiles
-    init = map(coord -> K2D.init_2d_domain(FT, kid_params, thermo_params, ρ_profile, coord.x, coord.z), coords)
+    init =
+        map(coord -> CO.initial_condition_1d(FT, common_params, kid_params, thermo_params, ρ_profile, coord.z), coords)
 
     # Create state vector and apply initial condition
-    Y = K1D.initialise_state(moisture, precip, init)
+    Y = CO.initialise_state(moisture, precip, init)
 
     # Create aux vector and apply initial condition
     aux = K2D.initialise_aux(
         FT,
         init,
+        common_params,
         kid_params,
         thermo_params,
         air_params,
@@ -115,10 +118,10 @@ function run_K2D_simulation(::Type{FT}, opts) where {FT}
     )
 
     # Output the initial condition
-    K2D.Kinematic2D_output(aux, 0.0)
+    CO.simulation_output(aux, 0.0)
 
     # Define callbacks for output
-    callback_io = ODE.DiscreteCallback(K1D.condition_io, K2D.affect_io!; save_positions = (false, false))
+    callback_io = ODE.DiscreteCallback(CO.condition_io, CO.affect_io!; save_positions = (false, false))
     callbacks = ODE.CallbackSet(callback_io)
 
     # Collect all the tendencies into rhs function for ODE solver

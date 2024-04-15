@@ -1,10 +1,5 @@
 """
-   Different components of the ODE `rhs!` function,
-   depending on the moisture and precipitation types.
-"""
-
-"""
-    Precompute momentum field
+    Prescribed momentum flux as a function of time
 """
 @inline function prescribed_momentum_helper(x, z, t, w1, t1, width, height)
     time_scale = t < t1 ? sin(pi * t / t1) : 0.0
@@ -53,13 +48,13 @@ end
 """
    Advection Equation: ∂ϕ/dt = -∂(vΦ)
 """
-@inline function advection_tendency!(sm::K1D.AbstractMoistureStyle, dY, Y, aux, t)
+@inline function advection_tendency!(sm::CO.AbstractMoistureStyle, dY, Y, aux, t)
     error("advection_tendency not implemented for a given $sm")
 end
-@inline function advection_tendency!(sp::K1D.AbstractPrecipitationStyle, dY, Y, aux, t)
+@inline function advection_tendency!(sp::CO.AbstractPrecipitationStyle, dY, Y, aux, t)
     error("advection_tendency not implemented for a given $sp")
 end
-@inline function advection_tendency!(::K1D.EquilibriumMoisture, dY, Y, aux, t)
+@inline function advection_tendency!(::CO.EquilibriumMoisture, dY, Y, aux, t)
 
     If = CC.Operators.InterpolateC2F()
     ∂ = CC.Operators.DivergenceF2C(
@@ -76,7 +71,7 @@ end
 
     return dY
 end
-@inline function advection_tendency!(::K1D.NonEquilibriumMoisture, dY, Y, aux, t)
+@inline function advection_tendency!(::CO.NonEquilibriumMoisture, dY, Y, aux, t)
     FT = eltype(Y.ρq_tot)
 
     If = CC.Operators.InterpolateC2F()
@@ -115,8 +110,8 @@ end
 
     return dY
 end
-@inline function advection_tendency!(::Union{K1D.NoPrecipitation, K1D.Precipitation0M}, dY, Y, aux, t) end
-@inline function advection_tendency!(::K1D.Precipitation1M, dY, Y, aux, t)
+@inline function advection_tendency!(::Union{CO.NoPrecipitation, CO.Precipitation0M}, dY, Y, aux, t) end
+@inline function advection_tendency!(::CO.Precipitation1M, dY, Y, aux, t)
     FT = eltype(Y.ρq_tot)
 
     If = CC.Operators.InterpolateC2F()
@@ -124,20 +119,34 @@ end
 
     @. dY.ρq_rai +=
         -∂(
-            (aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) + aux.precip_velocities.term_vel_rai) *
-            If(Y.ρq_rai),
+            (
+                aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) +
+                CC.Geometry.WVector(If(aux.precip_velocities.term_vel_rai) * FT(-1))
+            ) * If(Y.ρq_rai),
         )
     @. dY.ρq_sno +=
         -∂(
-            (aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) + aux.precip_velocities.term_vel_sno) *
-            If(Y.ρq_sno),
+            (
+                aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) +
+                CC.Geometry.WVector(If(aux.precip_velocities.term_vel_sno) * FT(-1))
+            ) * If(Y.ρq_sno),
         )
 
     fcc = CC.Operators.FluxCorrectionC2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
-    @. dY.ρq_rai +=
-        fcc((aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) + aux.precip_velocities.term_vel_rai), Y.ρq_rai)
-    @. dY.ρq_sno +=
-        fcc((aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) + aux.precip_velocities.term_vel_sno), Y.ρq_sno)
+    @. dY.ρq_rai += fcc(
+        (
+            aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) +
+            CC.Geometry.WVector(If(aux.precip_velocities.term_vel_rai) * FT(-1))
+        ),
+        Y.ρq_rai,
+    )
+    @. dY.ρq_sno += fcc(
+        (
+            aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) +
+            CC.Geometry.WVector(If(aux.precip_velocities.term_vel_sno) * FT(-1))
+        ),
+        Y.ρq_sno,
+    )
 
     hdiv = CC.Operators.WeakDivergence()
     @. dY.ρq_rai += -hdiv(aux.prescribed_velocity.ρu / aux.moisture_variables.ρ * Y.ρq_rai)
@@ -147,7 +156,7 @@ end
 
     return dY
 end
-@inline function advection_tendency!(::K1D.Precipitation2M, dY, Y, aux, t)
+@inline function advection_tendency!(::CO.Precipitation2M, dY, Y, aux, t)
     FT = eltype(Y.ρq_tot)
 
     If = CC.Operators.InterpolateC2F()
@@ -155,20 +164,34 @@ end
 
     @. dY.N_rai +=
         -∂(
-            (aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) + aux.precip_velocities.term_vel_N_rai) *
-            If(Y.N_rai),
+            (
+                aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) +
+                CC.Geometry.WVector(If(aux.precip_velocities.term_vel_N_rai) * FT(-1))
+            ) * If(Y.N_rai),
         )
     @. dY.ρq_rai +=
         -∂(
-            (aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) + aux.precip_velocities.term_vel_rai) *
-            If(Y.ρq_rai),
+            (
+                aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) +
+                CC.Geometry.WVector(If(aux.precip_velocities.term_vel_rai) * FT(-1))
+            ) * If(Y.ρq_rai),
         )
 
     fcc = CC.Operators.FluxCorrectionC2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
-    @. dY.N_rai +=
-        fcc((aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) + aux.precip_velocities.term_vel_N_rai), Y.N_rai)
-    @. dY.ρq_rai +=
-        fcc((aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) + aux.precip_velocities.term_vel_rai), Y.ρq_rai)
+    @. dY.N_rai += fcc(
+        (
+            aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) +
+            CC.Geometry.WVector(If(aux.precip_velocities.term_vel_N_rai) * FT(-1))
+        ),
+        Y.N_rai,
+    )
+    @. dY.ρq_rai += fcc(
+        (
+            aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) +
+            CC.Geometry.WVector(If(aux.precip_velocities.term_vel_rai) * FT(-1))
+        ),
+        Y.ρq_rai,
+    )
 
 
     hdiv = CC.Operators.WeakDivergence()

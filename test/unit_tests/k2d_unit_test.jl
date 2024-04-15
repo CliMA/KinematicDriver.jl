@@ -1,32 +1,3 @@
-const kid_dir = pkgdir(Kinematic1D)
-include(joinpath(kid_dir, "test", "create_parameters.jl"))
-
-# override the defaults
-default_toml_dict = CP.create_toml_dict(FT, dict_type = "alias")
-toml_dict = override_toml_dict(@__DIR__, default_toml_dict)
-
-# create all the parameters structs ...
-thermo_params = create_thermodynamics_parameters(toml_dict)
-kid_params = create_kid_parameters(toml_dict)
-air_params = CMP.AirProperties(FT, toml_dict)
-activation_params = CMP.AerosolActivationParameters(FT, toml_dict)
-params = (kid_params, thermo_params, air_params, activation_params)
-# ... for cloud condensate options ...
-equil_moist_ρθq = K1D.EquilibriumMoisture_ρθq()
-nequil_moist_ρθq = K1D.NonEquilibriumMoisture_ρθq(CMP.CloudLiquid(FT, toml_dict), CMP.CloudIce(FT, toml_dict))
-# # ... and precipitation options
-no_precip = K1D.NoPrecipitation()
-precip_1m = K1D.Precipitation1M(
-    CMP.CloudLiquid(FT, toml_dict),
-    CMP.CloudIce(FT, toml_dict),
-    CMP.Rain(FT, toml_dict),
-    CMP.Snow(FT, toml_dict),
-    CMP.CollisionEff(FT, toml_dict),
-    CMP.KK2000(FT, toml_dict),
-    CMP.Blk1MVelType(FT, toml_dict),
-)
-precip_2m = K1D.Precipitation2M(CMP.SB2006(FT, toml_dict), CMP.SB2006VelType(FT, toml_dict))
-
 @testset "Make space" begin
 
     @test K2D.make_function_space(FT, xlim = (0, 100.0), zlim = (0, 200.0), helem = 16, velem = 32) isa
@@ -66,7 +37,11 @@ end
         S_qs_precip = [0.0, 0.0],
         S_Nl_precip = [0.0, 0.0],
         S_Nr_precip = [0.0, 0.0],
-        S_Na = [0.0, 0.0],
+        S_Na_activation = [0.0, 0.0],
+        S_Nl_activation = [0.0, 0.0],
+        term_vel_rai = [0.0, 0.0],
+        term_vel_sno = [0.0, 0.0],
+        term_vel_N_rai = [0.0, 0.0],
     )
     space, face_space = K2D.make_function_space(FT)
 
@@ -94,8 +69,9 @@ end
     space, face_space = K2D.make_function_space(FT)
     coords = CC.Fields.coordinate_field(space)
     face_coords = CC.Fields.coordinate_field(face_space)
-    ρ_profile = K1D.ρ_ivp(FT, kid_params, thermo_params)
-    init = map(coord -> K2D.init_2d_domain(FT, kid_params, thermo_params, ρ_profile, coord.x, coord.z), coords)
+    ρ_profile = CO.ρ_ivp(FT, kid_params, thermo_params)
+    init =
+        map(coord -> CO.initial_condition_1d(FT, common_params, kid_params, thermo_params, ρ_profile, coord.z), coords)
     t = 1.1 * kid_params.t1
 
     @test_throws Exception K2D.advection_tendency!(K1D.AbstractMoistureStyle(), dY, Y, aux, t)
@@ -105,12 +81,12 @@ end
     aux = K2D.initialise_aux(FT, init, params..., 3000.0, 3000.0, 0.0, 0.0, space, face_space, equil_moist_ρθq)
     K2D.precompute_aux_prescribed_velocity!(aux, t)
 
-    Y = K1D.initialise_state(equil_moist_ρθq, no_precip, init)
+    Y = CO.initialise_state(equil_moist_ρθq, no_precip, init)
     dY = Y / 10
     K2D.advection_tendency!(equil_moist_ρθq, dY, Y, aux, t)
     @test dY ≈ Y / 10 atol = eps(FT) * 10
 
-    Y = K1D.initialise_state(equil_moist_ρθq, precip_2m, init)
+    Y = CO.initialise_state(equil_moist_ρθq, precip_2m, init)
     dY = Y / 10
     K2D.advection_tendency!(precip_2m, dY, Y, aux, t)
     @test dY ≈ Y / 10 atol = eps(FT) * 10
@@ -119,12 +95,12 @@ end
     aux = K2D.initialise_aux(FT, init, params..., 3000.0, 3000.0, 0.0, 0.0, space, face_space, nequil_moist_ρθq)
     K2D.precompute_aux_prescribed_velocity!(aux, t)
 
-    Y = K1D.initialise_state(nequil_moist_ρθq, no_precip, init)
+    Y = CO.initialise_state(nequil_moist_ρθq, no_precip, init)
     dY = Y / 10
     K2D.advection_tendency!(nequil_moist_ρθq, dY, Y, aux, t)
     @test dY ≈ Y / 10 atol = eps(FT) * 10
 
-    Y = K1D.initialise_state(nequil_moist_ρθq, precip_2m, init)
+    Y = CO.initialise_state(nequil_moist_ρθq, precip_2m, init)
     dY = Y / 10
     K2D.advection_tendency!(precip_2m, dY, Y, aux, t)
     @test dY ≈ Y / 10 atol = eps(FT) * 10

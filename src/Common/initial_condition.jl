@@ -5,7 +5,7 @@
 """
    Initial profiles and surface values as defined by KiD setup
 """
-function init_condition(::Type{FT}, kid_params, thermo_params, z; dry = false) where {FT}
+function init_profile(::Type{FT}, kid_params, thermo_params, z; dry = false) where {FT}
 
     z_0::FT = 0.0
     z_1::FT = 740.0
@@ -51,7 +51,7 @@ function dρ_dz!(ρ, ode_settings, z)
     (; dry, kid_params, thermo_params) = ode_settings
 
     # initial profiles
-    init = init_condition(FT, kid_params, thermo_params, z, dry = dry)
+    init = init_profile(FT, kid_params, thermo_params, z, dry = dry)
     θ_std::FT = init.θ_std
     q_vap::FT = init.qv
 
@@ -81,7 +81,7 @@ end
 """
 function ρ_ivp(::Type{FT}, kid_params, thermo_params; dry = false) where {FT}
 
-    init_surface = init_condition(FT, kid_params, thermo_params, 0.0, dry = dry)
+    init_surface = init_profile(FT, kid_params, thermo_params, 0.0, dry = dry)
 
     ρ_0::FT = init_surface.ρ_0
     z_0::FT = init_surface.z_0
@@ -100,10 +100,18 @@ end
     Populate the remaining profiles based on the KiD initial condition
     and the density profile
 """
-function init_1d_column(::Type{FT}, kid_params, thermo_params, ρ_profile, z; dry = false) where {FT}
+function initial_condition_1d(
+    ::Type{FT},
+    common_params,
+    kid_params,
+    thermo_params,
+    ρ_profile,
+    z;
+    dry = false,
+) where {FT}
 
-    q_vap::FT = init_condition(FT, kid_params, thermo_params, z, dry = dry).qv
-    θ_std::FT = init_condition(FT, kid_params, thermo_params, z, dry = dry).θ_std
+    q_vap::FT = init_profile(FT, kid_params, thermo_params, z, dry = dry).qv
+    θ_std::FT = init_profile(FT, kid_params, thermo_params, z, dry = dry).θ_std
 
     ρ::FT = ρ_profile(z)
     ρ_dry::FT = SDM_ρ_dry_of_ρ(ρ, q_vap)
@@ -131,7 +139,7 @@ function init_1d_column(::Type{FT}, kid_params, thermo_params, ρ_profile, z; dr
     ρq_sno::FT = q_sno * ρ
     N_liq::FT = FT(0)
     N_rai::FT = FT(0)
-    N_aer_0::FT = kid_params.prescribed_Nd * ρ_dry / ρ_SDP
+    N_aer_0::FT = common_params.prescribed_Nd * ρ_dry / ρ_SDP
     N_aer::FT = N_aer_0
 
     S_ql_moisture::FT = FT(0.0)
@@ -144,7 +152,13 @@ function init_1d_column(::Type{FT}, kid_params, thermo_params, ρ_profile, z; dr
     S_qs_precip::FT = FT(0.0)
     S_Nl_precip::FT = FT(0)
     S_Nr_precip::FT = FT(0)
-    S_Na::FT = FT(0)
+
+    S_Na_activation::FT = FT(0)
+    S_Nl_activation::FT = FT(0)
+
+    term_vel_rai::FT = FT(0)
+    term_vel_sno::FT = FT(0)
+    term_vel_N_rai::FT = FT(0)
 
     return (;
         ρ,
@@ -176,6 +190,111 @@ function init_1d_column(::Type{FT}, kid_params, thermo_params, ρ_profile, z; dr
         S_qs_precip,
         S_Nl_precip,
         S_Nr_precip,
-        S_Na,
+        S_Na_activation,
+        S_Nl_activation,
+        term_vel_rai,
+        term_vel_sno,
+        term_vel_N_rai,
+    )
+end
+
+"""
+    Populate the remaining profiles based on given initial conditions including total specific water 
+    content (liquid + rain) and total number concentration
+"""
+function initial_condition(::Type{FT}, thermo_params, qt::FT, Nd::FT, k::FT, ρ_dry::FT, z) where {FT}
+
+    # qt represents specific water content in cloud and rain. The initialization in PySDM is 
+    # based on initial gamma distributions. This can lead to initial existence of rain; so here
+    # we compute variables for any general initial gamma distributions, by assuming absolute
+    # fixed radius threshold of 40 um between cloud droplets and raindrops.
+    # Ltr : total liquid plus rain content (no vapor; or assuming vapor is contained in dry air density)
+    L_tr::FT = ρ_dry * qt / (1 - qt)
+
+    rhow = FT(1000)
+    radius_th::FT = 40 * 1e-6
+    thrshld::FT = 4 / 3 * pi * (radius_th)^3 * rhow / (L_tr / Nd / k)
+
+    mass_ratio = SF.gamma_inc(thrshld, k + 1)[2]
+    ρq_liq::FT = mass_ratio * L_tr
+    ρq_rai::FT = L_tr - ρq_liq
+    ρq_tot::FT = ρq_liq
+    ρq_ice::FT = FT(0)
+    ρq_sno::FT = FT(0)
+
+    ρ = ρ_dry + ρq_liq
+
+    q_liq::FT = ρq_liq / ρ
+    q_rai::FT = ρq_rai / ρ
+    q_tot::FT = q_liq
+    q_ice::FT = FT(0)
+    q_sno::FT = FT(0)
+
+    num_ratio = SF.gamma_inc(thrshld, k)[2]
+    N_liq::FT = num_ratio * Nd
+    N_rai::FT = Nd - N_liq
+    N_aer_0::FT = FT(0.0)
+    N_aer::FT = FT(0.0)
+
+    T::FT = FT(300)
+    q = TD.PhasePartition(q_tot, q_liq, q_ice)
+    ts = TD.PhaseNonEquil_ρTq(thermo_params, ρ, T, q)
+    p = TD.air_pressure(thermo_params, ts)
+    θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
+    θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
+
+    S_ql_moisture::FT = FT(0.0)
+    S_qi_moisture::FT = FT(0.0)
+
+    S_qt_precip::FT = FT(0.0)
+    S_ql_precip::FT = FT(0.0)
+    S_qi_precip::FT = FT(0.0)
+    S_qr_precip::FT = FT(0.0)
+    S_qs_precip::FT = FT(0.0)
+    S_Nl_precip::FT = FT(0)
+    S_Nr_precip::FT = FT(0)
+
+    S_Na_activation::FT = FT(0)
+    S_Nl_activation::FT = FT(0)
+
+    term_vel_rai::FT = FT(0)
+    term_vel_sno::FT = FT(0)
+    term_vel_N_rai::FT = FT(0)
+
+    return (;
+        ρ,
+        ρ_dry,
+        T,
+        p,
+        θ_liq_ice,
+        θ_dry,
+        ρq_tot,
+        ρq_liq,
+        ρq_ice,
+        ρq_rai,
+        ρq_sno,
+        q_tot,
+        q_liq,
+        q_ice,
+        q_rai,
+        q_sno,
+        N_liq,
+        N_rai,
+        N_aer,
+        N_aer_0,
+        S_ql_moisture,
+        S_qi_moisture,
+        S_qt_precip,
+        S_ql_precip,
+        S_qi_precip,
+        S_qr_precip,
+        S_qs_precip,
+        S_Nl_precip,
+        S_Nr_precip,
+        S_Na_activation,
+        S_Nl_activation,
+        term_vel_rai,
+        term_vel_sno,
+        term_vel_N_rai,
     )
 end

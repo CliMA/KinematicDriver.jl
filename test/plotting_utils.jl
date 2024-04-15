@@ -70,7 +70,7 @@ function plot_final_aux_profiles(z_centers, aux, precip; output = "output")
     p6 = Plots.plot(q_sno_end .* 1e3, z_centers, xlabel = "q_sno [g/kg]", ylabel = "z [m]")
 
     p7 = Plots.plot(xlabel = "precipitation susceptibility", ylabel = "z [m]")
-    if precip isa KID.Precipitation2M
+    if precip isa CO.Precipitation2M
         precip_sus_aut =
             CMPS.precipitation_susceptibility_autoconversion.(
                 Ref(precip.rain_formation),
@@ -119,13 +119,13 @@ function plot_animation(z_centers, solver, aux, moisture, precip, KiD; output = 
         ρ = parent(aux.moisture_variables.ρ)
         q_tot = parent(u.ρq_tot) ./ ρ .* 1e3
 
-        if moisture isa KiD.NonEquilibriumMoisture
+        if moisture isa CO.NonEquilibriumMoisture
             q_liq = parent(u.ρq_liq) ./ ρ .* 1e3
         else
             q_liq = q_tot .* 0.0
         end
 
-        if !(precip isa Union{KiD.NoPrecipitation, KiD.Precipitation0M})
+        if !(precip isa Union{CO.NoPrecipitation, CO.Precipitation0M})
             q_rai = parent(u.ρq_rai) ./ ρ .* 1e3
         else
             q_rai = q_tot .* 0.0
