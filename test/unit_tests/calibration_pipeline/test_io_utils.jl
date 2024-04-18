@@ -9,7 +9,7 @@
     tmp_file = pwd() * tmp_dir * "tmp_params.jld2"
 
     #action
-    KCP.make_output_directories(tmp_dir)
+    KCP.make_output_directories(dir = tmp_dir)
     KCP.save_data(res, u_values, u_names, config, file_name = tmp_file)
     tmp_data = KCP.load_data(tmp_file)
 
