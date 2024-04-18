@@ -153,7 +153,6 @@ function run_KiD_col_sed(u::Array{FT, 1}, u_names::Array{String, 1}, model_setti
     apply_param_dependency!(model_settings)
     model_settings["toml_dict"]["νc_SB2006"]["value"] = model_settings["k"]
     common_params = create_common_parameters(
-        FT,
         precip_sources = model_settings["precip_sources"],
         precip_sinks = model_settings["precip_sinks"],
         Nd = model_settings["Nd"],
