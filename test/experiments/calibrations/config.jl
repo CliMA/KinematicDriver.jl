@@ -1,4 +1,4 @@
-import CLIMAParameters as CP
+import ClimaParams as CP
 import CloudMicrophysics as CM
 import Thermodynamics as TD
 import Kinematic1D.CalibrateCMP as KCP
@@ -170,7 +170,7 @@ function create_parameter_set()
         println(io, "value = 0.018015")
         println(io, "type = \"float\"")
     end
-    toml_dict = CP.create_toml_dict(FT; override_file, dict_type = "alias")
+    toml_dict = CP.create_toml_dict(FT; override_file)
     isfile(override_file) && rm(override_file; force = true)
 
     FTD = CP.float_type(toml_dict)

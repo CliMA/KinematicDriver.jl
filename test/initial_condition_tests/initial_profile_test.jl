@@ -7,7 +7,7 @@ using Test
 import Interpolations as IP
 import LinearAlgebra
 
-import CLIMAParameters
+import ClimaParams
 import ClimaCore as CC
 import Thermodynamics
 import CloudMicrophysics.Parameters as CMP
@@ -22,7 +22,7 @@ include(joinpath(kid_dir, "test", "create_parameters.jl"))
 const FT = Float64
 
 # Create parameters overwrite the defaults to match PySDM
-default_toml_dict = CP.create_toml_dict(FT, dict_type = "alias")
+default_toml_dict = CP.create_toml_dict(FT)
 toml_dict = override_toml_dict(@__DIR__, default_toml_dict)
 thermo_params = create_thermodynamics_parameters(toml_dict)
 common_params = create_common_parameters(toml_dict)

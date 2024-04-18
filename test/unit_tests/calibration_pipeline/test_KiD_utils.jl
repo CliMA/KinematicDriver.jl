@@ -13,13 +13,11 @@
     model_settings["w1"] = 2.25
     #action
     common_params = KCP.create_common_parameters(
-        Float64,
         precip_sources = model_settings["precip_sources"],
         precip_sinks = model_settings["precip_sinks"],
         Nd = model_settings["Nd"],
     )
     kid_params = KCP.create_kid_parameters(
-        Float64,
         w1 = model_settings["w1"],
         t1 = model_settings["t1"],
         p0 = model_settings["p0"],

@@ -1,11 +1,11 @@
 """
     Returns moisture type
 """
-function get_moisture_type(FT, moisture_choice::String, toml_dict)
+function get_moisture_type(moisture_choice::String, toml_dict)
     if moisture_choice == "EquilibriumMoisture"
         moisture = EquilibriumMoisture_ρdTq()
     elseif moisture_choice == "NonEquilibriumMoisture"
-        moisture = NonEquilibriumMoisture_ρdTq(CMP.CloudLiquid(FT, toml_dict), CMP.CloudIce(FT, toml_dict))
+        moisture = NonEquilibriumMoisture_ρdTq(CMP.CloudLiquid(toml_dict), CMP.CloudIce(toml_dict))
     else
         error("Invalid moisture choice: $moisture_choice")
     end
@@ -16,7 +16,6 @@ end
     Returns precipitation type
 """
 function get_precipitation_type(
-    FT,
     precipitation_choice::String,
     toml_dict;
     rain_formation_choice::Union{Nothing, String} = nothing,
@@ -25,50 +24,50 @@ function get_precipitation_type(
     if precipitation_choice == "NoPrecipitation"
         precip = NoPrecipitation()
     elseif precipitation_choice == "Precipitation0M"
-        precip = Precipitation0M(CMP.Parameters0M(FT, toml_dict))
+        precip = Precipitation0M(CMP.Parameters0M(toml_dict))
     elseif precipitation_choice == "Precipitation1M"
         if sedimentation_choice == "CliMA_1M" || sedimentation_choice === nothing
-            st = CMP.Blk1MVelType(FT, toml_dict)
+            st = CMP.Blk1MVelType(toml_dict)
         elseif sedimentation_choice == "Chen2022"
-            st = CMP.Chen2022VelType(FT, toml_dict)
+            st = CMP.Chen2022VelType(toml_dict)
         else
             error("Invalid sedimentation choice: $sedimentation_choice")
         end
         if rain_formation_choice == "CliMA_1M" || rain_formation_choice === nothing
-            rain_params = CMP.Rain(FT, toml_dict)
+            rain_params = CMP.Rain(toml_dict)
             rf = rain_params.acnv1M
         elseif rain_formation_choice == "KK2000"
-            rf = CMP.KK2000(FT, toml_dict)
+            rf = CMP.KK2000(toml_dict)
         elseif rain_formation_choice == "B1994"
-            rf = CMP.B1994(FT, toml_dict)
+            rf = CMP.B1994(toml_dict)
         elseif rain_formation_choice == "TC1980"
-            rf = CMP.TC1980(FT, toml_dict)
+            rf = CMP.TC1980(toml_dict)
         elseif rain_formation_choice == "LD2004"
-            rf = CMP.LD2004(FT, toml_dict)
+            rf = CMP.LD2004(toml_dict)
         elseif rain_formation_choice == "VarTimeScaleAcnv"
-            rf = CMP.VarTimescaleAcnv(FT, toml_dict)
+            rf = CMP.VarTimescaleAcnv(toml_dict)
         else
             error("Invalid rain formation choice: $rain_formation_choice")
         end
         precip = Precipitation1M(
-            CMP.CloudLiquid(FT, toml_dict),
-            CMP.CloudIce(FT, toml_dict),
-            CMP.Rain(FT, toml_dict),
-            CMP.Snow(FT, toml_dict),
-            CMP.CollisionEff(FT, toml_dict),
+            CMP.CloudLiquid(toml_dict),
+            CMP.CloudIce(toml_dict),
+            CMP.Rain(toml_dict),
+            CMP.Snow(toml_dict),
+            CMP.CollisionEff(toml_dict),
             rf,
             st,
         )
     elseif precipitation_choice == "Precipitation2M"
         if sedimentation_choice == "SB2006" || sedimentation_choice === nothing
-            st = CMP.SB2006VelType(FT, toml_dict)
+            st = CMP.SB2006VelType(toml_dict)
         elseif sedimentation_choice == "Chen2022"
-            st = CMP.Chen2022VelTypeRain(FT, toml_dict)
+            st = CMP.Chen2022VelTypeRain(toml_dict)
         else
             error("Invalid sedimentation choice: $sedimentation_choice")
         end
         if rain_formation_choice == "SB2006" || rain_formation_choice === nothing
-            precip = Precipitation2M(CMP.SB2006(FT, toml_dict), st)
+            precip = Precipitation2M(CMP.SB2006(toml_dict), st)
         else
             error("Invalid rain formation choice: $rain_formation_choice")
         end

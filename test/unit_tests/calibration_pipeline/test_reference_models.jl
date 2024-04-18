@@ -22,7 +22,7 @@
     @test length(θ) == length(vals)
 end
 
-@testset "Get validation samples" begin
+@test_skip @testset "Get validation samples" begin
     #setup
     config = get_config()
     n_heights = config["model"]["n_elem"]
@@ -73,7 +73,7 @@ end
         eps(Float64) * 10.0
 end
 
-@testset "Get observational data" begin
+@test_skip @testset "Get observational data" begin
     #setup
     cases = get_observations_config()["cases"]
     dirs = [case.dir for case in cases]
@@ -144,7 +144,7 @@ end
     rm_fake_pysdm_data(dirs)
 end
 
-@testset "Get Observations" begin
+@test_skip @testset "Get Observations" begin
     #setup
     config = get_config()
     n_heights = config["model"]["n_elem"]

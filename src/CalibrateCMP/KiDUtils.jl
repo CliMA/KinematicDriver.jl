@@ -72,9 +72,8 @@ function run_KiD(u::Array{FT, 1}, u_names::Array{String, 1}, model_settings::Dic
         κ = model_settings["κ"],
     )
 
-    moisture = CO.get_moisture_type(FT, model_settings["moisture_choice"], model_settings["toml_dict"])
+    moisture = CO.get_moisture_type(model_settings["moisture_choice"], model_settings["toml_dict"])
     precip = CO.get_precipitation_type(
-        FT,
         model_settings["precipitation_choice"],
         model_settings["toml_dict"];
         rain_formation_choice = model_settings["rain_formation_choice"],
@@ -161,9 +160,8 @@ function run_KiD_col_sed(u::Array{FT, 1}, u_names::Array{String, 1}, model_setti
     )
     kid_params = create_kid_parameters(FT)
 
-    moisture = CO.get_moisture_type(FT, "NonEquilibriumMoisture", model_settings["toml_dict"])
+    moisture = CO.get_moisture_type("NonEquilibriumMoisture", model_settings["toml_dict"])
     precip = CO.get_precipitation_type(
-        FT,
         model_settings["precipitation_choice"],
         model_settings["toml_dict"];
         rain_formation_choice = model_settings["rain_formation_choice"],

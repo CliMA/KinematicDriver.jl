@@ -1,6 +1,6 @@
 import OrdinaryDiffEq as ODE
 import ClimaCore as CC
-import CLIMAParameters as CP
+import ClimaParams as CP
 import CloudMicrophysics.Parameters as CMP
 import Kinematic1D
 import Kinematic1D.Common as CO
@@ -28,7 +28,7 @@ function run_KiD_col_sed_simulation(::Type{FT}, opts) where {FT}
     mkpath(path)
 
     # Overwrite the defaults parameters based on options
-    default_toml_dict = CP.create_toml_dict(FT, dict_type = "alias")
+    default_toml_dict = CP.create_toml_dict(FT)
     toml_dict = override_toml_dict(
         path,
         default_toml_dict,
@@ -42,12 +42,11 @@ function run_KiD_col_sed_simulation(::Type{FT}, opts) where {FT}
     common_params = create_common_parameters(toml_dict)
     kid_params = create_kid_parameters(toml_dict)
     thermo_params = create_thermodynamics_parameters(toml_dict)
-    air_params = CMP.AirProperties(FT, toml_dict)
-    activation_params = CMP.AerosolActivationParameters(FT, toml_dict)
+    air_params = CMP.AirProperties(toml_dict)
+    activation_params = CMP.AerosolActivationParameters(toml_dict)
 
-    moisture = CO.get_moisture_type(FT, "NonEquilibriumMoisture", toml_dict)
+    moisture = CO.get_moisture_type("NonEquilibriumMoisture", toml_dict)
     precip = CO.get_precipitation_type(
-        FT,
         precipitation_choice,
         toml_dict,
         rain_formation_choice = rain_formation_choice,

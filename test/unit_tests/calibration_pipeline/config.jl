@@ -1,4 +1,4 @@
-import CLIMAParameters as CP
+import ClimaParams as CP
 import CloudMicrophysics as CM
 import Thermodynamics as TD
 import Kinematic1D.CalibrateCMP as KCP
@@ -100,11 +100,9 @@ end
 
 function create_parameter_set()
     FT = Float64
-    toml_dict = CP.create_toml_dict(FT; dict_type = "alias")
-    aliases = string.(fieldnames(TD.Parameters.ThermodynamicsParameters))
-    pairs = CP.get_parameter_values!(toml_dict, aliases, "Thermodynamics")
-    thermo_params = TD.Parameters.ThermodynamicsParameters{FT}(; pairs...)
-    air_params = CM.Parameters.AirProperties(FT, toml_dict)
-    activation_params = CM.Parameters.AerosolActivationParameters(FT, toml_dict)
+    toml_dict = CP.create_toml_dict(FT)
+    thermo_params = TD.Parameters.ThermodynamicsParameters(toml_dict)
+    air_params = CM.Parameters.AirProperties(toml_dict)
+    activation_params = CM.Parameters.AerosolActivationParameters(toml_dict)
     return (; toml_dict, thermo_params, air_params, activation_params)
 end
