@@ -6,7 +6,12 @@ using DocumenterCitations
 
 bib = CitationBibliography(joinpath(@__DIR__, "bibliography.bib"))
 
-pages = Any["Home" => "index.md", "References" => "References.md"]
+pages = Any[
+    "Home" => "index.md",
+    "Simulation setups" => "simulation_setups.md",
+    "Calibration features" => "calibration_features.md",
+    "References" => "References.md",
+]
 
 mathengine = MathJax(Dict(:TeX => Dict(:equationNumbers => Dict(:autoNumber => "AMS"), :Macros => Dict())))
 

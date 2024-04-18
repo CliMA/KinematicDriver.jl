@@ -2,6 +2,7 @@ env:
   SLURM_CPUS_PER_TASK: 1
   OPENBLAS_NUM_THREADS: 1
   CLIMATEMACHINE_SETTINGS_FIX_RNG_SEED: "true"
+  JULIA_DEPOT_PATH: "${BUILDKITE_BUILD_PATH}/${BUILDKITE_PIPELINE_SLUG}/depot/default"
   
 agents:
   queue: new-central
@@ -103,11 +104,11 @@ steps:
 
       - label: ":crystal_ball: Experiments: perfect-model calibration + EKP "
         command: "julia --color=yes --project=test test/experiments/calibrations/run_calibration.jl"
-        artifact_paths: "output/*"
+        artifact_paths: "calibration_output/*"
 
       - label: ":crystal_ball: Experiments: obs(perfect-model) vs. model with 4/3 params"
         command: "julia --color=yes --project=test test/experiments/calibrations/run_model.jl"
-        artifact_paths: "output/*"
+        artifact_paths: "run_model_output/*"
         
       - label: ":crystal_ball: Experiments: Box model"
         command: "julia --color=yes --project=test test/experiments/box_driver/run_box_simulation.jl"

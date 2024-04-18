@@ -2,7 +2,7 @@ import Kinematic1D.CalibrateCMP as KCP
 
 include("./config.jl")
 
-data_save_directory = KCP.make_output_directories()
+data_save_directory = KCP.make_output_directories(dir = "/calibration_output/")
 
 config = get_config()
 
