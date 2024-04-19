@@ -174,13 +174,9 @@ function create_parameter_set()
     toml_dict = CP.create_toml_dict(FT; override_file)
     isfile(override_file) && rm(override_file; force = true)
 
-    FTD = CP.float_type(toml_dict)
-    aliases = string.(fieldnames(TD.Parameters.ThermodynamicsParameters))
-    param_pairs = CP.get_parameter_values!(toml_dict, aliases, "Thermodynamics")
-    thermo_params = TD.Parameters.ThermodynamicsParameters{FTD}(; param_pairs...)
-
-    air_params = CM.Parameters.AirProperties(FT, toml_dict)
-    activation_params = CM.Parameters.AerosolActivationParameters(FT, toml_dict)
+    thermo_params = TD.Parameters.ThermodynamicsParameters(toml_dict)
+    air_params = CM.Parameters.AirProperties(toml_dict)
+    activation_params = CM.Parameters.AerosolActivationParameters(toml_dict)
 
     return (; toml_dict, thermo_params, air_params, activation_params)
 end
