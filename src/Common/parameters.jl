@@ -24,20 +24,14 @@ Base.@kwdef struct CommonParameters{FT} <: ACP
 end
 
 function CommonParameters(td::CP.AbstractTOMLDict)
-    #name_map = (;
-    #    :precipitation_sources_flag => :precip_sources,
-    #    :precipitation_sinks_flag => :precip_sinks,
-    #    :prescribed_Nd => :prescribed_Nd,
-    #)
-    #parameters = CP.get_parameter_values(td, name_map, "Common")
-    FT = CP.float_type(td)
-    (; data) = td
-    return CommonParameters{FT}(
-         precip_sources = data["precipitation_sources_flag"]["value"],
-         precip_sinks = data["precipitation_sinks_flag"]["value"],
-         prescribed_Nd = FT(data["prescribed_Nd"]["value"]),
+    name_map = (;
+        :precipitation_sources_flag => :precip_sources,
+        :precipitation_sinks_flag => :precip_sinks,
+        :prescribed_Nd => :prescribed_Nd,
     )
-    #return CommonParameters{FT}(; parameters)
+    parameters = CP.get_parameter_values(td, name_map, "Common")
+    FT = CP.float_type(td)
+    return CommonParameters{FT}(; parameters...)
 end
 
 precip_sources(ps::ACP) = ps.precip_sources

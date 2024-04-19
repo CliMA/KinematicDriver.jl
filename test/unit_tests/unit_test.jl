@@ -33,14 +33,8 @@ activation_params = CMP.AerosolActivationParameters(toml_dict)
 # ... for cloud condensate options ...
 equil_moist_ρθq = CO.EquilibriumMoisture_ρθq()
 equil_moist_ρdTq = CO.EquilibriumMoisture_ρdTq()
-nequil_moist_ρθq = CO.NonEquilibriumMoisture_ρθq(
-    CMP.CloudLiquid(toml_dict),
-    CMP.CloudIce(toml_dict)
-)
-nequil_moist_ρdTq = CO.NonEquilibriumMoisture_ρdTq(
-    CMP.CloudLiquid(toml_dict),
-    CMP.CloudIce(toml_dict)
-)
+nequil_moist_ρθq = CO.NonEquilibriumMoisture_ρθq(CMP.CloudLiquid(toml_dict), CMP.CloudIce(toml_dict))
+nequil_moist_ρdTq = CO.NonEquilibriumMoisture_ρdTq(CMP.CloudLiquid(toml_dict), CMP.CloudIce(toml_dict))
 # ... and precipitation options
 no_precip = CO.NoPrecipitation()
 precip_0m = CO.Precipitation0M(CMP.Parameters0M(toml_dict))

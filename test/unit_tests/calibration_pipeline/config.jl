@@ -16,8 +16,9 @@ end
 function get_prior_config()
     config = Dict()
     config["parameters"] = Dict(
-        "χv_rai" => (mean = 1.0, var = 0.25, lbound = 0.0, ubound = 2.0),
-        "χa_rai" => (mean = 1.0, var = 0.25, lbound = 0.0, ubound = Inf),
+        "rain_terminal_velocity_size_relation_coefficient_chiv" =>
+            (mean = 1.0, var = 0.25, lbound = 0.0, ubound = 2.0),
+        "rain_cross_section_size_relation_coefficient_chia" => (mean = 1.0, var = 0.25, lbound = 0.0, ubound = Inf),
     )
     return config
 end

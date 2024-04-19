@@ -32,29 +32,18 @@ Base.@kwdef struct Kinematic1DParameters{FT} <: AKP
 end
 
 function Kinematic1DParameters(td::CP.AbstractTOMLDict)
-    #name_map = (;
-    #    :prescribed_flow_w1 => :w1,
-    #    :prescribed_flow_t1 => :t1,
-    #    :surface_pressure => :p0,
-    #    :qtot_flux_correction_flag => :qtot_flux_correction,
-    #    :r_dry => :r_dry,
-    #    :std_dry => :std_dry,
-    #    :kappa => :κ,
-    #)
-    #parameters = CP.get_parameter_values(td, name_map, "Kinematic1D")
-    #FT = CP.float_type(td)
-    #return Kinematic1DParameters{FT}(; parameters)
-    (; data) = td
-    FT = CP.float_type(td)
-    return Kinematic1DParameters(
-        FT(data["prescribed_flow_w1"]["value"]),
-        FT(data["prescribed_flow_t1"]["value"]),
-        FT(data["surface_pressure"]["value"]),
-        Int(data["qtot_flux_correction_flag"]["value"]),
-        FT(data["r_dry"]["value"]),
-        FT(data["std_dry"]["value"]),
-        FT(data["kappa"]["value"]),
+    name_map = (;
+        :prescribed_flow_w1 => :w1,
+        :prescribed_flow_t1 => :t1,
+        :surface_pressure => :p0,
+        :qtot_flux_correction_flag => :qtot_flux_correction,
+        :r_dry => :r_dry,
+        :std_dry => :std_dry,
+        :kappa => :κ,
     )
+    parameters = CP.get_parameter_values(td, name_map, "Kinematic1D")
+    FT = CP.float_type(td)
+    return Kinematic1DParameters{FT}(; parameters...)
 end
 
 w1(ps::AKP) = ps.w1

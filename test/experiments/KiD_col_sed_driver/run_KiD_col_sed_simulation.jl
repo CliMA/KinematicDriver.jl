@@ -36,7 +36,7 @@ function run_KiD_col_sed_simulation(::Type{FT}, opts) where {FT}
         precip_sinks = 0,
         prescribed_Nd = FT(opts["prescribed_Nd"]),
     )
-    toml_dict["νc_SB2006"]["value"] = opts["k"]
+    toml_dict["SB2006_cloud_gamma_distribution_parameter"]["value"] = opts["k"]
     # Create Thermodynamics.jl and Kinematic1D model parameters
     # (some of the CloudMicrophysics.jl parameters structs are created later based on model choices)
     common_params = create_common_parameters(toml_dict)

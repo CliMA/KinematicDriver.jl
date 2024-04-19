@@ -26,10 +26,8 @@ params = (common_params, thermo_params, air_params, activation_params)
     precip_1m_3 = CO.get_precipitation_type(p1m, toml_dict, rain_formation_choice = rf_3)
     precip_1m_4 = CO.get_precipitation_type(p1m, toml_dict, rain_formation_choice = rf_4)
     precip_1m_5 = CO.get_precipitation_type(p1m, toml_dict, rain_formation_choice = rf_5)
-    precip_1m_6 =
-        CO.get_precipitation_type(p1m, toml_dict, rain_formation_choice = rf_6, sedimentation_choice = st_1)
-    precip_1m_7 =
-        CO.get_precipitation_type(p1m, toml_dict, rain_formation_choice = rf_6, sedimentation_choice = st_2)
+    precip_1m_6 = CO.get_precipitation_type(p1m, toml_dict, rain_formation_choice = rf_6, sedimentation_choice = st_1)
+    precip_1m_7 = CO.get_precipitation_type(p1m, toml_dict, rain_formation_choice = rf_6, sedimentation_choice = st_2)
     precip_2m = CO.get_precipitation_type(p2m, toml_dict, rain_formation_choice = rf_7)
 
     #test

@@ -41,8 +41,7 @@ function run_box_simulation(::Type{FT}, opts) where {FT}
     activation_params = CMP.AerosolActivationParameters(toml_dict)
 
     moisture = CO.get_moisture_type("NonEquilibriumMoisture", toml_dict)
-    precip =
-        CO.get_precipitation_type(precipitation_choice, toml_dict; rain_formation_choice = rain_formation_choice)
+    precip = CO.get_precipitation_type(precipitation_choice, toml_dict; rain_formation_choice = rain_formation_choice)
 
     # Initialize the timestepping struct
     TS = CO.TimeStepping(FT(opts["dt"]), FT(opts["dt_output"]), FT(opts["t_end"]))
