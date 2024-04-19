@@ -10,7 +10,7 @@ function make_function_space(FT, z_min, z_max, n_elem)
     domain = CC.Domains.IntervalDomain(
         CC.Geometry.ZPoint{FT}(z_min),
         CC.Geometry.ZPoint{FT}(z_max),
-        boundary_tags = (:bottom, :top),
+        boundary_names = (:bottom, :top),
     )
     mesh = CC.Meshes.IntervalMesh(domain, nelems = n_elem)
 
@@ -22,8 +22,8 @@ end
 
 """
    Interface to ODE solver. Returns the function needed to compute the
-   right hand side of the solved ODE for advection, condensation, 
-   collision, sedimentation and evaporation processes. The rhs is 
+   right hand side of the solved ODE for advection, condensation,
+   collision, sedimentation and evaporation processes. The rhs is
    assembled via dispatch based on the moisture and precipitation types.
 """
 function make_rhs_function(ms::CO.AbstractMoistureStyle, ps::CO.AbstractPrecipitationStyle)
@@ -50,7 +50,7 @@ end
 
 """
    Interface to ODE solver. Returns the function needed to compute the
-   right hand side of the solved ODE for collision and sedimentation 
+   right hand side of the solved ODE for collision and sedimentation
    processes. The rhs is assembled via dispatch based on precipitation type.
 """
 function make_rhs_function_col_sed(ms::CO.AbstractMoistureStyle, ps::CO.AbstractPrecipitationStyle)
