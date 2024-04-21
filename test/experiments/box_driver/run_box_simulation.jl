@@ -47,8 +47,11 @@ function run_box_simulation(::Type{FT}, opts) where {FT}
     TS = CO.TimeStepping(FT(opts["dt"]), FT(opts["dt_output"]), FT(opts["t_end"]))
 
     # Create the 0D box domain (one z point)
-    domain =
-        CC.Domains.IntervalDomain(CC.Geometry.ZPoint{FT}(0), CC.Geometry.ZPoint{FT}(1), boundary_names = (:bottom, :top))
+    domain = CC.Domains.IntervalDomain(
+        CC.Geometry.ZPoint{FT}(0),
+        CC.Geometry.ZPoint{FT}(1),
+        boundary_names = (:bottom, :top),
+    )
     mesh = CC.Meshes.IntervalMesh(domain, nelems = 1)
     space = CC.Spaces.CenterFiniteDifferenceSpace(mesh)
     coord = CC.Fields.coordinate_field(space)

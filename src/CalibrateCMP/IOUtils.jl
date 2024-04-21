@@ -160,7 +160,7 @@ function read_pysdm_data(file)
     # iterate over all variables
     vars = Dict()
     for (varname, var) in ds
-        vars[varname] = var[:]
+        vars[varname] = reshape(var[:], size(var))
     end
 
     close(ds)

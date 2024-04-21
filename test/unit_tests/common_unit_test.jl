@@ -508,8 +508,11 @@ end
         term_vel_sno = 0.0,
         term_vel_N_rai = 0.0,
     )
-    domain =
-        CC.Domains.IntervalDomain(CC.Geometry.ZPoint{FT}(0), CC.Geometry.ZPoint{FT}(1), boundary_names = (:bottom, :top))
+    domain = CC.Domains.IntervalDomain(
+        CC.Geometry.ZPoint{FT}(0),
+        CC.Geometry.ZPoint{FT}(1),
+        boundary_names = (:bottom, :top),
+    )
     mesh = CC.Meshes.IntervalMesh(domain, nelems = 1)
     space = CC.Spaces.CenterFiniteDifferenceSpace(mesh)
     coord = CC.Fields.coordinate_field(space)
