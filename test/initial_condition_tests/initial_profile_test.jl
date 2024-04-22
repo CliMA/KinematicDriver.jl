@@ -7,7 +7,7 @@ using Test
 import Interpolations as IP
 import LinearAlgebra
 
-import CLIMAParameters
+import ClimaParams
 import ClimaCore as CC
 import Thermodynamics
 import CloudMicrophysics.Parameters as CMP
@@ -22,13 +22,13 @@ include(joinpath(kid_dir, "test", "create_parameters.jl"))
 const FT = Float64
 
 # Create parameters overwrite the defaults to match PySDM
-default_toml_dict = CP.create_toml_dict(FT, dict_type = "alias")
+default_toml_dict = CP.create_toml_dict(FT)
 toml_dict = override_toml_dict(@__DIR__, default_toml_dict)
 thermo_params = create_thermodynamics_parameters(toml_dict)
 common_params = create_common_parameters(toml_dict)
 kid_params = create_kid_parameters(toml_dict)
-air_params = CMP.AirProperties(FT, toml_dict)
-activation_params = CMP.AerosolActivationParameters(FT, toml_dict)
+air_params = CMP.AirProperties(toml_dict)
+activation_params = CMP.AerosolActivationParameters(toml_dict)
 params = (common_params, kid_params, thermo_params, air_params, activation_params)
 
 function compare_profiles(; is_dry_flag::Bool)

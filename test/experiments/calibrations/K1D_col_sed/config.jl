@@ -1,4 +1,4 @@
-import CLIMAParameters as CP
+import ClimaParams as CP
 import CloudMicrophysics as CM
 import Thermodynamics as TD
 import Kinematic1D.CalibrateCMP as KCP
@@ -127,7 +127,7 @@ function get_model_config()
     )
     # Define default parameters
     FT = Float64
-    config["toml_dict"] = CP.create_toml_dict(FT, dict_type = "alias")
+    config["toml_dict"] = CP.create_toml_dict(FT)
     config["param_dependencies"] = [(base = "aR_tv_SB2006", dependant = "bR_tv_SB2006", ratio = 10.3 / 9.65)]
 
     return config

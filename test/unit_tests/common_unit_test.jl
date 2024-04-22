@@ -3,7 +3,7 @@ params = (common_params, thermo_params, air_params, activation_params)
 @testset "Precipitation types" begin
 
     #setup
-    toml_dict = CP.create_toml_dict(FT; dict_type = "alias")
+    toml_dict = CP.create_toml_dict(FT)
     pn = "NoPrecipitation"
     p0m = "Precipitation0M"
     p1m = "Precipitation1M"
@@ -19,23 +19,21 @@ params = (common_params, thermo_params, air_params, activation_params)
     st_2 = "Chen2022"
 
     #action
-    precip_pn = CO.get_precipitation_type(FT, pn, toml_dict)
-    precip_0m = CO.get_precipitation_type(FT, p0m, toml_dict)
-    precip_1m_1 = CO.get_precipitation_type(FT, p1m, toml_dict, rain_formation_choice = rf_1)
-    precip_1m_2 = CO.get_precipitation_type(FT, p1m, toml_dict, rain_formation_choice = rf_2)
-    precip_1m_3 = CO.get_precipitation_type(FT, p1m, toml_dict, rain_formation_choice = rf_3)
-    precip_1m_4 = CO.get_precipitation_type(FT, p1m, toml_dict, rain_formation_choice = rf_4)
-    precip_1m_5 = CO.get_precipitation_type(FT, p1m, toml_dict, rain_formation_choice = rf_5)
-    precip_1m_6 =
-        CO.get_precipitation_type(FT, p1m, toml_dict, rain_formation_choice = rf_6, sedimentation_choice = st_1)
-    precip_1m_7 =
-        CO.get_precipitation_type(FT, p1m, toml_dict, rain_formation_choice = rf_6, sedimentation_choice = st_2)
-    precip_2m = CO.get_precipitation_type(FT, p2m, toml_dict, rain_formation_choice = rf_7)
+    precip_pn = CO.get_precipitation_type(pn, toml_dict)
+    precip_0m = CO.get_precipitation_type(p0m, toml_dict)
+    precip_1m_1 = CO.get_precipitation_type(p1m, toml_dict, rain_formation_choice = rf_1)
+    precip_1m_2 = CO.get_precipitation_type(p1m, toml_dict, rain_formation_choice = rf_2)
+    precip_1m_3 = CO.get_precipitation_type(p1m, toml_dict, rain_formation_choice = rf_3)
+    precip_1m_4 = CO.get_precipitation_type(p1m, toml_dict, rain_formation_choice = rf_4)
+    precip_1m_5 = CO.get_precipitation_type(p1m, toml_dict, rain_formation_choice = rf_5)
+    precip_1m_6 = CO.get_precipitation_type(p1m, toml_dict, rain_formation_choice = rf_6, sedimentation_choice = st_1)
+    precip_1m_7 = CO.get_precipitation_type(p1m, toml_dict, rain_formation_choice = rf_6, sedimentation_choice = st_2)
+    precip_2m = CO.get_precipitation_type(p2m, toml_dict, rain_formation_choice = rf_7)
 
     #test
-    @test_throws Exception CO.get_precipitation_type(FT, "_", toml_dict, rain_formation_choice = rf_1)
-    @test_throws Exception CO.get_precipitation_type(FT, p1m, toml_dict, rain_formation_choice = "_")
-    @test_throws Exception CO.get_precipitation_type(FT, p2m, toml_dict, rain_formation_choice = rf_1)
+    @test_throws Exception CO.get_precipitation_type("_", toml_dict, rain_formation_choice = rf_1)
+    @test_throws Exception CO.get_precipitation_type(p1m, toml_dict, rain_formation_choice = "_")
+    @test_throws Exception CO.get_precipitation_type(p2m, toml_dict, rain_formation_choice = rf_1)
     @test precip_pn isa CO.NoPrecipitation
     @test precip_0m isa CO.Precipitation0M
     @test precip_1m_1 isa CO.Precipitation1M
@@ -52,13 +50,13 @@ end
 @testset "Moisture type" begin
 
     #setup
-    toml_dict = CP.create_toml_dict(FT; dict_type = "alias")
+    toml_dict = CP.create_toml_dict(FT)
     eqm = "EquilibriumMoisture"
     neqm = "NonEquilibriumMoisture"
 
     #action
-    moisture_eq = CO.get_moisture_type(FT, eqm, toml_dict)
-    moisture_neq = CO.get_moisture_type(FT, neqm, toml_dict)
+    moisture_eq = CO.get_moisture_type(eqm, toml_dict)
+    moisture_neq = CO.get_moisture_type(neqm, toml_dict)
 
     #test
     @test CO.EquilibriumMoisture <: CO.AbstractMoistureStyle
@@ -68,7 +66,7 @@ end
     @test CO.NonEquilibriumMoisture_ρθq <: CO.NonEquilibriumMoisture
     @test CO.NonEquilibriumMoisture_ρdTq <: CO.NonEquilibriumMoisture
 
-    @test_throws Exception CO.get_moisture_type(FT, "_", toml_dict)
+    @test_throws Exception CO.get_moisture_type("_", toml_dict)
     @test moisture_eq isa CO.EquilibriumMoisture_ρdTq
     @test moisture_neq isa CO.NonEquilibriumMoisture_ρdTq
 
@@ -510,8 +508,11 @@ end
         term_vel_sno = 0.0,
         term_vel_N_rai = 0.0,
     )
-    domain =
-        CC.Domains.IntervalDomain(CC.Geometry.ZPoint{FT}(0), CC.Geometry.ZPoint{FT}(1), boundary_tags = (:bottom, :top))
+    domain = CC.Domains.IntervalDomain(
+        CC.Geometry.ZPoint{FT}(0),
+        CC.Geometry.ZPoint{FT}(1),
+        boundary_names = (:bottom, :top),
+    )
     mesh = CC.Meshes.IntervalMesh(domain, nelems = 1)
     space = CC.Spaces.CenterFiniteDifferenceSpace(mesh)
     coord = CC.Fields.coordinate_field(space)

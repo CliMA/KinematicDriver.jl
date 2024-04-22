@@ -181,11 +181,11 @@ end
         # autoconversion liquid to rain and ice to snow
         # TODO - can we do it in a more elegant way?
         if rf isa CMP.Acnv1M{FT}
-            tmp = CM1.conv_q_liq_to_q_rai(rf, q.liq, smooth_transition = true)
+            tmp = CM1.conv_q_liq_to_q_rai(rf, q.liq, true)
         elseif typeof(rf) in [CMP.LD2004{FT}, CMP.VarTimescaleAcnv{FT}]
-            tmp = CM2.conv_q_liq_to_q_rai(rf, q.liq, ρ; N_d = common_params.prescribed_Nd)
+            tmp = CM2.conv_q_liq_to_q_rai(rf, q.liq, ρ, common_params.prescribed_Nd)
         elseif typeof(rf.acnv) in [CMP.AcnvKK2000{FT}, CMP.AcnvB1994{FT}, CMP.AcnvTC1980{FT}]
-            tmp = CM2.conv_q_liq_to_q_rai(rf, q.liq, ρ; N_d = common_params.prescribed_Nd)
+            tmp = CM2.conv_q_liq_to_q_rai(rf, q.liq, ρ, common_params.prescribed_Nd)
         else
             error("Unrecognized rain formation scheme")
         end

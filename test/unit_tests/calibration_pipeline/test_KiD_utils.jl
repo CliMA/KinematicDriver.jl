@@ -1,13 +1,13 @@
 @testset "creating parameters object" begin
     #setup
     u = [1e-4, 12345.0]
-    u_names = ["q_liq_threshold", "τ_acnv_rai"]
+    u_names = ["cloud_liquid_water_specific_humidity_autoconversion_threshold", "rain_autoconversion_timescale"]
     model_settings = get_model_config()
     #action
     KCP.update_parameters!(model_settings, u, u_names)
     #test
-    @test model_settings["toml_dict"]["q_liq_threshold"]["value"] == 1e-4
-    @test model_settings["toml_dict"]["τ_acnv_rai"]["value"] == 12345.0
+    @test model_settings["toml_dict"]["cloud_liquid_water_specific_humidity_autoconversion_threshold"]["value"] == 1e-4
+    @test model_settings["toml_dict"]["rain_autoconversion_timescale"]["value"] == 12345.0
 
     #setup
     model_settings["w1"] = 2.25
@@ -38,7 +38,7 @@ end
 @testset "Run KiD" begin
     #setup
     u = [1e-4]
-    u_names = ["q_liq_threshold"]
+    u_names = ["cloud_liquid_water_specific_humidity_autoconversion_threshold"]
     model_settings = get_model_config()
     n_heights = model_settings["n_elem"]
     n_times = length(model_settings["t_calib"])
@@ -78,7 +78,7 @@ end
 @testset "Run KiD (multiple cases) and run dynamical model" begin
     #setup
     u = [1e-4]
-    u_names = ["q_liq_threshold"]
+    u_names = ["cloud_liquid_water_specific_humidity_autoconversion_threshold"]
     config = Dict("model" => get_model_config(), "observations" => get_observations_config())
     n_heights = config["model"]["n_elem"]
     n_times = length(config["model"]["t_calib"])

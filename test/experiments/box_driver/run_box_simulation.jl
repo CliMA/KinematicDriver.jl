@@ -2,7 +2,7 @@ import OrdinaryDiffEq as ODE
 using Plots
 
 import ClimaCore as CC
-import CLIMAParameters as CP
+import ClimaParams as CP
 import CloudMicrophysics.Parameters as CMP
 import Kinematic1D
 import Kinematic1D.BoxModel as BX
@@ -24,7 +24,7 @@ function run_box_simulation(::Type{FT}, opts) where {FT}
     mkpath(path)
 
     # Overwrite the defaults parameters based on options
-    default_toml_dict = CP.create_toml_dict(FT, dict_type = "alias")
+    default_toml_dict = CP.create_toml_dict(FT)
     toml_dict = override_toml_dict(
         path,
         default_toml_dict,
@@ -37,19 +37,21 @@ function run_box_simulation(::Type{FT}, opts) where {FT}
     end
     common_params = create_common_parameters(toml_dict)
     thermo_params = create_thermodynamics_parameters(toml_dict)
-    air_params = CMP.AirProperties(FT, toml_dict)
-    activation_params = CMP.AerosolActivationParameters(FT, toml_dict)
+    air_params = CMP.AirProperties(toml_dict)
+    activation_params = CMP.AerosolActivationParameters(toml_dict)
 
-    moisture = CO.get_moisture_type(FT, "NonEquilibriumMoisture", toml_dict)
-    precip =
-        CO.get_precipitation_type(FT, precipitation_choice, toml_dict; rain_formation_choice = rain_formation_choice)
+    moisture = CO.get_moisture_type("NonEquilibriumMoisture", toml_dict)
+    precip = CO.get_precipitation_type(precipitation_choice, toml_dict; rain_formation_choice = rain_formation_choice)
 
     # Initialize the timestepping struct
     TS = CO.TimeStepping(FT(opts["dt"]), FT(opts["dt_output"]), FT(opts["t_end"]))
 
     # Create the 0D box domain (one z point)
-    domain =
-        CC.Domains.IntervalDomain(CC.Geometry.ZPoint{FT}(0), CC.Geometry.ZPoint{FT}(1), boundary_tags = (:bottom, :top))
+    domain = CC.Domains.IntervalDomain(
+        CC.Geometry.ZPoint{FT}(0),
+        CC.Geometry.ZPoint{FT}(1),
+        boundary_names = (:bottom, :top),
+    )
     mesh = CC.Meshes.IntervalMesh(domain, nelems = 1)
     space = CC.Spaces.CenterFiniteDifferenceSpace(mesh)
     coord = CC.Fields.coordinate_field(space)

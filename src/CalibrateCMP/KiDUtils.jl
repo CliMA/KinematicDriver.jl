@@ -72,9 +72,8 @@ function run_KiD(u::Array{FT, 1}, u_names::Array{String, 1}, model_settings::Dic
         κ = model_settings["κ"],
     )
 
-    moisture = CO.get_moisture_type(FT, model_settings["moisture_choice"], model_settings["toml_dict"])
+    moisture = CO.get_moisture_type(model_settings["moisture_choice"], model_settings["toml_dict"])
     precip = CO.get_precipitation_type(
-        FT,
         model_settings["precipitation_choice"],
         model_settings["toml_dict"];
         rain_formation_choice = model_settings["rain_formation_choice"],
@@ -152,18 +151,16 @@ function run_KiD_col_sed(u::Array{FT, 1}, u_names::Array{String, 1}, model_setti
 
     update_parameters!(model_settings, u, u_names)
     apply_param_dependency!(model_settings)
-    model_settings["toml_dict"]["νc_SB2006"]["value"] = model_settings["k"]
+    model_settings["toml_dict"]["SB2006_cloud_gamma_distribution_parameter"]["value"] = model_settings["k"]
     common_params = create_common_parameters(
-        FT,
         precip_sources = model_settings["precip_sources"],
         precip_sinks = model_settings["precip_sinks"],
         Nd = model_settings["Nd"],
     )
     kid_params = create_kid_parameters(FT)
 
-    moisture = CO.get_moisture_type(FT, "NonEquilibriumMoisture", model_settings["toml_dict"])
+    moisture = CO.get_moisture_type("NonEquilibriumMoisture", model_settings["toml_dict"])
     precip = CO.get_precipitation_type(
-        FT,
         model_settings["precipitation_choice"],
         model_settings["toml_dict"];
         rain_formation_choice = model_settings["rain_formation_choice"],

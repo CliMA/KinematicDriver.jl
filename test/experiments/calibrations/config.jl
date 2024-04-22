@@ -1,4 +1,4 @@
-import CLIMAParameters as CP
+import ClimaParams as CP
 import CloudMicrophysics as CM
 import Thermodynamics as TD
 import Kinematic1D.CalibrateCMP as KCP
@@ -22,8 +22,9 @@ function get_prior_config()
     config = Dict()
     # Define prior mean and bounds on the parameters.
     config["parameters"] = Dict(
-        "χv_rai" => (mean = 0.1, var = 0.03, lbound = 0.0, ubound = 1.0),
-        "χa_rai" => (mean = 4.0, var = 1.0, lbound = 0.0, ubound = 10.0),
+        "rain_terminal_velocity_size_relation_coefficient_chiv" =>
+            (mean = 0.1, var = 0.03, lbound = 0.0, ubound = 1.0),
+        "rain_cross_section_size_relation_coefficient_chia" => (mean = 4.0, var = 1.0, lbound = 0.0, ubound = 10.0),
     )
     return config
 end
@@ -170,16 +171,12 @@ function create_parameter_set()
         println(io, "value = 0.018015")
         println(io, "type = \"float\"")
     end
-    toml_dict = CP.create_toml_dict(FT; override_file, dict_type = "alias")
+    toml_dict = CP.create_toml_dict(FT; override_file)
     isfile(override_file) && rm(override_file; force = true)
 
-    FTD = CP.float_type(toml_dict)
-    aliases = string.(fieldnames(TD.Parameters.ThermodynamicsParameters))
-    param_pairs = CP.get_parameter_values!(toml_dict, aliases, "Thermodynamics")
-    thermo_params = TD.Parameters.ThermodynamicsParameters{FTD}(; param_pairs...)
-
-    air_params = CM.Parameters.AirProperties(FT, toml_dict)
-    activation_params = CM.Parameters.AerosolActivationParameters(FT, toml_dict)
+    thermo_params = TD.Parameters.ThermodynamicsParameters(toml_dict)
+    air_params = CM.Parameters.AirProperties(toml_dict)
+    activation_params = CM.Parameters.AerosolActivationParameters(toml_dict)
 
     return (; toml_dict, thermo_params, air_params, activation_params)
 end
