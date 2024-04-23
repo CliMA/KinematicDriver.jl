@@ -1,5 +1,5 @@
 using Combinatorics, Statistics
-import Kinematic1D.CalibrateCMP as KCP
+import KinematicDriver.CalibrateCMP as KCP
 
 include("../config.jl")
 

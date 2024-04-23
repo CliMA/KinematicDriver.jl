@@ -30,8 +30,8 @@
     )
 
     #test
-    @test common_params isa Kinematic1D.Common.Parameters.CommonParameters
-    @test kid_params isa Kinematic1D.K1DModel.Parameters.Kinematic1DParameters
+    @test common_params isa KinematicDriver.Common.Parameters.CommonParameters
+    @test kid_params isa KinematicDriver.K1DModel.Parameters.KinematicDriverParameters
     @test kid_params.w1 == 2.25
 end
 

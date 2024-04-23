@@ -11,10 +11,10 @@ import ClimaParams
 import ClimaCore as CC
 import Thermodynamics
 import CloudMicrophysics.Parameters as CMP
-import Kinematic1D
-import Kinematic1D.K1DModel as KID
+import KinematicDriver
+import KinematicDriver.K1DModel as KID
 
-const kid_dir = pkgdir(Kinematic1D)
+const kid_dir = pkgdir(KinematicDriver)
 include(joinpath(kid_dir, "test", "data_utils.jl"))
 include(joinpath(kid_dir, "test", "plotting_utils.jl"))
 include(joinpath(kid_dir, "test", "create_parameters.jl"))

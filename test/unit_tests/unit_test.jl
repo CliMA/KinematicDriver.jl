@@ -8,16 +8,16 @@ import LinearAlgebra as LA
 import ClimaParams as CP
 import ClimaCore as CC
 import Thermodynamics as TD
-import Kinematic1D
-import Kinematic1D.Common as CO
-import Kinematic1D.BoxModel as BX
-import Kinematic1D.K1DModel as K1D
-import Kinematic1D.K2DModel as K2D
+import KinematicDriver
+import KinematicDriver.Common as CO
+import KinematicDriver.BoxModel as BX
+import KinematicDriver.K1DModel as K1D
+import KinematicDriver.K2DModel as K2D
 import CloudMicrophysics.Parameters as CMP
 
 const FT = Float64
 
-const kid_dir = pkgdir(Kinematic1D)
+const kid_dir = pkgdir(KinematicDriver)
 include(joinpath(kid_dir, "test", "create_parameters.jl"))
 
 # override the defaults
@@ -52,10 +52,10 @@ precip_2m = CO.Precipitation2M(CMP.SB2006(toml_dict), CMP.SB2006VelType(toml_dic
 # common unit tests
 include("./common_unit_test.jl")
 
-# kinematic1d unit tests
+# KinematricDriver 1D unit tests
 include("./k1d_unit_test.jl")
 
-# kinematic2d unit tests
+# KinematricDriver 2D unit tests
 include("./k2d_unit_test.jl")
 
 # calibration pipeline unit tests

@@ -2,12 +2,12 @@ import OrdinaryDiffEq as ODE
 import ClimaCore as CC
 import ClimaParams as CP
 import CloudMicrophysics.Parameters as CMP
-import Kinematic1D
-import Kinematic1D.Common as CO
-import Kinematic1D.K1DModel as K1D
+import KinematicDriver
+import KinematicDriver.Common as CO
+import KinematicDriver.K1DModel as K1D
 
-include(joinpath(pkgdir(Kinematic1D), "test", "create_parameters.jl"))
-include(joinpath(pkgdir(Kinematic1D), "test", "plotting_utils.jl"))
+include(joinpath(pkgdir(KinematicDriver), "test", "create_parameters.jl"))
+include(joinpath(pkgdir(KinematicDriver), "test", "plotting_utils.jl"))
 
 function run_KiD_col_sed_simulation(::Type{FT}, opts) where {FT}
 
@@ -37,7 +37,7 @@ function run_KiD_col_sed_simulation(::Type{FT}, opts) where {FT}
         prescribed_Nd = FT(opts["prescribed_Nd"]),
     )
     toml_dict["SB2006_cloud_gamma_distribution_parameter"]["value"] = opts["k"]
-    # Create Thermodynamics.jl and Kinematic1D model parameters
+    # Create Thermodynamics.jl and KinematicDriver model parameters
     # (some of the CloudMicrophysics.jl parameters structs are created later based on model choices)
     common_params = create_common_parameters(toml_dict)
     kid_params = create_kid_parameters(toml_dict)

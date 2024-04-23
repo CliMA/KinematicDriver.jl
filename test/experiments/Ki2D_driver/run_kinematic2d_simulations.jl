@@ -2,15 +2,15 @@ import OrdinaryDiffEq as ODE
 import ClimaCore as CC
 import ClimaParams as CP
 import CloudMicrophysics.Parameters as CMP
-import Kinematic1D
-import Kinematic1D.K1DModel as K1D
-import Kinematic1D.K2DModel as K2D
+import KinematicDriver
+import KinematicDriver.K1DModel as K1D
+import KinematicDriver.K2DModel as K2D
 
 ENV["GKSwstype"] = "nul"
 using ClimaCorePlots, Plots
 Plots.GRBackend()
 
-include(joinpath(pkgdir(Kinematic1D), "test", "create_parameters.jl"))
+include(joinpath(pkgdir(KinematicDriver), "test", "create_parameters.jl"))
 
 function run_K2D_simulation(::Type{FT}, opts) where {FT}
 
@@ -48,7 +48,7 @@ function run_K2D_simulation(::Type{FT}, opts) where {FT}
         std_dry = FT(opts["std_dry"]),
         κ = FT(opts["kappa"]),
     )
-    # Create Thermodynamics.jl and Kinematic1D model parameters
+    # Create Thermodynamics.jl and KinematicDriver model parameters
     # (some of the CloudMicrophysics.jl parameters structs are created later based on model choices)
     thermo_params = create_thermodynamics_parameters(toml_dict)
     common_params = create_common_parameters(toml_dict)

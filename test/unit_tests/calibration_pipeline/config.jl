@@ -1,7 +1,7 @@
 import ClimaParams as CP
 import CloudMicrophysics as CM
 import Thermodynamics as TD
-import Kinematic1D.CalibrateCMP as KCP
+import KinematicDriver.CalibrateCMP as KCP
 
 function get_config()
     config = Dict()
