@@ -40,6 +40,15 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
         w1 = FT(opts["w1"]),
         t1 = FT(opts["t1"]),
         p0 = FT(opts["p0"]),
+        z_0 = FT(opts["z_0"]),
+        z_1 = FT(opts["z_1"]),
+        z_2 = FT(opts["z_2"]),
+        rv_0 = FT(opts["rv_0"]),
+        rv_1 = FT(opts["rv_1"]),
+        rv_2 = FT(opts["rv_2"]),
+        tht_0 = FT(opts["tht_0"]),
+        tht_1 = FT(opts["tht_1"]),
+        tht_2 = FT(opts["tht_2"]),
         precip_sources = Int(opts["precip_sources"]),
         precip_sinks = Int(opts["precip_sinks"]),
         qtot_flux_correction = Int(opts["qtot_flux_correction"]),
@@ -131,7 +140,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
         z_centers = parent(CC.Fields.coordinate_field(space))
         plot_final_aux_profiles(z_centers, aux, precip, output = plot_folder)
         plot_animation(z_centers, solver, aux, moisture, precip, K1D, output = plot_folder)
-        plot_timeheight(string("experiments/KiD_driver/", output_folder, "/Output.nc"), output = plot_folder)
+        #plot_timeheight(string("experiments/KiD_driver/", output_folder, "/Output.nc"), output = plot_folder)
     end
 
     return solver

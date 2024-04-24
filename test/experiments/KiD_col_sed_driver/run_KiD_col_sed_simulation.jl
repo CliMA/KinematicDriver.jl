@@ -135,8 +135,10 @@ function run_KiD_col_sed_simulation(::Type{FT}, opts) where {FT}
 
     # Some basic plots
     plot_folder = string("experiments/KiD_col_sed_driver/", output_folder, "/figures/")
-    plot_timeheight(string("experiments/KiD_col_sed_driver/", output_folder, "/Output.nc"), output = plot_folder)
-
+    plot_timeheight_no_ice_snow(
+        string("experiments/KiD_col_sed_driver/", output_folder, "/Output.nc"),
+        output = plot_folder,
+    )
     return solver
 end
 
