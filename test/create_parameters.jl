@@ -11,6 +11,15 @@ function override_toml_dict(
     w1 = 2.0,
     t1 = 600.0,
     p0 = 100700.0,
+    z_0 = 0.0,
+    z_1 = 740.0,
+    z_2 = 3260.0,
+    rv_0 = 0.015,
+    rv_1 = 0.0138,
+    rv_2 = 0.0024,
+    tht_0 = 297.9,
+    tht_1 = 297.9,
+    tht_2 = 312.66,
     precip_sources = 1,
     precip_sinks = 1,
     qtot_flux_correction = 0,
@@ -20,65 +29,36 @@ function override_toml_dict(
     κ = 0.9,
 )
     FT = CP.float_type(toml_dict)
-    override_file = joinpath(out_dir, "override_dict.toml")
-    open(override_file, "w") do io
-        println(io, "[mean_sea_level_pressure]")
-        println(io, "value = 100000.0")
-        println(io, "type = \"float\"")
-        println(io, "[gravitational_acceleration]")
-        println(io, "value = 9.80665")
-        println(io, "type = \"float\"")
-        println(io, "[gas_constant]")
-        println(io, "value = 8.314462618")
-        println(io, "type = \"float\"")
-        println(io, "[adiabatic_exponent_dry_air]")
-        println(io, "value = 0.2855747338575384")
-        println(io, "type = \"float\"")
-        println(io, "[isobaric_specific_heat_vapor]")
-        println(io, "value = 1850.0")
-        println(io, "type = \"float\"")
-        println(io, "[molar_mass_dry_air]")
-        println(io, "value = 0.02896998")
-        println(io, "type = \"float\"")
-        println(io, "[molar_mass_water]")
-        println(io, "value = 0.018015")
-        println(io, "type = \"float\"")
-        println(io, "[cloud_liquid_water_specific_humidity_autoconversion_threshold]")
-        println(io, "value = 0.0001")
-        println(io, "type = \"float\"")
-        println(io, "[prescribed_flow_w1]")
-        println(io, "value = " * string(w1))
-        println(io, "type = \"float\"")
-        println(io, "[prescribed_flow_t1]")
-        println(io, "value = " * string(t1))
-        println(io, "type = \"float\"")
-        println(io, "[surface_pressure]")
-        println(io, "value = " * string(p0))
-        println(io, "type = \"float\"")
-        println(io, "[precipitation_sources_flag]")
-        println(io, "value = " * string(precip_sources))
-        println(io, "type = \"bool\"")
-        println(io, "[precipitation_sinks_flag]")
-        println(io, "value = " * string(precip_sinks))
-        println(io, "type = \"bool\"")
-        println(io, "[qtot_flux_correction_flag]")
-        println(io, "value = " * string(qtot_flux_correction))
-        println(io, "type = \"bool\"")
-        println(io, "[prescribed_Nd]")
-        println(io, "value = " * string(prescribed_Nd))
-        println(io, "type = \"float\"")
-        println(io, "[r_dry]")
-        println(io, "value = " * string(r_dry))
-        println(io, "type = \"float\"")
-        println(io, "[std_dry]")
-        println(io, "value = " * string(std_dry))
-        println(io, "type = \"float\"")
-        println(io, "[kappa]")
-        println(io, "value = " * string(κ))
-        println(io, "type = \"float\"")
-    end
+    override_file = Dict(
+        "mean_sea_level_pressure" => Dict("value" => 100000.0, "type" => "float"),
+        "gravitational_acceleration" => Dict("value" => 9.80665, "type" => "float"),
+        "gas_constant" => Dict("value" => 8.314462618, "type" => "float"),
+        "adiabatic_exponent_dry_air" => Dict("value" => 0.2855747338575384, "type" => "float"),
+        "isobaric_specific_heat_vapor" => Dict("value" => 1850.0, "type" => "float"),
+        "molar_mass_dry_air" => Dict("value" => 0.02896998, "type" => "float"),
+        "molar_mass_water" => Dict("value" => 0.018015, "type" => "float"),
+        "cloud_liquid_water_specific_humidity_autoconversion_threshold" => Dict("value" => 0.0001, "type" => "float"),
+        "prescribed_flow_w1" => Dict("value" => w1, "type" => "float"),
+        "prescribed_flow_t1" => Dict("value" => t1, "type" => "float"),
+        "surface_pressure" => Dict("value" => p0, "type" => "float"),
+        "precipitation_sources_flag" => Dict("value" => precip_sources, "type" => "bool"),
+        "precipitation_sinks_flag" => Dict("value" => precip_sinks, "type" => "bool"),
+        "qtot_flux_correction_flag" => Dict("value" => qtot_flux_correction, "type" => "bool"),
+        "prescribed_Nd" => Dict("value" => prescribed_Nd, "type" => "float"),
+        "r_dry" => Dict("value" => r_dry, "type" => "float"),
+        "std_dry" => Dict("value" => std_dry, "type" => "float"),
+        "kappa" => Dict("value" => κ, "type" => "float"),
+        "init_cond_z0" => Dict("value" => z_0, "type" => "float"),
+        "init_cond_z1" => Dict("value" => z_1, "type" => "float"),
+        "init_cond_z2" => Dict("value" => z_2, "type" => "float"),
+        "init_cond_rv0" => Dict("value" => rv_0, "type" => "float"),
+        "init_cond_rv1" => Dict("value" => rv_1, "type" => "float"),
+        "init_cond_rv2" => Dict("value" => rv_2, "type" => "float"),
+        "init_cond_theta0" => Dict("value" => tht_0, "type" => "float"),
+        "init_cond_theta1" => Dict("value" => tht_1, "type" => "float"),
+        "init_cond_theta2" => Dict("value" => tht_2, "type" => "float"),
+    )
     toml_dict = CP.create_toml_dict(FT; override_file)
-    isfile(override_file) && rm(override_file; force=true)
     return toml_dict
 end
 

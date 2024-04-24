@@ -7,15 +7,15 @@
 """
 function init_profile(::Type{FT}, kid_params, thermo_params, z; dry = false) where {FT}
 
-    z_0::FT = 0.0
-    z_1::FT = 740.0
-    z_2::FT = 3260.0
-    rv_0::FT = 0.015
-    rv_1::FT = 0.0138
-    rv_2::FT = 0.0024
-    θ_0::FT = 297.9
-    θ_1::FT = 297.9
-    θ_2::FT = 312.66
+    z_0::FT = kid_params.z_0   # 0.0
+    z_1::FT = kid_params.z_1   # 740.0
+    z_2::FT = kid_params.z_2   # 3260.0
+    rv_0::FT = kid_params.rv_0 # 0.015
+    rv_1::FT = kid_params.rv_1 # 0.0138
+    rv_2::FT = kid_params.rv_2 # 0.0024
+    θ_0::FT = kid_params.tht_0   # 297.9
+    θ_1::FT = kid_params.tht_1   # 297.9
+    θ_2::FT = kid_params.tht_2   # 312.66
 
     if dry
         rv_0 = 0.0
@@ -199,12 +199,12 @@ function initial_condition_1d(
 end
 
 """
-    Populate the remaining profiles based on given initial conditions including total specific water 
+    Populate the remaining profiles based on given initial conditions including total specific water
     content (liquid + rain) and total number concentration
 """
 function initial_condition(::Type{FT}, thermo_params, qt::FT, Nd::FT, k::FT, ρ_dry::FT, z) where {FT}
 
-    # qt represents specific water content in cloud and rain. The initialization in PySDM is 
+    # qt represents specific water content in cloud and rain. The initialization in PySDM is
     # based on initial gamma distributions. This can lead to initial existence of rain; so here
     # we compute variables for any general initial gamma distributions, by assuming absolute
     # fixed radius threshold of 40 um between cloud droplets and raindrops.

@@ -21,6 +21,24 @@ Base.@kwdef struct Kinematic1DParameters{FT} <: AKP
     t1::FT
     "Surface pressure [Pa]"
     p0::FT
+    "Initial profile parameter [m]"
+    z_0::FT
+    "Initial profile parameter [m]"
+    z_1::FT
+    "Initial profile parameter [m]"
+    z_2::FT
+    "Initial profile parameter [kg/kg]"
+    rv_0::FT
+    "Initial profile parameter [kg/kg]"
+    rv_1::FT
+    "Initial profile parameter [kg/kg]"
+    rv_2::FT
+    "Initial profile parameter [K]"
+    tht_0::FT
+    "Initial profile parameter [K]"
+    tht_1::FT
+    "Initial profile parameter [K]"
+    tht_2::FT
     "Switch to include flux correction for moisture transport"
     qtot_flux_correction::Int
     "Assumed aerosol dry radius [m]"
@@ -36,6 +54,15 @@ function Kinematic1DParameters(td::CP.AbstractTOMLDict)
         :prescribed_flow_w1 => :w1,
         :prescribed_flow_t1 => :t1,
         :surface_pressure => :p0,
+        :init_cond_z0 => :z_0,
+        :init_cond_z1 => :z_1,
+        :init_cond_z2 => :z_2,
+        :init_cond_rv0 => :rv_0,
+        :init_cond_rv1 => :rv_1,
+        :init_cond_rv2 => :rv_2,
+        :init_cond_theta0 => :tht_0,
+        :init_cond_theta1 => :tht_1,
+        :init_cond_theta2 => :tht_2,
         :qtot_flux_correction_flag => :qtot_flux_correction,
         :r_dry => :r_dry,
         :std_dry => :std_dry,
@@ -46,13 +73,10 @@ function Kinematic1DParameters(td::CP.AbstractTOMLDict)
     return Kinematic1DParameters{FT}(; parameters...)
 end
 
-w1(ps::AKP) = ps.w1
-t1(ps::AKP) = ps.t1
-p0(ps::AKP) = ps.p0
-#aerosol parameters for 2M scheme
-r_dry(ps::AKP) = ps.r_dry
-std_dry(ps::AKP) = ps.std_dry
-κ(ps::AKP) = ps.κ
+# wrappers
+for fn in fieldnames(Kinematic1DParameters)
+    @eval $(fn)(ps::Kinematic1DParameters) = ps.$(fn)
+end
 
 Base.eltype(::Kinematic1DParameters{FT}) where {FT} = FT
 # Magic needed to get rid of length(ps) error

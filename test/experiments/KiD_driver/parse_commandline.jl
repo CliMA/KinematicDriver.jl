@@ -105,6 +105,42 @@ function parse_commandline()
         help = "hygroscopicity of aerosols for aerosol activation calucaulations in 2M schemes"
         arg_type = Float64
         default = Float64(0.9)
+        "--z_0"
+        help = "Initial condition z0 [m]"
+        arg_type = Float64
+        default = Float64(0)
+        "--z_1"
+        help = "Initial condition z1 [m]"
+        arg_type = Float64
+        default = Float64(740)
+        "--z_2"
+        help = "Initial condition z2 [m]"
+        arg_type = Float64
+        default = Float64(3260)
+        "--rv_0"
+        help = "Initial condition rv0 [kg/kg]"
+        arg_type = Float64
+        default = Float64(0.015)
+        "--rv_1"
+        help = "Initial condition rv1 [kg/kg]"
+        arg_type = Float64
+        default = Float64(0.0138)
+        "--rv_2"
+        help = "Initial condition rv2 [kg/kg]"
+        arg_type = Float64
+        default = Float64(0.0024)
+        "--tht_0"
+        help = "Initial condition theta0 [K]"
+        arg_type = Float64
+        default = Float64(297.9)
+        "--tht_1"
+        help = "Initial condition theta1 [K]"
+        arg_type = Float64
+        default = Float64(297.9)
+        "--tht_2"
+        help = "Initial condition theta2 [K]"
+        arg_type = Float64
+        default = Float64(312.66)
     end
 
     return AP.parse_args(s)

@@ -121,28 +121,36 @@ function plot_animation(z_centers, solver, aux, moisture, precip, KiD; output = 
 
         if moisture isa CO.NonEquilibriumMoisture
             q_liq = parent(u.ρq_liq) ./ ρ .* 1e3
+            q_ice = parent(u.ρq_ice) ./ ρ .* 1e3
         else
             q_liq = q_tot .* 0.0
+            q_ice = q_tot .* 0.0
         end
 
         if !(precip isa Union{CO.NoPrecipitation, CO.Precipitation0M})
             q_rai = parent(u.ρq_rai) ./ ρ .* 1e3
+            q_sno = parent(u.ρq_sno) ./ ρ .* 1e3
         else
             q_rai = q_tot .* 0.0
+            q_sno = q_tot .* 0.0
         end
 
         p1 = Plots.plot(q_tot, z_centers, xlabel = "q_tot [g/kg]", ylabel = "z [m]")
         p2 = Plots.plot(q_liq, z_centers, xlabel = "q_liq [g/kg]", ylabel = "z [m]")
-        p3 = Plots.plot(q_rai, z_centers, xlabel = "q_rai [g/kg]", ylabel = "z [m]")
+        p3 = Plots.plot(q_ice, z_centers, xlabel = "q_ice [g/kg]", ylabel = "z [m]")
+        p4 = Plots.plot(q_rai, z_centers, xlabel = "q_rai [g/kg]", ylabel = "z [m]")
+        p5 = Plots.plot(q_sno, z_centers, xlabel = "q_sno [g/kg]", ylabel = "z [m]")
 
         p = Plots.plot(
             p1,
             p2,
             p3,
-            size = (1000.0, 500.0),
+            p4,
+            p5,
+            size = (1500.0, 1000.0),
             bottom_margin = 30.0 * Plots.PlotMeasures.px,
             left_margin = 30.0 * Plots.PlotMeasures.px,
-            layout = (1, 3),
+            layout = (2, 3),
         )
     end
 
@@ -150,6 +158,36 @@ function plot_animation(z_centers, solver, aux, moisture, precip, KiD; output = 
 end
 
 function plot_timeheight(nc_data_file; output = "output")
+    path = joinpath(@__DIR__, output)
+    mkpath(path)
+
+    ds = NC.NCDataset(joinpath(@__DIR__, nc_data_file))
+    t_plt = collect(ds.group["profiles"]["t"])
+    z_plt = collect(ds.group["profiles"]["zc"])
+    q_tot_plt = collect(ds.group["profiles"]["q_tot"])
+    q_liq_plt = collect(ds.group["profiles"]["q_liq"])
+    q_ice_plt = collect(ds.group["profiles"]["q_ice"])
+    q_rai_plt = collect(ds.group["profiles"]["q_rai"])
+    q_sno_plt = collect(ds.group["profiles"]["q_sno"])
+    p1 = Plots.heatmap(t_plt, z_plt, q_tot_plt .* 1e3, title = "q_tot [g/kg]", xlabel = "time [s]", ylabel = "z [m]")
+    p2 = Plots.heatmap(t_plt, z_plt, q_liq_plt .* 1e3, title = "q_liq [g/kg]", xlabel = "time [s]", ylabel = "z [m]")
+    p3 = Plots.heatmap(t_plt, z_plt, q_ice_plt .* 1e3, title = "q_ice [g/kg]", xlabel = "time [s]", ylabel = "z [m]")
+    p4 = Plots.heatmap(t_plt, z_plt, q_rai_plt .* 1e3, title = "q_rai [g/kg]", xlabel = "time [s]", ylabel = "z [m]")
+    p5 = Plots.heatmap(t_plt, z_plt, q_sno_plt .* 1e3, title = "q_sno [g/kg]", xlabel = "time [s]", ylabel = "z [m]")
+    p = Plots.plot(
+        p1,
+        p2,
+        p3,
+        p4,
+        p5,
+        size = (1500.0, 1000.0),
+        bottom_margin = 30.0 * Plots.PlotMeasures.px,
+        left_margin = 30.0 * Plots.PlotMeasures.px,
+        layout = (2, 3),
+    )
+    Plots.png(p, joinpath(path, "timeheight.png"))
+end
+function plot_timeheight_no_ice_snow(nc_data_file; output = "output")
     path = joinpath(@__DIR__, output)
     mkpath(path)
 
@@ -166,10 +204,10 @@ function plot_timeheight(nc_data_file; output = "output")
         p1,
         p2,
         p3,
-        size = (1500.0, 500.0),
+        size = (1000.0, 500.0),
         bottom_margin = 30.0 * Plots.PlotMeasures.px,
         left_margin = 30.0 * Plots.PlotMeasures.px,
-        layout = (1, 3),
+        layout = (2, 3),
     )
     Plots.png(p, joinpath(path, "timeheight.png"))
 end
