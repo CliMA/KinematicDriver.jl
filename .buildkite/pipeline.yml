@@ -85,7 +85,7 @@ steps:
 
       - label: ":crystal_ball: Experiments: non equil (fixed rhod and T) + VarTimeScaleAcnv "
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --prognostic_vars=RhodTQ --precipitation_choice=Precipitation1M --rain_formation_scheme_choice VarTimeScaleAcnv --prescribed_Nd 1e8"
-        artifact_paths: "test/experiments/KiD_driver/Output_EquilibriumMoisture_RhodTQ_Precipitation1M_VarTimeScaleAcnv/figures/*"
+        artifact_paths: "test/experiments/KiD_driver/Output_NonEquilibriumMoisture_RhodTQ_Precipitation1M_VarTimeScaleAcnv/figures/*"
 
       - label: ":crystal_ball: Experiments: equil (fixed rhod and T) + SB2006 "
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=EquilibriumMoisture --prognostic_vars=RhodTQ --precipitation_choice=Precipitation2M --rain_formation_scheme_choice SB2006 --sedimentation_scheme_choice SB2006 --prescribed_Nd 1e8"

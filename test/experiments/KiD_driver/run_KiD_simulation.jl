@@ -107,6 +107,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
         Stats,
         face_space,
         moisture,
+        precip,
     )
 
     # Output the initial condition

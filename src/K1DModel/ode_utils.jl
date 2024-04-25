@@ -29,19 +29,19 @@ end
 function make_rhs_function(ms::CO.AbstractMoistureStyle, ps::CO.AbstractPrecipitationStyle)
     function rhs!(dY, Y, aux, t)
 
-        for eq_style in [ms, ps]
-            CO.zero_tendencies!(eq_style, dY, Y, aux, t)
-        end
+        CO.zero_tendencies!(dY)
 
         precompute_aux_prescribed_velocity!(aux, t)
-        CO.precompute_aux_thermo!(ms, dY, Y, aux, t)
-        CO.precompute_aux_moisture_sources!(ms, dY, Y, aux, t)
+        CO.precompute_aux_thermo!(ms, Y, aux)
+        CO.precompute_aux_precip!(ps, Y, aux)
+
         precompute_aux_activation!(ps, dY, Y, aux, t)
-        CO.precompute_aux_precip!(ps, dY, Y, aux, t)
+
+        CO.cloud_sources_tendency!(ms, dY, Y, aux, t)
+        CO.precip_sources_tendency!(ms, ps, dY, Y, aux, t)
 
         for eq_style in [ms, ps]
             advection_tendency!(eq_style, dY, Y, aux, t)
-            CO.sources_tendency!(eq_style, dY, Y, aux, t)
         end
 
     end
@@ -57,16 +57,15 @@ function make_rhs_function_col_sed(ms::CO.AbstractMoistureStyle, ps::CO.Abstract
 
     function rhs!(dY, Y, aux, t)
 
-        for eq_style in [ms, ps]
-            CO.zero_tendencies!(eq_style, dY, Y, aux, t)
-        end
+        CO.zero_tendencies!(dY)
 
-        CO.precompute_aux_thermo!(ms, dY, Y, aux, t)
-        CO.precompute_aux_precip!(ps, dY, Y, aux, t)
+        CO.precompute_aux_thermo!(ms, Y, aux)
+        CO.precompute_aux_precip!(ps, Y, aux)
+
+        CO.precip_sources_tendency!(ms, ps, dY, Y, aux, t)
 
         for eq_style in [ms, ps]
             advection_tendency!(eq_style, dY, Y, aux, t)
-            CO.sources_tendency!(eq_style, dY, Y, aux, t)
         end
 
     end
@@ -90,15 +89,26 @@ function initialise_aux(
     Stats,
     face_space,
     moisture,
+    precip,
 )
-
     q_surf = CO.init_profile(FT, kid_params, thermo_params, 0.0).qv
 
     ρw = CC.Geometry.WVector.(zeros(FT, face_space))
     ρw0 = 0.0
 
     return merge(
-        CO.initialise_aux(FT, ip, common_params, thermo_params, air_params, activation_params, TS, Stats, moisture),
+        CO.initialise_aux(
+            FT,
+            ip,
+            common_params,
+            thermo_params,
+            air_params,
+            activation_params,
+            TS,
+            Stats,
+            moisture,
+            precip,
+        ),
         (; prescribed_velocity = CC.Fields.FieldVector(; ρw = ρw, ρw0 = ρw0), kid_params = kid_params, q_surf = q_surf),
     )
 end

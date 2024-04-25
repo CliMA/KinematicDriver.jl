@@ -92,7 +92,7 @@ function simulation_output(aux, t::FT) where {FT <: Real}
         @inbounds ts_t[end + 1] = t::FT
 
         # write profiles
-        for field in (aux.moisture_variables, aux.precip_variables)
+        for field in (aux.thermo_variables, aux.microph_variables)
             for var in keys(Stats.output_profiles)
                 if var in propertynames(field)
                     prop = getproperty(field, var)
@@ -110,7 +110,7 @@ function simulation_output(aux, t::FT) where {FT <: Real}
         end
         # write timeseries
         ncdf_var = NC.cfvariable(ds.group["timeseries"], "ql_max", _parentname = nothing)
-        @inbounds ncdf_var[end] = maximum(aux.moisture_variables.q_liq)
+        @inbounds ncdf_var[end] = maximum(aux.microph_variables.q_liq)
 
         # close the NC dataset
     end

@@ -110,6 +110,7 @@ function run_KiD(u::Array{FT, 1}, u_names::Array{String, 1}, model_settings::Dic
         nothing,
         face_space,
         moisture,
+        precip,
     )
     ode_rhs! = KD.make_rhs_function(moisture, precip)
     problem = ODE.ODEProblem(ode_rhs!, Y, (model_settings["t_ini"], model_settings["t_end"]), aux)
@@ -235,7 +236,7 @@ function ODEsolution2Gvector(ODEsol, aux, precip, variables, filter)
     for i in 1:_nt_filtered
         _single_filtered_cell_data = zeros(_nz * _nvar, _nt_per_filtered_cell)
         for j in 1:_nt_per_filtered_cell
-            u = ODEsol[(i - 1) * _nt_per_filtered_cell + j]
+            u = ODEsol[:, (i - 1) * _nt_per_filtered_cell + j]
             for (k, var) in enumerate(variables)
                 _single_filtered_cell_data[((k - 1) * _nz + 1):(k * _nz), j] =
                     CO.get_variable_data_from_ODE(u, aux, precip, var)
