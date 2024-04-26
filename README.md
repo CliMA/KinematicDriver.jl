@@ -1,4 +1,4 @@
-# Kinematic1D.jl
+# KinematicDriver.jl
 
 Kinematic 1D driver
 
@@ -9,24 +9,24 @@ Kinematic 1D driver
 | **GHA CI**           | [![gha ci][gha-ci-img]][gha-ci-url]           |
 | **Code Coverage**    | [![codecov][codecov-img]][codecov-url]        |
 
-[docs-bld-img]: https://github.com/CliMA/Kinematic1D.jl/actions/workflows/docs.yml/badge.svg
-[docs-bld-url]: https://github.com/CliMA/Kinematic1D.jl/actions/workflows/docs.yml
+[docs-bld-img]: https://github.com/CliMA/KinematicDriver.jl/actions/workflows/docs.yml/badge.svg
+[docs-bld-url]: https://github.com/CliMA/KinematicDriver.jl/actions/workflows/docs.yml
 
 [docs-dev-img]: https://img.shields.io/badge/docs-dev-blue.svg
-[docs-dev-url]: https://CliMA.github.io/Kinematic1D.jl/dev/
+[docs-dev-url]: https://CliMA.github.io/KinematicDriver.jl/dev/
 
-[gha-ci-img]: https://github.com/CliMA/Kinematic1D.jl/actions/workflows/ci.yml/badge.svg
-[gha-ci-url]: https://github.com/CliMA/Kinematic1D.jl/actions/workflows/ci.yml
+[gha-ci-img]: https://github.com/CliMA/KinematicDriver.jl/actions/workflows/ci.yml/badge.svg
+[gha-ci-url]: https://github.com/CliMA/KinematicDriver.jl/actions/workflows/ci.yml
 
-[codecov-img]: https://codecov.io/gh/CliMA/Kinematic1D.jl/branch/main/graph/badge.svg
-[codecov-url]: https://codecov.io/gh/CliMA/Kinematic1D.jl
+[codecov-img]: https://codecov.io/gh/CliMA/KinematicDriver.jl/branch/main/graph/badge.svg
+[codecov-url]: https://codecov.io/gh/CliMA/KinematicDriver.jl
 
 ## Installation and running instructions
 
-Kinematic1D.jl is a Julia registered package.
+KinematicDriver.jl is a Julia registered package.
 See the [Project.toml](https://github.com/CliMA/CloudMicrophysics.jl/blob/main/Project.toml)
   for a full list of dependencies.
-When using the Kinematic1D.jl,
+When using the KinematicDriver.jl,
   the easiest way to obtain the package dependencies
   is to use the Julia built-in package manager
   (accessed by pressing `]` in the Julia REPL):
@@ -54,7 +54,7 @@ An example command to run the `Kid_driver.jl` from terminal:
 julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation1M
 ```
 
-In addition to simulating the 1D rainshaft, Kinematic1D.jl provides tools for calibrating microphysics parameters against available data. The main program for running calibrations is given inside `test/experiments/calibrations` folder. This program is accompanied by the `config.jl` file that defines all the settings for the dynamics, observations, optimization process, and parameters to be calibrated. To run calibrations of microphysics schemes by using Kinematic1D the `config.jl` file needs to be adjusted. Then the program can be called from terminal:
+In addition to simulating the 1D rainshaft, KinematicDriver.jl provides tools for calibrating microphysics parameters against available data. The main program for running calibrations is given inside `test/experiments/calibrations` folder. This program is accompanied by the `config.jl` file that defines all the settings for the dynamics, observations, optimization process, and parameters to be calibrated. To run calibrations of microphysics schemes by using KinematicDriver the `config.jl` file needs to be adjusted. Then the program can be called from terminal:
 ```bash
 julia --color=yes --project=test test/experiments/calibrations/run_calibrations.jl
 ```

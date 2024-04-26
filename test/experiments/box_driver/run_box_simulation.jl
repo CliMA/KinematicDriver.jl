@@ -4,10 +4,10 @@ using Plots
 import ClimaCore as CC
 import ClimaParams as CP
 import CloudMicrophysics.Parameters as CMP
-import Kinematic1D
-import Kinematic1D.BoxModel as BX
+import KinematicDriver
+import KinematicDriver.BoxModel as BX
 
-include(joinpath(pkgdir(Kinematic1D), "test", "create_parameters.jl"))
+include(joinpath(pkgdir(KinematicDriver), "test", "create_parameters.jl"))
 
 function run_box_simulation(::Type{FT}, opts) where {FT}
 

@@ -19,18 +19,18 @@ format = Documenter.HTML(prettyurls = get(ENV, "CI", nothing) == "true", matheng
 
 makedocs(
     bib,
-    sitename = "Kinematic1D.jl",
+    sitename = "KinematicDriver.jl",
     strict = true,
     format = format,
     checkdocs = :exports,
     clean = true,
     doctest = true,
-    #modules = [Kinematic1D],
+    #modules = [KinematicDriver],
     pages = pages,
 )
 
 deploydocs(
-    repo = "github.com/CliMA/Kinematic1D.jl.git",
+    repo = "github.com/CliMA/KinematicDriver.jl.git",
     target = "build",
     push_preview = true,
     devbranch = "main",

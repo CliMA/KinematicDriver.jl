@@ -1,4 +1,4 @@
-module Kinematic1D
+module KinematicDriver
 
 # include models and calibration tools
 include("Common/Common.jl")

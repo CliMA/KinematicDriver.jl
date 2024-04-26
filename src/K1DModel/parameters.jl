@@ -7,14 +7,14 @@ abstract type AbstractKinematicParameters end
 const AKP = AbstractKinematicParameters
 
 """
-    Kinematic1DParameters{FT}
+    KinematicDriverParameters{FT}
 
     Free parameters for the kinematic 1-dimensional simulation
 
     #Fields
     $(DocStringExtensions.FIELDS)
 """
-Base.@kwdef struct Kinematic1DParameters{FT} <: AKP
+Base.@kwdef struct KinematicDriverParameters{FT} <: AKP
     "Maximum updraft momentum flux m/s kg/m3"
     w1::FT
     "Time when the updraft is switched off [s]"
@@ -49,7 +49,7 @@ Base.@kwdef struct Kinematic1DParameters{FT} <: AKP
     κ::FT
 end
 
-function Kinematic1DParameters(td::CP.AbstractTOMLDict)
+function KinematicDriverParameters(td::CP.AbstractTOMLDict)
     name_map = (;
         :prescribed_flow_w1 => :w1,
         :prescribed_flow_t1 => :t1,
@@ -68,17 +68,17 @@ function Kinematic1DParameters(td::CP.AbstractTOMLDict)
         :std_dry => :std_dry,
         :kappa => :κ,
     )
-    parameters = CP.get_parameter_values(td, name_map, "Kinematic1D")
+    parameters = CP.get_parameter_values(td, name_map, "KinematicDriver")
     FT = CP.float_type(td)
-    return Kinematic1DParameters{FT}(; parameters...)
+    return KinematicDriverParameters{FT}(; parameters...)
 end
 
 # wrappers
-for fn in fieldnames(Kinematic1DParameters)
-    @eval $(fn)(ps::Kinematic1DParameters) = ps.$(fn)
+for fn in fieldnames(KinematicDriverParameters)
+    @eval $(fn)(ps::KinematicDriverParameters) = ps.$(fn)
 end
 
-Base.eltype(::Kinematic1DParameters{FT}) where {FT} = FT
+Base.eltype(::KinematicDriverParameters{FT}) where {FT} = FT
 # Magic needed to get rid of length(ps) error
 Base.broadcastable(ps::AKP) = Ref(ps)
 end

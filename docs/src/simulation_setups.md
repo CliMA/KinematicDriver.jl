@@ -6,8 +6,8 @@ The Box Model simulation represents a zero-dimensional system that focuses on ke
 An example of running a box simulation is provided in the following file:
 `test/experiments/box_driver/run_box_simulation.jl`.
 
-## Kinematic1D
-The Kinematic1D setup is based on the kinematic framework introduced by [KiD2012](@cite):
+## KinematicDriver
+The KinematicDriver setup is based on the kinematic framework introduced by [KiD2012](@cite):
 Vertical momentum flux is constant with height and varying in time.
 Density and temerature profiles are constant and defined by the initial
   condition, which is unsaturated.
@@ -21,7 +21,7 @@ Below figure shows an example prescribed vertical momentum as a function of time
 
 ```@example example_figure
 using Plots
-import Kinematic1D.K1DModel as K1D
+import KinematicDriver.K1DModel as K1D
 
 t_range = range(0, 15 * 60, length=100)
 w1 = 2.0
@@ -64,7 +64,7 @@ where ``(\rho w)_{max}`` represents the maximum updraft amplitude. An example of
 
 ## Changes to CliMA defaults
 
-One of the goals of Kinematic1D.jl
+One of the goals of KinematicDriver.jl
   is to test against [PySDM](https://github.com/atmos-cloud-sim-uj/PySDM)
   and the particle-based implementation of the kinematic model available in
   [PySDM-examples](https://github.com/atmos-cloud-sim-uj/PySDM-examples).

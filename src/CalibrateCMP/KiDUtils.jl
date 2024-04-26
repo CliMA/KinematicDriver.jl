@@ -293,7 +293,7 @@ function create_kid_parameters(
     std_dry = 1.4,
     κ = 0.9,
 )
-    kid_params = KD.Parameters.Kinematic1DParameters{FT}(;
+    kid_params = KD.Parameters.KinematicDriverParameters{FT}(;
         w1,
         t1,
         p0,
