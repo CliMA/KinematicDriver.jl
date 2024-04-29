@@ -54,6 +54,18 @@ An example command to run the `Kid_driver.jl` from terminal:
 julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation1M
 ```
 
+To run `KiD_driver.jl` interactively, open `julia --project=test` and run:
+```julia
+include("test/experiments/KiD_driver/parse_commandline.jl")
+
+# Set arguments
+opts = parse_commandline()
+opts["FLOAT_TYPE"] = "FLOAT32"
+opts["moisture_choice"] = "EquilibriumMoisture"
+
+include("test/experiments/KiD_driver/KiD_driver.jl")
+```
+
 In addition to simulating the 1D rainshaft, KinematicDriver.jl provides tools for calibrating microphysics parameters against available data. The main program for running calibrations is given inside `test/experiments/calibrations` folder. This program is accompanied by the `config.jl` file that defines all the settings for the dynamics, observations, optimization process, and parameters to be calibrated. To run calibrations of microphysics schemes by using KinematicDriver the `config.jl` file needs to be adjusted. Then the program can be called from terminal:
 ```bash
 julia --color=yes --project=test test/experiments/calibrations/run_calibrations.jl

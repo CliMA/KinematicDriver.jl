@@ -8,9 +8,12 @@
 
 # Get the parameter values for the simulation
 include("parse_commandline.jl")
-opts = parse_commandline()
 
-ft_choice = opts["FLOAT_TYPE"]
+if !(@isdefined config)
+    config = parse_commandline()
+end
+
+ft_choice = config["FLOAT_TYPE"]
 
 if ft_choice == "Float64"
     const FT = Float64
@@ -22,4 +25,4 @@ end
 
 include("run_KiD_simulation.jl")
 
-run_KiD_simulation(FT, opts)
+run_KiD_simulation(FT, config)
