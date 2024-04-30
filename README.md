@@ -59,9 +59,9 @@ To run `KiD_driver.jl` interactively, open `julia --project=test` and run:
 include("test/experiments/KiD_driver/parse_commandline.jl")
 
 # Set arguments
-opts = parse_commandline()
-opts["FLOAT_TYPE"] = "FLOAT32"
-opts["moisture_choice"] = "EquilibriumMoisture"
+config = parse_commandline()
+config["FLOAT_TYPE"] = "FLOAT32"
+config["moisture_choice"] = "EquilibriumMoisture"
 
 include("test/experiments/KiD_driver/KiD_driver.jl")
 ```
