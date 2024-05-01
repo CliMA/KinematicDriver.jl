@@ -71,13 +71,28 @@ function initialise_state(::NonEquilibriumMoisture, ::Precipitation2M, initial_p
         N_aer = initial_profiles.N_aer,
     )
 end
+function initialise_state(::NonEquilibriumMoisture, ::PrecipitationNM, initial_profiles)
+    return CC.Fields.FieldVector(;
+        ρq_tot = initial_profiles.ρq_tot,
+        ρq_liq = initial_profiles.ρq_liq,
+        ρq_ice = initial_profiles.ρq_ice,
+        ρq_rai = initial_profiles.ρq_rai,
+        ρq_sno = initial_profiles.ρq_sno,
+        N_liq = initial_profiles.N_liq,
+        N_rai = initial_profiles.N_rai,
+        N_aer = initial_profiles.N_aer,
+        moments = initial_profiles.moments,
+        pdists = initial_profiles.pdists
+    )
+    # TODO: remove unnecessary variables
+end
 
 """
    Interface to ODE solver. It initializes the auxiliary state.
    The auxiliary state is created as a ClimaCore FieldVector
    and passed to ODE solver via the `p` parameter of the ODEProblem.
 """
-function initialise_aux(FT, ip, common_params, thermo_params, air_params, activation_params, TS, Stats, moisture)
+function initialise_aux(FT, ip, common_params, thermo_params, air_params, activation_params, TS, Stats, moisture, psNM = false)
 
     if moisture isa EquilibriumMoisture
         ts = @. TD.PhaseEquil_ρθq(thermo_params, ip.ρ, ip.θ_liq_ice, ip.q_tot)
@@ -90,7 +105,7 @@ function initialise_aux(FT, ip, common_params, thermo_params, air_params, activa
         )
     end
 
-    return (;
+    aux = (;
         moisture_variables = CC.Fields.FieldVector(;
             ρ = ip.ρ,
             ρ_dry = ip.ρ_dry,
@@ -103,7 +118,7 @@ function initialise_aux(FT, ip, common_params, thermo_params, air_params, activa
             q_ice = ip.q_ice,
             ts = ts,
         ),
-        precip_variables = CC.Fields.FieldVector(;
+        precip_variables =  CC.Fields.FieldVector(;
             q_rai = ip.q_rai,
             q_sno = ip.q_sno,
             N_liq = ip.N_liq,
@@ -133,4 +148,13 @@ function initialise_aux(FT, ip, common_params, thermo_params, air_params, activa
         Stats = Stats,
         TS = TS,
     )
+    if psNM
+        aux = merge(aux,
+            (; cloudy_variables = CC.Fields.FieldVector(; pdists = ip.pdists, moments = ip.moments),
+            cloudy_sources = CC.Fields.FieldVector(; S_moments = ip.S_moments),
+            cloudy_velocity = CC.Fields.FieldVector(; weighted_vt = ip.weighted_vt,))
+        )
+    end
+
+    return aux
 end

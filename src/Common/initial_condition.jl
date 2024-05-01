@@ -198,6 +198,52 @@ function initial_condition_1d(
     )
 end
 
+function initial_condition_1d(
+    ::Type{FT},
+    ::Val{NM},
+    common_params,
+    kid_params,
+    thermo_params,
+    ρ_profile,
+    z;
+    dry = false,
+) where {NM, FT}
+    moments::NTuple{NM, FT} = ntuple(_ -> FT(0), NM)
+    S_moments::NTuple{NM, FT} = ntuple(_ -> FT(0), NM)
+    weighted_vt::NTuple{NM, FT} = ntuple(_ -> FT(0), NM)
+    
+    if NM % 3 > 0
+        error("must use a multiple of 3 moments")
+    end
+
+    # set up the distributions # TODO: make this general for types of moments
+    # if NM % 3 == 0 # all gamma
+    #     ndist = Int(NM / 3)
+    #     nexp = 0
+    # elseif NM % 3 == 2 # one exp, remaining gamma
+    #     ndist = Int((NM - 2) / 3 + 1)
+    #     nexp = 1
+    # else # two exp, remaining gamma
+    #     ndist = Int((NM - 4) / 3 + 2)
+    #     nexp = 2
+    # end
+    # pdists::NTuple{ND, <: CL.ParticleDistributions.PrimitiveParticleDistribution{FT}} = ntuple(ND) do k
+    #     if k <= nexp
+    #         CL.ParticleDistributions.ExponentialPrimitiveParticleDistribution(FT(0), FT(k))
+    #     else
+    #         CL.ParticleDistributions.GammaPrimitiveParticleDistribution(FT(0), FT(k), FT(1))
+    #     end
+    # end
+    pdists::NTuple{Int(NM / 3), CL.ParticleDistributions.GammaPrimitiveParticleDistribution{FT}} = ntuple(Int(NM/3)) do k
+        CL.ParticleDistributions.GammaPrimitiveParticleDistribution(FT(0), FT(k), FT(1))
+    end
+
+    return merge(
+        initial_condition_1d(FT, common_params, kid_params, thermo_params, ρ_profile, z, dry=dry),
+        (; moments=moments, S_moments=S_moments, pdists=pdists, weighted_vt=weighted_vt)
+    )
+end
+
 """
     Populate the remaining profiles based on given initial conditions including total specific water
     content (liquid + rain) and total number concentration

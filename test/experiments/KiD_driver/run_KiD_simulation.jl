@@ -2,6 +2,7 @@ import OrdinaryDiffEq as ODE
 import ClimaCore as CC
 import ClimaParams as CP
 import CloudMicrophysics.Parameters as CMP
+import CloudMicrophysics as CM
 import KinematicDriver
 import KinematicDriver.Common as CO
 import KinematicDriver.K1DModel as K1D
@@ -17,6 +18,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     precipitation_choice = opts["precipitation_choice"]
     rain_formation_choice = opts["rain_formation_scheme_choice"]
     sedimentation_choice = opts["sedimentation_scheme_choice"]
+    @info moisture_choice, precipitation_choice, rain_formation_choice, sedimentation_choice
 
     # Decide the output flder name based on options
     output_folder = string("Output_", moisture_choice, "_", prognostics_choice, "_", precipitation_choice)
@@ -73,6 +75,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
         sedimentation_choice = sedimentation_choice,
     )
 
+    @info "Initialising"
     # Initialize the timestepping struct
     TS = CO.TimeStepping(FT(opts["dt"]), FT(opts["dt_output"]), FT(opts["t_end"]))
 
@@ -89,7 +92,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     ρ_profile = CO.ρ_ivp(FT, kid_params, thermo_params)
     # Create the initial condition profiles
     init =
-        map(coord -> CO.initial_condition_1d(FT, common_params, kid_params, thermo_params, ρ_profile, coord.z), coord)
+        map(coord -> CO.initial_condition_1d(FT, Val(6), common_params, kid_params, thermo_params, ρ_profile, coord.z), coord)
 
     # Create state vector and apply initial condition
     Y = CO.initialise_state(moisture, precip, init)
@@ -107,6 +110,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
         Stats,
         face_space,
         moisture,
+        true # NM style
     )
 
     # Output the initial condition
@@ -122,6 +126,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
 
     # Solve the ODE operator
     problem = ODE.ODEProblem(ode_rhs!, Y, (FT(opts["t_ini"]), FT(opts["t_end"])), aux)
+    @info "Solving"
     solver = ODE.solve(
         problem,
         ODE.SSPRK33(),
@@ -132,6 +137,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
         progress_message = (dt, u, p, t) -> t,
     )
 
+    @info "Plotting"
     # Some basic plots
     if opts["plotting_flag"] == true
 

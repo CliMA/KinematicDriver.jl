@@ -36,6 +36,15 @@ end
     @. dY.N_rai = FT(0)
     @. dY.N_aer = FT(0)
 end
+@inline function zero_tendencies!(::PrecipitationNM, dY, Y, aux, t)
+    FT = eltype(Y.ρq_tot)
+    @. dY.ρq_rai = FT(0)
+    @. dY.ρq_sno = FT(0)
+    @. dY.N_liq = FT(0)
+    @. dY.N_rai = FT(0)
+    @. dY.N_aer = FT(0)
+    @. dY.moments = ntuple(_ -> FT(0), length(dY.moments))
+end
 
 """
      Helper functions for broadcasting and populating the auxiliary state
@@ -415,6 +424,69 @@ end
     return (; S_q_tot, S_q_liq, S_q_rai, S_N_liq, S_N_rai, S_q_vap, term_vel_rai, term_vel_N_rai)
 end
 
+@inline function precip_helper_sources!(
+    ps::PrecipitationNM,
+    common_params,
+    thermo_params,
+    air_params,
+    q_tot,
+    q_liq,
+    moments,
+    old_pdists,
+    T,
+    ρ,
+)
+    FT = eltype(q_tot)
+
+    # TODO: store/compute these only once
+    NProgMoms = map(old_pdists) do dist
+        CL.ParticleDistributions.nparams(dist)
+    end
+    norms = (1e6, 1e-9)
+
+    S_moments = ntuple(_ -> FT(0), length(moments))
+
+    q = TD.PhasePartition(q_tot, q_liq, FT(0))
+    
+    # update the ParticleDistributions
+    mom_norms = CL.get_moments_normalizing_factors(NProgMoms, norms)
+    mom_normed = tuple(moments ./ mom_norms...)
+    pdists = ntuple(length(old_pdists)) do i
+        ind_rng = CL.get_dist_moments_ind_range(NProgMoms, i)
+        CL.ParticleDistributions.update_dist_from_moments(old_pdists[i], mom_normed[ind_rng])
+    end
+
+    if Bool(common_params.precip_sources)
+        # TODO: avoid recomputing / storing these every time
+        kernel_func = CL.KernelFunctions.LongKernelFunction(5.236e-10, 9.44e9, 5.78)
+        matrix_of_kernels = ntuple(2) do i
+            ntuple(2) do j
+                if i == j == 1
+                    CL.KernelTensors.CoalescenceTensor(kernel_func, 2, FT(5e-10))
+                else
+                    CL.KernelTensors.CoalescenceTensor(kernel_func, 2, FT(1e-6), FT(5e-10))
+                end
+            end
+        end
+        coal_data = CL.Coalescence.CoalescenceData(matrix_of_kernels, NProgMoms, (5e-10, Inf), norms)
+        dY_coal = CL.Coalescence.get_coal_ints(CL.EquationTypes.AnalyticalCoalStyle(), pdists, coal_data)
+        S_moments = S_moments .+ dY_coal
+    end
+
+    if Bool(common_params.precip_sinks)
+        ξ = CM.Common.G_func(air_params, thermo_params, T, TD.Liquid())
+        s = TD.supersaturation(thermo_params, q, ρ, T, TD.Liquid())
+        dY_ce = CL.Condensation.get_cond_evap(pdists, s, ξ) .* mom_norms
+        S_moments = S_moments .+ dY_ce
+    end
+
+    vel = ((50.0, 1.0 / 6),) # TODO: store this elsewhere
+    sed_flux = CL.Sedimentation.get_sedimentation_flux(pdists, vel)
+    weighted_vt = sed_flux ./ mom_normed
+
+    return (; S_moments, weighted_vt, pdists)
+end
+
 """
      Precompute the auxiliary values
 """
@@ -611,6 +683,28 @@ end
     aux.precip_velocities.term_vel_N_rai = tmp.term_vel_N_rai
     aux.precip_velocities.term_vel_rai = tmp.term_vel_rai
 end
+@inline function precompute_aux_precip!(ps::PrecipitationNM, dY, Y, aux, t)
+    FT = eltype(Y.ρq_rai)
+
+    aux.cloudy_variables.moments = Y.moments
+
+    tmp = @. precip_helper_sources!(
+        ps,
+        aux.common_params,
+        aux.thermo_params,
+        aux.air_params,
+        aux.moisture_variables.q_tot,
+        aux.moisture_variables.q_liq,
+        aux.cloudy_variables.moments,
+        aux.cloudy_variables.pdists,
+        aux.moisture_variables.T,
+        aux.moisture_variables.ρ,
+    )
+
+    aux.cloudy_sources.S_moments = tmp.S_moments
+    aux.cloudy_variables.pdists = tmp.pdists
+    aux.cloudy_velocity.weighted_vt = tmp.weighted_vt
+end
 
 """
    Additional source terms
@@ -655,6 +749,20 @@ end
 
     @. dY.N_liq += aux.activation_sources.S_N_liq
     @. dY.N_aer += aux.activation_sources.S_N_aer
+
+    return dY
+end
+@inline function sources_tendency!(::PrecipitationNM, dY, Y, aux, t)
+
+    @. dY.ρq_rai += aux.moisture_variables.ρ * aux.precip_sources.S_q_rai
+    @. dY.N_liq += aux.precip_sources.S_N_liq
+    @. dY.N_rai += aux.precip_sources.S_N_rai
+
+    @. dY.N_liq += aux.activation_sources.S_N_liq
+    @. dY.N_aer += aux.activation_sources.S_N_aer
+    # TODO: add the activation tendency to the moments as well
+
+    @. dY.moments = aux.cloudy_sources.S_moments
 
     return dY
 end
