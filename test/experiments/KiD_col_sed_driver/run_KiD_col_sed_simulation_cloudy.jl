@@ -18,12 +18,6 @@ function run_KiD_col_sed_simulation(::Type{FT}, opts) where {FT}
 
     # Decide the output flder name based on options
     output_folder = string("Output_", precipitation_choice)
-    if precipitation_choice in ["Precipitation1M", "Precipitation2M"]
-        output_folder = output_folder * "_" * rain_formation_choice
-        if sedimentation_choice == "Chen2022"
-            output_folder = output_folder * "_Chen2022"
-        end
-    end
     path = joinpath(@__DIR__, output_folder)
     mkpath(path)
 
@@ -44,8 +38,10 @@ function run_KiD_col_sed_simulation(::Type{FT}, opts) where {FT}
     thermo_params = create_thermodynamics_parameters(toml_dict)
     air_params = CMP.AirProperties(toml_dict)
     activation_params = CMP.AerosolActivationParameters(toml_dict)
+    cloudy_params = create_cloudy_parameters(6, FT)
 
-    moisture = CO.get_moisture_type("NonEquilibriumMoisture", toml_dict)
+    #moisture = CO.get_moisture_type("NonEquilibriumMoisture", toml_dict)
+    moisture = CO.get_moisture_type("CloudyMoisture", toml_dict)
     precip = CO.get_precipitation_type(
         precipitation_choice,
         toml_dict,
@@ -80,8 +76,9 @@ function run_KiD_col_sed_simulation(::Type{FT}, opts) where {FT}
 
     # Create the initial condition profiles
     init = map(
-        coord -> CO.initial_condition(
+        coord -> CO.initial_condition_cloudy(
             FT,
+            Val(6),
             thermo_params,
             opts["qt"],
             opts["prescribed_Nd"],
@@ -108,7 +105,8 @@ function run_KiD_col_sed_simulation(::Type{FT}, opts) where {FT}
         Stats,
         face_space,
         moisture,
-        precip,
+        true,
+        cloudy_params
     )
 
     # Output the initial condition
@@ -140,7 +138,6 @@ function run_KiD_col_sed_simulation(::Type{FT}, opts) where {FT}
         string("experiments/KiD_col_sed_driver/", output_folder, "/Output.nc"),
         output = plot_folder,
     )
-    return solver
 end
 
 opts = Dict(
@@ -148,9 +145,9 @@ opts = Dict(
     "prescribed_Nd" => 1e8,
     "k" => 2.0,
     "rhod" => 1.0,
-    "precipitation_choice" => "Precipitation2M", #"Precipitation1M",
-    "rain_formation_choice" => "SB2006", #"CliMA_1M",
-    "sedimentation_choice" => "SB2006", #"CliMA_1M",
+    "precipitation_choice" => "CloudyPrecip",
+    "rain_formation_choice" => "CliMA_1M",
+    "sedimentation_choice" => "CliMA_1M",
     "z_min" => 0.0,
     "z_max" => 3000.0,
     "n_elem" => 60,

@@ -2,6 +2,7 @@ import OrdinaryDiffEq as ODE
 import ClimaCore as CC
 import ClimaParams as CP
 import CloudMicrophysics.Parameters as CMP
+import CloudMicrophysics as CM
 import KinematicDriver
 import KinematicDriver.Common as CO
 import KinematicDriver.K1DModel as K1D
@@ -17,6 +18,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     precipitation_choice = opts["precipitation_choice"]
     rain_formation_choice = opts["rain_formation_scheme_choice"]
     sedimentation_choice = opts["sedimentation_scheme_choice"]
+    @info moisture_choice, precipitation_choice, rain_formation_choice, sedimentation_choice
 
     # Decide the output flder name based on options
     output_folder = string("Output_", moisture_choice, "_", prognostics_choice, "_", precipitation_choice)
@@ -64,6 +66,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     thermo_params = create_thermodynamics_parameters(toml_dict)
     air_params = CMP.AirProperties(toml_dict)
     activation_params = CMP.AerosolActivationParameters(toml_dict)
+    cloudy_params = create_cloudy_parameters(6, FT)
 
     moisture = CO.get_moisture_type(moisture_choice, toml_dict)
     precip = CO.get_precipitation_type(
@@ -73,6 +76,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
         sedimentation_choice = sedimentation_choice,
     )
 
+    @info "Initialising"
     # Initialize the timestepping struct
     TS = CO.TimeStepping(FT(opts["dt"]), FT(opts["dt_output"]), FT(opts["t_end"]))
 
@@ -89,7 +93,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     ρ_profile = CO.ρ_ivp(FT, kid_params, thermo_params)
     # Create the initial condition profiles
     init =
-        map(coord -> CO.initial_condition_1d(FT, common_params, kid_params, thermo_params, ρ_profile, coord.z), coord)
+        map(coord -> CO.initial_condition_1d(FT, Val(6), common_params, kid_params, thermo_params, ρ_profile, coord.z), coord)
 
     # Create state vector and apply initial condition
     Y = CO.initialise_state(moisture, precip, init)
@@ -108,6 +112,8 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
         face_space,
         moisture,
         precip,
+        true, # NM style
+        cloudy_params,
     )
 
     # Output the initial condition
@@ -123,6 +129,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
 
     # Solve the ODE operator
     problem = ODE.ODEProblem(ode_rhs!, Y, (FT(opts["t_ini"]), FT(opts["t_end"])), aux)
+    @info "Solving"
     solver = ODE.solve(
         problem,
         ODE.SSPRK33(),
@@ -132,10 +139,10 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
         progress = true,
         progress_message = (dt, u, p, t) -> t,
     )
-
+ 
     # Some basic plots
     if opts["plotting_flag"] == true
-
+        @info "Plotting"
         plot_folder = string("experiments/KiD_driver/", output_folder, "/figures/")
 
         z_centers = parent(CC.Fields.coordinate_field(space))
@@ -144,6 +151,5 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
         plot_timeheight(string("experiments/KiD_driver/", output_folder, "/Output.nc"), output = plot_folder)
     end
 
-    return solver
-
+    return
 end

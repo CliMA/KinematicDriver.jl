@@ -149,6 +149,9 @@ function plot_animation(z_centers, solver, aux, moisture, precip, KiD; output = 
         if moisture isa CO.NonEquilibriumMoisture
             q_liq = parent(u.ρq_liq) ./ ρ .* 1e3
             q_ice = parent(u.ρq_ice) ./ ρ .* 1e3
+        elseif moisture isa CO.CloudyMoisture
+            q_liq = parent(u.ρq_liq) ./ ρ .* 1e3
+            q_ice = q_tot .* 0.0
         else
             q_liq = q_tot .* 0.0
             q_ice = q_tot .* 0.0
@@ -157,7 +160,7 @@ function plot_animation(z_centers, solver, aux, moisture, precip, KiD; output = 
         if precip isa CO.Precipitation1M
             q_rai = parent(u.ρq_rai) ./ ρ .* 1e3
             q_sno = parent(u.ρq_sno) ./ ρ .* 1e3
-        elseif precip isa CO.Precipitation2M
+        elseif precip isa Union{CO.Precipitation2M, CO.CloudyPrecip}
             q_rai = parent(u.ρq_rai) ./ ρ .* 1e3
             q_sno = q_tot .* 0.0
         else
@@ -165,22 +168,34 @@ function plot_animation(z_centers, solver, aux, moisture, precip, KiD; output = 
             q_sno = q_tot .* 0.0
         end
 
+        if (precip isa Union{CO.Precipitation2M, CO.CloudyPrecip})
+            N_rai = parent(u.N_rai)
+            N_liq = parent(u.N_liq)
+        else
+            N_rai = q_tot .* 0.0
+            N_liq = q_tot .* 0.0
+        end
+
         p1 = Plots.plot(q_tot, z_centers, xlabel = "q_tot [g/kg]", ylabel = "z [m]")
         p2 = Plots.plot(q_liq, z_centers, xlabel = "q_liq [g/kg]", ylabel = "z [m]")
-        p3 = Plots.plot(q_ice, z_centers, xlabel = "q_ice [g/kg]", ylabel = "z [m]")
-        p4 = Plots.plot(q_rai, z_centers, xlabel = "q_rai [g/kg]", ylabel = "z [m]")
+        p2a = Plots.plot(N_liq, z_centers, xlabel = "N_liq [1/m^3]", ylabel = "z [m]")
+        p3 = Plots.plot(q_rai, z_centers, xlabel = "q_rai [g/kg]", ylabel = "z [m]")
+        p3a = Plots.plot(N_rai, z_centers, xlabel = "N_rai [1/m^3]", ylabel = "z [m]")
+        p4 = Plots.plot(q_ice, z_centers, xlabel = "q_ice [g/kg]", ylabel = "z [m]")
         p5 = Plots.plot(q_sno, z_centers, xlabel = "q_sno [g/kg]", ylabel = "z [m]")
 
         p = Plots.plot(
             p1,
             p2,
+            p2a,
             p3,
+            p3a,
             p4,
             p5,
-            size = (1500.0, 1000.0),
+            size = (1500.0, 1500.0),
             bottom_margin = 30.0 * Plots.PlotMeasures.px,
             left_margin = 30.0 * Plots.PlotMeasures.px,
-            layout = (2, 3),
+            layout = (3, 3),
         )
     end
 
@@ -245,10 +260,10 @@ function plot_timeheight_no_ice_snow(nc_data_file; output = "output")
         p1,
         p2,
         p3,
-        size = (1000.0, 500.0),
+        size = (1200.0, 300.0),
         bottom_margin = 30.0 * Plots.PlotMeasures.px,
         left_margin = 30.0 * Plots.PlotMeasures.px,
-        layout = (3, 3),
+        layout = (1, 3),
     )
     Plots.png(p, joinpath(path, "timeheight.png"))
 end

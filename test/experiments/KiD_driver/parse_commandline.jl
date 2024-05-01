@@ -13,25 +13,25 @@ function parse_commandline()
         arg_type = String
         default = "Float64"
         "--moisture_choice"
-        help = "Mositure model choice: EquilibriumMoisture, NonEquilibriumMoisture"
+        help = "Mositure model choice: EquilibriumMoisture, NonEquilibriumMoisture, CloudyMoisture"
         arg_type = String
-        default = "NonEquilibriumMoisture"
+        default = "CloudyMoisture" # "NonEquilibriumMoisture" #
         "--prognostic_vars"
         help = "Prognostic variables choice: RhoThetaQ, RhodTQ"
         arg_type = String
         default = "RhoThetaQ"
         "--precipitation_choice"
-        help = "Precipitation model choice: NoPrecipitation, Precipitation0M, Precipitation1M, Precipitation2M"
+        help = "Precipitation model choice: NoPrecipitation, Precipitation0M, Precipitation1M, Precipitation2M, CloudyPrecip"
         arg_type = String
-        default = "Precipitation1M"
+        default = "CloudyPrecip" # "Precipitation2M" "Precipitation1M"
         "--rain_formation_scheme_choice"
         help = "Rain formation scheme choice: CliMA_1M, KK2000, B1994, TC1980, LD2004, VarTimeScaleAcnv for Precipitation1M; and SB2006 for Precipitation2M"
         arg_type = String
-        default = "CliMA_1M"
+        default = "SB2006" #"CliMA_1M"
         "--sedimentation_scheme_choice"
         help = "Sedimentation scheme choice: CliMA_1M, Chen2022 for Precipitation1M; and Chen2022, SB2006 for Precipitation2M"
         arg_type = String
-        default = "CliMA_1M"
+        default = "SB2006" #"CliMA_1M"
         "--prescribed_Nd"
         help = "Prescribed number of cloud droplets (used in KK2000, B1994, TC1980, LD2004, VarTimeScaleAcnv and SB2006 rain formation schemes)"
         arg_type = Float64
@@ -41,11 +41,11 @@ function parse_commandline()
         arg_type = Bool
         default = true
         "--precip_sources"
-        help = "Set to true if you want to switch on autoconversion and accretion in the 1-moment scheme"
+        help = "Set to true if you want to switch on autoconversion and accretion in the 1-moment scheme, or collisional coalescence in Cloudy"
         arg_type = Bool
         default = true
         "--precip_sinks"
-        help = "Set to true if you want to switch on evaporation, deposition, sublimation and melting in the 1-moment scheme"
+        help = "Set to true if you want to switch on evaporation, deposition, sublimation and melting in the 1-moment scheme; or condensation/evaporation in Cloudy"
         arg_type = Bool
         default = true
         "--qtot_flux_correction"
@@ -64,7 +64,7 @@ function parse_commandline()
         "--n_elem"
         help = "Number of computational elements"
         arg_type = Int
-        default = 256
+        default = 20
         "--dt"
         help = "Simulation time step [s]"
         arg_type = Float64
@@ -80,7 +80,7 @@ function parse_commandline()
         "--t_end"
         help = "Time at the end of the simulation [s]"
         arg_type = Float64
-        default = Float64(3600)
+        default = Float64(600)
         "--w1"
         help = "Maximum prescribed updraft momentum flux [m/s * kg/m3]"
         arg_type = Float64

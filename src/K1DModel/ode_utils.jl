@@ -90,6 +90,8 @@ function initialise_aux(
     face_space,
     moisture,
     precip,
+    psNM = false,
+    cloudy_params = nothing
 )
     q_surf = CO.init_profile(FT, kid_params, thermo_params, 0.0).qv
 
@@ -108,6 +110,8 @@ function initialise_aux(
             Stats,
             moisture,
             precip,
+            psNM, 
+            cloudy_params,
         ),
         (; prescribed_velocity = CC.Fields.FieldVector(; ρw = ρw, ρw0 = ρw0), kid_params = kid_params, q_surf = q_surf),
     )

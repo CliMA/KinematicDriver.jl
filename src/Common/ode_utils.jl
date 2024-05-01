@@ -83,6 +83,18 @@ function initialise_state(::MoistureP3, ::PrecipitationP3, initial_profiles)
         N_aer = initial_profiles.N_aer,
     )
 end
+function initialise_state(::CloudyMoisture, ::CloudyPrecip, initial_profiles)
+    return CC.Fields.FieldVector(;
+        ρq_vap = initial_profiles.ρq_vap,
+        N_aer = initial_profiles.N_aer,
+        moments = initial_profiles.moments,
+        ρq_tot = initial_profiles.ρq_tot,
+        ρq_liq = initial_profiles.ρq_liq,
+        ρq_rai = initial_profiles.ρq_rai,
+        N_liq = initial_profiles.N_liq,
+        N_rai = initial_profiles.N_rai,
+    )
+end
 
 """
    Interface to ODE solver. It initializes the auxiliary state.
@@ -100,6 +112,8 @@ function initialise_aux(
     Stats,
     moisture,
     precip,
+    psNM = false, 
+    cloudy_params = nothing
 )
 
     # Create a thermo state for aux
@@ -114,9 +128,12 @@ function initialise_aux(
 
         cloud_sources_eltype = @NamedTuple{q_liq::FT, q_ice::FT}
         cloud_sources = @. cloud_sources_eltype(tuple(copy(ip.zero), copy(ip.zero)))
+    elseif moisture isa CloudyMoisture
+        q = @. TD.PhasePartition(ip.q_tot, ip.q_liq, ip.q_ice)
+        ts = @. TD.PhaseNonEquil_ρTq(thermo_params, ip.ρ, ip.T, q)
     else
         error(
-            "Wrong moisture choise $moisture. The supported options are EquilibriumMoisture and NonEquilibriumMoisture",
+            "Wrong moisture choice $moisture. The supported options are EquilibriumMoisture, NonEquilibriumMoisture, and CloudyMoisture",
         )
     end
 
@@ -212,7 +229,7 @@ function initialise_aux(
         activation_sources = nothing
     end
 
-    return (;
+    aux = (;
         scratch,
         thermo_variables,
         microph_variables,
@@ -227,4 +244,16 @@ function initialise_aux(
         Stats,
         TS,
     )
+
+    if psNM
+        aux = merge(aux,
+            (; cloudy_variables = CC.Fields.FieldVector(; pdists = ip.pdists, moments = ip.moments),
+            cloudy_sources = CC.Fields.FieldVector(; S_moments = ip.S_moments, S_ρq_vap = ip.S_ρq_vap, S_activation = ip.S_activation),
+            cloudy_velocity = CC.Fields.FieldVector(; weighted_vt = ip.weighted_vt),
+            cloudy_params = cloudy_params,
+            )
+        )
+    end
+
+    return aux
 end
