@@ -57,7 +57,7 @@ end
     aux,
     t,
 ) end
-@inline function precompute_aux_activation!(ps::CO.Precipitation2M, dY, Y, aux, t)
+@inline function precompute_aux_activation!(ps::Union{CO.Precipitation2M, CO.PrecipitationNM}, dY, Y, aux, t)
 
     aux.aerosol_variables.N_aer = Y.N_aer
     tmp = @. aerosol_activation_helper(
@@ -236,6 +236,36 @@ end
             CC.Geometry.WVector(If(aux.precip_velocities.term_vel_rai) * FT(-1))
         ),
         Y.ρq_rai,
+    )
+
+    return dY
+end
+
+# TODO: make it work!
+@inline function advection_tendency!(::CO.PrecipitationNM, dY, Y, aux, t)
+    FT = eltype(Y.ρq_tot)
+
+    If = CC.Operators.InterpolateC2F()
+    ∂ = CC.Operators.DivergenceF2C(
+        bottom = CC.Operators.Extrapolate(),
+        top = CC.Operators.SetValue(CC.Geometry.WVector(0.0)),
+    )
+
+    @. dY.moments +=
+        -∂(
+            (
+                aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) +
+                CC.Geometry.WVector(If(aux.cloudy_velocity.weighted_vt) * FT(-1))
+            ) * If(Y.moments),
+        )
+    
+    fcc = CC.Operators.FluxCorrectionC2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
+    @. dY.moments += fcc(
+        (
+            aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) +
+            CC.Geometry.WVector(If(aux.cloudy_velocity.weighted_vt) * FT(-1))
+        ),
+        Y.moments,
     )
 
     return dY

@@ -21,9 +21,9 @@ function parse_commandline()
         arg_type = String
         default = "RhoThetaQ"
         "--precipitation_choice"
-        help = "Precipitation model choice: NoPrecipitation, Precipitation0M, Precipitation1M, Precipitation2M"
+        help = "Precipitation model choice: NoPrecipitation, Precipitation0M, Precipitation1M, Precipitation2M, PrecipitationNM"
         arg_type = String
-        default = "Precipitation1M"
+        default = "PrecipitationNM" #"Precipitation1M"
         "--rain_formation_scheme_choice"
         help = "Rain formation scheme choice: CliMA_1M, KK2000, B1994, TC1980, LD2004, VarTimeScaleAcnv for Precipitation1M; and SB2006 for Precipitation2M"
         arg_type = String
@@ -64,7 +64,7 @@ function parse_commandline()
         "--n_elem"
         help = "Number of computational elements"
         arg_type = Int
-        default = 256
+        default = 10 #256
         "--dt"
         help = "Simulation time step [s]"
         arg_type = Float64
@@ -80,7 +80,7 @@ function parse_commandline()
         "--t_end"
         help = "Time at the end of the simulation [s]"
         arg_type = Float64
-        default = Float64(3600)
+        default = Float64(1) #Float64(3600)
         "--w1"
         help = "Maximum prescribed updraft momentum flux [m/s * kg/m3]"
         arg_type = Float64

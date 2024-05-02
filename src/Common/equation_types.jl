@@ -19,6 +19,7 @@ export NoPrecipitation
 export Precipitation0M
 export Precipitation1M
 export Precipitation2M
+export PrecipitationNM
 
 abstract type AbstractStyle end
 Base.broadcastable(x::AbstractStyle) = Ref(x)
@@ -56,4 +57,7 @@ end
 struct Precipitation2M{PT, ST} <: AbstractPrecipitationStyle
     rain_formation::PT
     sedimentation::ST
+end
+struct PrecipitationNM{PNM} <: AbstractPrecipitationStyle
+    params::PNM
 end
