@@ -57,7 +57,7 @@ end
     aux,
     t,
 ) end
-@inline function precompute_aux_activation!(ps::Union{CO.Precipitation2M, CO.PrecipitationNM}, dY, Y, aux, t)
+@inline function precompute_aux_activation!(ps::Union{CO.Precipitation2M, CO.CloudyPrecip}, dY, Y, aux, t)
 
     aux.aerosol_variables.N_aer = Y.N_aer
     tmp = @. aerosol_activation_helper(
@@ -242,7 +242,7 @@ end
 end
 
 # TODO: make it work!
-@inline function advection_tendency!(::CO.PrecipitationNM, dY, Y, aux, t)
+@inline function advection_tendency!(::CO.CloudyPrecip, dY, Y, aux, t)
     FT = eltype(Y.ρq_tot)
 
     If = CC.Operators.InterpolateC2F()

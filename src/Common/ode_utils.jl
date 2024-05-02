@@ -71,18 +71,10 @@ function initialise_state(::NonEquilibriumMoisture, ::Precipitation2M, initial_p
         N_aer = initial_profiles.N_aer,
     )
 end
-function initialise_state(::NonEquilibriumMoisture, ::PrecipitationNM, initial_profiles)
+function initialise_state(::CloudyMoisture, ::CloudyPrecip, initial_profiles)
     return CC.Fields.FieldVector(;
         ρq_tot = initial_profiles.ρq_tot,
-        ρq_liq = initial_profiles.ρq_liq,
-        ρq_ice = initial_profiles.ρq_ice,
-        ρq_rai = initial_profiles.ρq_rai,
-        ρq_sno = initial_profiles.ρq_sno,
-        N_liq = initial_profiles.N_liq,
-        N_rai = initial_profiles.N_rai,
-        N_aer = initial_profiles.N_aer,
         moments = initial_profiles.moments,
-        pdists = initial_profiles.pdists
     )
     # TODO: remove unnecessary variables
 end
@@ -152,7 +144,9 @@ function initialise_aux(FT, ip, common_params, thermo_params, air_params, activa
         aux = merge(aux,
             (; cloudy_variables = CC.Fields.FieldVector(; pdists = ip.pdists, moments = ip.moments),
             cloudy_sources = CC.Fields.FieldVector(; S_moments = ip.S_moments),
-            cloudy_velocity = CC.Fields.FieldVector(; weighted_vt = ip.weighted_vt,))
+            cloudy_velocity = CC.Fields.FieldVector(; weighted_vt = ip.weighted_vt),
+            # TODO cloudy_params
+            )
         )
     end
 
