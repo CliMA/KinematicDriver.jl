@@ -6,7 +6,7 @@ function get_moisture_type(moisture_choice::String, toml_dict)
         moisture = EquilibriumMoisture_ρdTq()
     elseif moisture_choice == "NonEquilibriumMoisture"
         moisture = NonEquilibriumMoisture_ρdTq(CMP.CloudLiquid(toml_dict), CMP.CloudIce(toml_dict))
-    elseif 
+    elseif moisture_choice == "CloudyMoisture"
         moisture = CloudyMoisture()
     else
         error("Invalid moisture choice: $moisture_choice")

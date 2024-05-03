@@ -73,7 +73,7 @@ function initialise_state(::NonEquilibriumMoisture, ::Precipitation2M, initial_p
 end
 function initialise_state(::CloudyMoisture, ::CloudyPrecip, initial_profiles)
     return CC.Fields.FieldVector(;
-        ρq_tot = initial_profiles.ρq_tot,
+        ρq_vap = initial_profiles.ρq_vap,
         moments = initial_profiles.moments,
     )
     # TODO: remove unnecessary variables
@@ -91,9 +91,12 @@ function initialise_aux(FT, ip, common_params, thermo_params, air_params, activa
     elseif moisture isa NonEquilibriumMoisture
         q = @. TD.PhasePartition(ip.q_tot, ip.q_liq, ip.q_ice)
         ts = @. TD.PhaseNonEquil_ρθq(thermo_params, ip.ρ, ip.θ_liq_ice, q)
+    elseif moisture isa CloudyMoisture
+        q = @. TD.PhasePartition(ip.q_tot, ip.q_liq, ip.q_ice)
+        ts = @. TD.PhaseNonEquil_ρTq(thermo_params, ip.ρ, ip.T, q)
     else
         error(
-            "Wrong moisture choise $moisture. The supported options are EquilibriumMoisture and NonEquilibriumMoisture",
+            "Wrong moisture choice $moisture. The supported options are EquilibriumMoisture, NonEquilibriumMoisture, and CloudyMoisture",
         )
     end
 

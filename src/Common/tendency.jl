@@ -22,6 +22,10 @@ end
     @. dY.ρq_liq = FT(0)
     @. dY.ρq_ice = FT(0)
 end
+@inline function zero_tendencies!(::CloudyMoisture, dY, Y, aux, t)
+    FT = eltype(Y.ρq_vap)
+    @. dY.ρq_vap = FT(0)
+end
 @inline function zero_tendencies!(::Union{NoPrecipitation, Precipitation0M}, dY, Y, aux, t) end
 @inline function zero_tendencies!(::Precipitation1M, dY, Y, aux, t)
     FT = eltype(Y.ρq_tot)
@@ -37,12 +41,7 @@ end
     @. dY.N_aer = FT(0)
 end
 @inline function zero_tendencies!(::CloudyPrecip, dY, Y, aux, t)
-    FT = eltype(Y.ρq_tot)
-    @. dY.ρq_rai = FT(0)
-    @. dY.ρq_sno = FT(0)
-    @. dY.N_liq = FT(0)
-    @. dY.N_rai = FT(0)
-    @. dY.N_aer = FT(0)
+    FT = eltype(Y.ρq_vap)
     @. dY.moments = ntuple(_ -> FT(0), length(dY.moments))
 end
 

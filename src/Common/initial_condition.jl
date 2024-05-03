@@ -137,6 +137,7 @@ function initial_condition_1d(
     q_sno::FT = FT(0.0)
     ρq_rai::FT = q_rai * ρ
     ρq_sno::FT = q_sno * ρ
+    ρq_vap::FT = q_vap * ρ
     N_liq::FT = FT(0)
     N_rai::FT = FT(0)
     N_aer_0::FT = common_params.prescribed_Nd * ρ_dry / ρ_SDP
@@ -172,6 +173,7 @@ function initial_condition_1d(
         ρq_ice,
         ρq_rai,
         ρq_sno,
+        ρq_vap,
         q_tot,
         q_liq,
         q_ice,
