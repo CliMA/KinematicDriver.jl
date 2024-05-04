@@ -74,6 +74,7 @@ end
 function initialise_state(::CloudyMoisture, ::CloudyPrecip, initial_profiles)
     return CC.Fields.FieldVector(;
         ρq_vap = initial_profiles.ρq_vap,
+        N_aer = initial_profiles.N_aer,
         moments = initial_profiles.moments,
     )
     # TODO: remove unnecessary variables
@@ -84,7 +85,7 @@ end
    The auxiliary state is created as a ClimaCore FieldVector
    and passed to ODE solver via the `p` parameter of the ODEProblem.
 """
-function initialise_aux(FT, ip, common_params, thermo_params, air_params, activation_params, TS, Stats, moisture, psNM = false)
+function initialise_aux(FT, ip, common_params, thermo_params, air_params, activation_params, TS, Stats, moisture, psNM = false, cloudy_params = nothing)
 
     if moisture isa EquilibriumMoisture
         ts = @. TD.PhaseEquil_ρθq(thermo_params, ip.ρ, ip.θ_liq_ice, ip.q_tot)
@@ -144,11 +145,12 @@ function initialise_aux(FT, ip, common_params, thermo_params, air_params, activa
         TS = TS,
     )
     if psNM
+        
         aux = merge(aux,
             (; cloudy_variables = CC.Fields.FieldVector(; pdists = ip.pdists, moments = ip.moments),
-            cloudy_sources = CC.Fields.FieldVector(; S_moments = ip.S_moments),
+            cloudy_sources = CC.Fields.FieldVector(; S_moments = ip.S_moments, S_ρq_vap = ip.S_ρq_vap, S_activation = ip.S_activation),
             cloudy_velocity = CC.Fields.FieldVector(; weighted_vt = ip.weighted_vt),
-            # TODO cloudy_params
+            cloudy_params = cloudy_params,
             )
         )
     end

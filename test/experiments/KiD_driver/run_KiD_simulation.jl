@@ -66,6 +66,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     thermo_params = create_thermodynamics_parameters(toml_dict)
     air_params = CMP.AirProperties(toml_dict)
     activation_params = CMP.AerosolActivationParameters(toml_dict)
+    cloudy_params = create_cloudy_parameters(6)
 
     moisture = CO.get_moisture_type(moisture_choice, toml_dict)
     precip = CO.get_precipitation_type(
@@ -110,7 +111,8 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
         Stats,
         face_space,
         moisture,
-        true # NM style
+        true, # NM style
+        cloudy_params,
     )
 
     # Output the initial condition

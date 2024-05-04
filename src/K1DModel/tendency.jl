@@ -44,6 +44,45 @@
     return (; S_Nl, S_Na)
 end
 
+@inline function aerosol_activation_helper(
+    kid_params,
+    thermo_params,
+    air_params,
+    activation_params,
+    q_tot,
+    q_liq,
+    N_aer,
+    N_aer_0,
+    T,
+    p,
+    ρ,
+    ρw,
+    dt,
+    moments
+)
+    tmp = aerosol_activation_helper(    
+        kid_params,
+        thermo_params,
+        air_params,
+        activation_params,
+        q_tot,
+        q_liq,
+        N_aer,
+        N_aer_0,
+        T,
+        p,
+        ρ,
+        ρw,
+        dt,
+    )
+    FT = eltype(q_tot)
+    S_act = ntuple(length(moments)) do k
+        k > 1 ? FT(0) : tmp.S_Nl
+    end
+
+    return (; tmp.S_Nl, tmp.S_Na, S_act)
+end
+
 """
 Aerosol activation tendencies
 """
@@ -57,7 +96,7 @@ end
     aux,
     t,
 ) end
-@inline function precompute_aux_activation!(ps::Union{CO.Precipitation2M, CO.CloudyPrecip}, dY, Y, aux, t)
+@inline function precompute_aux_activation!(::CO.Precipitation2M, dY, Y, aux, t)
 
     aux.aerosol_variables.N_aer = Y.N_aer
     tmp = @. aerosol_activation_helper(
@@ -77,6 +116,28 @@ end
     )
     aux.activation_sources.S_N_aer = tmp.S_Na
     aux.activation_sources.S_N_liq = tmp.S_Nl
+end
+@inline function precompute_aux_activation!(::CO.CloudyPrecip, dY, Y, aux, t)
+
+    aux.aerosol_variables.N_aer = Y.N_aer
+    tmp = @. aerosol_activation_helper(
+        aux.kid_params,
+        aux.thermo_params,
+        aux.air_params,
+        aux.activation_params,
+        aux.moisture_variables.q_tot,
+        aux.moisture_variables.q_liq,
+        aux.aerosol_variables.N_aer,
+        aux.aerosol_variables.N_aer_0,
+        aux.moisture_variables.T,
+        aux.moisture_variables.p,
+        aux.moisture_variables.ρ,
+        CC.Operators.InterpolateF2C().(aux.prescribed_velocity.ρw.components.data.:1),
+        aux.TS.dt,
+        Y.moments
+    )
+    aux.activation_sources.S_N_aer = tmp.S_Na
+    aux.cloudy_sources.S_activation = tmp.S_act
 end
 
 """

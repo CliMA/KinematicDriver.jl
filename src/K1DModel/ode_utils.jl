@@ -35,14 +35,14 @@ function make_rhs_function(ms::CO.AbstractMoistureStyle, ps::CO.AbstractPrecipit
 
         precompute_aux_prescribed_velocity!(aux, t)
         CO.precompute_aux_thermo!(ms, dY, Y, aux, t)
-        # CO.precompute_aux_moisture_sources!(ms, dY, Y, aux, t)
-        # precompute_aux_activation!(ps, dY, Y, aux, t)
-        # CO.precompute_aux_precip!(ps, dY, Y, aux, t)
+        CO.precompute_aux_moisture_sources!(ms, dY, Y, aux, t)
+        precompute_aux_activation!(ps, dY, Y, aux, t)
+        CO.precompute_aux_precip!(ps, dY, Y, aux, t)
 
-        # for eq_style in [ms, ps]
-        #     advection_tendency!(eq_style, dY, Y, aux, t)
-        #     CO.sources_tendency!(eq_style, dY, Y, aux, t)
-        # end
+        for eq_style in [ms, ps]
+            # advection_tendency!(eq_style, dY, Y, aux, t)
+            CO.sources_tendency!(eq_style, dY, Y, aux, t)
+        end
 
     end
     return rhs!
@@ -90,7 +90,8 @@ function initialise_aux(
     Stats,
     face_space,
     moisture,
-    psNM = false
+    psNM = false,
+    cloudy_params = nothing
 )
 
     q_surf = CO.init_profile(FT, kid_params, thermo_params, 0.0).qv
@@ -99,7 +100,7 @@ function initialise_aux(
     ρw0 = 0.0
 
     return merge(
-        CO.initialise_aux(FT, ip, common_params, thermo_params, air_params, activation_params, TS, Stats, moisture, psNM),
+        CO.initialise_aux(FT, ip, common_params, thermo_params, air_params, activation_params, TS, Stats, moisture, psNM, cloudy_params),
         (; prescribed_velocity = CC.Fields.FieldVector(; ρw = ρw, ρw0 = ρw0), kid_params = kid_params, q_surf = q_surf),
     )
 end

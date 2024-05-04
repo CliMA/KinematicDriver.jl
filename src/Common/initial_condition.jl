@@ -213,6 +213,8 @@ function initial_condition_1d(
     moments::NTuple{NM, FT} = ntuple(_ -> FT(0), NM)
     S_moments::NTuple{NM, FT} = ntuple(_ -> FT(0), NM)
     weighted_vt::NTuple{NM, FT} = ntuple(_ -> FT(0), NM)
+    S_ρq_vap::FT = FT(0)
+    S_activation::NTuple{NM, FT} = ntuple(_ -> FT(0), NM)
     
     if NM % 3 > 0
         error("must use a multiple of 3 moments")
@@ -239,10 +241,10 @@ function initial_condition_1d(
     pdists::NTuple{Int(NM / 3), CL.ParticleDistributions.GammaPrimitiveParticleDistribution{FT}} = ntuple(Int(NM/3)) do k
         CL.ParticleDistributions.GammaPrimitiveParticleDistribution(FT(0), FT(k), FT(1))
     end
-
+    
     return merge(
         initial_condition_1d(FT, common_params, kid_params, thermo_params, ρ_profile, z, dry=dry),
-        (; moments=moments, S_moments=S_moments, pdists=pdists, weighted_vt=weighted_vt)
+        (; moments=moments, S_moments=S_moments, S_ρq_vap=S_ρq_vap, S_activation=S_activation, pdists=pdists, weighted_vt=weighted_vt)
     )
 end
 
