@@ -321,43 +321,30 @@ end
 # TODO: make it work!
 @inline function advection_tendency!(::CO.CloudyPrecip, dY, Y, aux, t)
     FT = eltype(Y.ρq_vap)
-    getk(ntup, k) = ntup[k]
-    give(fieldk) = fieldk
+    Nmom = Int(sum(aux.cloudy_params.NProgMoms))
     
     If = CC.Operators.InterpolateC2F()
     ∂ = CC.Operators.DivergenceF2C(
         bottom = CC.Operators.Extrapolate(),
-        top = CC.Operators.SetValue(CC.Geometry.WVector(0.0)),
+        top = CC.Operators.SetValue(CC.Geometry.WVector(FT(0))),
     )
     fcc = CC.Operators.FluxCorrectionC2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
 
-    dY_adv = ntuple(Int(sum(aux.cloudy_params.NProgMoms))) do k 
-        vtk = @. getk(aux.cloudy_velocity.weighted_vt, k)
-        momk = @. getk(Y.moments, k)
-
-        tmp = @. -∂(
+    for i in 1:Nmom 
+        @. dY.moments.:($$i) = -∂(
             (
                 aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) +
-                CC.Geometry.WVector(If(vtk) * FT(-1))
-            ) * If(momk),
+                CC.Geometry.WVector(If(aux.cloudy_velocity.weighted_vt.:($$i)) * FT(-1))
+            ) * If(Y.moments.:($$i)),
         )
-        @. tmp += fcc(
+        @. dY.moments.:($$i) += fcc(
             (
                 aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) +
-                CC.Geometry.WVector(If(vtk) * FT(-1))
+                CC.Geometry.WVector(If(aux.cloudy_velocity.weighted_vt.:($$i)) * FT(-1))
             ),
-            momk,
+            Y.moments.:($$i)
         )
-        return tmp
     end
-
-    b = @. 
-        (give(dY_adv[1]), give(dY_adv[2]))
-    @show b
-
-    # @. dY.moments += ntuple(Val(6)) do k
-    #         dY_adv[k]
-    #     end
 
     return dY
 end

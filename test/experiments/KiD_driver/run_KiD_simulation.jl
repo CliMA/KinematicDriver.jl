@@ -139,10 +139,9 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
         progress_message = (dt, u, p, t) -> t,
     )
 
-    @info "Plotting"
     # Some basic plots
     if opts["plotting_flag"] == true
-
+        @info "Plotting"
         plot_folder = string("experiments/KiD_driver/", output_folder, "/figures/")
 
         z_centers = parent(CC.Fields.coordinate_field(space))
