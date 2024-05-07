@@ -112,27 +112,23 @@ end
 
     return (; ts, q_tot, q_liq, q_ice, ρ, p, θ_liq_ice, θ_dry)
 end
-@inline function moisture_helper_vars_cloudy(thermo_params, ρq_vap, moments, pdists, ρ_dry, T, size_cutoff = 2.6e-10)
-
-    # compute the pdists without normalization
-    # TODO: store/compute these only once
-    NProgMoms = map(pdists) do dist
-        CL.ParticleDistributions.nparams(dist)
-    end
+@inline function moisture_helper_vars_cloudy(thermo_params, cloudy_params, ρq_vap, moments, pdists, ρ_dry, T, size_cutoff = 2.6e-10)
 
     pdists_tmp = ntuple(length(pdists)) do i
-        ind_rng = CL.get_dist_moments_ind_range(NProgMoms, i)
+        ind_rng = CL.get_dist_moments_ind_range(cloudy_params.NProgMoms, i)
         CL.ParticleDistributions.update_dist_from_moments(pdists[i], moments[ind_rng])
     end
 
     (; N_liq, M_liq, N_rai, M_rai) = CL.ParticleDistributions.get_standard_N_q(pdists_tmp, size_cutoff = size_cutoff)
-    ρq_liq = M_liq + M_rai
-    ρq_tot = ρq_vap + ρq_liq
+    ρq_liq = M_liq
+    ρq_rai = M_rai
+    ρq_tot = ρq_vap + ρq_liq + ρq_rai
     ρ = ρ_dry .+ ρq_tot
 
     FT = typeof(ρq_vap)
     q_tot = ρq_tot / ρ
     q_liq = ρq_liq / ρ
+    q_rai = ρq_rai / ρ
     q_ice = FT(0)
     q = TD.PhasePartition(q_tot, q_liq, q_ice)
 
@@ -142,7 +138,7 @@ end
     θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
     θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
 
-    return (; ts, q_tot, q_liq, ρ, p, θ_liq_ice, θ_dry, N_liq, N_rai)
+    return (; ts, q_tot, q_liq, q_rai, ρ, p, θ_liq_ice, θ_dry, N_liq, N_rai)
 end
 @inline function moisture_helper_sources(thermo_params, ne, ρ, T, q_tot, q_liq, q_ice)
 
@@ -586,6 +582,7 @@ end
     
     tmp = @. moisture_helper_vars_cloudy(
         aux.thermo_params,
+        aux.cloudy_params,
         Y.ρq_vap,
         Y.moments,
         aux.cloudy_variables.pdists,
@@ -597,6 +594,7 @@ end
     aux.moisture_variables.θ_dry = tmp.θ_dry
     aux.moisture_variables.q_tot = tmp.q_tot
     aux.moisture_variables.q_liq = tmp.q_liq
+    aux.precip_variables.q_rai = tmp.q_rai
     aux.moisture_variables.p = tmp.p
     aux.moisture_variables.ts = tmp.ts
     aux.precip_variables.N_liq = tmp.N_liq

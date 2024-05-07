@@ -33,15 +33,15 @@ function make_rhs_function(ms::CO.AbstractMoistureStyle, ps::CO.AbstractPrecipit
             CO.zero_tendencies!(eq_style, dY, Y, aux, t)
         end
 
-        # precompute_aux_prescribed_velocity!(aux, t)
-        # CO.precompute_aux_thermo!(ms, dY, Y, aux, t)
-        # CO.precompute_aux_moisture_sources!(ms, dY, Y, aux, t)
-        # precompute_aux_activation!(ps, dY, Y, aux, t)
-        # CO.precompute_aux_precip!(ps, dY, Y, aux, t)
+        precompute_aux_prescribed_velocity!(aux, t)
+        CO.precompute_aux_thermo!(ms, dY, Y, aux, t)
+        CO.precompute_aux_moisture_sources!(ms, dY, Y, aux, t)
+        precompute_aux_activation!(ps, dY, Y, aux, t)
+        CO.precompute_aux_precip!(ps, dY, Y, aux, t)
 
         for eq_style in [ms, ps]
             advection_tendency!(eq_style, dY, Y, aux, t)
-            # CO.sources_tendency!(eq_style, dY, Y, aux, t)
+            CO.sources_tendency!(eq_style, dY, Y, aux, t)
         end
 
     end
