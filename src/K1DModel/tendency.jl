@@ -81,9 +81,12 @@ end
     r = FT(0.5e-6) # 0.5 μm
     v = 4/3 * π * r^3
     m = v * FT(1000)
+    shape = 2
     S_act = ntuple(length(moments)) do k
-        if k <= cloudy_params.NProgMoms[1]
-            S_Nl * m^(k-1)
+        if k <= cloudy_params.NProgMoms[1] && k < 3
+            S_Nl * m^(k-1) * shape
+        elseif k == 3 && cloudy_params.NProgMoms[1] == 3
+            S_Nl * m^(k-1) * shape * (shape + 1)
         else
             FT(0)
         end
