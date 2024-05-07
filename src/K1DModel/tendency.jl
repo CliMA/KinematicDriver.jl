@@ -49,6 +49,7 @@ end
     thermo_params,
     air_params,
     activation_params,
+    cloudy_params,
     q_tot,
     q_liq,
     N_aer,
@@ -60,7 +61,7 @@ end
     dt,
     moments
 )
-    tmp = aerosol_activation_helper(    
+    (; S_Nl, S_Na) = aerosol_activation_helper(    
         kid_params,
         thermo_params,
         air_params,
@@ -76,11 +77,19 @@ end
         dt,
     )
     FT = eltype(q_tot)
+    # TODO: right now we are just assuming the size of the nucleated droplet
+    r = FT(0.5e-6) # 0.5 μm
+    v = 4/3 * π * r^3
+    m = v * FT(1000)
     S_act = ntuple(length(moments)) do k
-        k > 1 ? FT(0) : tmp.S_Nl
+        if k <= cloudy_params.NProgMoms[1]
+            S_Nl * m^(k-1)
+        else
+            FT(0)
+        end
     end
 
-    return (; tmp.S_Nl, tmp.S_Na, S_act)
+    return (; S_Nl, S_Na, S_act)
 end
 
 """
@@ -125,6 +134,7 @@ end
         aux.thermo_params,
         aux.air_params,
         aux.activation_params,
+        aux.cloudy_params,
         aux.moisture_variables.q_tot,
         aux.moisture_variables.q_liq,
         aux.aerosol_variables.N_aer,

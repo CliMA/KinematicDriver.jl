@@ -138,8 +138,8 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
         progress = true,
         progress_message = (dt, u, p, t) -> t,
     )
-
-    # Some basic plots
+    return 
+    # # Some basic plots
     # if opts["plotting_flag"] == true
     #     @info "Plotting"
     #     plot_folder = string("experiments/KiD_driver/", output_folder, "/figures/")
@@ -149,7 +149,4 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     #     plot_animation(z_centers, solver, aux, moisture, precip, K1D, output = plot_folder)
     #     plot_timeheight(string("experiments/KiD_driver/", output_folder, "/Output.nc"), output = plot_folder)
     # end
-
-    return solver
-
 end

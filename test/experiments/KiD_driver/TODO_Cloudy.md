@@ -11,3 +11,6 @@
 
 Clean up
 Remove unnecessary variables and other tracers from the initialisation and state vector
+
+
+Note: onset of activation is around 180 sec

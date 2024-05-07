@@ -122,6 +122,9 @@ function plot_animation(z_centers, solver, aux, moisture, precip, KiD; output = 
         if moisture isa CO.NonEquilibriumMoisture
             q_liq = parent(u.ρq_liq) ./ ρ .* 1e3
             q_ice = parent(u.ρq_ice) ./ ρ .* 1e3
+        elseif moisture isa CO.CloudyMoisture
+            q_liq = parent(u.ρq_liq) ./ ρ .* 1e3
+            q_ice = q_tot .* 0.0
         else
             q_liq = q_tot .* 0.0
             q_ice = q_tot .* 0.0
@@ -129,7 +132,11 @@ function plot_animation(z_centers, solver, aux, moisture, precip, KiD; output = 
 
         if !(precip isa Union{CO.NoPrecipitation, CO.Precipitation0M})
             q_rai = parent(u.ρq_rai) ./ ρ .* 1e3
-            q_sno = parent(u.ρq_sno) ./ ρ .* 1e3
+            if !(precip isa Union{CO.CloudyPrecip})
+                q_sno = parent(u.ρq_sno) ./ ρ .* 1e3
+            else
+                q_sno = q_tot .* 0.0
+            end
         else
             q_rai = q_tot .* 0.0
             q_sno = q_tot .* 0.0

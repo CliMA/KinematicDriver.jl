@@ -600,6 +600,13 @@ end
     aux.precip_variables.N_liq = tmp.N_liq
     aux.precip_variables.N_rai = tmp.N_rai
 
+    # we update the state directly here too, so that it's accessible for plotting_flag
+    @. Y.ρq_tot = tmp.q_tot * tmp.ρ
+    @. Y.ρq_liq = tmp.q_liq * tmp.ρ
+    @. Y.ρq_rai = tmp.q_rai * tmp.ρ
+    @. Y.N_liq = tmp.N_liq
+    @. Y.N_rai = tmp.N_rai
+
 end
 @inline function precompute_aux_moisture_sources!(sm::AbstractMoistureStyle, dY, Y, aux, t)
     error("precompute_aux not implemented for a given $sm")
@@ -717,8 +724,6 @@ end
     aux.precip_velocities.term_vel_rai = tmp.term_vel_rai
 end
 @inline function precompute_aux_precip!(ps::CloudyPrecip, dY, Y, aux, t)
-    FT = eltype(Y.ρq_vap)
-
     aux.cloudy_variables.moments = Y.moments
 
     tmp = @. precip_helper_sources!(
@@ -795,5 +800,6 @@ end
     @. dY.moments += aux.cloudy_sources.S_activation
     @. dY.N_aer += aux.activation_sources.S_N_aer
 
+    @show Y.moments
     return dY
 end
