@@ -78,7 +78,7 @@ end
     )
     FT = eltype(q_tot)
     # TODO: right now we are just assuming the size of the nucleated droplet
-    r = FT(0.5e-6) # 0.5 μm
+    r = FT(4.0e-6) # 4.0 μm
     v = 4/3 * π * r^3
     m = v * FT(1000)
     shape = 2

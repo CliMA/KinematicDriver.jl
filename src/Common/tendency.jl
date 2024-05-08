@@ -113,13 +113,15 @@ end
     return (; ts, q_tot, q_liq, q_ice, ρ, p, θ_liq_ice, θ_dry)
 end
 @inline function moisture_helper_vars_cloudy(thermo_params, cloudy_params, ρq_vap, moments, pdists, ρ_dry, T, size_cutoff = 2.6e-10)
-
+    # TODO: update Cloudy.jl to get rid of the requirement that moments[2] > eps(FT)
     pdists_tmp = ntuple(length(pdists)) do i
         ind_rng = CL.get_dist_moments_ind_range(cloudy_params.NProgMoms, i)
         CL.ParticleDistributions.update_dist_from_moments(pdists[i], moments[ind_rng])
     end
+    # TODO: update this function to use analytical integration rather than quadgk so we can use any number of moments
+    #(; N_liq, M_liq, N_rai, M_rai) = CL.ParticleDistributions.get_standard_N_q(pdists_tmp, size_cutoff = size_cutoff)
+    (N_liq, M_liq, N_rai, M_rai) = (moments[1], moments[2], moments[4], moments[5])
 
-    (; N_liq, M_liq, N_rai, M_rai) = CL.ParticleDistributions.get_standard_N_q(pdists_tmp, size_cutoff = size_cutoff)
     ρq_liq = M_liq
     ρq_rai = M_rai
     ρq_tot = ρq_vap + ρq_liq + ρq_rai
@@ -487,12 +489,14 @@ end
         s = TD.supersaturation(thermo_params, q, ρ, T, TD.Liquid())
         dY_ce = CL.Condensation.get_cond_evap(pdists, s, ξ) .* cloudy_params.mom_norms
         S_moments = S_moments .+ dY_ce
+        # TODO: generalize to any number of moments
+        S_ρq_vap = -dY_ce[2] - dY_ce[4]
     end
 
     sed_flux = CL.Sedimentation.get_sedimentation_flux(pdists, cloudy_params.vel)
     weighted_vt = sed_flux ./ mom_normed
 
-    return (; S_moments, weighted_vt, pdists)
+    return (; S_moments, S_ρq_vap, weighted_vt, pdists)
 end
 
 """
@@ -606,7 +610,6 @@ end
     @. Y.ρq_rai = tmp.q_rai * tmp.ρ
     @. Y.N_liq = tmp.N_liq
     @. Y.N_rai = tmp.N_rai
-
 end
 @inline function precompute_aux_moisture_sources!(sm::AbstractMoistureStyle, dY, Y, aux, t)
     error("precompute_aux not implemented for a given $sm")
@@ -741,6 +744,7 @@ end
     )
 
     aux.cloudy_sources.S_moments = tmp.S_moments
+    aux.cloudy_sources.S_ρq_vap = tmp.S_ρq_vap
     aux.cloudy_variables.pdists = tmp.pdists
     aux.cloudy_velocity.weighted_vt = tmp.weighted_vt
 end
@@ -799,7 +803,5 @@ end
     @. dY.moments = aux.cloudy_sources.S_moments
     @. dY.moments += aux.cloudy_sources.S_activation
     @. dY.N_aer += aux.activation_sources.S_N_aer
-
-    @show Y.moments
     return dY
 end
