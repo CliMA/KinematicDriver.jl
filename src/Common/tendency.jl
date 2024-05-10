@@ -379,12 +379,12 @@ end
 
         # self_collection
         tmp_l = CM2.liquid_self_collection(sb2006.acnv, q.liq, ρ, -2 * S_Nr)
-        tmp_r = CM2.rain_self_collection(sb2006.pdf, sb2006.self, q_rai, ρ, N_rai)
+        tmp_r = CM2.rain_self_collection(sb2006.pdf_r, sb2006.self, q_rai, ρ, N_rai)
         S_N_liq += -min(max(FT(0), N_liq / dt), -tmp_l)
         S_N_rai += -min(max(FT(0), N_rai / dt), -tmp_r)
 
         # rain breakup
-        tmp = CM2.rain_breakup(sb2006.pdf, sb2006.brek, q_rai, ρ, N_rai, tmp_r)
+        tmp = CM2.rain_breakup(sb2006.pdf_r, sb2006.brek, q_rai, ρ, N_rai, tmp_r)
         S_N_rai += min(max(FT(0), N_rai / dt), tmp_r)
 
         # accretion cloud water + rain
