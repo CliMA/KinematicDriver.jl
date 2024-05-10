@@ -153,6 +153,7 @@ function run_KiD_col_sed(u::Array{FT, 1}, u_names::Array{String, 1}, model_setti
     apply_param_dependency!(model_settings)
     model_settings["toml_dict"]["SB2006_cloud_gamma_distribution_parameter"]["value"] = model_settings["k"]
     common_params = create_common_parameters(
+        FT,
         precip_sources = model_settings["precip_sources"],
         precip_sinks = model_settings["precip_sinks"],
         Nd = model_settings["Nd"],
@@ -167,7 +168,7 @@ function run_KiD_col_sed(u::Array{FT, 1}, u_names::Array{String, 1}, model_setti
         sedimentation_choice = model_settings["sedimentation_choice"],
     )
 
-    TS = KD.TimeStepping(model_settings["dt"], model_settings["dt_calib"], model_settings["t_end"])
+    TS = CO.TimeStepping(model_settings["dt"], model_settings["dt_calib"], model_settings["t_end"])
     space, face_space =
         KD.make_function_space(FT, model_settings["z_min"], model_settings["z_max"], model_settings["n_elem"])
     coord = CC.Fields.coordinate_field(space)
@@ -198,7 +199,7 @@ function run_KiD_col_sed(u::Array{FT, 1}, u_names::Array{String, 1}, model_setti
         face_space,
         moisture,
     )
-    ode_rhs! = KCS.make_rhs_function_col_sed(moisture, precip)
+    ode_rhs! = KD.make_rhs_function_col_sed(moisture, precip)
     problem = ODE.ODEProblem(ode_rhs!, Y, (model_settings["t_ini"], model_settings["t_end"]), aux)
     saveat = model_settings["filter"]["apply"] ? model_settings["filter"]["saveat_t"] : model_settings["t_calib"]
     solution = ODE.solve(problem, ODE.SSPRK33(), dt = model_settings["dt"], saveat = saveat)

@@ -22,11 +22,12 @@ function get_prior_config()
     config = Dict()
     # Define prior mean and bounds on the parameters.
     config["parameters"] = Dict(
-        "kcc_SB2006" => (mean = 4.44e9, var = 1.11e9, lbound = 0.0, ubound = Inf),
-        "A_phi_au_SB2006" => (mean = 400.0, var = 100.0, lbound = 0.0, ubound = Inf),
-        "kcr_SB2006" => (mean = 5.25, var = 1.3125, lbound = 0.0, ubound = Inf),
-        "krr_SB2006" => (mean = 7.12, var = 1.78, lbound = 0.0, ubound = Inf),
-        "aR_tv_SB2006" => (mean = 9.65, var = 2.4125, lbound = 0.0, ubound = Inf),
+        "SB2006_collection_kernel_coeff_kcc" => (mean = 4.44e9, var = 1.11e9, lbound = 0.0, ubound = Inf),
+        "SB2006_autoconversion_correcting_function_coeff_A" =>
+            (mean = 400.0, var = 100.0, lbound = 0.0, ubound = Inf),
+        "SB2006_collection_kernel_coeff_kcr" => (mean = 5.25, var = 1.3125, lbound = 0.0, ubound = Inf),
+        "SB2006_collection_kernel_coeff_krr" => (mean = 7.12, var = 1.78, lbound = 0.0, ubound = Inf),
+        "SB2006_raindrops_terminal_velocity_coeff_aR" => (mean = 9.65, var = 2.4125, lbound = 0.0, ubound = Inf),
     )
     return config
 end
@@ -125,10 +126,16 @@ function get_model_config()
         nz_per_filtered_cell = 4,
         nt_per_filtered_cell = 30,
     )
+    config["param_dependencies"] = [(
+        base = "SB2006_raindrops_terminal_velocity_coeff_aR",
+        dependant = "SB2006_raindrops_terminal_velocity_coeff_bR",
+        ratio = 10.3 / 9.65,
+    )]
     # Define default parameters
-    FT = Float64
-    config["toml_dict"] = CP.create_toml_dict(FT)
-    config["param_dependencies"] = [(base = "aR_tv_SB2006", dependant = "bR_tv_SB2006", ratio = 10.3 / 9.65)]
+    config["toml_dict"] = CP.create_toml_dict(Float64)
+    config["thermo_params"] = TD.Parameters.ThermodynamicsParameters(config["toml_dict"])
+    config["air_params"] = CM.Parameters.AirProperties(config["toml_dict"])
+    config["activation_params"] = CM.Parameters.AerosolActivationParameters(config["toml_dict"])
 
     return config
 end
