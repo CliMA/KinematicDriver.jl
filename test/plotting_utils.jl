@@ -211,10 +211,10 @@ function plot_timeheight_no_ice_snow(nc_data_file; output = "output")
         p1,
         p2,
         p3,
-        size = (1000.0, 500.0),
+        size = (1200.0, 300.0),
         bottom_margin = 30.0 * Plots.PlotMeasures.px,
         left_margin = 30.0 * Plots.PlotMeasures.px,
-        layout = (2, 3),
+        layout = (1, 3),
     )
     Plots.png(p, joinpath(path, "timeheight.png"))
 end
