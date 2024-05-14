@@ -120,7 +120,6 @@ function initial_condition_1d(
     # assuming no cloud condensate in the initial profile
     θ_liq_ice::FT = θ_std # TODO - compute this based on TS
     q_tot::FT = q_vap
-    ρq_tot::FT = q_tot * ρ
 
     θ_dry::FT = SDM_θ_dry(thermo_params, θ_std, q_vap)
     T::FT = SDM_T(thermo_params, θ_dry, ρ_dry)
@@ -128,37 +127,28 @@ function initial_condition_1d(
     ts = TD.PhaseEquil_ρTq(thermo_params, ρ, T, q_tot)
     p::FT = TD.air_pressure(thermo_params, ts)
 
-    q_liq::FT = TD.liquid_specific_humidity(thermo_params, ts)
-    q_ice::FT = TD.ice_specific_humidity(thermo_params, ts)
-    ρq_liq::FT = q_liq * ρ
-    ρq_ice::FT = q_ice * ρ
-
-    q_rai::FT = FT(0.0)
-    q_sno::FT = FT(0.0)
-    ρq_rai::FT = q_rai * ρ
-    ρq_sno::FT = q_sno * ρ
-    N_liq::FT = FT(0)
-    N_rai::FT = FT(0)
     N_aer_0::FT = common_params.prescribed_Nd * ρ_dry / ρ_SDP
     N_aer::FT = N_aer_0
 
-    S_ql_moisture::FT = FT(0.0)
-    S_qi_moisture::FT = FT(0.0)
+    q_liq::FT = FT(0) #TD.liquid_specific_humidity(thermo_params, ts)
+    q_ice::FT = FT(0) #TD.ice_specific_humidity(thermo_params, ts)
+    q_rai::FT = FT(0)
+    q_sno::FT = FT(0)
+    q_rim::FT = FT(0)
+    B_rim::FT = FT(0)
 
-    S_qt_precip::FT = FT(0.0)
-    S_ql_precip::FT = FT(0.0)
-    S_qi_precip::FT = FT(0.0)
-    S_qr_precip::FT = FT(0.0)
-    S_qs_precip::FT = FT(0.0)
-    S_Nl_precip::FT = FT(0)
-    S_Nr_precip::FT = FT(0)
+    ρq_tot::FT = q_tot * ρ
+    ρq_liq::FT = q_liq * ρ
+    ρq_ice::FT = q_ice * ρ
+    ρq_rai::FT = q_rai * ρ
+    ρq_sno::FT = q_sno * ρ
+    ρq_rim::FT = q_rim * ρ
 
-    S_Na_activation::FT = FT(0)
-    S_Nl_activation::FT = FT(0)
+    N_liq::FT = FT(0)
+    N_ice::FT = FT(0)
+    N_rai::FT = FT(0)
 
-    term_vel_rai::FT = FT(0)
-    term_vel_sno::FT = FT(0)
-    term_vel_N_rai::FT = FT(0)
+    zero::FT = FT(0)
 
     return (;
         ρ,
@@ -177,24 +167,14 @@ function initial_condition_1d(
         q_ice,
         q_rai,
         q_sno,
+        q_rim,
+        B_rim,
         N_liq,
+        N_ice,
         N_rai,
         N_aer,
         N_aer_0,
-        S_ql_moisture,
-        S_qi_moisture,
-        S_qt_precip,
-        S_ql_precip,
-        S_qi_precip,
-        S_qr_precip,
-        S_qs_precip,
-        S_Nl_precip,
-        S_Nr_precip,
-        S_Na_activation,
-        S_Nl_activation,
-        term_vel_rai,
-        term_vel_sno,
-        term_vel_N_rai,
+        zero,
     )
 end
 
@@ -241,8 +221,8 @@ function initial_condition(
     num_ratio = SF.gamma_inc(thrshld, k)[2]
     N_liq::FT = num_ratio * Nd
     N_rai::FT = Nd - N_liq
-    N_aer_0::FT = FT(0.0)
-    N_aer::FT = FT(0.0)
+    N_aer_0::FT = FT(0)
+    N_aer::FT = FT(0)
 
     T::FT = FT(300)
     q = TD.PhasePartition(q_tot, q_liq, q_ice)
@@ -251,23 +231,7 @@ function initial_condition(
     θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
     θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
 
-    S_ql_moisture::FT = FT(0.0)
-    S_qi_moisture::FT = FT(0.0)
-
-    S_qt_precip::FT = FT(0.0)
-    S_ql_precip::FT = FT(0.0)
-    S_qi_precip::FT = FT(0.0)
-    S_qr_precip::FT = FT(0.0)
-    S_qs_precip::FT = FT(0.0)
-    S_Nl_precip::FT = FT(0)
-    S_Nr_precip::FT = FT(0)
-
-    S_Na_activation::FT = FT(0)
-    S_Nl_activation::FT = FT(0)
-
-    term_vel_rai::FT = FT(0)
-    term_vel_sno::FT = FT(0)
-    term_vel_N_rai::FT = FT(0)
+    zero::FT = FT(0)
 
     return (;
         ρ,
@@ -290,19 +254,6 @@ function initial_condition(
         N_rai,
         N_aer,
         N_aer_0,
-        S_ql_moisture,
-        S_qi_moisture,
-        S_qt_precip,
-        S_ql_precip,
-        S_qi_precip,
-        S_qr_precip,
-        S_qs_precip,
-        S_Nl_precip,
-        S_Nr_precip,
-        S_Na_activation,
-        S_Nl_activation,
-        term_vel_rai,
-        term_vel_sno,
-        term_vel_N_rai,
+        zero,
     )
 end

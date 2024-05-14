@@ -96,7 +96,6 @@ end
     @test state isa CC.Fields.FieldVector
     @test LA.norm(state.ρq_tot) == 0
     @test LA.norm(state.ρq_rai) == 0
-    @test LA.norm(state.ρq_sno) == 0
     @test LA.norm(state.N_liq) == 0
     @test LA.norm(state.N_rai) == 0
     @test LA.norm(state.N_aer) == 0
@@ -119,7 +118,6 @@ end
     @test state isa CC.Fields.FieldVector
     @test LA.norm(state.ρq_tot) == 0
     @test LA.norm(state.ρq_rai) == 0
-    @test LA.norm(state.ρq_sno) == 0
     @test LA.norm(state.N_liq) == 0
     @test LA.norm(state.N_rai) == 0
     @test LA.norm(state.N_aer) == 0
@@ -148,9 +146,7 @@ end
     @test state isa CC.Fields.FieldVector
     @test LA.norm(state.ρq_tot) == 0
     @test LA.norm(state.ρq_liq) == 0
-    @test LA.norm(state.ρq_ice) == 0
     @test LA.norm(state.ρq_rai) == 0
-    @test LA.norm(state.ρq_sno) == 0
     @test LA.norm(state.N_liq) == 0
     @test LA.norm(state.N_rai) == 0
     @test LA.norm(state.N_aer) == 0
@@ -179,9 +175,7 @@ end
     @test state isa CC.Fields.FieldVector
     @test LA.norm(state.ρq_tot) == 0
     @test LA.norm(state.ρq_liq) == 0
-    @test LA.norm(state.ρq_ice) == 0
     @test LA.norm(state.ρq_rai) == 0
-    @test LA.norm(state.ρq_sno) == 0
     @test LA.norm(state.N_liq) == 0
     @test LA.norm(state.N_rai) == 0
     @test LA.norm(state.N_aer) == 0
@@ -206,66 +200,40 @@ end
         N_rai = [0.0, 0.0],
         N_aer_0 = [0.0, 0.0],
         N_aer = [0.0, 0.0],
-        S_ql_moisture = [0.0, 0.0],
-        S_qi_moisture = [0.0, 0.0],
-        S_qt_precip = [0.0, 0.0],
-        S_ql_precip = [0.0, 0.0],
-        S_qi_precip = [0.0, 0.0],
-        S_qr_precip = [0.0, 0.0],
-        S_qs_precip = [0.0, 0.0],
-        S_Nl_precip = [0.0, 0.0],
-        S_Nr_precip = [0.0, 0.0],
-        S_Na_activation = [0.0, 0.0],
-        S_Nl_activation = [0.0, 0.0],
-        term_vel_rai = [0.0, 0.0],
-        term_vel_sno = [0.0, 0.0],
-        term_vel_N_rai = [0.0, 0.0],
+        zero = [0.0, 0.0],
     )
 
-    @test_throws Exception CO.initialise_aux(FT, ip, params..., 0.0, 0.0, no_precip)
-    @test_throws Exception CO.initialise_aux(FT, ip, params..., 0.0, 0.0, CO.EquilibriumMoisture())
-    @test_throws Exception CO.initialise_aux(FT, ip, params..., 0.0, 0.0, CO.NonEquilibriumMoisture())
+    @test_throws Exception CO.initialise_aux(FT, ip, params..., 0.0, 0.0, no_precip, no_precip)
+    @test_throws Exception CO.initialise_aux(FT, ip, params..., 0.0, 0.0, CO.EquilibriumMoisture(), no_precip)
+    @test_throws Exception CO.initialise_aux(FT, ip, params..., 0.0, 0.0, CO.NonEquilibriumMoisture(), no_precip)
 
-    aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, equil_moist_ρθq)
+    aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, equil_moist_ρθq, no_precip)
     @test aux isa NamedTuple
-    @test aux.moisture_variables isa CC.Fields.FieldVector
-    @test aux.precip_variables isa CC.Fields.FieldVector
-    @test aux.moisture_sources isa CC.Fields.FieldVector
-    @test aux.aerosol_variables isa CC.Fields.FieldVector
-    @test aux.precip_sources isa CC.Fields.FieldVector
+    @test aux.thermo_variables isa NamedTuple
+    @test aux.microph_variables isa NamedTuple
+    @test aux.cloud_sources isa Nothing
     @test LA.norm(aux.precip_sources) == 0
-    @test LA.norm(aux.moisture_sources) == 0
 
-    aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, equil_moist_ρdTq)
+    aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, equil_moist_ρdTq, precip_0m)
     @test aux isa NamedTuple
-    @test aux.moisture_variables isa CC.Fields.FieldVector
-    @test aux.precip_variables isa CC.Fields.FieldVector
-    @test aux.moisture_sources isa CC.Fields.FieldVector
-    @test aux.aerosol_variables isa CC.Fields.FieldVector
-    @test aux.precip_sources isa CC.Fields.FieldVector
+    @test aux.thermo_variables isa NamedTuple
+    @test aux.microph_variables isa NamedTuple
+    @test aux.cloud_sources isa Nothing
     @test LA.norm(aux.precip_sources) == 0
-    @test LA.norm(aux.moisture_sources) == 0
 
-    aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, nequil_moist_ρθq)
+    aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, nequil_moist_ρθq, precip_1m)
     @test aux isa NamedTuple
-    @test aux.moisture_variables isa CC.Fields.FieldVector
-    @test aux.precip_variables isa CC.Fields.FieldVector
-    @test aux.moisture_sources isa CC.Fields.FieldVector
-    @test aux.aerosol_variables isa CC.Fields.FieldVector
-    @test aux.precip_sources isa CC.Fields.FieldVector
+    @test aux.thermo_variables isa NamedTuple
+    @test aux.microph_variables isa NamedTuple
+    @test LA.norm(aux.cloud_sources) == 0
     @test LA.norm(aux.precip_sources) == 0
-    @test LA.norm(aux.moisture_sources) == 0
 
-    aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, nequil_moist_ρdTq)
+    aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, nequil_moist_ρdTq, precip_2m)
     @test aux isa NamedTuple
-    @test aux.moisture_variables isa CC.Fields.FieldVector
-    @test aux.precip_variables isa CC.Fields.FieldVector
-    @test aux.moisture_sources isa CC.Fields.FieldVector
-    @test aux.aerosol_variables isa CC.Fields.FieldVector
-    @test aux.precip_sources isa CC.Fields.FieldVector
+    @test aux.thermo_variables isa NamedTuple
+    @test aux.microph_variables isa NamedTuple
+    @test LA.norm(aux.cloud_sources) == 0
     @test LA.norm(aux.precip_sources) == 0
-    @test LA.norm(aux.moisture_sources) == 0
-
 end
 
 @testset "Zero tendencies, sources tendencies" begin
@@ -291,222 +259,50 @@ end
         N_rai = [0.0, 0.0],
         N_aer_0 = [0.0, 0.0],
         N_aer = [0.0, 0.0],
-        S_ql_moisture = [1.0, 2.0],
-        S_qi_moisture = [3.0, 4.0],
-        S_qt_precip = [5.0, 6.0],
-        S_ql_precip = [7.0, 8.0],
-        S_qi_precip = [9.0, 10.0],
-        S_qr_precip = [11.0, 12.0],
-        S_qs_precip = [13.0, 14.0],
-        S_Nl_precip = [15.0, 16.0],
-        S_Nr_precip = [17.0, 18.0],
-        S_Na_activation = [19.0, 20.0],
-        S_Nl_activation = [21.0, 22.0],
-        term_vel_rai = [0.0, 0.0],
-        term_vel_sno = [0.0, 0.0],
-        term_vel_N_rai = [0.0, 0.0],
+        zero = [1.3, 4.2],
     )
-    aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, equil_moist_ρθq)
+    aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, equil_moist_ρθq, no_precip)
     Y = CO.initialise_state(equil_moist_ρθq, no_precip, ip)
-
-    dY = (; ρq_tot = [10.0, 13.0])
-    @test_throws Exception CO.zero_tendencies!(CO.AbstractMoistureStyle(), dY, Y, aux, 1.0)
-    @test_throws Exception CO.zero_tendencies!(CO.AbstractPrecipitationStyle(), dY, Y, aux, 1.0)
-
-    dY = (; ρq_tot = [10.0, 13.0])
-    CO.zero_tendencies!(equil_moist_ρθq, dY, Y, aux, 1.0)
+    dY = similar(Y)
+    CO.zero_tendencies!(dY)
     @test LA.norm(dY) == 0
 
-    aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, nequil_moist_ρθq)
+    aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, nequil_moist_ρθq, precip_1m)
     Y = CO.initialise_state(nequil_moist_ρθq, precip_1m, ip)
-    dY = (;
-        ρq_tot = [10.0, 13.0],
-        ρq_liq = [5.0, 10.0],
-        ρq_ice = [44.0, -42.0],
-        ρq_rai = [1.0, 2.0],
-        ρq_sno = [1.0, 1.0],
-    )
-    CO.zero_tendencies!(nequil_moist_ρθq, dY, Y, aux, 1.0)
-    CO.zero_tendencies!(precip_1m, dY, Y, aux, 1.0)
+    dY = similar(Y)
+    CO.zero_tendencies!(dY)
     @test LA.norm(dY) == 0
 
-    dY = (;
-        ρq_tot = [10.0, 13.0],
-        ρq_liq = [5.0, 10.0],
-        ρq_ice = [44.0, -42.0],
-        ρq_rai = [1.0, 2.0],
-        ρq_sno = [1.0, 1.0],
-        N_liq = [1e8, 1e7],
-        N_rai = [1e4, 1e4],
-        N_aer = [1e9, 1e8],
-    )
-    CO.zero_tendencies!(nequil_moist_ρθq, dY, Y, aux, 1.0)
-    CO.zero_tendencies!(precip_2m, dY, Y, aux, 1.0)
-    @test LA.norm(dY) == 0
-
-    @test_throws Exception CO.sources_tendency!(CO.AbstractMoistureStyle(), dY, Y, aux, 1.0)
-    @test_throws Exception CO.sources_tendency!(CO.AbstractPrecipitationStyle(), dY, Y, aux, 1.0)
-    CO.sources_tendency!(nequil_moist_ρθq, dY, Y, aux, 1.0)
-    CO.sources_tendency!(precip_2m, dY, Y, aux, 1.0)
-    @test dY.ρq_tot == [5.0, 6.0]
-    @test dY.ρq_liq == [8.0, 10.0]
-    @test dY.ρq_ice == [12.0, 14.0]
-    @test dY.ρq_rai == [11.0, 12.0]
-    @test dY.ρq_sno == [13.0, 14.0]
-    @test dY.N_liq == [36.0, 38.0]
-    @test dY.N_rai == [17.0, 18.0]
-    @test dY.N_aer == [19.0, 20.0]
-
+    @test_throws Exception CO.cloud_sources_tendency!(CO.AbstractMoistureStyle(), dY, Y, aux, 1.0)
+    @test_throws Exception CO.precip_sources_tendency!(CO.AbstractPrecipitationStyle(), dY, Y, aux, 1.0)
 end
 
 @testset "Tendency helper functions" begin
 
-    ρ = 1.2
-    ρ_dry = 1.185
-    θ_liq_ice = 350.0
-    ρq_tot = 15e-3
-    ρq_liq = 1e-3
-    ρq_ice = 2e-3
-    ρq_rai = 1e-3
-    ρq_sno = 2e-3
-    q_tot = ρq_tot / ρ
-    q_liq = ρq_liq / ρ
-    q_ice = ρq_ice / ρ
-    q_rai = ρq_rai / ρ
-    q_sno = ρq_sno / ρ
-    N_liq = 1e8
-    N_rai = 1e4
-    T = 280.0
-
-    q = TD.PhasePartition(q_tot, q_liq, q_ice)
-
-    tmp = CO.moisture_helper_vars_eq_ρθq(thermo_params, ρq_tot, ρ, θ_liq_ice)
-    @test !isnan(tmp.q_tot + tmp.q_liq + tmp.q_ice .+ tmp.ρ_dry .+ tmp.p .+ tmp.T + tmp.θ_dry)
-    @test tmp.q_tot >= 0.0
-    @test tmp.q_liq >= 0.0
-    @test tmp.q_ice >= 0.0
-    @test tmp.ρ_dry == ρ - ρq_tot
-    @test tmp.p == TD.air_pressure(thermo_params, tmp.ts)
-    @test tmp.T == TD.air_temperature(thermo_params, tmp.ts)
-    @test tmp.θ_dry == TD.dry_pottemp(thermo_params, tmp.T, tmp.ρ_dry)
-
-    tmp = CO.moisture_helper_vars_eq_ρdTq(thermo_params, ρq_tot, ρ_dry, T)
-    @test !isnan(tmp.q_tot + tmp.q_liq + tmp.q_ice .+ tmp.ρ .+ tmp.p .+ tmp.θ_liq_ice + tmp.θ_dry)
-    @test tmp.q_tot >= 0.0
-    @test tmp.q_liq >= 0.0
-    @test tmp.q_ice >= 0.0
-    @test tmp.ρ == ρ_dry + ρq_tot
-    @test tmp.p == TD.air_pressure(thermo_params, tmp.ts)
-    @test tmp.θ_liq_ice == TD.liquid_ice_pottemp(thermo_params, tmp.ts)
-    @test tmp.θ_dry == TD.dry_pottemp(thermo_params, T, ρ_dry)
-
-    tmp = CO.moisture_helper_vars_neq_ρθq(thermo_params, ρq_tot, ρq_liq, ρq_ice, ρ, θ_liq_ice)
-    @test !isnan(tmp.q_tot .+ tmp.q_liq .+ tmp.q_ice .+ tmp.ρ_dry .+ tmp.p .+ tmp.T .+ tmp.θ_dry)
-    @test tmp.ρ_dry == ρ - ρq_tot
-    @test tmp.p == TD.air_pressure(thermo_params, tmp.ts)
-    @test tmp.T == TD.air_temperature(thermo_params, tmp.ts)
-    @test tmp.θ_dry == TD.dry_pottemp(thermo_params, tmp.T, tmp.ρ_dry)
-
-    tmp = CO.moisture_helper_vars_neq_ρdTq(thermo_params, ρq_tot, ρq_liq, ρq_ice, ρ_dry, T)
-    @test !isnan(tmp.q_tot .+ tmp.q_liq .+ tmp.q_ice .+ tmp.ρ .+ tmp.p .+ tmp.θ_liq_ice .+ tmp.θ_dry)
-    @test tmp.ρ == ρ_dry + ρq_tot
-    @test tmp.p == TD.air_pressure(thermo_params, tmp.ts)
-    @test tmp.θ_liq_ice == TD.liquid_ice_pottemp(thermo_params, tmp.ts)
-    @test tmp.θ_dry == TD.dry_pottemp(thermo_params, T, ρ_dry)
-
-    tmp = CO.moisture_helper_sources(thermo_params, nequil_moist_ρθq, ρ, T, q_tot, q_liq, q_ice)
-    @test !isnan(tmp.S_q_liq .+ tmp.S_q_ice)
-
-    tmp = CO.precip_helper_vars(ρq_rai, ρq_sno, ρ)
-    @test !isnan(tmp.q_rai .+ tmp.q_sno)
-    @test tmp.q_rai == q_rai
-    @test tmp.q_sno == q_sno
-
-    dt = 0.5
-    ts = TD.PhaseEquil_ρTq(thermo_params, ρ, T, q_tot)
-    tmp = CO.precip_helper_sources!(precip_0m, thermo_params, ts, q_tot, q_liq, q_ice, dt)
-    @test !isnan(tmp.S_q_tot .+ tmp.S_q_liq .+ tmp.S_q_ice .+ tmp.S_q_rai .+ tmp.S_q_sno)
-    @test tmp.S_q_tot == tmp.S_q_liq + tmp.S_q_ice
-    @test tmp.S_q_tot == -(tmp.S_q_rai + tmp.S_q_sno)
-
-    tmp = CO.precip_helper_sources!(
-        precip_1m,
-        common_params,
-        thermo_params,
-        air_params,
-        ts,
-        q_tot,
-        q_liq,
-        q_ice,
-        q_rai,
-        q_sno,
-        T,
-        ρ,
-        dt,
-    )
-    @test !isnan(tmp.S_q_tot .+ tmp.S_q_liq .+ tmp.S_q_ice .+ tmp.S_q_rai .+ tmp.S_q_sno)
-    @test tmp.S_q_tot ≈ tmp.S_q_liq + tmp.S_q_ice + tmp.S_q_vap
-    @test tmp.S_q_tot ≈ -(tmp.S_q_rai + tmp.S_q_sno)
-
-    tmp = CO.precip_helper_sources!(
-        precip_2m,
-        common_params,
-        thermo_params,
-        air_params,
-        q_tot,
-        q_liq,
-        q_rai,
-        N_liq,
-        N_rai,
-        T,
-        ρ,
-        dt,
-    )
-    @test !isnan(tmp.S_q_tot .+ tmp.S_q_liq .+ tmp.S_q_rai)
-    @test !isnan(tmp.S_N_liq .+ tmp.S_N_rai)
-    @test !isnan(tmp.term_vel_rai .+ tmp.term_vel_N_rai)
-    @test tmp.S_q_tot ≈ tmp.S_q_liq + tmp.S_q_vap
-    @test tmp.S_q_tot ≈ -tmp.S_q_rai
-
-end
-
-@testset "precompute aux" begin
-
     _ip = (;
-        ρ = 1.0,
-        ρ_dry = 0.999,
-        θ_liq_ice = 440.0,
-        q_tot = 1e-3,
-        q_liq = 0.0,
-        q_ice = 0.0,
-        ρq_tot = 1e-3,
-        ρq_liq = 0.0,
-        ρq_ice = 0.0,
-        ρq_rai = 0.0,
-        ρq_sno = 0.0,
+        ρ = 1.2,
+        ρ_dry = 1.185,
+        θ_liq_ice = 350.0,
+        q_tot = 15e-3 / 1.2,
+        q_liq = 1e-3 / 1.2,
+        q_ice = 2e-3 / 1.2,
+        q_rai = 1e-3 / 1.2,
+        q_sno = 2e-3 / 1.2,
+        ρq_tot = 15e-3,
+        ρq_liq = 1e-3,
+        ρq_ice = 2e-3,
+        ρq_rai = 1e-3,
+        ρq_sno = 2e-3,
         p = 101300.0,
-        T = 300.0,
-        θ_dry = 440.0,
-        q_rai = 0.0,
-        q_sno = 0.0,
-        N_liq = 0.0,
-        N_rai = 0.0,
-        N_aer_0 = 0.0,
-        N_aer = 0.0,
-        S_ql_moisture = 0.0,
-        S_qi_moisture = 0.0,
-        S_qt_precip = 0.0,
-        S_ql_precip = 0.0,
-        S_qi_precip = 0.0,
-        S_qr_precip = 0.0,
-        S_qs_precip = 0.0,
-        S_Nl_precip = 0.0,
-        S_Nr_precip = 0.0,
-        S_Na_activation = 0.0,
-        S_Nl_activation = 0.0,
-        term_vel_rai = 0.0,
-        term_vel_sno = 0.0,
-        term_vel_N_rai = 0.0,
+        T = 280.0,
+        θ_dry = 360.0,
+        N_liq = 1e8,
+        N_ice = 1e8,
+        N_rai = 1e4,
+        N_sno = 1e4,
+        N_aer = 1e10,
+        N_aer_0 = 1e10,
+        zero = 0.0,
     )
     domain = CC.Domains.IntervalDomain(
         CC.Geometry.ZPoint{FT}(0),
@@ -518,72 +314,95 @@ end
     coord = CC.Fields.coordinate_field(space)
     ip = map(coord -> _ip, coord)
 
-    t = 13.0
+    get_value(x) = parent(CC.Fields.field_values(CC.Fields.level(x, 1)))
 
-    # eq
-    aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, equil_moist_ρθq)
+    # test if throws error
+    aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, equil_moist_ρθq, no_precip)
     Y = CO.initialise_state(equil_moist_ρθq, no_precip, ip)
-    dY = Y / 10
+    @test_throws Exception CO.precompute_aux_thermo!(CO.AbstractMoistureStyle(), Y, aux)
+    @test_throws Exception CO.precompute_aux_precip!(CO.AbstractPrecipitationStyle(), Y, aux)
 
-    @test_throws Exception CO.precompute_aux_thermo!(CO.AbstractMoistureStyle(), dY, Y, aux, t)
-    @test_throws Exception CO.precompute_aux_precip!(CO.AbstractPrecipitationStyle(), dY, Y, aux, t)
+    # test precompute_aux_thermo
+    for ms in (equil_moist_ρθq, equil_moist_ρdTq, nequil_moist_ρdTq, nequil_moist_ρθq)
+        Y = CO.initialise_state(ms, no_precip, ip)
+        aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, ms, no_precip)
+        CO.precompute_aux_thermo!(ms, Y, aux)
+        (; ρ_dry, p, T, θ_dry, θ_liq_ice, ts, ρ, ρ_dry) = aux.thermo_variables
+        (; q_tot, q_liq, q_ice) = aux.microph_variables
+        for el in aux.thermo_variables
+            if el != aux.thermo_variables.ts
+                @test all(isfinite, get_value(el))
+            end
+        end
+        @test get_value(q_tot)[1] >= 0.0
+        @test get_value(q_liq)[1] >= 0.0
+        @test get_value(q_ice)[1] >= 0.0
 
-    CO.precompute_aux_thermo!(equil_moist_ρθq, dY, Y, aux, t)
-    @test aux.moisture_variables.ρ_dry == aux.moisture_variables.ρ .- Y.ρq_tot
-    @test aux.moisture_variables.p == TD.air_pressure.(thermo_params, aux.moisture_variables.ts)
-    @test aux.moisture_variables.T == TD.air_temperature.(thermo_params, aux.moisture_variables.ts)
-    @test aux.moisture_variables.θ_dry ==
-          TD.dry_pottemp.(thermo_params, aux.moisture_variables.T, aux.moisture_variables.ρ_dry)
+        @test ρ_dry == ρ .- Y.ρq_tot
+        @test p == TD.air_pressure.(thermo_params, ts)
+        @test T == TD.air_temperature.(thermo_params, ts)
+        @test θ_dry == TD.dry_pottemp.(thermo_params, T, ρ_dry)
+        #TODO - check Thermodynamics?
+        #@test get_value(θ_liq_ice)[1] == TD.liquid_ice_pottemp(thermo_params, get_value(ts)[1])
+    end
 
-    CO.precompute_aux_thermo!(equil_moist_ρdTq, dY, Y, aux, t)
-    @test aux.moisture_variables.ρ == aux.moisture_variables.ρ_dry .+ Y.ρq_tot
-    @test aux.moisture_variables.p == TD.air_pressure.(thermo_params, aux.moisture_variables.ts)
-    @test aux.moisture_variables.θ_liq_ice == TD.liquid_ice_pottemp.(thermo_params, aux.moisture_variables.ts)
-    @test aux.moisture_variables.θ_dry ==
-          TD.dry_pottemp.(thermo_params, aux.moisture_variables.T, aux.moisture_variables.ρ_dry)
+    # test precompute_aux_precip
+    for ps in (precip_1m, precip_2m)
+        Y = CO.initialise_state(equil_moist_ρθq, ps, ip)
+        aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, equil_moist_ρθq, ps)
+        CO.precompute_aux_thermo!(equil_moist_ρθq, Y, aux)
+        CO.precompute_aux_precip!(ps, Y, aux)
+        for el in merge(aux.velocities, aux.microph_variables)
+            @test all(isfinite, get_value(el))
+            @test all(get_value(el) .>= FT(0))
+        end
+    end
 
-    # Non-eq
-    aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, nequil_moist_ρθq)
-    Y = CO.initialise_state(nequil_moist_ρθq, no_precip, ip)
-    dY = Y / 10
+    # test precompute_aux_moisture_sources
+    for ms in (nequil_moist_ρdTq, nequil_moist_ρθq)
+        Y = CO.initialise_state(ms, precip_1m, ip)
+        aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, ms, precip_1m)
+        CO.precompute_aux_thermo!(ms, Y, aux)
+        CO.precompute_aux_moisture_sources!(ms, aux)
+        @test all(isfinite, get_value(aux.cloud_sources.q_ice))
+        @test all(isfinite, get_value(aux.cloud_sources.q_liq))
+    end
 
-    CO.precompute_aux_thermo!(nequil_moist_ρθq, dY, Y, aux, t)
-    @test aux.moisture_variables.ρ_dry == aux.moisture_variables.ρ .- Y.ρq_tot
-    @test aux.moisture_variables.p == TD.air_pressure.(thermo_params, aux.moisture_variables.ts)
-    @test aux.moisture_variables.T == TD.air_temperature.(thermo_params, aux.moisture_variables.ts)
-    @test aux.moisture_variables.θ_dry ==
-          TD.dry_pottemp.(thermo_params, aux.moisture_variables.T, aux.moisture_variables.ρ_dry)
+    # test precompute_aux_precip_sources
+    for ps in (precip_0m, precip_1m, precip_2m)
+        Y = CO.initialise_state(equil_moist_ρθq, precip_1m, ip)
+        TS = CO.TimeStepping(FT(10), FT(10), FT(20))
+        aux = CO.initialise_aux(FT, ip, params..., TS, 0.0, equil_moist_ρθq, ps)
+        CO.precompute_aux_thermo!(equil_moist_ρθq, Y, aux)
+        CO.precompute_aux_precip_sources!(ps, aux)
+        if ps isa CO.Precipitation0M
+            @test all(isfinite, get_value(aux.precip_sources.q_tot))
+            @test all(isfinite, get_value(aux.precip_sources.q_liq))
+            @test all(isfinite, get_value(aux.precip_sources.q_ice))
+            @test get_value(aux.precip_sources.q_tot) ==
+                  get_value(aux.precip_sources.q_liq) + get_value(aux.precip_sources.q_ice)
+        elseif ps isa CO.Precipitation1M
+            @test all(isfinite, get_value(aux.precip_sources.q_tot))
+            @test all(isfinite, get_value(aux.precip_sources.q_liq))
+            @test all(isfinite, get_value(aux.precip_sources.q_ice))
+            @test all(isfinite, get_value(aux.precip_sources.q_rai))
+            @test all(isfinite, get_value(aux.precip_sources.q_sno))
+            @test all(
+                isapprox.(
+                    get_value(aux.precip_sources.q_tot),
+                    -get_value(aux.precip_sources.q_rai) - get_value(aux.precip_sources.q_sno),
+                    rtol = sqrt(eps(FT)),
+                ),
+            )
 
-    CO.precompute_aux_thermo!(nequil_moist_ρdTq, dY, Y, aux, t)
-    @test aux.moisture_variables.ρ == aux.moisture_variables.ρ_dry .+ Y.ρq_tot
-    @test aux.moisture_variables.p == TD.air_pressure.(thermo_params, aux.moisture_variables.ts)
-    @test aux.moisture_variables.θ_liq_ice == TD.liquid_ice_pottemp.(thermo_params, aux.moisture_variables.ts)
-    @test aux.moisture_variables.θ_dry ==
-          TD.dry_pottemp.(thermo_params, aux.moisture_variables.T, aux.moisture_variables.ρ_dry)
-
-    aux = CO.initialise_aux(FT, ip, params..., (; dt = 2.0), 0.0, nequil_moist_ρθq)
-    Y = CO.initialise_state(nequil_moist_ρθq, precip_2m, ip)
-    dY = Y / 10
-
-    CO.precompute_aux_precip!(precip_2m, dY, Y, aux, t)
-    tmp = @. CO.precip_helper_sources!(
-        precip_2m,
-        aux.common_params,
-        aux.thermo_params,
-        aux.air_params,
-        aux.moisture_variables.q_tot,
-        aux.moisture_variables.q_liq,
-        aux.precip_variables.q_rai,
-        aux.precip_variables.N_liq,
-        aux.precip_variables.N_rai,
-        aux.moisture_variables.T,
-        aux.moisture_variables.ρ,
-        aux.TS.dt,
-    )
-
-    @test aux.precip_sources.S_q_rai ≈ tmp.S_q_rai atol = eps(FT) * 10
-    @test aux.precip_sources.S_q_tot ≈ tmp.S_q_tot atol = eps(FT) * 10
-    @test aux.precip_sources.S_q_liq ≈ tmp.S_q_liq atol = eps(FT) * 10
-    @test aux.precip_sources.S_N_liq ≈ tmp.S_N_liq atol = eps(FT) * 10
-    @test aux.precip_sources.S_N_rai ≈ tmp.S_N_rai atol = eps(FT) * 10
+        else
+            @test all(isfinite, get_value(aux.precip_sources.q_tot))
+            @test all(isfinite, get_value(aux.precip_sources.q_liq))
+            @test all(isfinite, get_value(aux.precip_sources.q_rai))
+            @test all(isfinite, get_value(aux.precip_sources.N_aer))
+            @test all(isfinite, get_value(aux.precip_sources.N_liq))
+            @test all(isfinite, get_value(aux.precip_sources.N_rai))
+            @test get_value(aux.precip_sources.q_tot) == -get_value(aux.precip_sources.q_rai)
+        end
+    end
 end

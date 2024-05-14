@@ -9,7 +9,7 @@
 end
 @inline function precompute_aux_prescribed_velocity!(aux, t)
 
-    FT = eltype(aux.moisture_variables.q_tot)
+    FT = eltype(aux.thermo_params)
     coords = CC.Fields.coordinate_field(axes(aux.prescribed_velocity.ρu))
     face_coords = CC.Fields.coordinate_field(axes(aux.prescribed_velocity.ρw))
     aux.prescribed_velocity.ρu = map(
@@ -64,9 +64,9 @@ end
     fcc = CC.Operators.FluxCorrectionC2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
     hdiv = CC.Operators.WeakDivergence()
 
-    @. dY.ρq_tot += -∂(aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) * If(Y.ρq_tot))
-    @. dY.ρq_tot += fcc(aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ), Y.ρq_tot)
-    @. dY.ρq_tot += -hdiv(aux.prescribed_velocity.ρu / aux.moisture_variables.ρ * Y.ρq_tot)
+    @. dY.ρq_tot += -∂(aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ) * If(Y.ρq_tot))
+    @. dY.ρq_tot += fcc(aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ), Y.ρq_tot)
+    @. dY.ρq_tot += -hdiv(aux.prescribed_velocity.ρu / aux.thermo_variables.ρ * Y.ρq_tot)
     CC.Spaces.weighted_dss!(dY.ρq_tot)
 
     return dY
@@ -89,20 +89,20 @@ end
         top = CC.Operators.Extrapolate(),
     )
 
-    @. dY.ρq_tot += -∂_qt(aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) * If(Y.ρq_tot))
-    @. dY.ρq_liq += -∂_ql(aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) * If(Y.ρq_liq))
-    @. dY.ρq_ice += -∂_qi(aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) * If(Y.ρq_ice))
+    @. dY.ρq_tot += -∂_qt(aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ) * If(Y.ρq_tot))
+    @. dY.ρq_liq += -∂_ql(aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ) * If(Y.ρq_liq))
+    @. dY.ρq_ice += -∂_qi(aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ) * If(Y.ρq_ice))
 
 
     fcc = CC.Operators.FluxCorrectionC2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
-    @. dY.ρq_tot += fcc(aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ), Y.ρq_tot)
-    @. dY.ρq_liq += fcc(aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ), Y.ρq_liq)
-    @. dY.ρq_ice += fcc(aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ), Y.ρq_ice)
+    @. dY.ρq_tot += fcc(aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ), Y.ρq_tot)
+    @. dY.ρq_liq += fcc(aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ), Y.ρq_liq)
+    @. dY.ρq_ice += fcc(aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ), Y.ρq_ice)
 
     hdiv = CC.Operators.WeakDivergence()
-    @. dY.ρq_tot += -hdiv(aux.prescribed_velocity.ρu / aux.moisture_variables.ρ * Y.ρq_tot)
-    @. dY.ρq_liq += -hdiv(aux.prescribed_velocity.ρu / aux.moisture_variables.ρ * Y.ρq_liq)
-    @. dY.ρq_ice += -hdiv(aux.prescribed_velocity.ρu / aux.moisture_variables.ρ * Y.ρq_ice)
+    @. dY.ρq_tot += -hdiv(aux.prescribed_velocity.ρu / aux.thermo_variables.ρ * Y.ρq_tot)
+    @. dY.ρq_liq += -hdiv(aux.prescribed_velocity.ρu / aux.thermo_variables.ρ * Y.ρq_liq)
+    @. dY.ρq_ice += -hdiv(aux.prescribed_velocity.ρu / aux.thermo_variables.ρ * Y.ρq_ice)
     CC.Spaces.weighted_dss!(dY.ρq_tot)
     CC.Spaces.weighted_dss!(dY.ρq_liq)
     CC.Spaces.weighted_dss!(dY.ρq_ice)
@@ -120,37 +120,37 @@ end
     @. dY.ρq_rai +=
         -∂(
             (
-                aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) +
-                CC.Geometry.WVector(If(aux.precip_velocities.term_vel_rai) * FT(-1))
+                aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ) +
+                CC.Geometry.WVector(If(aux.velocities.term_vel_rai) * FT(-1))
             ) * If(Y.ρq_rai),
         )
     @. dY.ρq_sno +=
         -∂(
             (
-                aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) +
-                CC.Geometry.WVector(If(aux.precip_velocities.term_vel_sno) * FT(-1))
+                aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ) +
+                CC.Geometry.WVector(If(aux.velocities.term_vel_sno) * FT(-1))
             ) * If(Y.ρq_sno),
         )
 
     fcc = CC.Operators.FluxCorrectionC2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
     @. dY.ρq_rai += fcc(
         (
-            aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) +
-            CC.Geometry.WVector(If(aux.precip_velocities.term_vel_rai) * FT(-1))
+            aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ) +
+            CC.Geometry.WVector(If(aux.velocities.term_vel_rai) * FT(-1))
         ),
         Y.ρq_rai,
     )
     @. dY.ρq_sno += fcc(
         (
-            aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) +
-            CC.Geometry.WVector(If(aux.precip_velocities.term_vel_sno) * FT(-1))
+            aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ) +
+            CC.Geometry.WVector(If(aux.velocities.term_vel_sno) * FT(-1))
         ),
         Y.ρq_sno,
     )
 
     hdiv = CC.Operators.WeakDivergence()
-    @. dY.ρq_rai += -hdiv(aux.prescribed_velocity.ρu / aux.moisture_variables.ρ * Y.ρq_rai)
-    @. dY.ρq_sno += -hdiv(aux.prescribed_velocity.ρu / aux.moisture_variables.ρ * Y.ρq_sno)
+    @. dY.ρq_rai += -hdiv(aux.prescribed_velocity.ρu / aux.thermo_variables.ρ * Y.ρq_rai)
+    @. dY.ρq_sno += -hdiv(aux.prescribed_velocity.ρu / aux.thermo_variables.ρ * Y.ρq_sno)
     CC.Spaces.weighted_dss!(dY.ρq_rai)
     CC.Spaces.weighted_dss!(dY.ρq_sno)
 
@@ -165,38 +165,38 @@ end
     @. dY.N_rai +=
         -∂(
             (
-                aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) +
-                CC.Geometry.WVector(If(aux.precip_velocities.term_vel_N_rai) * FT(-1))
+                aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ) +
+                CC.Geometry.WVector(If(aux.velocities.term_vel_N_rai) * FT(-1))
             ) * If(Y.N_rai),
         )
     @. dY.ρq_rai +=
         -∂(
             (
-                aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) +
-                CC.Geometry.WVector(If(aux.precip_velocities.term_vel_rai) * FT(-1))
+                aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ) +
+                CC.Geometry.WVector(If(aux.velocities.term_vel_rai) * FT(-1))
             ) * If(Y.ρq_rai),
         )
 
     fcc = CC.Operators.FluxCorrectionC2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
     @. dY.N_rai += fcc(
         (
-            aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) +
-            CC.Geometry.WVector(If(aux.precip_velocities.term_vel_N_rai) * FT(-1))
+            aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ) +
+            CC.Geometry.WVector(If(aux.velocities.term_vel_N_rai) * FT(-1))
         ),
         Y.N_rai,
     )
     @. dY.ρq_rai += fcc(
         (
-            aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) +
-            CC.Geometry.WVector(If(aux.precip_velocities.term_vel_rai) * FT(-1))
+            aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ) +
+            CC.Geometry.WVector(If(aux.velocities.term_vel_rai) * FT(-1))
         ),
         Y.ρq_rai,
     )
 
 
     hdiv = CC.Operators.WeakDivergence()
-    @. dY.N_rai += -hdiv(aux.prescribed_velocity.ρu / aux.moisture_variables.ρ * Y.N_rai)
-    @. dY.ρq_rai += -hdiv(aux.prescribed_velocity.ρu / aux.moisture_variables.ρ * Y.ρq_rai)
+    @. dY.N_rai += -hdiv(aux.prescribed_velocity.ρu / aux.thermo_variables.ρ * Y.N_rai)
+    @. dY.ρq_rai += -hdiv(aux.prescribed_velocity.ρu / aux.thermo_variables.ρ * Y.ρq_rai)
     CC.Spaces.weighted_dss!(dY.ρq_rai)
     CC.Spaces.weighted_dss!(dY.N_rai)
 

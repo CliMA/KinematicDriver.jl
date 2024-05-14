@@ -114,6 +114,7 @@ function run_K2D_simulation(::Type{FT}, opts) where {FT}
         hv_center_space,
         hv_face_space,
         moisture,
+        precip,
     )
 
     # Output the initial condition

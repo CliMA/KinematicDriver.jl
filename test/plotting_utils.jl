@@ -53,14 +53,23 @@ function plot_final_aux_profiles(z_centers, aux, precip; output = "output")
     path = joinpath(@__DIR__, output)
     mkpath(path)
 
-    T_end = parent(aux.moisture_variables.T)
-    q_tot_end = parent(aux.moisture_variables.q_tot)
-    q_liq_end = parent(aux.moisture_variables.q_liq)
-    q_ice_end = parent(aux.moisture_variables.q_ice)
-    q_rai_end = parent(aux.precip_variables.q_rai)
-    q_sno_end = parent(aux.precip_variables.q_sno)
-    N_liq_end = parent(aux.precip_variables.N_liq)
-    ρ_end = parent(aux.moisture_variables.ρ)
+    T_end = parent(aux.thermo_variables.T)
+    q_tot_end = parent(aux.microph_variables.q_tot)
+    ρ_end = parent(aux.thermo_variables.ρ)
+
+    q_liq_end = parent(aux.microph_variables.q_liq)
+    q_ice_end = parent(aux.microph_variables.q_ice)
+
+    if precip isa CO.Precipitation1M
+        q_rai_end = parent(aux.microph_variables.q_rai)
+        q_sno_end = parent(aux.microph_variables.q_sno)
+    elseif precip isa CO.Precipitation2M
+        q_rai_end = parent(aux.microph_variables.q_rai)
+        q_sno_end = q_tot_end .* 0.0
+    else
+        q_rai_end = q_tot_end .* 0.0
+        q_sno_end = q_tot_end .* 0.0
+    end
 
     p1 = Plots.plot(q_tot_end .* 1e3, z_centers, xlabel = "q_tot [g/kg]", ylabel = "z [m]")
     p2 = Plots.plot(q_liq_end .* 1e3, z_centers, xlabel = "q_liq [g/kg]", ylabel = "z [m]")
@@ -71,6 +80,7 @@ function plot_final_aux_profiles(z_centers, aux, precip; output = "output")
 
     p7 = Plots.plot(xlabel = "precipitation susceptibility", ylabel = "z [m]")
     if precip isa CO.Precipitation2M
+        N_liq_end = parent(aux.microph_variables.N_liq)
         precip_sus_aut =
             CMPS.precipitation_susceptibility_autoconversion.(
                 Ref(precip.rain_formation),
@@ -116,7 +126,7 @@ function plot_animation(z_centers, solver, aux, moisture, precip, KiD; output = 
 
     anim = Plots.@animate for u in solver.u
 
-        ρ = parent(aux.moisture_variables.ρ)
+        ρ = parent(aux.thermo_variables.ρ)
         q_tot = parent(u.ρq_tot) ./ ρ .* 1e3
 
         if moisture isa CO.NonEquilibriumMoisture
@@ -127,9 +137,12 @@ function plot_animation(z_centers, solver, aux, moisture, precip, KiD; output = 
             q_ice = q_tot .* 0.0
         end
 
-        if !(precip isa Union{CO.NoPrecipitation, CO.Precipitation0M})
+        if precip isa CO.Precipitation1M
             q_rai = parent(u.ρq_rai) ./ ρ .* 1e3
             q_sno = parent(u.ρq_sno) ./ ρ .* 1e3
+        elseif precip isa CO.Precipitation2M
+            q_rai = parent(u.ρq_rai) ./ ρ .* 1e3
+            q_sno = q_tot .* 0.0
         else
             q_rai = q_tot .* 0.0
             q_sno = q_tot .* 0.0

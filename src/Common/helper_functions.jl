@@ -82,7 +82,7 @@ end
 """
 function get_variable_data_from_ODE(u, aux, precip, var::String)
 
-    ρ = parent(aux.moisture_variables.ρ_dry)[:] .+ parent(u.ρq_tot)[:]
+    ρ = parent(aux.thermo_variables.ρ_dry)[:] .+ parent(u.ρq_tot)[:]
 
     if var == "qt"
         output = parent(u.ρq_tot) ./ ρ

@@ -39,20 +39,7 @@ end
         N_rai = [0.0, 0.0],
         N_aer_0 = [0.0, 0.0],
         N_aer = [0.0, 0.0],
-        S_ql_moisture = [0.0, 0.0],
-        S_qi_moisture = [0.0, 0.0],
-        S_qt_precip = [0.0, 0.0],
-        S_ql_precip = [0.0, 0.0],
-        S_qi_precip = [0.0, 0.0],
-        S_qr_precip = [0.0, 0.0],
-        S_qs_precip = [0.0, 0.0],
-        S_Nl_precip = [0.0, 0.0],
-        S_Nr_precip = [0.0, 0.0],
-        S_Na_activation = [0.0, 0.0],
-        S_Nl_activation = [0.0, 0.0],
-        term_vel_rai = [0.0, 0.0],
-        term_vel_sno = [0.0, 0.0],
-        term_vel_N_rai = [0.0, 0.0],
+        zero = [0.0, 0.0],
     )
     space, face_space = K1D.make_function_space(FT, 0, 100, 10)
 
@@ -60,58 +47,18 @@ end
     @test_throws Exception K1D.initialise_aux(FT, ip, params..., 0.0, 0.0, face_space, CO.EquilibriumMoisture())
     @test_throws Exception K1D.initialise_aux(FT, ip, params..., 0.0, 0.0, face_space, CO.NonEquilibriumMoisture())
 
-    aux = K1D.initialise_aux(FT, ip, params..., 0.0, 0.0, face_space, equil_moist_ρθq)
-    @test aux isa NamedTuple
-    @test aux.moisture_variables isa CC.Fields.FieldVector
-    @test aux.precip_variables isa CC.Fields.FieldVector
-    @test aux.moisture_sources isa CC.Fields.FieldVector
-    @test aux.aerosol_variables isa CC.Fields.FieldVector
-    @test aux.precip_sources isa CC.Fields.FieldVector
-    @test aux.precip_velocities isa CC.Fields.FieldVector
-    @test aux.prescribed_velocity isa CC.Fields.FieldVector
-    @test LA.norm(aux.precip_variables) == 0
-    @test LA.norm(aux.precip_sources) == 0
-    @test LA.norm(aux.moisture_sources) == 0
-
-    aux = K1D.initialise_aux(FT, ip, params..., 0.0, 0.0, face_space, equil_moist_ρdTq)
-    @test aux isa NamedTuple
-    @test aux.moisture_variables isa CC.Fields.FieldVector
-    @test aux.precip_variables isa CC.Fields.FieldVector
-    @test aux.moisture_sources isa CC.Fields.FieldVector
-    @test aux.aerosol_variables isa CC.Fields.FieldVector
-    @test aux.precip_sources isa CC.Fields.FieldVector
-    @test aux.precip_velocities isa CC.Fields.FieldVector
-    @test aux.prescribed_velocity isa CC.Fields.FieldVector
-    @test LA.norm(aux.precip_variables) == 0
-    @test LA.norm(aux.precip_sources) == 0
-    @test LA.norm(aux.moisture_sources) == 0
-
-    aux = K1D.initialise_aux(FT, ip, params..., 0.0, 0.0, face_space, nequil_moist_ρθq)
-    @test aux isa NamedTuple
-    @test aux.moisture_variables isa CC.Fields.FieldVector
-    @test aux.precip_variables isa CC.Fields.FieldVector
-    @test aux.moisture_sources isa CC.Fields.FieldVector
-    @test aux.aerosol_variables isa CC.Fields.FieldVector
-    @test aux.precip_sources isa CC.Fields.FieldVector
-    @test aux.precip_velocities isa CC.Fields.FieldVector
-    @test aux.prescribed_velocity isa CC.Fields.FieldVector
-    @test LA.norm(aux.precip_variables) == 0
-    @test LA.norm(aux.precip_sources) == 0
-    @test LA.norm(aux.moisture_sources) == 0
-
-    aux = K1D.initialise_aux(FT, ip, params..., 0.0, 0.0, face_space, nequil_moist_ρdTq)
-    @test aux isa NamedTuple
-    @test aux.moisture_variables isa CC.Fields.FieldVector
-    @test aux.precip_variables isa CC.Fields.FieldVector
-    @test aux.moisture_sources isa CC.Fields.FieldVector
-    @test aux.aerosol_variables isa CC.Fields.FieldVector
-    @test aux.precip_sources isa CC.Fields.FieldVector
-    @test aux.precip_velocities isa CC.Fields.FieldVector
-    @test aux.prescribed_velocity isa CC.Fields.FieldVector
-    @test LA.norm(aux.precip_variables) == 0
-    @test LA.norm(aux.precip_sources) == 0
-    @test LA.norm(aux.moisture_sources) == 0
-
+    ms_styles = [equil_moist_ρθq, equil_moist_ρdTq, nequil_moist_ρθq, nequil_moist_ρdTq]
+    ps_styles = [no_precip, precip_1m, precip_2m, precip_2m]
+    for (ms, ps) in zip(ms_styles, ps_styles)
+        aux = K1D.initialise_aux(FT, ip, params..., 0.0, 0.0, face_space, ms, ps)
+        @test aux isa NamedTuple
+        @test LA.norm(aux.precip_sources) == 0
+        if ms in [nequil_moist_ρθq, nequil_moist_ρdTq]
+            @test LA.norm(aux.cloud_sources) == 0
+        else
+            @test aux.cloud_sources == nothing
+        end
+    end
 end
 
 @testset "advection_tendency" begin
@@ -124,118 +71,90 @@ end
     t = 13.0
 
     # eq
-    aux = K1D.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, equil_moist_ρθq)
-    ρw = 0.0
-    @. aux.prescribed_velocity.ρw = CC.Geometry.WVector.(ρw)
-    aux.prescribed_velocity.ρw0 = ρw
-
+    aux = K1D.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, equil_moist_ρθq, no_precip)
     Y = CO.initialise_state(equil_moist_ρθq, no_precip, init)
     dY = Y / 10
-
     @test_throws Exception K1D.advection_tendency!(CO.AbstractMoistureStyle(), dY, Y, aux, t)
     @test_throws Exception K1D.advection_tendency!(CO.AbstractPrecipitationStyle(), dY, Y, aux, t)
 
-    K1D.advection_tendency!(equil_moist_ρθq, dY, Y, aux, t)
-    @test dY ≈ Y / 10 atol = eps(FT) * 10
-
-    Y = CO.initialise_state(equil_moist_ρθq, precip_2m, init)
-    dY = Y / 10
-    K1D.advection_tendency!(precip_2m, dY, Y, aux, t)
-    @test dY ≈ Y / 10 atol = eps(FT) * 10
-
-    # Non-eq
-    aux = K1D.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, nequil_moist_ρθq)
-    ρw = 0.0
-    @. aux.prescribed_velocity.ρw = CC.Geometry.WVector.(ρw)
-    aux.prescribed_velocity.ρw0 = ρw
-
-    Y = CO.initialise_state(nequil_moist_ρθq, no_precip, init)
-    dY = Y / 10
-
-    K1D.advection_tendency!(nequil_moist_ρθq, dY, Y, aux, t)
-    @test dY ≈ Y / 10 atol = eps(FT) * 10
-
-    Y = CO.initialise_state(nequil_moist_ρθq, precip_2m, init)
-    dY = Y / 10
-    K1D.advection_tendency!(precip_2m, dY, Y, aux, t)
-    @test dY ≈ Y / 10 atol = eps(FT) * 10
-
+    ms_styles = [equil_moist_ρθq, equil_moist_ρdTq, nequil_moist_ρθq, nequil_moist_ρdTq]
+    ps_styles = [no_precip, precip_1m, precip_2m, precip_2m]
+    for (ms, ps) in zip(ms_styles, ps_styles)
+        aux = K1D.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, ms, ps)
+        Y = CO.initialise_state(ms, ps, init)
+        dY = Y / 10
+        ρw = 0.0
+        @. aux.prescribed_velocity.ρw = CC.Geometry.WVector.(ρw)
+        aux.prescribed_velocity.ρw0 = ρw
+        K1D.advection_tendency!(ms, dY, Y, aux, t)
+        K1D.advection_tendency!(ps, dY, Y, aux, t)
+        @test dY ≈ Y / 10 atol = eps(FT) * 10
+    end
 end
 
 @testset "aerosol activation for 2M schemes" begin
     #setup
-    q_tot = 1e-2
-    q_liq = 1e-3
-    N_aer = 5e7
-    N_aer_0 = 1e8
-    T = 280.0
-    p = 1e5
-    ρ = 1.0
-    ρw = 2.0
-    dt = 1.0
-
-    #action
-    tmp = K1D.aerosol_activation_helper(
-        kid_params,
-        thermo_params,
-        air_params,
-        activation_params,
-        q_tot,
-        q_liq,
-        N_aer,
-        N_aer_0,
-        T,
-        p,
-        ρ,
-        ρw,
-        dt,
+    _ip = (;
+        ρ = 1.2,
+        ρ_dry = 1.185,
+        θ_liq_ice = 350.0,
+        q_tot = 15e-3 / 1.2,
+        q_liq = 1e-3 / 1.2,
+        q_ice = 2e-3 / 1.2,
+        q_rai = 1e-3 / 1.2,
+        q_sno = 2e-3 / 1.2,
+        ρq_tot = 15e-3,
+        ρq_liq = 1e-3,
+        ρq_ice = 2e-3,
+        ρq_rai = 1e-3,
+        ρq_sno = 2e-3,
+        p = 101300.0,
+        T = 280.0,
+        θ_dry = 360.0,
+        N_liq = 1e8,
+        N_ice = 1e8,
+        N_rai = 1e4,
+        N_sno = 1e4,
+        N_aer = 5e7,
+        N_aer_0 = 1e8,
+        zero = 0.0,
     )
-
-    #test
-    @test tmp isa NamedTuple
-    @test tmp.S_Nl ≈ -tmp.S_Na
-    @test 0 < tmp.S_Nl < N_aer_0
-
-    #action
-    tmp = K1D.aerosol_activation_helper(
-        kid_params,
-        thermo_params,
-        air_params,
-        activation_params,
-        q_tot,
-        q_liq,
-        N_aer,
-        N_aer_0,
-        290.0,
-        p,
-        ρ,
-        ρw,
-        dt,
+    domain = CC.Domains.IntervalDomain(
+        CC.Geometry.ZPoint{FT}(0),
+        CC.Geometry.ZPoint{FT}(1),
+        boundary_names = (:bottom, :top),
     )
+    mesh = CC.Meshes.IntervalMesh(domain, nelems = 1)
+    space = CC.Spaces.CenterFiniteDifferenceSpace(mesh)
+    face_space = CC.Spaces.FaceFiniteDifferenceSpace(mesh)
+    coord = CC.Fields.coordinate_field(space)
+    ip = map(coord -> _ip, coord)
 
-    #test
-    @test tmp.S_Nl ≈ 0.0 atol = eps(FT)
-    @test tmp.S_Na ≈ 0.0 atol = eps(FT)
+    get_value(x) = parent(CC.Fields.field_values(CC.Fields.level(x, 1)))
 
-    #action
-    tmp = K1D.aerosol_activation_helper(
+    TS = CO.TimeStepping(FT(10), FT(10), FT(20))
+
+    Y = CO.initialise_state(equil_moist_ρθq, precip_2m, ip)
+    dY = similar(Y)
+    aux = K1D.initialise_aux(
+        FT,
+        ip,
+        common_params,
         kid_params,
         thermo_params,
         air_params,
         activation_params,
-        q_tot,
-        q_liq,
-        N_aer,
-        N_aer_0,
-        T,
-        p,
-        ρ,
+        TS,
         0.0,
-        dt,
+        face_space,
+        equil_moist_ρθq,
+        precip_2m,
     )
 
-    #test
-    @test tmp.S_Nl ≈ 0.0 atol = eps(FT)
-    @test tmp.S_Na ≈ 0.0 atol = eps(FT)
+    K1D.precompute_aux_activation!(precip_2m, dY, Y, aux, 13)
 
+    #test
+    @test all(isfinite, get_value(aux.activation_sources.N_aer))
+    @test all(isfinite, get_value(aux.activation_sources.N_liq))
+    @test get_value(aux.activation_sources.N_aer) == -get_value(aux.activation_sources.N_liq)
 end

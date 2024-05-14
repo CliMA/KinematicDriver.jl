@@ -48,7 +48,7 @@ end
 
     #test
     @test length(ode_sol) == n_times
-    @test length(parent(aux.moisture_variables.ρ_dry)) == n_heights
+    @test length(parent(aux.thermo_variables.ρ_dry)) == n_heights
 
     #action
     G = KCP.ODEsolution2Gvector(ode_sol, aux, precip, ["rlr", "rv"])

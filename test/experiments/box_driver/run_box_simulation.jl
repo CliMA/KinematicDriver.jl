@@ -74,7 +74,18 @@ function run_box_simulation(::Type{FT}, opts) where {FT}
     Y = CO.initialise_state(moisture, precip, init)
 
     # Create aux vector and apply initial condition
-    aux = CO.initialise_aux(FT, init, common_params, thermo_params, air_params, activation_params, TS, 0.0, moisture)
+    aux = CO.initialise_aux(
+        FT,
+        init,
+        common_params,
+        thermo_params,
+        air_params,
+        activation_params,
+        TS,
+        0.0,
+        moisture,
+        precip,
+    )
 
     # Collect all the tendencies into rhs function for ODE solver
     # based on model choices for the solved equations

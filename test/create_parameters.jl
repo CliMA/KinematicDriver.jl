@@ -26,7 +26,7 @@ function override_toml_dict(
     prescribed_Nd = 100 * 1e6,
     r_dry = 0.04 * 1e-6,
     std_dry = 1.4,
-    κ = 0.9,
+    κ = 1.12,
 )
     FT = CP.float_type(toml_dict)
     override_file = Dict(

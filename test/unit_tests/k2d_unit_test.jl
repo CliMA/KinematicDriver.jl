@@ -28,20 +28,7 @@ end
         N_rai = [0.0, 0.0],
         N_aer_0 = [0.0, 0.0],
         N_aer = [0.0, 0.0],
-        S_ql_moisture = [0.0, 0.0],
-        S_qi_moisture = [0.0, 0.0],
-        S_qt_precip = [0.0, 0.0],
-        S_ql_precip = [0.0, 0.0],
-        S_qi_precip = [0.0, 0.0],
-        S_qr_precip = [0.0, 0.0],
-        S_qs_precip = [0.0, 0.0],
-        S_Nl_precip = [0.0, 0.0],
-        S_Nr_precip = [0.0, 0.0],
-        S_Na_activation = [0.0, 0.0],
-        S_Nl_activation = [0.0, 0.0],
-        term_vel_rai = [0.0, 0.0],
-        term_vel_sno = [0.0, 0.0],
-        term_vel_N_rai = [0.0, 0.0],
+        zero = [0.0, 0.0],
     )
     space, face_space = K2D.make_function_space(FT)
 
@@ -49,19 +36,10 @@ end
     @test_throws Exception K2D.initialise_aux(FT, ip, params..., 0.0, 0.0, face_space, K1D.EquilibriumMoisture())
     @test_throws Exception K2D.initialise_aux(FT, ip, params..., 0.0, 0.0, face_space, K1D.NonEquilibriumMoisture())
 
-    aux = K2D.initialise_aux(FT, ip, params..., 100.0, 200.0, 0.0, 0.0, space, face_space, equil_moist_ρθq)
+    aux = K2D.initialise_aux(FT, ip, params..., 100.0, 200.0, 0.0, 0.0, space, face_space, equil_moist_ρθq, precip_1m)
     @test aux isa NamedTuple
-    @test aux.moisture_variables isa CC.Fields.FieldVector
-    @test aux.precip_variables isa CC.Fields.FieldVector
-    @test aux.moisture_sources isa CC.Fields.FieldVector
-    @test aux.aerosol_variables isa CC.Fields.FieldVector
-    @test aux.precip_sources isa CC.Fields.FieldVector
-    @test aux.precip_velocities isa CC.Fields.FieldVector
-    @test aux.prescribed_velocity isa CC.Fields.FieldVector
-    @test LA.norm(aux.precip_variables) == 0
+    @test aux.cloud_sources == nothing
     @test LA.norm(aux.precip_sources) == 0
-    @test LA.norm(aux.moisture_sources) == 0
-
 end
 
 @testset "advection tendency" begin
@@ -77,32 +55,15 @@ end
     @test_throws Exception K2D.advection_tendency!(K1D.AbstractMoistureStyle(), dY, Y, aux, t)
     @test_throws Exception K2D.advection_tendency!(K1D.AbstractPrecipitationStyle(), dY, Y, aux, t)
 
-    # eq
-    aux = K2D.initialise_aux(FT, init, params..., 3000.0, 3000.0, 0.0, 0.0, space, face_space, equil_moist_ρθq)
-    K2D.precompute_aux_prescribed_velocity!(aux, t)
-
-    Y = CO.initialise_state(equil_moist_ρθq, no_precip, init)
-    dY = Y / 10
-    K2D.advection_tendency!(equil_moist_ρθq, dY, Y, aux, t)
-    @test dY ≈ Y / 10 atol = eps(FT) * 10
-
-    Y = CO.initialise_state(equil_moist_ρθq, precip_2m, init)
-    dY = Y / 10
-    K2D.advection_tendency!(precip_2m, dY, Y, aux, t)
-    @test dY ≈ Y / 10 atol = eps(FT) * 10
-
-    # Non-eq
-    aux = K2D.initialise_aux(FT, init, params..., 3000.0, 3000.0, 0.0, 0.0, space, face_space, nequil_moist_ρθq)
-    K2D.precompute_aux_prescribed_velocity!(aux, t)
-
-    Y = CO.initialise_state(nequil_moist_ρθq, no_precip, init)
-    dY = Y / 10
-    K2D.advection_tendency!(nequil_moist_ρθq, dY, Y, aux, t)
-    @test dY ≈ Y / 10 atol = eps(FT) * 10
-
-    Y = CO.initialise_state(nequil_moist_ρθq, precip_2m, init)
-    dY = Y / 10
-    K2D.advection_tendency!(precip_2m, dY, Y, aux, t)
-    @test dY ≈ Y / 10 atol = eps(FT) * 10
-
+    ms_styles = [equil_moist_ρθq, nequil_moist_ρθq]
+    ps_styles = [no_precip, precip_2m]
+    for (ms, ps) in zip(ms_styles, ps_styles)
+        aux = K2D.initialise_aux(FT, init, params..., 3000.0, 3000.0, 0.0, 0.0, space, face_space, ms, ps)
+        K2D.precompute_aux_prescribed_velocity!(aux, t)
+        Y = CO.initialise_state(ms, ps, init)
+        dY = Y / 10
+        K2D.advection_tendency!(ms, dY, Y, aux, t)
+        K2D.advection_tendency!(ps, dY, Y, aux, t)
+        @test dY ≈ Y / 10 atol = eps(FT) * 10
+    end
 end
