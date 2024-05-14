@@ -124,7 +124,7 @@ end
 
     ρq_liq = M_liq
     ρq_rai = M_rai
-    ρq_tot = ρq_vap + ρq_liq + ρq_rai
+    ρq_tot = ρq_vap + ρq_liq
     ρ = ρ_dry .+ ρq_tot
 
     FT = typeof(ρq_vap)
@@ -418,12 +418,12 @@ end
 
         # self_collection
         tmp_l = CM2.liquid_self_collection(sb2006.acnv, q.liq, ρ, -2 * S_Nr)
-        tmp_r = CM2.rain_self_collection(sb2006.pdf, sb2006.self, q_rai, ρ, N_rai)
+        tmp_r = CM2.rain_self_collection(sb2006.pdf_r, sb2006.self, q_rai, ρ, N_rai)
         S_N_liq += -min(max(FT(0), N_liq / dt), -tmp_l)
         S_N_rai += -min(max(FT(0), N_rai / dt), -tmp_r)
 
         # rain breakup
-        tmp = CM2.rain_breakup(sb2006.pdf, sb2006.brek, q_rai, ρ, N_rai, tmp_r)
+        tmp = CM2.rain_breakup(sb2006.pdf_r, sb2006.brek, q_rai, ρ, N_rai, tmp_r)
         S_N_rai += min(max(FT(0), N_rai / dt), tmp_r)
 
         # accretion cloud water + rain
@@ -470,6 +470,7 @@ end
     FT = eltype(q_tot)
 
     S_moments = ntuple(_ -> FT(0), length(moments))
+    S_ρq_vap = FT(0)
     q = TD.PhasePartition(q_tot, q_liq, FT(0))
 
     # update the ParticleDistributions
@@ -490,11 +491,17 @@ end
         dY_ce = CL.Condensation.get_cond_evap(pdists, s, ξ) .* cloudy_params.mom_norms
         S_moments = S_moments .+ dY_ce
         # TODO: generalize to any number of moments
-        S_ρq_vap = -dY_ce[2] - dY_ce[4]
+        S_ρq_vap += -dY_ce[2] - dY_ce[4]
     end
 
-    sed_flux = CL.Sedimentation.get_sedimentation_flux(pdists, cloudy_params.vel)
-    weighted_vt = sed_flux ./ mom_normed
+    sed_flux = -1 .* CL.Sedimentation.get_sedimentation_flux(pdists, cloudy_params.vel)
+    weighted_vt = ntuple(length(moments)) do i
+        if mom_normed[i] > FT(0)
+            sed_flux[i] / mom_normed[i]
+        else
+            FT(0)
+        end
+    end
 
     return (; S_moments, S_ρq_vap, weighted_vt, pdists)
 end
@@ -800,7 +807,7 @@ end
     return dY
 end
 @inline function sources_tendency!(::CloudyPrecip, dY, Y, aux, t)
-    @. dY.moments = aux.cloudy_sources.S_moments
+    @. dY.moments += aux.cloudy_sources.S_moments
     @. dY.moments += aux.cloudy_sources.S_activation
     @. dY.N_aer += aux.activation_sources.S_N_aer
     return dY

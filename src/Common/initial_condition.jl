@@ -348,3 +348,37 @@ function initial_condition(::Type{FT}, thermo_params, qt::FT, Nd::FT, k::FT, ρ_
         term_vel_N_rai,
     )
 end
+
+function initial_condition_cloudy(::Type{FT}, ::Val{NM}, thermo_params, qt::FT, Nd::FT, k::FT, ρ_dry::FT, z) where {NM, FT}
+    ρq_vap::FT = FT(0)
+    S_moments::NTuple{NM, FT} = ntuple(_ -> FT(0), NM)
+    weighted_vt::NTuple{NM, FT} = ntuple(_ -> FT(0), NM)
+    S_ρq_vap::FT = FT(0)
+    S_activation::NTuple{NM, FT} = ntuple(_ -> FT(0), NM)
+    
+    if NM % 3 > 0
+        error("must use a multiple of 3 moments")
+    end
+
+    θ_dist = qt * ρ_dry / Nd / k
+    
+    moments::NTuple{NM, FT} = ntuple(NM) do j
+        if j==1
+            Nd
+        elseif j==2
+            Nd * θ_dist * k
+        elseif j==3
+            Nd * θ_dist^2 * k * (k+1)
+        else
+            FT(0)
+        end
+    end 
+    pdists::NTuple{Int(NM / 3), CL.ParticleDistributions.GammaPrimitiveParticleDistribution{FT}} = ntuple(Int(NM/3)) do k
+        CL.ParticleDistributions.GammaPrimitiveParticleDistribution(FT(0), FT(k), FT(1))
+    end
+
+    return merge(
+        initial_condition(FT, thermo_params, qt, Nd, k, ρ_dry, z),
+        (; ρq_vap = ρq_vap, moments=moments, S_moments=S_moments, S_ρq_vap=S_ρq_vap, S_activation=S_activation, pdists=pdists, weighted_vt=weighted_vt)
+    )
+end

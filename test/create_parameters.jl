@@ -87,7 +87,7 @@ function create_kid_parameters(toml_dict)
 end
 Base.broadcastable(x::KID.Parameters.KinematicDriverParameters) = Ref(x)
 
-function create_cloudy_parameters(NM)
+function create_cloudy_parameters(NM, FT)
     pdists::NTuple{Int(NM / 3), CL.ParticleDistributions.GammaPrimitiveParticleDistribution{FT}} = ntuple(Int(NM/3)) do k
         CL.ParticleDistributions.GammaPrimitiveParticleDistribution(FT(0), FT(k), FT(1))
     end # TODO: generalize
@@ -95,10 +95,11 @@ function create_cloudy_parameters(NM)
         CL.ParticleDistributions.nparams(pdists[k])
     end
     # TODO: figure out why norms isn't working
-    norms::Tuple{FT, FT} = (FT(1), FT(1)) #(FT(1e6), FT(1e-9))
+    norms::Tuple{FT, FT} = (FT(1e6), FT(1e-9))
     mom_norms::NTuple{NM, FT} = CL.get_moments_normalizing_factors(Int.(NProgMoms), norms)
     
-    kernel_func = CL.KernelFunctions.LongKernelFunction(5.236e-10, 9.44e9, 5.78)
+    kernel_func = CL.KernelFunctions.LinearKernelFunction(5e0)
+    #kernel_func = CL.KernelFunctions.LongKernelFunction(5.236e-10, 9.44e9, 5.78)
     matrix_of_kernels = ntuple(2) do i
         ntuple(2) do j
             if i == j == 1
@@ -109,7 +110,7 @@ function create_cloudy_parameters(NM)
         end
     end
     coal_data::CL.Coalescence.CoalescenceData{2, 3, FT, 9} = CL.Coalescence.CoalescenceData(matrix_of_kernels, Int.(NProgMoms), (5e-10, Inf), norms)
-    vel = ((FT(50.0), FT(1.0 / 6)),)
+    vel = ((FT(1.0), FT(1.0 / 6)),)
     cloudy_params = CO.Parameters.CloudyParameters(NProgMoms, norms, mom_norms, coal_data, vel)
     return cloudy_params
 end
