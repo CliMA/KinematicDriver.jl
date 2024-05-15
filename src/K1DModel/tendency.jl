@@ -344,7 +344,7 @@ end
     fcc = CC.Operators.FluxCorrectionC2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
 
     for i in 1:Nmom 
-        @. dY.moments.:($$i) = -∂(
+        @. dY.moments.:($$i) += -∂(
             (
                 aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) +
                 CC.Geometry.WVector(If(aux.cloudy_velocity.weighted_vt.:($$i)) * FT(-1))
@@ -358,6 +358,9 @@ end
             Y.moments.:($$i)
         )
     end
+    # if t >= 79
+    #     @show dY.moments
+    # end
 
     return dY
 end

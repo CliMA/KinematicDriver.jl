@@ -66,7 +66,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     thermo_params = create_thermodynamics_parameters(toml_dict)
     air_params = CMP.AirProperties(toml_dict)
     activation_params = CMP.AerosolActivationParameters(toml_dict)
-    cloudy_params = create_cloudy_parameters(6)
+    cloudy_params = create_cloudy_parameters(6, FT)
 
     moisture = CO.get_moisture_type(moisture_choice, toml_dict)
     precip = CO.get_precipitation_type(

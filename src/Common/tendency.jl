@@ -112,12 +112,7 @@ end
 
     return (; ts, q_tot, q_liq, q_ice, ρ, p, θ_liq_ice, θ_dry)
 end
-@inline function moisture_helper_vars_cloudy(thermo_params, cloudy_params, ρq_vap, moments, pdists, ρ_dry, T, size_cutoff = 2.6e-10)
-    # TODO: update Cloudy.jl to get rid of the requirement that moments[2] > eps(FT)
-    pdists_tmp = ntuple(length(pdists)) do i
-        ind_rng = CL.get_dist_moments_ind_range(cloudy_params.NProgMoms, i)
-        CL.ParticleDistributions.update_dist_from_moments(pdists[i], moments[ind_rng])
-    end
+@inline function moisture_helper_vars_cloudy(thermo_params, cloudy_params, ρq_vap, moments, pdists, ρ_dry, T)
     # TODO: update this function to use analytical integration rather than quadgk so we can use any number of moments
     #(; N_liq, M_liq, N_rai, M_rai) = CL.ParticleDistributions.get_standard_N_q(pdists_tmp, size_cutoff = size_cutoff)
     (N_liq, M_liq, N_rai, M_rai) = (moments[1], moments[2], moments[4], moments[5])
@@ -466,6 +461,8 @@ end
     old_pdists,
     T,
     ρ,
+    dt,
+    t
 )
     FT = eltype(q_tot)
 
@@ -481,14 +478,43 @@ end
     end
 
     if Bool(common_params.precip_sources)
-        dY_coal = CL.Coalescence.get_coal_ints(CL.EquationTypes.AnalyticalCoalStyle(), pdists, cloudy_params.coal_data) .* cloudy_params.mom_norms
+        dY_coal_tmp = CL.Coalescence.get_coal_ints(CL.EquationTypes.AnalyticalCoalStyle(), pdists, cloudy_params.coal_data) .* cloudy_params.mom_norms
+        for i in 1:length(moments)
+            if isnan(dY_coal_tmp[i])
+                @show moments
+                @show pdists
+                @show dY_coal_tmp
+            end
+        end
+        dY_coal = ntuple(length(moments)) do j
+            if dY_coal_tmp[j] >= 0
+                dY_coal_tmp[j]
+            else
+                max(dY_coal_tmp[j], -moments[j] / dt)
+            end
+        end
         S_moments = S_moments .+ dY_coal
     end
 
     if Bool(common_params.precip_sinks)
         ξ = CM.Common.G_func(air_params, thermo_params, T, TD.Liquid())
+        ξ_normed = ξ / cloudy_params.norms[2]^(2/3)
         s = TD.supersaturation(thermo_params, q, ρ, T, TD.Liquid())
-        dY_ce = CL.Condensation.get_cond_evap(pdists, s, ξ) .* cloudy_params.mom_norms
+        dY_ce_tmp = CL.Condensation.get_cond_evap(pdists, s, ξ_normed) .* cloudy_params.mom_norms
+        for i in 1:length(moments)
+            if isnan(dY_ce_tmp[i])
+                @show moments
+                @show pdists
+                @show dY_ce_tmp
+            end
+        end
+        dY_ce = ntuple(length(moments)) do j
+            if dY_ce_tmp[j] >= 0
+                dY_ce_tmp[j]
+            else
+                max(dY_ce_tmp[j], -moments[j] / dt)
+            end
+        end
         S_moments = S_moments .+ dY_ce
         # TODO: generalize to any number of moments
         S_ρq_vap += -dY_ce[2] - dY_ce[4]
@@ -748,12 +774,21 @@ end
         aux.cloudy_variables.pdists,
         aux.moisture_variables.T,
         aux.moisture_variables.ρ,
+        aux.TS.dt,
+        t
     )
 
     aux.cloudy_sources.S_moments = tmp.S_moments
     aux.cloudy_sources.S_ρq_vap = tmp.S_ρq_vap
     aux.cloudy_variables.pdists = tmp.pdists
     aux.cloudy_velocity.weighted_vt = tmp.weighted_vt
+
+    # if t >= 389
+    #     @show t
+    #     @show aux.cloudy_sources.S_moments
+    #     @show aux.cloudy_variables.pdists
+    #     @show Y.moments
+    # end
 end
 
 """
