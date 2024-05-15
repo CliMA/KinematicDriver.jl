@@ -199,6 +199,7 @@ function run_KiD_col_sed(u::Array{FT, 1}, u_names::Array{String, 1}, model_setti
         nothing,
         face_space,
         moisture,
+        precip,
     )
     ode_rhs! = KD.make_rhs_function_col_sed(moisture, precip)
     problem = ODE.ODEProblem(ode_rhs!, Y, (model_settings["t_ini"], model_settings["t_end"]), aux)
