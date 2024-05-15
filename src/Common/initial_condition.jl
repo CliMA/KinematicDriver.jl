@@ -127,8 +127,7 @@ function initial_condition_1d(
     ts = TD.PhaseEquil_ρTq(thermo_params, ρ, T, q_tot)
     p::FT = TD.air_pressure(thermo_params, ts)
 
-    N_aer_0::FT = common_params.prescribed_Nd * ρ_dry / ρ_SDP
-    N_aer::FT = N_aer_0
+    N_aer::FT = common_params.prescribed_Nd * ρ_dry / ρ_SDP
 
     q_liq::FT = FT(0) #TD.liquid_specific_humidity(thermo_params, ts)
     q_ice::FT = FT(0) #TD.ice_specific_humidity(thermo_params, ts)
@@ -173,7 +172,6 @@ function initial_condition_1d(
         N_ice,
         N_rai,
         N_aer,
-        N_aer_0,
         zero,
     )
 end
@@ -221,7 +219,6 @@ function initial_condition(
     num_ratio = SF.gamma_inc(thrshld, k)[2]
     N_liq::FT = num_ratio * Nd
     N_rai::FT = Nd - N_liq
-    N_aer_0::FT = FT(0)
     N_aer::FT = FT(0)
 
     T::FT = FT(300)
@@ -253,7 +250,6 @@ function initial_condition(
         N_liq,
         N_rai,
         N_aer,
-        N_aer_0,
         zero,
     )
 end

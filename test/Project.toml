@@ -27,7 +27,7 @@ Thermodynamics = "b60c26fb-14c3-4610-9d3e-2d17fe7ff00c"
 [compat]
 ClimaCore = "0.14"
 ClimaCorePlots = "0.2"
-ClimaParams = "0.10.6"
+ClimaParams = "0.10.7"
 CloudMicrophysics = "0.20"
 DiffEqBase = "6.75"
 NCDatasets = "0.14"

@@ -121,7 +121,12 @@ function initialise_aux(
     end
 
     # Allocate scratch which is a tuple of fields for storing intermediate outputs
-    scratch = (; tmp = similar(ip.q_tot), tmp2 = similar(ip.q_tot), tmp3 = similar(ip.q_tot))
+    scratch = (;
+        tmp = similar(ip.q_tot),
+        tmp2 = similar(ip.q_tot),
+        tmp3 = similar(ip.q_tot),
+        tmp_surface = similar(CC.Fields.level(ip.q_tot, 1), Tuple{FT, FT}),
+    )
 
     # Allocate a tuple of fields for storing precomputed thermodynamic variables
     thermo_variables =
@@ -147,7 +152,6 @@ function initialise_aux(
             N_liq = ip.N_liq,
             N_rai = ip.N_rai,
             N_aer = ip.N_aer,
-            N_aer_0 = ip.N_aer_0,
         )
         velocities = (; term_vel_N_rai = copy(ip.zero), term_vel_rai = copy(ip.zero))
         precip_sources_eltype = @NamedTuple{q_tot::FT, q_liq::FT, q_rai::FT, N_aer::FT, N_liq::FT, N_rai::FT}
