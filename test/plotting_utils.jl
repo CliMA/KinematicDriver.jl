@@ -71,12 +71,26 @@ function plot_final_aux_profiles(z_centers, aux, precip; output = "output")
         q_sno_end = q_tot_end .* 0.0
     end
 
+    if precip isa CO.Precipitation2M
+        N_aer_end = parent(aux.microph_variables.N_aer)
+        N_liq_end = parent(aux.microph_variables.N_liq)
+        N_rai_end = parent(aux.microph_variables.N_rai)
+    else
+        N_aer_end = q_tot_end .* 0.0
+        N_liq_end = q_tot_end .* 0.0
+        N_rai_end = q_tot_end .* 0.0
+    end
+
     p1 = Plots.plot(q_tot_end .* 1e3, z_centers, xlabel = "q_tot [g/kg]", ylabel = "z [m]")
     p2 = Plots.plot(q_liq_end .* 1e3, z_centers, xlabel = "q_liq [g/kg]", ylabel = "z [m]")
     p3 = Plots.plot(q_ice_end .* 1e3, z_centers, xlabel = "q_ice [g/kg]", ylabel = "z [m]")
     p4 = Plots.plot(T_end, z_centers, xlabel = "T [K]", ylabel = "z [m]")
     p5 = Plots.plot(q_rai_end .* 1e3, z_centers, xlabel = "q_rai [g/kg]", ylabel = "z [m]")
     p6 = Plots.plot(q_sno_end .* 1e3, z_centers, xlabel = "q_sno [g/kg]", ylabel = "z [m]")
+
+    p8 = Plots.plot(N_aer_end .* 1e-6, z_centers, xlabel = "N_aer [1/cm3]", ylabel = "z [m]")
+    p9 = Plots.plot(N_liq_end .* 1e-6, z_centers, xlabel = "N_liq [1/cm3]", ylabel = "z [m]")
+    p10 = Plots.plot(N_rai_end .* 1e-6, z_centers, xlabel = "N_rai [1/cm3]", ylabel = "z [m]")
 
     p7 = Plots.plot(xlabel = "precipitation susceptibility", ylabel = "z [m]")
     if precip isa CO.Precipitation2M
@@ -111,8 +125,11 @@ function plot_final_aux_profiles(z_centers, aux, precip; output = "output")
         p4,
         p5,
         p6,
+        p8,
+        p9,
+        p10,
         p7,
-        size = (1200.0, 750.0),
+        size = (1800.0, 1200.0),
         bottom_margin = 40.0 * Plots.PlotMeasures.px,
         left_margin = 80.0 * Plots.PlotMeasures.px,
     )
@@ -182,21 +199,32 @@ function plot_timeheight(nc_data_file; output = "output")
     q_ice_plt = Array(ds.group["profiles"]["q_ice"])
     q_rai_plt = Array(ds.group["profiles"]["q_rai"])
     q_sno_plt = Array(ds.group["profiles"]["q_sno"])
-    p1 = Plots.heatmap(t_plt, z_plt, q_tot_plt .* 1e3, title = "q_tot [g/kg]", xlabel = "time [s]", ylabel = "z [m]")
-    p2 = Plots.heatmap(t_plt, z_plt, q_liq_plt .* 1e3, title = "q_liq [g/kg]", xlabel = "time [s]", ylabel = "z [m]")
-    p3 = Plots.heatmap(t_plt, z_plt, q_ice_plt .* 1e3, title = "q_ice [g/kg]", xlabel = "time [s]", ylabel = "z [m]")
-    p4 = Plots.heatmap(t_plt, z_plt, q_rai_plt .* 1e3, title = "q_rai [g/kg]", xlabel = "time [s]", ylabel = "z [m]")
-    p5 = Plots.heatmap(t_plt, z_plt, q_sno_plt .* 1e3, title = "q_sno [g/kg]", xlabel = "time [s]", ylabel = "z [m]")
+    N_aer_plt = Array(ds.group["profiles"]["N_aer"])
+    N_liq_plt = Array(ds.group["profiles"]["N_liq"])
+    N_rai_plt = Array(ds.group["profiles"]["N_rai"])
+    #! format: off
+    p1 = Plots.heatmap(t_plt, z_plt, q_tot_plt .* 1e3, title = "q_tot [g/kg]", xlabel = "time [s]", ylabel = "z [m]", color = :viridis)
+    p2 = Plots.heatmap(t_plt, z_plt, q_liq_plt .* 1e3, title = "q_liq [g/kg]", xlabel = "time [s]", ylabel = "z [m]", color = :viridis)
+    p3 = Plots.heatmap(t_plt, z_plt, q_ice_plt .* 1e3, title = "q_ice [g/kg]", xlabel = "time [s]", ylabel = "z [m]", color = :viridis)
+    p4 = Plots.heatmap(t_plt, z_plt, q_rai_plt .* 1e3, title = "q_rai [g/kg]", xlabel = "time [s]", ylabel = "z [m]", color = :viridis)
+    p5 = Plots.heatmap(t_plt, z_plt, q_sno_plt .* 1e3, title = "q_sno [g/kg]", xlabel = "time [s]", ylabel = "z [m]", color = :viridis)
+    p6 = Plots.heatmap(t_plt, z_plt, N_aer_plt .* 1e-6, title = "N_aer [1/cm3]", xlabel = "time [s]", ylabel = "z [m]", color = :viridis, clims=(0, 100))
+    p7 = Plots.heatmap(t_plt, z_plt, N_liq_plt .* 1e-6, title = "N_liq [1/cm3]", xlabel = "time [s]", ylabel = "z [m]", color = :viridis)
+    p8 = Plots.heatmap(t_plt, z_plt, N_rai_plt .* 1e-6, title = "N_rai [1/cm3]", xlabel = "time [s]", ylabel = "z [m]", color = :viridis)
+    #! format: on
     p = Plots.plot(
         p1,
         p2,
         p3,
         p4,
         p5,
-        size = (1500.0, 1000.0),
+        p6,
+        p7,
+        p8,
+        size = (2000.0, 1500.0),
         bottom_margin = 30.0 * Plots.PlotMeasures.px,
         left_margin = 30.0 * Plots.PlotMeasures.px,
-        layout = (2, 3),
+        layout = (3, 3),
     )
     Plots.png(p, joinpath(path, "timeheight.png"))
 end
@@ -220,7 +248,7 @@ function plot_timeheight_no_ice_snow(nc_data_file; output = "output")
         size = (1000.0, 500.0),
         bottom_margin = 30.0 * Plots.PlotMeasures.px,
         left_margin = 30.0 * Plots.PlotMeasures.px,
-        layout = (2, 3),
+        layout = (3, 3),
     )
     Plots.png(p, joinpath(path, "timeheight.png"))
 end
