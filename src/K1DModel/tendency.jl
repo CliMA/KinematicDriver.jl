@@ -78,12 +78,14 @@ end
     )
     FT = eltype(q_tot)
     # TODO: right now we are just assuming the size of the nucleated droplet
-    r = FT(4.0e-6) # 4.0 μm
+    r = FT(2.0e-6) # 4.0 μm
     v = 4/3 * π * r^3
     m = v * FT(1000)
     shape = 2
     S_act = ntuple(length(moments)) do k
-        if k <= cloudy_params.NProgMoms[1] && k < 3
+        if k == 1
+            S_Nl
+        elseif k <= cloudy_params.NProgMoms[1] && k ==2
             S_Nl * m^(k-1) * shape
         elseif k == 3 && cloudy_params.NProgMoms[1] == 3
             S_Nl * m^(k-1) * shape * (shape + 1)
