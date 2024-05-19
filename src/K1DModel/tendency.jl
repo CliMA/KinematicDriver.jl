@@ -78,7 +78,7 @@ end
     )
     FT = eltype(q_tot)
     # TODO: right now we are just assuming the size of the nucleated droplet
-    r = FT(2.0e-6) # 4.0 μm
+    r = FT(2.0e-6) # 2.0 μm
     v = 4/3 * π * r^3
     m = v * FT(1000)
     shape = 2
@@ -160,26 +160,26 @@ end
 end
 @inline function precompute_aux_activation!(::CO.CloudyPrecip, dY, Y, aux, t)
 
-    aux.aerosol_variables.N_aer = Y.N_aer
+    @. aux.microph_variables.N_aer = Y.N_aer
     tmp = @. aerosol_activation_helper(
         aux.kid_params,
         aux.thermo_params,
         aux.air_params,
         aux.activation_params,
         aux.cloudy_params,
-        aux.moisture_variables.q_tot,
-        aux.moisture_variables.q_liq,
-        aux.aerosol_variables.N_aer,
-        aux.aerosol_variables.N_aer_0,
-        aux.moisture_variables.T,
-        aux.moisture_variables.p,
-        aux.moisture_variables.ρ,
+        aux.microph_variables.q_tot,
+        aux.microph_variables.q_liq,
+        aux.microph_variables.N_aer,
+        aux.microph_variables.N_aer_0,
+        aux.thermo_variables.T,
+        aux.thermo_variables.p,
+        aux.thermo_variables.ρ,
         CC.Operators.InterpolateF2C().(aux.prescribed_velocity.ρw.components.data.:1),
         aux.TS.dt,
         Y.moments
     )
-    aux.activation_sources.S_N_aer = tmp.S_Na
-    aux.cloudy_sources.S_activation = tmp.S_act
+    @. aux.activation_sources.N_aer = tmp.S_Na
+    @. aux.activation_sources.activation = tmp.S_act
 end
 
 """
@@ -231,11 +231,11 @@ end
         bottom = CC.Operators.SetValue(CC.Geometry.WVector(aux.prescribed_velocity.ρw0 * aux.q_surf)),
         top = CC.Operators.Extrapolate(),
     )
-    @. dY.ρq_vap += -∂(aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) * If(Y.ρq_vap))
+    @. dY.ρq_vap += -∂(aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ) * If(Y.ρq_vap))
 
     if Bool(aux.kid_params.qtot_flux_correction)
         fcc = CC.Operators.FluxCorrectionC2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
-        @. dY.ρq_vap += fcc(aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ), Y.ρq_vap)
+        @. dY.ρq_vap += fcc(aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ), Y.ρq_vap)
     end
 
     return dY
@@ -373,14 +373,14 @@ end
     for i in 1:Nmom 
         @. dY.moments.:($$i) += -∂(
             (
-                aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) +
-                CC.Geometry.WVector(If(aux.cloudy_velocity.weighted_vt.:($$i)) * FT(-1))
+                aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ) +
+                CC.Geometry.WVector(If(aux.velocities.weighted_vt.:($$i)) * FT(-1))
             ) * If(Y.moments.:($$i)),
         )
         @. dY.moments.:($$i) += fcc(
             (
-                aux.prescribed_velocity.ρw / If(aux.moisture_variables.ρ) +
-                CC.Geometry.WVector(If(aux.cloudy_velocity.weighted_vt.:($$i)) * FT(-1))
+                aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ) +
+                CC.Geometry.WVector(If(aux.velocities.weighted_vt.:($$i)) * FT(-1))
             ),
             Y.moments.:($$i)
         )

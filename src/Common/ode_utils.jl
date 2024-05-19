@@ -131,6 +131,7 @@ function initialise_aux(
     elseif moisture isa CloudyMoisture
         q = @. TD.PhasePartition(ip.q_tot, ip.q_liq, ip.q_ice)
         ts = @. TD.PhaseNonEquil_ρTq(thermo_params, ip.ρ, ip.T, q)
+        cloud_sources = nothing
     else
         error(
             "Wrong moisture choice $moisture. The supported options are EquilibriumMoisture, NonEquilibriumMoisture, and CloudyMoisture",
@@ -149,12 +150,14 @@ function initialise_aux(
         velocities = nothing
         precip_sources_eltype = @NamedTuple{q_tot::FT, q_liq::FT, q_ice::FT}
         precip_sources = @. precip_sources_eltype(tuple(copy(ip.zero), copy(ip.zero), copy(ip.zero)))
+        activation_sources = nothing
     elseif precip isa Precipitation1M
         microph_variables = (; q_tot = ip.q_tot, q_liq = ip.q_liq, q_ice = ip.q_ice, q_rai = ip.q_rai, q_sno = ip.q_sno)
         velocities = (; term_vel_rai = copy(ip.zero), term_vel_sno = copy(ip.zero))
         precip_sources_eltype = @NamedTuple{q_tot::FT, q_liq::FT, q_ice::FT, q_rai::FT, q_sno::FT}
         precip_sources =
             @. precip_sources_eltype(tuple(copy(ip.zero), copy(ip.zero), copy(ip.zero), copy(ip.zero), copy(ip.zero)))
+            activation_sources = nothing
     elseif precip isa Precipitation2M
         microph_variables = (;
             q_tot = ip.q_tot,
@@ -171,6 +174,8 @@ function initialise_aux(
         precip_sources = @. precip_sources_eltype(
             tuple(copy(ip.zero), copy(ip.zero), copy(ip.zero), copy(ip.zero), copy(ip.zero), copy(ip.zero)),
         )
+        activation_sources_eltype = @NamedTuple{N_aer::FT, N_liq::FT}
+        activation_sources = @. activation_sources_eltype(tuple(copy(ip.zero), copy(ip.zero)))
     elseif precip isa PrecipitationP3
         microph_variables = (;
             q_tot = ip.q_tot,
@@ -217,16 +222,25 @@ function initialise_aux(
             ),
         )
 
+        activation_sources = nothing
         @assert moisture isa NonEquilibrumMoisture
+    elseif precip isa CloudyPrecip
+        microph_variables = (; 
+            q_tot = ip.q_tot,
+            q_liq = ip.q_liq,
+            q_ice = ip.q_ice,
+            q_rai = ip.q_rai,
+            N_liq = ip.N_liq,
+            N_rai = ip.N_rai,
+            N_aer = ip.N_aer,
+            N_aer_0 = ip.N_aer_0,
+            pdists = ip.pdists, 
+            moments = ip.moments)
+        velocities = (; weighted_vt = ip.weighted_vt)
+        precip_sources = (; moments = ip.moments, q_vap = copy(ip.zero))
+        activation_sources = (; activation = ip.S_activation, N_aer = copy(ip.zero))
     else
         error("Wrong precipitation choise $precip")
-    end
-
-    if precip isa Precipitation2M
-        activation_sources_eltype = @NamedTuple{N_aer::FT, N_liq::FT}
-        activation_sources = @. activation_sources_eltype(tuple(copy(ip.zero), copy(ip.zero)))
-    else
-        activation_sources = nothing
     end
 
     aux = (;
@@ -245,14 +259,8 @@ function initialise_aux(
         TS,
     )
 
-    if psNM
-        aux = merge(aux,
-            (; cloudy_variables = CC.Fields.FieldVector(; pdists = ip.pdists, moments = ip.moments),
-            cloudy_sources = CC.Fields.FieldVector(; S_moments = ip.S_moments, S_ρq_vap = ip.S_ρq_vap, S_activation = ip.S_activation),
-            cloudy_velocity = CC.Fields.FieldVector(; weighted_vt = ip.weighted_vt),
-            cloudy_params = cloudy_params,
-            )
-        )
+    if precip isa CloudyPrecip
+        aux = merge(aux, (; cloudy_params))
     end
 
     return aux

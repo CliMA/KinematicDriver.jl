@@ -12,6 +12,8 @@ include("parse_commandline.jl")
 if !(@isdefined config)
     config = parse_commandline()
 end
+config["t_end"] = 1800.0
+config["precip_sources"] = true
 
 ft_choice = config["FLOAT_TYPE"]
 
@@ -26,3 +28,4 @@ end
 include("run_KiD_simulation.jl")
 
 run_KiD_simulation(FT, config)
+plot!()
