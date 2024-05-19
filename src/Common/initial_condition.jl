@@ -190,11 +190,8 @@ function initial_condition_1d(
     z;
     dry = false,
 ) where {NM, FT}
-    moments::NTuple{NM, FT} = ntuple(_ -> FT(0), NM)
-    S_moments::NTuple{NM, FT} = ntuple(_ -> FT(0), NM)
-    weighted_vt::NTuple{NM, FT} = ntuple(_ -> FT(0), NM)
-    S_ρq_vap::FT = FT(0)
-    S_activation::NTuple{NM, FT} = ntuple(_ -> FT(0), NM)
+    moments = ntuple(_ -> FT(0), NM)
+    cloudy_moments_zero::NTuple{NM, FT} = ntuple(_ -> FT(0), NM)
     
     if NM % 3 > 0
         error("must use a multiple of 3 moments")
@@ -224,7 +221,7 @@ function initial_condition_1d(
     
     return merge(
         initial_condition_1d(FT, common_params, kid_params, thermo_params, ρ_profile, z, dry=dry),
-        (; moments=moments, S_moments=S_moments, S_ρq_vap=S_ρq_vap, S_activation=S_activation, pdists=pdists, weighted_vt=weighted_vt)
+        (; moments = moments, pdists=pdists, cloudy_moments_zero)
     )
 end
 

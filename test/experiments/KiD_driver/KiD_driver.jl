@@ -14,6 +14,8 @@ if !(@isdefined config)
 end
 config["t_end"] = 1800.0
 config["precip_sources"] = true
+config["precip_sinks"] = true
+config["dt"] = 1.0
 
 ft_choice = config["FLOAT_TYPE"]
 

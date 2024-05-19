@@ -236,9 +236,9 @@ function initialise_aux(
             N_aer_0 = ip.N_aer_0,
             pdists = ip.pdists, 
             moments = ip.moments)
-        velocities = (; weighted_vt = ip.weighted_vt)
-        precip_sources = (; moments = ip.moments, q_vap = copy(ip.zero))
-        activation_sources = (; activation = ip.S_activation, N_aer = copy(ip.zero))
+        velocities = (; weighted_vt = copy(ip.cloudy_moments_zero))
+        precip_sources = (; moments = copy(ip.cloudy_moments_zero), ρq_vap = copy(ip.zero))
+        activation_sources = (; activation = copy(ip.cloudy_moments_zero), N_aer = copy(ip.zero), ρq_vap = copy(ip.zero))
     else
         error("Wrong precipitation choise $precip")
     end

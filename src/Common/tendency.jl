@@ -171,15 +171,40 @@ end
 
     # TODO...
 end
+
+@inline function cloudy_precompute_aux_precip_helper(cloudy_params, moments, old_pdists)
+
+    FT = eltype(old_pdists[1])
+    # update the ParticleDistributions
+    mom_normed = tuple(moments ./ cloudy_params.mom_norms...)
+    pdists = ntuple(length(old_pdists)) do i
+        ind_rng = CL.get_dist_moments_ind_range(cloudy_params.NProgMoms, i)
+        CL.ParticleDistributions.update_dist_from_moments(old_pdists[i], mom_normed[ind_rng], param_range = (; :k => (0.1, 10.0)))
+    end
+
+    # compute terminal velocity
+    sed_flux = -1 .* CL.Sedimentation.get_sedimentation_flux(pdists, cloudy_params.vel)
+    weighted_vt = ntuple(length(moments)) do i
+        ifelse(mom_normed[i] > FT(0), sed_flux[i] / mom_normed[i], FT(0))
+    end
+
+    return (; pdists, weighted_vt)
+end
 @inline function precompute_aux_precip!(ps::CloudyPrecip, Y, aux)
     
+    (; cloudy_params) = aux
     (; ρ) = aux.thermo_variables
-    (; q_rai, N_rai, N_liq, moments) = aux.microph_variables
+    (; q_rai, N_rai, N_liq, pdists, moments) = aux.microph_variables
+    (; weighted_vt) = aux.velocities
     
     @. N_liq = Y.moments.:1
     @. N_rai = Y.moments.:4
     @. q_rai = q_(Y.moments.:5, ρ)
     @. moments = Y.moments
+
+    tmp = @. cloudy_precompute_aux_precip_helper(cloudy_params, moments, pdists)
+    @. pdists = tmp.pdists
+    @. weighted_vt = tmp.weighted_vt
 end
 
 @inline function precompute_aux_moisture_sources!(sm::AbstractMoistureStyle, aux)
@@ -474,8 +499,7 @@ end
     return nothing
 end
 
-@inline function precip_helper_sources!(
-    ps::CloudyPrecip,
+@inline function cloudy_precompute_aux_precip_sources_helper(
     common_params,
     thermo_params,
     air_params,
@@ -483,7 +507,7 @@ end
     q_tot,
     q_liq,
     moments,
-    old_pdists,
+    pdists,
     T,
     ρ,
     dt,
@@ -494,28 +518,10 @@ end
     S_ρq_vap = FT(0)
     q = TD.PhasePartition(q_tot, q_liq, FT(0))
 
-    # update the ParticleDistributions
-    mom_normed = tuple(moments ./ cloudy_params.mom_norms...)
-    pdists = ntuple(length(old_pdists)) do i
-        ind_rng = CL.get_dist_moments_ind_range(cloudy_params.NProgMoms, i)
-        CL.ParticleDistributions.update_dist_from_moments(old_pdists[i], mom_normed[ind_rng], param_range = (; :k => (0.1, Inf)))
-    end
-
     if Bool(common_params.precip_sources)
         dY_coal_tmp = CL.Coalescence.get_coal_ints(CL.EquationTypes.AnalyticalCoalStyle(), pdists, cloudy_params.coal_data) .* cloudy_params.mom_norms
-        for i in 1:length(moments)
-            if isnan(dY_coal_tmp[i])
-                @show moments
-                @show pdists
-                @show dY_coal_tmp
-            end
-        end
         dY_coal = ntuple(length(moments)) do j
-            if dY_coal_tmp[j] >= 0
-                dY_coal_tmp[j]
-            else
-                max(dY_coal_tmp[j], -moments[j] / dt)
-            end
+            ifelse(dY_coal_tmp[j] >= 0, dY_coal_tmp[j], max(dY_coal_tmp[j], -moments[j] / dt))
         end
         S_moments = S_moments .+ dY_coal
     end
@@ -525,41 +531,20 @@ end
         ξ_normed = ξ / cloudy_params.norms[2]^(2/3)
         s = TD.supersaturation(thermo_params, q, ρ, T, TD.Liquid())
         dY_ce_tmp = CL.Condensation.get_cond_evap(pdists, s, ξ_normed) .* cloudy_params.mom_norms
-        for i in 1:length(moments)
-            if isnan(dY_ce_tmp[i])
-                @show moments
-                @show pdists
-                @show dY_ce_tmp
-            end
-        end
         dY_ce = ntuple(length(moments)) do j
-            if dY_ce_tmp[j] >= 0
-                dY_ce_tmp[j]
-            else
-                max(dY_ce_tmp[j], -moments[j] / dt)
-            end
+            ifelse(dY_ce_tmp[j] >= 0, dY_ce_tmp[j], max(dY_ce_tmp[j], -moments[j] / dt))
         end
         S_moments = S_moments .+ dY_ce
-        # TODO: generalize to any number of moments
-        S_ρq_vap += -dY_ce[2] - dY_ce[4]
+
+        rain_mass_ind = CL.get_dist_moments_ind_range(cloudy_params.NProgMoms, 2)[2]
+        S_ρq_vap += -dY_ce[2] - dY_ce[rain_mass_ind]
     end
 
-    sed_flux = -1 .* CL.Sedimentation.get_sedimentation_flux(pdists, cloudy_params.vel)
-    weighted_vt = ntuple(length(moments)) do i
-        if mom_normed[i] > FT(0)
-            # FT(0)
-            sed_flux[i] / mom_normed[i]
-        else
-            FT(0)
-        end
-    end
-
-    return (; S_moments, S_ρq_vap, weighted_vt, pdists)
+    return (; S_moments, S_ρq_vap)
 end
 @inline function precompute_aux_precip_sources!(ps::CloudyPrecip, aux)
 
-    tmp = @. precip_helper_sources!(
-        ps,
+    tmp = @. cloudy_precompute_aux_precip_sources_helper(
         aux.common_params,
         aux.thermo_params,
         aux.air_params,
@@ -574,9 +559,7 @@ end
     )
 
     @. aux.precip_sources.moments = tmp.S_moments
-    @. aux.precip_sources.q_vap = tmp.S_ρq_vap / aux.thermo_variables.ρ
-    @. aux.microph_variables.pdists = tmp.pdists
-    @. aux.velocities.weighted_vt = tmp.weighted_vt
+    @. aux.precip_sources.ρq_vap = tmp.S_ρq_vap
 
 end
 
@@ -597,7 +580,8 @@ end
 end
 @inline function cloud_sources_tendency!(::MoistureP3, dY, Y, aux, t) end
 @inline function cloud_sources_tendency!(::CloudyMoisture, dY, Y, aux, t)
-    @. dY.ρq_vap += aux.thermo_variables.ρ * aux.precip_sources.q_vap
+    @. dY.ρq_vap += aux.precip_sources.ρq_vap
+    @. dY.ρq_vap += aux.activation_sources.ρq_vap
     return dY
 end
 

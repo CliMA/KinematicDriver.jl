@@ -1,103 +1,4 @@
 """
-    Returns the number of new activated aerosol particles and updates aerosol number density
-"""
-@inline function aerosol_activation_helper(
-    kid_params,
-    thermo_params,
-    air_params,
-    activation_params,
-    q_tot,
-    q_liq,
-    N_aer,
-    N_aer_0,
-    T,
-    p,
-    ρ,
-    ρw,
-    dt,
-)
-
-    FT = eltype(q_tot)
-    S_Nl::FT = FT(0)
-    S_Na::FT = FT(0)
-
-    q = TD.PhasePartition(q_tot, q_liq, FT(0))
-    S::FT = TD.supersaturation(thermo_params, q, ρ, T, TD.Liquid())
-
-    if (S < FT(0))
-        return (; S_Nl, S_Na)
-    end
-
-    (; r_dry, std_dry, κ) = kid_params
-    w = ρw / ρ
-
-    aerosol_distribution = CMAM.AerosolDistribution((CMAM.Mode_κ(r_dry, std_dry, N_aer_0, (FT(1),), (FT(1),), (FT(0),), (κ,)),))
-    N_act = CMAA.N_activated_per_mode(activation_params, aerosol_distribution, air_params, thermo_params, T, p, w, q)[1]
-
-    if isnan(N_act)
-        return (; S_Nl, S_Na)
-    end
-
-    S_Nl = max(0, N_act - (N_aer_0 - N_aer)) / dt
-    S_Na = -S_Nl
-
-    return (; S_Nl, S_Na)
-end
-
-@inline function aerosol_activation_helper(
-    kid_params,
-    thermo_params,
-    air_params,
-    activation_params,
-    cloudy_params,
-    q_tot,
-    q_liq,
-    N_aer,
-    N_aer_0,
-    T,
-    p,
-    ρ,
-    ρw,
-    dt,
-    moments
-)
-    (; S_Nl, S_Na) = aerosol_activation_helper(    
-        kid_params,
-        thermo_params,
-        air_params,
-        activation_params,
-        q_tot,
-        q_liq,
-        N_aer,
-        N_aer_0,
-        T,
-        p,
-        ρ,
-        ρw,
-        dt,
-    )
-    FT = eltype(q_tot)
-    # TODO: right now we are just assuming the size of the nucleated droplet
-    r = FT(2.0e-6) # 2.0 μm
-    v = 4/3 * π * r^3
-    m = v * FT(1000)
-    shape = 2
-    S_act = ntuple(length(moments)) do k
-        if k == 1
-            S_Nl
-        elseif k <= cloudy_params.NProgMoms[1] && k ==2
-            S_Nl * m^(k-1) * shape
-        elseif k == 3 && cloudy_params.NProgMoms[1] == 3
-            S_Nl * m^(k-1) * shape * (shape + 1)
-        else
-            FT(0)
-        end
-    end
-
-    return (; S_Nl, S_Na, S_act)
-end
-
-"""
 Aerosol activation tendencies
 """
 @inline function precompute_aux_activation!(sp::CO.AbstractPrecipitationStyle, dY, Y, aux, t)
@@ -158,10 +59,64 @@ end
 
     @. aux.activation_sources = to_sources(-S_Nl, S_Nl)
 end
+
+@inline function cloudy_precompute_aux_activation_helper(
+    kid_params,
+    thermo_params,
+    air_params,
+    activation_params,
+    cloudy_params,
+    q_tot,
+    q_liq,
+    N_aer,
+    N_aer_0,
+    T,
+    p,
+    ρ,
+    ρw,
+    dt,
+)
+    FT = eltype(q_tot)
+    S_Nl::FT = FT(0)
+    S_Na::FT = FT(0)
+    S_ρq_vap::FT = FT(0)
+
+    q = TD.PhasePartition(q_tot, q_liq, FT(0))
+    S::FT = TD.supersaturation(thermo_params, q, ρ, T, TD.Liquid())
+
+    (; r_dry, std_dry, κ) = kid_params
+    w = ρw / ρ
+
+    aerosol_distribution = CMAM.AerosolDistribution((CMAM.Mode_κ(r_dry, std_dry, N_aer_0, (FT(1),), (FT(1),), (FT(0),), (κ,)),))
+    N_act = CMAA.N_activated_per_mode(activation_params, aerosol_distribution, air_params, thermo_params, T, p, w, q)[1]
+
+    S_Nl = ifelse(S < 0 || isnan(N_act), FT(0), max(FT(0), N_act - (N_aer_0 - N_aer)) / dt)
+    S_Na = -S_Nl
+
+    # TODO: right now we are just assuming the size of the nucleated droplet
+    r = FT(2.0e-6) # 2.0 μm
+    v = 4/3 * π * r^3
+    m = v * FT(1000)
+    shape = 2
+    S_act = ntuple(length(cloudy_params.mom_norms)) do k
+        if k == 1
+            S_Nl
+        elseif k == 2
+            S_Nl * m * shape
+        elseif k == 3 && cloudy_params.NProgMoms[1] == 3
+            S_Nl * m^(k-1) * shape * (shape + 1)
+        else
+            FT(0)
+        end
+    end
+    S_ρq_vap = -S_act[2]
+
+    return (; S_Na, S_act, S_ρq_vap)
+end
 @inline function precompute_aux_activation!(::CO.CloudyPrecip, dY, Y, aux, t)
 
     @. aux.microph_variables.N_aer = Y.N_aer
-    tmp = @. aerosol_activation_helper(
+    tmp = @. cloudy_precompute_aux_activation_helper(
         aux.kid_params,
         aux.thermo_params,
         aux.air_params,
@@ -176,10 +131,10 @@ end
         aux.thermo_variables.ρ,
         CC.Operators.InterpolateF2C().(aux.prescribed_velocity.ρw.components.data.:1),
         aux.TS.dt,
-        Y.moments
     )
-    @. aux.activation_sources.N_aer = tmp.S_Na
     @. aux.activation_sources.activation = tmp.S_act
+    @. aux.activation_sources.N_aer = tmp.S_Na
+    @. aux.activation_sources.ρq_vap = tmp.S_ρq_vap
 end
 
 """
@@ -385,9 +340,6 @@ end
             Y.moments.:($$i)
         )
     end
-    # if t >= 79
-    #     @show dY.moments
-    # end
 
     return dY
 end

@@ -111,7 +111,7 @@ function create_cloudy_parameters(NM, FT)
         end
     end
     coal_data::CL.Coalescence.CoalescenceData{2, 3, FT, 9} = CL.Coalescence.CoalescenceData(matrix_of_kernels, Int.(NProgMoms), (5e-10, Inf), norms)
-    vel = ((FT(1.0), FT(1.0 / 6)),)
+    vel = ((FT(1.0), FT(1.0 / 6)),) # normalized; v1_normed = v1 * norm[2] ^ v2
     cloudy_params = CO.Parameters.CloudyParameters(NProgMoms, norms, mom_norms, coal_data, vel)
     return cloudy_params
 end
