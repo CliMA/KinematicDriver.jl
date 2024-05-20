@@ -6,7 +6,7 @@ end
 
 @testset "Make rhs function" begin
 
-    rhs = K2D.make_rhs_function(equil_moist_ρθq, precip_1m)
+    rhs = K2D.make_rhs_function(equil_moist, precip_1m)
     @test typeof(rhs) <: Function
 end
 
@@ -36,7 +36,7 @@ end
     @test_throws Exception K2D.initialise_aux(FT, ip, params..., 0.0, 0.0, face_space, K1D.EquilibriumMoisture())
     @test_throws Exception K2D.initialise_aux(FT, ip, params..., 0.0, 0.0, face_space, K1D.NonEquilibriumMoisture())
 
-    aux = K2D.initialise_aux(FT, ip, params..., 100.0, 200.0, 0.0, 0.0, space, face_space, equil_moist_ρθq, precip_1m)
+    aux = K2D.initialise_aux(FT, ip, params..., 100.0, 200.0, 0.0, 0.0, space, face_space, equil_moist, precip_1m)
     @test aux isa NamedTuple
     @test aux.cloud_sources == nothing
     @test LA.norm(aux.precip_sources) == 0
@@ -55,7 +55,7 @@ end
     @test_throws Exception K2D.advection_tendency!(K1D.AbstractMoistureStyle(), dY, Y, aux, t)
     @test_throws Exception K2D.advection_tendency!(K1D.AbstractPrecipitationStyle(), dY, Y, aux, t)
 
-    ms_styles = [equil_moist_ρθq, nequil_moist_ρθq]
+    ms_styles = [equil_moist, nequil_moist]
     ps_styles = [no_precip, precip_2m]
     for (ms, ps) in zip(ms_styles, ps_styles)
         aux = K2D.initialise_aux(FT, init, params..., 3000.0, 3000.0, 0.0, 0.0, space, face_space, ms, ps)

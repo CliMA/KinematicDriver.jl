@@ -10,10 +10,6 @@ export AbstractPrecipitationStyle
 #export NoMoisture
 export EquilibriumMoisture
 export NonEquilibriumMoisture
-export EquilibriumMoisture_ρθq
-export EquilibriumMoisture_ρdTq
-export NonEquilibriumMoisture_ρθq
-export NonEquilibriumMoisture_ρdTq
 export MoistureP3
 export CloudyMoisture
 
@@ -31,16 +27,9 @@ abstract type AbstractMoistureStyle <: AbstractStyle end
 abstract type AbstractPrecipitationStyle <: AbstractStyle end
 
 #struct NoMoisture <: AbstractMoistureStyle end
-abstract type EquilibriumMoisture <: AbstractMoistureStyle end
-abstract type NonEquilibriumMoisture <: AbstractMoistureStyle end
 struct CloudyMoisture <: AbstractMoistureStyle end
-struct EquilibriumMoisture_ρθq <: EquilibriumMoisture end
-struct EquilibriumMoisture_ρdTq <: EquilibriumMoisture end
-struct NonEquilibriumMoisture_ρθq{CL, IC} <: NonEquilibriumMoisture
-    liquid::CL
-    ice::IC
-end
-struct NonEquilibriumMoisture_ρdTq{CL, IC} <: NonEquilibriumMoisture
+struct EquilibriumMoisture <: AbstractMoistureStyle end
+struct NonEquilibriumMoisture{CL, IC} <: AbstractMoistureStyle
     liquid::CL
     ice::IC
 end

@@ -3,9 +3,9 @@
 """
 function get_moisture_type(moisture_choice::String, toml_dict)
     if moisture_choice == "EquilibriumMoisture"
-        moisture = EquilibriumMoisture_ρdTq()
+        moisture = EquilibriumMoisture()
     elseif moisture_choice == "NonEquilibriumMoisture"
-        moisture = NonEquilibriumMoisture_ρdTq(CMP.CloudLiquid(toml_dict), CMP.CloudIce(toml_dict))
+        moisture = NonEquilibriumMoisture(CMP.CloudLiquid(toml_dict), CMP.CloudIce(toml_dict))
     elseif moisture_choice == "CloudyMoisture"
         moisture = CloudyMoisture()
     else

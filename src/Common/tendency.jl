@@ -35,24 +35,7 @@ end
 @inline function precompute_aux_thermo!(sm::AbstractMoistureStyle, Y, aux)
     error("precompute_aux not implemented for a given $sm")
 end
-@inline function precompute_aux_thermo!(::EquilibriumMoisture_ρθq, Y, aux)
-
-    (; thermo_params) = aux
-    (; ts, ρ, ρ_dry, p, T, θ_dry, θ_liq_ice) = aux.thermo_variables
-    (; q_tot, q_liq, q_ice) = aux.microph_variables
-
-    @. ts = TD.PhaseEquil_ρθq(thermo_params, ρ, θ_liq_ice, Y.ρq_tot / ρ)
-
-    @. q_tot = TD.total_specific_humidity(thermo_params, ts)
-    @. q_liq = TD.liquid_specific_humidity(thermo_params, ts)
-    @. q_ice = TD.ice_specific_humidity(thermo_params, ts)
-
-    @. ρ_dry = ρ - Y.ρq_tot
-    @. p = TD.air_pressure(thermo_params, ts)
-    @. T = TD.air_temperature(thermo_params, ts)
-    @. θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
-end
-@inline function precompute_aux_thermo!(::EquilibriumMoisture_ρdTq, Y, aux)
+@inline function precompute_aux_thermo!(::EquilibriumMoisture, Y, aux)
 
     (; thermo_params) = aux
     (; ts, ρ, ρ_dry, p, T, θ_dry, θ_liq_ice) = aux.thermo_variables
@@ -69,27 +52,7 @@ end
     @. θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
     @. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
 end
-@inline function precompute_aux_thermo!(::NonEquilibriumMoisture_ρθq, Y, aux)
-
-    (; thermo_params) = aux
-    (; ts, ρ, ρ_dry, p, T, θ_dry, θ_liq_ice) = aux.thermo_variables
-    (; q_tot, q_liq, q_ice) = aux.microph_variables
-
-    @. q_tot = q_(Y.ρq_tot, ρ)
-    @. q_liq = q_(Y.ρq_liq, ρ)
-    @. q_ice = q_(Y.ρq_ice, ρ)
-
-    @. ts = TD.PhaseNonEquil_ρθq(thermo_params, ρ, θ_liq_ice, PP(q_tot, q_liq, q_ice))
-
-    @. ρ_dry = ρ - Y.ρq_tot
-    @. p = TD.air_pressure(thermo_params, ts)
-    @. T = TD.air_temperature(thermo_params, ts)
-    @. θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
-    #TODO - should we delete this option? the potential temperature returned from ts is different than the input
-    #@. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
-    #@info("Inside the tendency, after ts", θ_liq_ice )
-end
-@inline function precompute_aux_thermo!(::NonEquilibriumMoisture_ρdTq, Y, aux)
+@inline function precompute_aux_thermo!(::NonEquilibriumMoisture, Y, aux)
 
     (; thermo_params) = aux
     (; ts, ρ, ρ_dry, p, T, θ_dry, θ_liq_ice) = aux.thermo_variables
