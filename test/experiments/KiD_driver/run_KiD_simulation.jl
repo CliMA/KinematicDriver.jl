@@ -14,14 +14,14 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
 
     # Equations to solve for mositure and precipitation variables
     moisture_choice = opts["moisture_choice"]
-    prognostics_choice = opts["prognostic_vars"]
     precipitation_choice = opts["precipitation_choice"]
     rain_formation_choice = opts["rain_formation_scheme_choice"]
     sedimentation_choice = opts["sedimentation_scheme_choice"]
     @info moisture_choice, precipitation_choice, rain_formation_choice, sedimentation_choice
 
     # Decide the output flder name based on options
-    output_folder = string("Output_", moisture_choice, "_", prognostics_choice, "_", precipitation_choice)
+    
+    output_folder = string("Output_", moisture_choice, "_", precipitation_choice)
     if precipitation_choice in ["Precipitation1M", "Precipitation2M"]
         output_folder = output_folder * "_" * rain_formation_choice
         if sedimentation_choice == "Chen2022"
@@ -66,7 +66,6 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     thermo_params = create_thermodynamics_parameters(toml_dict)
     air_params = CMP.AirProperties(toml_dict)
     activation_params = CMP.AerosolActivationParameters(toml_dict)
-    cloudy_params = create_cloudy_parameters(6, FT)
 
     moisture = CO.get_moisture_type(moisture_choice, toml_dict)
     precip = CO.get_precipitation_type(
@@ -92,11 +91,13 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     # Solve the initial value problem for density profile
     ρ_profile = CO.ρ_ivp(FT, kid_params, thermo_params)
     # Create the initial condition profiles
-    # init = map(coord -> CO.initial_condition_1d(FT, Val(6), common_params, kid_params, thermo_params, ρ_profile, coord.z), coord)
-    init = map(coord -> CO.cloudy_initial_condition(Val(6), CO.initial_condition_1d(FT, common_params, kid_params, thermo_params, ρ_profile, coord.z)), coord)
-
-    # Create state vector and apply initial condition
-    Y = CO.initialise_state(moisture, precip, init)
+    if precipitation_choice == "CloudyPrecip"
+        cloudy_params, cloudy_pdists = create_cloudy_parameters(6, FT)
+        init = map(coord -> CO.cloudy_initial_condition(cloudy_pdists, CO.initial_condition_1d(FT, common_params, kid_params, thermo_params, ρ_profile, coord.z)), coord)
+    else
+        cloudy_params = nothing
+        init = map(coord -> CO.initial_condition_1d(FT, common_params, kid_params, thermo_params, ρ_profile, coord.z), coord)
+    end
 
     # Create aux vector and apply initial condition
     aux = K1D.initialise_aux(
@@ -112,9 +113,11 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
         face_space,
         moisture,
         precip,
-        true, # NM style
         cloudy_params,
     )
+    
+    # Create state vector and apply initial condition
+    Y = CO.initialise_state(moisture, precip, init)
 
     # Output the initial condition
     CO.simulation_output(aux, 0.0)

@@ -114,7 +114,7 @@ function create_cloudy_parameters(NM, FT)
     # terminal velocity of particles = v1 * x^v2 
     vel = ((FT(1.0), FT(1.0 / 6)),) # normalized; v1_normed = v1 * norm[2] ^ v2
     cloudy_params = CO.Parameters.CloudyParameters(NProgMoms, norms, mom_norms, coal_data, vel)
-    return cloudy_params
+    return cloudy_params, pdists
 end
 Base.broadcastable(x::CO.Parameters.CloudyParameters) = Ref(x)
 #! format: on

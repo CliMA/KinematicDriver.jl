@@ -112,7 +112,6 @@ function initialise_aux(
     Stats,
     moisture,
     precip,
-    psNM = false, 
     cloudy_params = nothing
 )
 

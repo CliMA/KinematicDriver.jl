@@ -15,23 +15,19 @@ function parse_commandline()
         "--moisture_choice"
         help = "Mositure model choice: EquilibriumMoisture, NonEquilibriumMoisture, CloudyMoisture"
         arg_type = String
-        default = "CloudyMoisture" # "NonEquilibriumMoisture" #
-        "--prognostic_vars"
-        help = "Prognostic variables choice: RhoThetaQ, RhodTQ"
-        arg_type = String
-        default = "RhoThetaQ"
+        default = "NonEquilibriumMoisture"
         "--precipitation_choice"
         help = "Precipitation model choice: NoPrecipitation, Precipitation0M, Precipitation1M, Precipitation2M, CloudyPrecip"
         arg_type = String
-        default = "CloudyPrecip" # "Precipitation2M" "Precipitation1M"
+        default = "Precipitation1M"
         "--rain_formation_scheme_choice"
         help = "Rain formation scheme choice: CliMA_1M, KK2000, B1994, TC1980, LD2004, VarTimeScaleAcnv for Precipitation1M; and SB2006 for Precipitation2M"
         arg_type = String
-        default = "SB2006" #"CliMA_1M"
+        default = "CliMA_1M"
         "--sedimentation_scheme_choice"
         help = "Sedimentation scheme choice: CliMA_1M, Chen2022 for Precipitation1M; and Chen2022, SB2006 for Precipitation2M"
         arg_type = String
-        default = "SB2006" #"CliMA_1M"
+        default = "CliMA_1M"
         "--prescribed_Nd"
         help = "Prescribed number of cloud droplets (used in KK2000, B1994, TC1980, LD2004, VarTimeScaleAcnv and SB2006 rain formation schemes)"
         arg_type = Float64
@@ -64,7 +60,7 @@ function parse_commandline()
         "--n_elem"
         help = "Number of computational elements"
         arg_type = Int
-        default = 20
+        default = 256
         "--dt"
         help = "Simulation time step [s]"
         arg_type = Float64
@@ -80,7 +76,7 @@ function parse_commandline()
         "--t_end"
         help = "Time at the end of the simulation [s]"
         arg_type = Float64
-        default = Float64(600)
+        default = Float64(3600)
         "--w1"
         help = "Maximum prescribed updraft momentum flux [m/s * kg/m3]"
         arg_type = Float64

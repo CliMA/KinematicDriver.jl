@@ -260,11 +260,9 @@ function initial_condition(
     )
 end
 
-function cloudy_initial_condition(::Val{NM}, ip, k = 1) where {NM}
+function cloudy_initial_condition(pdists, ip, k = 1)
 
-    if NM % 3 > 0
-        error("must use a multiple of 3 moments")
-    end
+    NM = sum(CL.ParticleDistributions.nparams.(pdists))
 
     FT = eltype(ip.ρq_liq)
     L_tr::FT = ip.ρq_liq + ip.ρq_rai
@@ -275,16 +273,12 @@ function cloudy_initial_condition(::Val{NM}, ip, k = 1) where {NM}
             Nd
         elseif j==2
             L_tr
-        elseif j==3
+        elseif j==3 && CL.ParticleDistributions.nparams(pdists[1]) == 3
             ifelse(Nd < eps(FT), FT(0), L_tr^2 / Nd * (k+1) / k)
         else
             FT(0)
         end
     end 
-
-    pdists::NTuple{Int(NM / 3), CL.ParticleDistributions.GammaPrimitiveParticleDistribution{FT}} = ntuple(Int(NM/3)) do j
-        CL.ParticleDistributions.GammaPrimitiveParticleDistribution(FT(0), FT(j), FT(k))
-    end
     
     cloudy_moments_zero::NTuple{NM, FT} = ntuple(_ -> FT(0), NM)
     
