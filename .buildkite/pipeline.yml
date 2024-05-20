@@ -47,10 +47,6 @@ steps:
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=EquilibriumMoisture --precipitation_choice=Precipitation1M --qtot_flux_correction=true"
         artifact_paths: "test/experiments/KiD_driver/Output_EquilibriumMoisture_Precipitation1M_CliMA_1M_wFC/figures/*"
 
-      - label: ":crystal_ball: Experiments: equil + 1M "
-        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=EquilibriumMoisture --precipitation_choice=Precipitation1M"
-        artifact_paths: "test/experiments/KiD_driver/Output_EquilibriumMoisture_Precipitation1M_CliMA_1M/figures/*"
-
       - label: ":crystal_ball: Experiments: non equil + no precip"
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=NoPrecipitation"
         artifact_paths: "test/experiments/KiD_driver/Output_NonEquilibriumMoisture_NoPrecipitation/figures/*"
@@ -63,39 +59,35 @@ steps:
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation1M --qtot_flux_correction=true"
         artifact_paths: "test/experiments/KiD_driver/Output_NonEquilibriumMoisture_Precipitation1M_CliMA_1M_wFC/figures/*"
 
-      - label: ":crystal_ball: Experiments: non equil + 1M "
-        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation1M"
-        artifact_paths: "test/experiments/KiD_driver/Output_NonEquilibriumMoisture_Precipitation1M_CliMA_1M/figures/*"
-
-      - label: ":crystal_ball: Experiments: equil + KK2000 + Float32 "
+      - label: ":crystal_ball: Experiments: equil + KK2000 + Float32"
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --FLOAT_TYPE=Float32 --moisture_choice=EquilibriumMoisture --precipitation_choice=Precipitation1M --rain_formation_scheme_choice KK2000 --prescribed_Nd 1e8"
         artifact_paths: "test/experiments/KiD_driver/Output_EquilibriumMoisture_Precipitation1M_KK2000/figures/*"
 
-      - label: ":crystal_ball: Experiments: equil + B1994 "
+      - label: ":crystal_ball: Experiments: equil + B1994"
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=EquilibriumMoisture --precipitation_choice=Precipitation1M --rain_formation_scheme_choice B1994 --prescribed_Nd 1e8"
         artifact_paths: "test/experiments/KiD_driver/Output_EquilibriumMoisture_Precipitation1M_B1994/figures/*"
 
-      - label: ":crystal_ball: Experiments: equil + TC1980 "
+      - label: ":crystal_ball: Experiments: equil + TC1980"
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=EquilibriumMoisture --precipitation_choice=Precipitation1M --rain_formation_scheme_choice TC1980 --prescribed_Nd 1e8"
         artifact_paths: "test/experiments/KiD_driver/Output_EquilibriumMoisture_Precipitation1M_TC1980/figures/*"
 
-      - label: ":crystal_ball: Experiments: equil + LD2004 "
+      - label: ":crystal_ball: Experiments: equil + LD2004"
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=EquilibriumMoisture --precipitation_choice=Precipitation1M --rain_formation_scheme_choice LD2004 --prescribed_Nd 1e8"
         artifact_paths: "test/experiments/KiD_driver/Output_EquilibriumMoisture_Precipitation1M_LD2004/figures/*"
 
-      - label: ":crystal_ball: Experiments: non equil + VarTimeScaleAcnv "
+      - label: ":crystal_ball: Experiments: non equil + VarTimeScaleAcnv"
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation1M --rain_formation_scheme_choice VarTimeScaleAcnv --prescribed_Nd 1e8"
         artifact_paths: "test/experiments/KiD_driver/Output_NonEquilibriumMoisture_Precipitation1M_VarTimeScaleAcnv/figures/*"
 
-      - label: ":crystal_ball: Experiments: equil + SB2006 "
+      - label: ":crystal_ball: Experiments: equil + SB2006"
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=EquilibriumMoisture --precipitation_choice=Precipitation2M --rain_formation_scheme_choice SB2006 --sedimentation_scheme_choice SB2006 --prescribed_Nd 1e8"
         artifact_paths: "test/experiments/KiD_driver/Output_EquilibriumMoisture_Precipitation2M_SB2006/figures/*"
 
-      - label: ":crystal_ball: Experiments: non equil + SB2006 "
+      - label: ":crystal_ball: Experiments: non equil + SB2006"
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation2M --rain_formation_scheme_choice SB2006 --sedimentation_scheme_choice SB2006 --prescribed_Nd 1e8"
         artifact_paths: "test/experiments/KiD_driver/Output_NonEquilibriumMoisture_Precipitation2M_SB2006/figures/*"
 
-      - label: ":crystal_ball: Experiments: non equil + SB2006 + Chen2022 "
+      - label: ":crystal_ball: Experiments: non equil + SB2006 + Chen2022"
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation2M --rain_formation_scheme_choice SB2006 --sedimentation_scheme_choice Chen2022 --prescribed_Nd 1e8"
         artifact_paths: "test/experiments/KiD_driver/Output_NonEquilibriumMoisture_Precipitation2M_SB2006_Chen2022/figures/*"
 
@@ -103,7 +95,7 @@ steps:
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation1M --rv_0 0.0008 --rv_1 0.0008 --rv_2 0.0001 --tht_0 260 --tht_1 260 --tht_2 270 --w1 2 --z_max 4000 --n_elem 200"
         artifact_paths: "test/experiments/KiD_driver/Output_NonEquilibriumMoisture_Precipitation1M_CliMA_1M/figures/*"
 
-      - label: ":crystal_ball: Experiments: perfect-model calibration + EKP "
+      - label: ":crystal_ball: Experiments: perfect-model calibration + EKP"
         command: "julia --color=yes --project=test test/experiments/calibrations/run_calibration.jl"
         artifact_paths: "calibration_output/*"
 
