@@ -106,7 +106,7 @@ function run_KiD_col_sed_simulation(::Type{FT}, opts) where {FT}
         face_space,
         moisture,
         true,
-        cloudy_params
+        cloudy_params,
     )
 
     # Output the initial condition

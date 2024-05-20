@@ -112,7 +112,7 @@ function initialise_aux(
     Stats,
     moisture,
     precip,
-    cloudy_params = nothing
+    cloudy_params = nothing,
 )
 
     # Create a thermo state for aux
@@ -156,7 +156,7 @@ function initialise_aux(
         precip_sources_eltype = @NamedTuple{q_tot::FT, q_liq::FT, q_ice::FT, q_rai::FT, q_sno::FT}
         precip_sources =
             @. precip_sources_eltype(tuple(copy(ip.zero), copy(ip.zero), copy(ip.zero), copy(ip.zero), copy(ip.zero)))
-            activation_sources = nothing
+        activation_sources = nothing
     elseif precip isa Precipitation2M
         microph_variables = (;
             q_tot = ip.q_tot,
@@ -224,7 +224,7 @@ function initialise_aux(
         activation_sources = nothing
         @assert moisture isa NonEquilibrumMoisture
     elseif precip isa CloudyPrecip
-        microph_variables = (; 
+        microph_variables = (;
             q_tot = ip.q_tot,
             q_liq = ip.q_liq,
             q_ice = ip.q_ice,
@@ -233,11 +233,13 @@ function initialise_aux(
             N_rai = ip.N_rai,
             N_aer = ip.N_aer,
             N_aer_0 = ip.N_aer_0,
-            pdists = ip.pdists, 
-            moments = ip.moments)
+            pdists = ip.pdists,
+            moments = ip.moments,
+        )
         velocities = (; weighted_vt = copy(ip.cloudy_moments_zero))
         precip_sources = (; moments = copy(ip.cloudy_moments_zero), ρq_vap = copy(ip.zero))
-        activation_sources = (; activation = copy(ip.cloudy_moments_zero), N_aer = copy(ip.zero), ρq_vap = copy(ip.zero))
+        activation_sources =
+            (; activation = copy(ip.cloudy_moments_zero), N_aer = copy(ip.zero), ρq_vap = copy(ip.zero))
     else
         error("Wrong precipitation choise $precip")
     end

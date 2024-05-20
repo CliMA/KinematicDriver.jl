@@ -111,7 +111,7 @@ end
     (; thermo_params) = aux
     (; ts, ρ, ρ_dry, p, T, θ_dry, θ_liq_ice) = aux.thermo_variables
     (; q_tot, q_liq, q_ice) = aux.microph_variables
-    
+
     FT = eltype(Y.ρq_vap)
     @. q_tot = q_(Y.moments.:2 + Y.ρq_vap, ρ)
     @. q_liq = q_(Y.moments.:2, ρ)
@@ -179,7 +179,11 @@ end
     mom_normed = tuple(moments ./ cloudy_params.mom_norms...)
     pdists = ntuple(length(old_pdists)) do i
         ind_rng = CL.get_dist_moments_ind_range(cloudy_params.NProgMoms, i)
-        CL.ParticleDistributions.update_dist_from_moments(old_pdists[i], mom_normed[ind_rng], param_range = (; :k => (0.1, 10.0)))
+        CL.ParticleDistributions.update_dist_from_moments(
+            old_pdists[i],
+            mom_normed[ind_rng],
+            param_range = (; :k => (0.1, 10.0)),
+        )
     end
 
     # compute terminal velocity
@@ -191,12 +195,12 @@ end
     return (; pdists, weighted_vt)
 end
 @inline function precompute_aux_precip!(ps::CloudyPrecip, Y, aux)
-    
+
     (; cloudy_params) = aux
     (; ρ) = aux.thermo_variables
     (; q_rai, N_rai, N_liq, pdists, moments) = aux.microph_variables
     (; weighted_vt) = aux.velocities
-    
+
     rain_number_ind = Int(CL.get_dist_moments_ind_range(cloudy_params.NProgMoms, 2)[1])
     rain_mass_ind = Int(CL.get_dist_moments_ind_range(cloudy_params.NProgMoms, 2)[2])
     @. N_liq = Y.moments.:1
@@ -521,7 +525,9 @@ end
     q = TD.PhasePartition(q_tot, q_liq, FT(0))
 
     if Bool(common_params.precip_sources)
-        dY_coal_tmp = CL.Coalescence.get_coal_ints(CL.EquationTypes.AnalyticalCoalStyle(), pdists, cloudy_params.coal_data) .* cloudy_params.mom_norms
+        dY_coal_tmp =
+            CL.Coalescence.get_coal_ints(CL.EquationTypes.AnalyticalCoalStyle(), pdists, cloudy_params.coal_data) .*
+            cloudy_params.mom_norms
         dY_coal = ntuple(length(moments)) do j
             ifelse(dY_coal_tmp[j] >= 0, dY_coal_tmp[j], max(dY_coal_tmp[j], -moments[j] / dt))
         end
@@ -530,7 +536,7 @@ end
 
     if Bool(common_params.precip_sinks)
         ξ = CM.Common.G_func(air_params, thermo_params, T, TD.Liquid())
-        ξ_normed = ξ / cloudy_params.norms[2]^(2/3)
+        ξ_normed = ξ / cloudy_params.norms[2]^(2 / 3)
         s = TD.supersaturation(thermo_params, q, ρ, T, TD.Liquid())
         dY_ce_tmp = CL.Condensation.get_cond_evap(pdists, s, ξ_normed) .* cloudy_params.mom_norms
         dY_ce = ntuple(length(moments)) do j
@@ -642,7 +648,7 @@ end
     return dY
 end
 @inline function precip_sources_tendency!(ms::CloudyMoisture, ps::CloudyPrecip, dY, Y, aux, t)
-    
+
     precompute_aux_precip_sources!(ps, aux)
 
     @. dY.moments += aux.precip_sources.moments

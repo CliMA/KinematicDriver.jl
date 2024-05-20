@@ -90,7 +90,7 @@ function initialise_aux(
     face_space,
     moisture,
     precip,
-    cloudy_params = nothing
+    cloudy_params = nothing,
 )
     q_surf = CO.init_profile(FT, kid_params, thermo_params, 0.0).qv
 

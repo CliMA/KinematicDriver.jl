@@ -269,21 +269,18 @@ function cloudy_initial_condition(pdists, ip, k = 1)
     Nd::FT = ip.N_liq + ip.N_rai
 
     moments::NTuple{NM, FT} = ntuple(NM) do j
-        if j==1
+        if j == 1
             Nd
-        elseif j==2
+        elseif j == 2
             L_tr
-        elseif j==3 && CL.ParticleDistributions.nparams(pdists[1]) == 3
-            ifelse(Nd < eps(FT), FT(0), L_tr^2 / Nd * (k+1) / k)
+        elseif j == 3 && CL.ParticleDistributions.nparams(pdists[1]) == 3
+            ifelse(Nd < eps(FT), FT(0), L_tr^2 / Nd * (k + 1) / k)
         else
             FT(0)
         end
-    end 
-    
+    end
+
     cloudy_moments_zero::NTuple{NM, FT} = ntuple(_ -> FT(0), NM)
-    
-    return merge(
-        ip,
-        (; moments = moments, pdists=pdists, cloudy_moments_zero)
-    )
+
+    return merge(ip, (; moments = moments, pdists = pdists, cloudy_moments_zero))
 end

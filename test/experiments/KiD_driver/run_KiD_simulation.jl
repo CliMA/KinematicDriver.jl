@@ -20,7 +20,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     @info moisture_choice, precipitation_choice, rain_formation_choice, sedimentation_choice
 
     # Decide the output flder name based on options
-    
+
     output_folder = string("Output_", moisture_choice, "_", precipitation_choice)
     if precipitation_choice in ["Precipitation1M", "Precipitation2M"]
         output_folder = output_folder * "_" * rain_formation_choice
@@ -93,10 +93,19 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     # Create the initial condition profiles
     if precipitation_choice == "CloudyPrecip"
         cloudy_params, cloudy_pdists = create_cloudy_parameters(6, FT)
-        init = map(coord -> CO.cloudy_initial_condition(cloudy_pdists, CO.initial_condition_1d(FT, common_params, kid_params, thermo_params, ρ_profile, coord.z)), coord)
+        init = map(
+            coord -> CO.cloudy_initial_condition(
+                cloudy_pdists,
+                CO.initial_condition_1d(FT, common_params, kid_params, thermo_params, ρ_profile, coord.z),
+            ),
+            coord,
+        )
     else
         cloudy_params = nothing
-        init = map(coord -> CO.initial_condition_1d(FT, common_params, kid_params, thermo_params, ρ_profile, coord.z), coord)
+        init = map(
+            coord -> CO.initial_condition_1d(FT, common_params, kid_params, thermo_params, ρ_profile, coord.z),
+            coord,
+        )
     end
 
     # Create aux vector and apply initial condition
@@ -115,7 +124,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
         precip,
         cloudy_params,
     )
-    
+
     # Create state vector and apply initial condition
     Y = CO.initialise_state(moisture, precip, init)
 
@@ -142,7 +151,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
         progress = true,
         progress_message = (dt, u, p, t) -> t,
     )
- 
+
     # Some basic plots
     if opts["plotting_flag"] == true
         @info "Plotting"
