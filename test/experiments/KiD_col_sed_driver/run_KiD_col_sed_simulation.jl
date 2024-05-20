@@ -87,7 +87,7 @@ function run_KiD_col_sed_simulation(::Type{FT}, opts) where {FT}
         init = map(
             coord -> CO.cloudy_initial_condition(
                 cloudy_pdists,
-                CO.initial_condition_0d(FT, thermo_params, opts["qt"], opts["prescribed_Nd"], opts["k"], opts["rhod"],),
+                CO.initial_condition_0d(FT, thermo_params, opts["qt"], opts["prescribed_Nd"], opts["k"], opts["rhod"]),
                 opts["k"],
             ),
             coord,
@@ -95,7 +95,14 @@ function run_KiD_col_sed_simulation(::Type{FT}, opts) where {FT}
     else
         cloudy_params = nothing
         init = map(
-            coord -> CO.initial_condition_0d(FT, thermo_params, opts["qt"], opts["prescribed_Nd"], opts["k"], opts["rhod"],),
+            coord -> CO.initial_condition_0d(
+                FT,
+                thermo_params,
+                opts["qt"],
+                opts["prescribed_Nd"],
+                opts["k"],
+                opts["rhod"],
+            ),
             coord,
         )
     end
@@ -114,7 +121,7 @@ function run_KiD_col_sed_simulation(::Type{FT}, opts) where {FT}
         face_space,
         moisture,
         precip,
-        cloudy_params
+        cloudy_params,
     )
 
     # Create state vector and apply initial condition
