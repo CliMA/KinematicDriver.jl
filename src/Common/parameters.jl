@@ -45,7 +45,7 @@ end
 """
 Base.@kwdef struct CloudyParameters{FT, NM, ND, N, P, T} <: ACP
     "Number of prognostic moments associated with each dist"
-    NProgMoms::NTuple{ND, FT}
+    NProgMoms::NTuple{ND, Int}
     "Normalizing number density and mass"
     norms::Tuple{FT, FT}
     "Normalizing moments"
@@ -54,6 +54,19 @@ Base.@kwdef struct CloudyParameters{FT, NM, ND, N, P, T} <: ACP
     coal_data::CL.Coalescence.CoalescenceData{N, P, FT, T}
     "Vel information for power law"
     vel::Tuple{Tuple{FT, FT}}
+
+    function CloudyParameters(
+        NProgMoms::NTuple{ND, Int},
+        norms::Tuple{FT, FT},
+        mom_norms::NTuple{NM, FT},
+        coal_data::CL.Coalescence.CoalescenceData{N, P, FT, T},
+        vel::Tuple{Tuple{FT, FT}},
+    ) where {NM, ND, N, P, T, FT <: Real}
+        normed_vel = map(vel) do v
+            (v[1] * norms[2]^v[2], v[2])
+        end
+        new{FT, NM, ND, N, P, T}(NProgMoms, norms, mom_norms, coal_data, normed_vel)
+    end
 end
 
 precip_sources(ps::ACP) = ps.precip_sources

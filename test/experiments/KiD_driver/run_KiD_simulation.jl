@@ -92,7 +92,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     ρ_profile = CO.ρ_ivp(FT, kid_params, thermo_params)
     # Create the initial condition profiles
     if precipitation_choice == "CloudyPrecip"
-        cloudy_params, cloudy_pdists = create_cloudy_parameters(6, FT)
+        cloudy_params, cloudy_pdists = create_cloudy_parameters(FT)
         init = map(
             coord -> CO.cloudy_initial_condition(
                 cloudy_pdists,
