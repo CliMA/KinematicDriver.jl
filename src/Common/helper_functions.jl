@@ -74,7 +74,7 @@ function get_precipitation_type(
             error("Invalid rain formation choice: $rain_formation_choice")
         end
     elseif precipitation_choice == "CloudyPrecip"
-        precip = CloudyPrecip(CMP.Parameters0M(toml_dict))
+        precip = CloudyPrecip()
     else
         error("Invalid precipitation choice: $precipitation_choice")
     end

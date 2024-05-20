@@ -19,7 +19,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     sedimentation_choice = opts["sedimentation_scheme_choice"]
     @info moisture_choice, precipitation_choice, rain_formation_choice, sedimentation_choice
 
-    # Decide the output flder name based on options
+    # Decide the output folder name based on options
 
     output_folder = string("Output_", moisture_choice, "_", precipitation_choice)
     if precipitation_choice in ["Precipitation1M", "Precipitation2M"]

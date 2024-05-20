@@ -184,14 +184,13 @@ end
     Populate the remaining profiles based on given initial conditions including total specific water
     content (liquid + rain) and total number concentration
 """
-function initial_condition(
+function initial_condition_0d(
     ::Type{FT},
     thermo_params::TD.Parameters.ThermodynamicsParameters{FT},
     qt::FT,
     Nd::FT,
     k::FT,
     ρ_dry::FT,
-    z,
 ) where {FT}
 
     # qt represents specific water content in cloud and rain. The initialization in PySDM is
@@ -211,6 +210,7 @@ function initial_condition(
     ρq_tot::FT = ρq_liq
     ρq_ice::FT = FT(0)
     ρq_sno::FT = FT(0)
+    ρq_vap::FT = FT(0)
 
     ρ = ρ_dry + ρq_liq
 
@@ -247,6 +247,7 @@ function initial_condition(
         ρq_ice,
         ρq_rai,
         ρq_sno,
+        ρq_vap,
         q_tot,
         q_liq,
         q_ice,

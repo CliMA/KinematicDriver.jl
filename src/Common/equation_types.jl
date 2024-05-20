@@ -68,6 +68,4 @@ struct PrecipitationP3{PT, ST, P3} <: AbstractPrecipitationStyle
     sedimentation::ST
     p3_parameters::P3
 end
-struct CloudyPrecip{PNM} <: AbstractPrecipitationStyle
-    params::PNM
-end
+struct CloudyPrecip <: AbstractPrecipitationStyle end

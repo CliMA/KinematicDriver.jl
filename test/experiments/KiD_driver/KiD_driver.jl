@@ -26,4 +26,3 @@ end
 include("run_KiD_simulation.jl")
 
 run_KiD_simulation(FT, config)
-plot!()

@@ -179,11 +179,12 @@ end
     mom_normed = tuple(moments ./ cloudy_params.mom_norms...)
     pdists = ntuple(length(old_pdists)) do i
         ind_rng = CL.get_dist_moments_ind_range(cloudy_params.NProgMoms, i)
-        CL.ParticleDistributions.update_dist_from_moments(
-            old_pdists[i],
-            mom_normed[ind_rng],
-            param_range = (; :k => (0.1, 10.0)),
-        )
+        args = (old_pdists[i], mom_normed[ind_rng])
+        if old_pdists[i] isa CL.ParticleDistributions.GammaPrimitiveParticleDistribution
+            CL.ParticleDistributions.update_dist_from_moments(args..., param_range = (; :k => (0.1, 10.0)))
+        else
+            CL.ParticleDistributions.update_dist_from_moments(args...)
+        end
     end
 
     # compute terminal velocity

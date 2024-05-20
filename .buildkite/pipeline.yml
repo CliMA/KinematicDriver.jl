@@ -123,6 +123,6 @@ steps:
         command: "julia --color=yes --project=test test/experiments/Ki2D_driver/run_kinematic2d_simulations.jl"
         artifact_paths: "test/experiments/Ki2D_driver/Output_NonEquilibriumMoisture_Precipitation1M_CliMA_1M/*"
 
-      - label: ":cloudy: Experiment: 1D with Cloudy"
+      - label: ":partly_sunny: Experiment: 1D with Cloudy"
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=CloudyMoisture --precipitation_choice=CloudyPrecip"
         artifact_paths: "test/experiments/KiD_driver/Output_CloudyMoisture_CloudyPrecip/figures/*"
