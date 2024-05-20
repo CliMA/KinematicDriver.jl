@@ -92,8 +92,8 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     # Solve the initial value problem for density profile
     ρ_profile = CO.ρ_ivp(FT, kid_params, thermo_params)
     # Create the initial condition profiles
-    init =
-        map(coord -> CO.initial_condition_1d(FT, Val(6), common_params, kid_params, thermo_params, ρ_profile, coord.z), coord)
+    # init = map(coord -> CO.initial_condition_1d(FT, Val(6), common_params, kid_params, thermo_params, ρ_profile, coord.z), coord)
+    init = map(coord -> CO.cloudy_initial_condition(Val(6), CO.initial_condition_1d(FT, common_params, kid_params, thermo_params, ρ_profile, coord.z)), coord)
 
     # Create state vector and apply initial condition
     Y = CO.initialise_state(moisture, precip, init)

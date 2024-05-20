@@ -197,9 +197,11 @@ end
     (; q_rai, N_rai, N_liq, pdists, moments) = aux.microph_variables
     (; weighted_vt) = aux.velocities
     
+    rain_number_ind = Int(CL.get_dist_moments_ind_range(cloudy_params.NProgMoms, 2)[1])
+    rain_mass_ind = Int(CL.get_dist_moments_ind_range(cloudy_params.NProgMoms, 2)[2])
     @. N_liq = Y.moments.:1
-    @. N_rai = Y.moments.:4
-    @. q_rai = q_(Y.moments.:5, ρ)
+    @. N_rai = Y.moments.:($$rain_number_ind)
+    @. q_rai = q_(Y.moments.:($$rain_mass_ind), ρ)
     @. moments = Y.moments
 
     tmp = @. cloudy_precompute_aux_precip_helper(cloudy_params, moments, pdists)
