@@ -23,25 +23,40 @@ end
 
 @testset "Initialise aux" begin
 
-    ip = (;
-        ρ = [1.0, 1.0],
-        ρ_dry = [0.999, 1.0],
-        θ_liq_ice = [440.0, 450.0],
-        q_tot = [1e-3, 0.0],
-        q_liq = [0.0, 0.0],
-        q_ice = [0.0, 0.0],
-        p = [101300.0, 90000.0],
-        T = [300.0, 290.0],
-        θ_dry = [440.0, 450],
-        q_rai = [0.0, 0.0],
-        q_sno = [0.0, 0.0],
-        N_liq = [0.0, 0.0],
-        N_rai = [0.0, 0.0],
-        N_aer_0 = [0.0, 0.0],
-        N_aer = [0.0, 0.0],
-        zero = [0.0, 0.0],
+    _ip = (;
+        ρ = 1.2,
+        ρ_dry = 1.185,
+        θ_liq_ice = 350.0,
+        q_tot = 15e-3 / 1.2,
+        q_liq = 1e-3 / 1.2,
+        q_ice = 2e-3 / 1.2,
+        q_rai = 1e-3 / 1.2,
+        q_sno = 2e-3 / 1.2,
+        ρq_tot = 15e-3,
+        ρq_liq = 1e-3,
+        ρq_ice = 2e-3,
+        ρq_rai = 1e-3,
+        ρq_sno = 2e-3,
+        p = 101300.0,
+        T = 280.0,
+        θ_dry = 360.0,
+        N_liq = 1e8,
+        N_ice = 1e8,
+        N_rai = 1e4,
+        N_sno = 1e4,
+        N_aer = 5e7,
+        zero = 0.0,
     )
-    space, face_space = K1D.make_function_space(FT, 0, 100, 10)
+    domain = CC.Domains.IntervalDomain(
+        CC.Geometry.ZPoint{FT}(0),
+        CC.Geometry.ZPoint{FT}(1),
+        boundary_names = (:bottom, :top),
+    )
+    mesh = CC.Meshes.IntervalMesh(domain, nelems = 1)
+    space = CC.Spaces.CenterFiniteDifferenceSpace(mesh)
+    face_space = CC.Spaces.FaceFiniteDifferenceSpace(mesh)
+    coord = CC.Fields.coordinate_field(space)
+    ip = map(coord -> _ip, coord)
 
     @test_throws Exception K1D.initialise_aux(FT, ip, params..., 0.0, 0.0, face_space, no_precip)
     @test_throws Exception K1D.initialise_aux(FT, ip, params..., 0.0, 0.0, face_space, CO.EquilibriumMoisture())
@@ -116,7 +131,6 @@ end
         N_rai = 1e4,
         N_sno = 1e4,
         N_aer = 5e7,
-        N_aer_0 = 1e8,
         zero = 0.0,
     )
     domain = CC.Domains.IntervalDomain(
