@@ -74,7 +74,6 @@ function create_common_parameters(toml_dict)
     end
     return common_params
 end
-Base.broadcastable(x::CO.Parameters.CommonParameters) = Ref(x)
 
 function create_kid_parameters(toml_dict)
     kid_params = KID.Parameters.KinematicDriverParameters(toml_dict)
@@ -84,5 +83,4 @@ function create_kid_parameters(toml_dict)
     end
     return kid_params
 end
-Base.broadcastable(x::KID.Parameters.KinematicDriverParameters) = Ref(x)
 #! format: on
