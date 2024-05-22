@@ -83,7 +83,7 @@ function run_KiD_col_sed_simulation(::Type{FT}, opts) where {FT}
 
     # Create the initial condition profiles
     if precipitation_choice == "CloudyPrecip"
-        cloudy_params, cloudy_pdists = create_cloudy_parameters(6, FT)
+        cloudy_params, cloudy_pdists = create_cloudy_parameters(FT)
         init = map(
             coord -> CO.cloudy_initial_condition(
                 cloudy_pdists,
@@ -166,7 +166,7 @@ opts = Dict(
     "prescribed_Nd" => 1e8,
     "k" => 2.0,
     "rhod" => 1.0,
-    "precipitation_choice" => "Precipitation1M",
+    "precipitation_choice" => "CloudyPrecip",
     "rain_formation_choice" => "CliMA_1M",
     "sedimentation_choice" => "CliMA_1M",
     "z_min" => 0.0,

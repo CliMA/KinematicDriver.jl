@@ -60,12 +60,12 @@ end
     @. aux.activation_sources = to_sources(-S_Nl, S_Nl)
 end
 
-@inline function cloudy_precompute_aux_activation_helper(
+# helper functions for precomputing aux activation for cloudy
+@inline function get_aerosol_tendency(
     kid_params,
     thermo_params,
     air_params,
     activation_params,
-    cloudy_params,
     q_tot,
     q_liq,
     N_aer,
@@ -79,7 +79,6 @@ end
     FT = eltype(q_tot)
     S_Nl::FT = FT(0)
     S_Na::FT = FT(0)
-    S_ρq_vap::FT = FT(0)
 
     q = TD.PhasePartition(q_tot, q_liq, FT(0))
     S::FT = TD.supersaturation(thermo_params, q, ρ, T, TD.Liquid())
@@ -94,48 +93,54 @@ end
     S_Nl = ifelse(S < 0 || isnan(N_act), FT(0), max(FT(0), N_act - (N_aer_0 - N_aer)) / dt)
     S_Na = -S_Nl
 
-    # TODO: right now we are just assuming the size of the nucleated droplet
+    return S_Na
+end
+@inline function get_activation_sources(S_Na, cloudy_params)
+    FT = eltype(S_Na)
     r = FT(2.0e-6) # 2.0 μm
     v = 4 / 3 * π * r^3
     m = v * FT(1000)
     shape = 2
     S_act = ntuple(length(cloudy_params.mom_norms)) do k
         if k == 1
-            S_Nl
+            -S_Na
         elseif k == 2
-            S_Nl * m * shape
+            -S_Na * m * shape
         elseif k == 3 && cloudy_params.NProgMoms[1] == 3
-            S_Nl * m^(k - 1) * shape * (shape + 1)
+            -S_Na * m^(k - 1) * shape * (shape + 1)
         else
             FT(0)
         end
     end
-    S_ρq_vap = -S_act[2]
 
-    return (; S_Na, S_act, S_ρq_vap)
+    return S_act
 end
 @inline function precompute_aux_activation!(::CO.CloudyPrecip, dY, Y, aux, t)
 
-    @. aux.microph_variables.N_aer = Y.N_aer
-    tmp = @. cloudy_precompute_aux_activation_helper(
-        aux.kid_params,
-        aux.thermo_params,
-        aux.air_params,
-        aux.activation_params,
-        aux.cloudy_params,
-        aux.microph_variables.q_tot,
-        aux.microph_variables.q_liq,
-        aux.microph_variables.N_aer,
-        aux.microph_variables.N_aer_0,
-        aux.thermo_variables.T,
-        aux.thermo_variables.p,
-        aux.thermo_variables.ρ,
-        CC.Operators.InterpolateF2C().(aux.prescribed_velocity.ρw.components.data.:1),
-        aux.TS.dt,
+    (; kid_params, thermo_params, air_params, activation_params, cloudy_params) = aux
+    (; q_tot, q_liq, N_aer, N_aer_0) = aux.microph_variables
+    (; T, p, ρ) = aux.thermo_variables
+    (; ρw) = aux.prescribed_velocity
+    (; dt) = aux.TS
+
+    @. N_aer = Y.N_aer
+    @. aux.activation_sources.N_aer = get_aerosol_tendency(
+        kid_params,
+        thermo_params,
+        air_params,
+        activation_params,
+        q_tot,
+        q_liq,
+        N_aer,
+        N_aer_0,
+        T,
+        p,
+        ρ,
+        CC.Operators.InterpolateF2C().(ρw.components.data.:1),
+        dt,
     )
-    @. aux.activation_sources.activation = tmp.S_act
-    @. aux.activation_sources.N_aer = tmp.S_Na
-    @. aux.activation_sources.ρq_vap = tmp.S_ρq_vap
+    @. aux.activation_sources.activation = get_activation_sources(aux.activation_sources.N_aer, cloudy_params)
+    @. aux.activation_sources.ρq_vap = -aux.activation_sources.activation.:2
 end
 
 """

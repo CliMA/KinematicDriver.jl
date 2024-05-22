@@ -107,7 +107,7 @@ steps:
         command: "julia --color=yes --project=test test/experiments/box_driver/run_box_simulation.jl"
         artifact_paths: "test/experiments/box_driver/Output_Precipitation2M_SB2006/*"
 
-      - label: ":crystal_ball: Experiments: 1D with collision and sedimentation"
+      - label: ":crystal_ball: Experiments: 1D with collision and sedimentation + Cloudy"
         command: "julia --color=yes --project=test test/experiments/KiD_col_sed_driver/run_KiD_col_sed_simulation.jl"
         artifact_paths: "test/experiments/KiD_col_sed_driver/Output_Precipitation1M_CliMA_1M/figures/*"
 

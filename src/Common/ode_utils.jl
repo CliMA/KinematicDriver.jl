@@ -240,6 +240,8 @@ function initialise_aux(
         precip_sources = (; moments = copy(ip.cloudy_moments_zero), ρq_vap = copy(ip.zero))
         activation_sources =
             (; activation = copy(ip.cloudy_moments_zero), N_aer = copy(ip.zero), ρq_vap = copy(ip.zero))
+        cloudy_variables = (; nm_cloud = Val(cloudy_params.NProgMoms[1]), nm_rain = Val(cloudy_params.NProgMoms[2]))
+        scratch = merge(scratch, (; tmp_cloudy = similar(ip.cloudy_moments_zero)))
     else
         error("Wrong precipitation choise $precip")
     end
@@ -261,7 +263,7 @@ function initialise_aux(
     )
 
     if precip isa CloudyPrecip
-        aux = merge(aux, (; cloudy_params))
+        aux = merge(aux, (; cloudy_params, cloudy_variables))
     end
 
     return aux

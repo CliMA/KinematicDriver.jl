@@ -87,7 +87,7 @@ function create_kid_parameters(toml_dict)
 end
 Base.broadcastable(x::KID.Parameters.KinematicDriverParameters) = Ref(x)
 
-function create_cloudy_parameters(FT, dist_names::NTuple{ND, String} = ("gamma", "gamma")) where {ND}
+function create_cloudy_parameters(FT, dist_names::NTuple{2, String} = ("gamma", "gamma"))
 
     # Create water category distributions
     function make_dist(dist_name)
@@ -99,12 +99,12 @@ function create_cloudy_parameters(FT, dist_names::NTuple{ND, String} = ("gamma",
             return CL.ParticleDistributions.GammaPrimitiveParticleDistribution(FT(0), FT(1), FT(1))
         end
     end
-    pdists::NTuple{ND, CL.ParticleDistributions.PrimitiveParticleDistribution} = map(dist_names) do name
+    pdists::NTuple{2, CL.ParticleDistributions.PrimitiveParticleDistribution} = map(dist_names) do name
         make_dist(name)
     end
 
     # Create tuple of number of prognostic moments for each distribution
-    NProgMoms::NTuple{ND, Int} = map(pdists) do dist
+    NProgMoms::NTuple{2, Int} = map(pdists) do dist
         CL.ParticleDistributions.nparams(dist)
     end
 
@@ -131,9 +131,7 @@ function create_cloudy_parameters(FT, dist_names::NTuple{ND, String} = ("gamma",
     end
 
     # Define mass thresholds between water categories
-    mass_thresholds = ntuple(ND) do j
-        ifelse(j == 1, 5e-10, Inf) # 5e-10 kg
-    end
+    mass_thresholds = (5e-10, Inf) # 5e-10 kg
 
     # Define coalescence data required by Cloudy
     coal_data::CL.Coalescence.CoalescenceData{2, 3, FT, 9} = CL.Coalescence.CoalescenceData(matrix_of_kernels, NProgMoms, mass_thresholds, norms)
