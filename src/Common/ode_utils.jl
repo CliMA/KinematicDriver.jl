@@ -236,7 +236,6 @@ function initialise_aux(
             N_liq = ip.N_liq,
             N_rai = ip.N_rai,
             N_aer = ip.N_aer,
-            N_aer_0 = ip.N_aer_0,
             pdists = ip.pdists,
             moments = ip.moments,
         )

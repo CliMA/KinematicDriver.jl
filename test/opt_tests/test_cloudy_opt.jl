@@ -50,26 +50,27 @@ function test_cloudy_allocation(::Type{FT}) where {FT}
     Y = CO.initialise_state(moisture, precip, init)
     dY = Y
 
-    # test
-    @test_opt CO.precompute_aux_thermo!(moisture, Y, aux)
-    CO.precompute_aux_thermo!(moisture, Y, aux)
-    @test 64 >= @allocated CO.precompute_aux_thermo!(moisture, Y, aux)
+    @testset "Cloud optimization tests" begin
+        @test_opt CO.precompute_aux_thermo!(moisture, Y, aux)
+        CO.precompute_aux_thermo!(moisture, Y, aux)
+        @test 64 >= @allocated CO.precompute_aux_thermo!(moisture, Y, aux)
 
-    @test_opt CO.precompute_aux_precip!(precip, Y, aux)
-    CO.precompute_aux_precip!(precip, Y, aux)
-    @test 944 >= @allocated CO.precompute_aux_precip!(precip, Y, aux)
+        @test_opt CO.precompute_aux_precip!(precip, Y, aux)
+        CO.precompute_aux_precip!(precip, Y, aux)
+        @test 944 >= @allocated CO.precompute_aux_precip!(precip, Y, aux)
 
-    @test_opt CO.precompute_aux_moisture_sources!(moisture, dY, Y, aux, 0.0)
-    CO.precompute_aux_moisture_sources!(moisture, dY, Y, aux, 0.0)
-    @test 0 == @allocated CO.precompute_aux_moisture_sources!(moisture, dY, Y, aux, 0.0)
+        @test_opt CO.precompute_aux_moisture_sources!(moisture, dY, Y, aux, 0.0)
+        CO.precompute_aux_moisture_sources!(moisture, dY, Y, aux, 0.0)
+        @test 0 == @allocated CO.precompute_aux_moisture_sources!(moisture, dY, Y, aux, 0.0)
 
-    @test_opt CO.precompute_aux_precip_sources!(precip, aux)
-    CO.precompute_aux_precip_sources!(precip, aux)
-    @test 928 >= @allocated CO.precompute_aux_precip_sources!(precip, aux)
+        @test_opt CO.precompute_aux_precip_sources!(precip, aux)
+        CO.precompute_aux_precip_sources!(precip, aux)
+        @test 928 >= @allocated CO.precompute_aux_precip_sources!(precip, aux)
 
-    @test_opt K1D.precompute_aux_activation!(precip, dY, Y, aux, 0.0)
-    K1D.precompute_aux_activation!(precip, dY, Y, aux, 0.0)
-    @test 624 >= @allocated K1D.precompute_aux_activation!(precip, dY, Y, aux, 0.0)
+        @test_opt K1D.precompute_aux_activation!(precip, dY, Y, aux, 0.0)
+        K1D.precompute_aux_activation!(precip, dY, Y, aux, 0.0)
+        @test 624 >= @allocated K1D.precompute_aux_activation!(precip, dY, Y, aux, 0.0)
+    end
 
 end
 

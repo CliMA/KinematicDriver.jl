@@ -88,8 +88,8 @@ end
     activation_params,
     q_tot,
     q_liq,
+    N_liq,
     N_aer,
-    N_aer_0,
     T,
     p,
     ρ,
@@ -107,10 +107,10 @@ end
     w = ρw / ρ
 
     aerosol_distribution =
-        CMAM.AerosolDistribution((CMAM.Mode_κ(r_dry, std_dry, N_aer_0, (FT(1),), (FT(1),), (FT(0),), (κ,)),))
+        CMAM.AerosolDistribution((CMAM.Mode_κ(r_dry, std_dry, N_aer, (FT(1),), (FT(1),), (FT(0),), (κ,)),))
     N_act = CMAA.N_activated_per_mode(activation_params, aerosol_distribution, air_params, thermo_params, T, p, w, q)[1]
 
-    S_Nl = ifelse(S < 0 || isnan(N_act), FT(0), max(FT(0), N_act - (N_aer_0 - N_aer)) / dt)
+    S_Nl = ifelse(S < 0 || isnan(N_act), FT(0), max(FT(0), N_act - N_liq) / dt)
     S_Na = -S_Nl
 
     return S_Na
@@ -138,7 +138,7 @@ end
 @inline function precompute_aux_activation!(::CO.CloudyPrecip, dY, Y, aux, t)
 
     (; kid_params, thermo_params, air_params, activation_params, cloudy_params) = aux
-    (; q_tot, q_liq, N_aer, N_aer_0) = aux.microph_variables
+    (; q_tot, q_liq, N_liq, N_aer) = aux.microph_variables
     (; T, p, ρ) = aux.thermo_variables
     (; ρw) = aux.prescribed_velocity
     (; dt) = aux.TS
@@ -151,8 +151,8 @@ end
         activation_params,
         q_tot,
         q_liq,
+        N_liq,
         N_aer,
-        N_aer_0,
         T,
         p,
         ρ,
@@ -346,7 +346,6 @@ end
     return dY
 end
 
-# TODO: make it work!
 @inline function advection_tendency!(::CO.CloudyPrecip, dY, Y, aux, t)
     FT = eltype(Y.ρq_vap)
     Nmom = Int(sum(aux.cloudy_params.NProgMoms))

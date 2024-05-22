@@ -191,8 +191,8 @@ end
     # test zero tendencies
     #
 
-    aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, equil_moist_ρθq, no_precip)
-    Y = CO.initialise_state(equil_moist_ρθq, no_precip, ip)
+    aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, equil_moist, no_precip)
+    Y = CO.initialise_state(equil_moist, no_precip, ip)
     dY = similar(Y)
     CO.zero_tendencies!(dY)
     @test LA.norm(dY) == 0

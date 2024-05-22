@@ -26,7 +26,7 @@ end
 
 
     aux = K2D.initialise_aux(FT, init, params..., 100.0, 200.0, 0.0, 0.0, space, face_space, equil_moist, precip_1m)
-  
+
     @test aux isa NamedTuple
     @test aux.cloud_sources == nothing
     @test LA.norm(aux.precip_sources) == 0
