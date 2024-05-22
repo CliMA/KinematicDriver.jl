@@ -4,7 +4,7 @@ using SafeTestsets
     include("unit_tests/unit_test.jl")
 end
 
-@safeTestset "Optimization Tests" begin
+@safetestset "Optimization Tests" begin
     include("opt_tests/opt_tests.jl")
 end
 

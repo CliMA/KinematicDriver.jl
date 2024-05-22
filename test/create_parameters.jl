@@ -141,5 +141,4 @@ function create_cloudy_parameters(FT, dist_names::NTuple{ND, String} = ("gamma",
     cloudy_params = CO.Parameters.CloudyParameters(NProgMoms, norms, mom_norms, coal_data, vel)
     return cloudy_params, pdists
 end
-Base.broadcastable(x::CO.Parameters.CloudyParameters) = Ref(x)
 #! format: on

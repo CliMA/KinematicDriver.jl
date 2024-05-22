@@ -73,10 +73,11 @@ precip_sources(ps::ACP) = ps.precip_sources
 precip_sinks(ps::ACP) = ps.precip_sinks
 prescribed_Nd(ps::ACP) = ps.prescribed_Nd
 
-Base.eltype(::CloudyParameters{FT}) where {FT} = FT
 Base.eltype(::CommonParameters{FT}) where {FT} = FT
+Base.eltype(::CloudyParameters{FT}) where {FT} = FT
 # Magic needed to get rid of length(ps) error
 Base.broadcastable(ps::ACP) = Ref(ps)
 Base.broadcastable(x::CommonParameters) = Ref(x)
+Base.broadcastable(x::CloudyParameters) = Ref(x)
 
 end
