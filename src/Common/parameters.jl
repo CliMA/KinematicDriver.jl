@@ -77,4 +77,6 @@ Base.eltype(::CloudyParameters{FT}) where {FT} = FT
 Base.eltype(::CommonParameters{FT}) where {FT} = FT
 # Magic needed to get rid of length(ps) error
 Base.broadcastable(ps::ACP) = Ref(ps)
+Base.broadcastable(x::CommonParameters) = Ref(x)
+
 end
