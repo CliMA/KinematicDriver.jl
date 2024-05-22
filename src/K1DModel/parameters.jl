@@ -81,4 +81,5 @@ end
 Base.eltype(::KinematicDriverParameters{FT}) where {FT} = FT
 # Magic needed to get rid of length(ps) error
 Base.broadcastable(ps::AKP) = Ref(ps)
+Base.broadcastable(x::KinematicDriverParameters) = Ref(x)
 end

@@ -41,4 +41,6 @@ prescribed_Nd(ps::ACP) = ps.prescribed_Nd
 Base.eltype(::CommonParameters{FT}) where {FT} = FT
 # Magic needed to get rid of length(ps) error
 Base.broadcastable(ps::ACP) = Ref(ps)
+Base.broadcastable(x::CommonParameters) = Ref(x)
+
 end
