@@ -136,24 +136,30 @@ end
 end
 
 # helper function for precomputing aux precip for cloudy
-@inline function get_updated_pdists(
-    moments,
-    old_pdists,
-    cloudy_params,
-    ::Val{NM_liq},
-    ::Val{NM_rai},
-) where {NM_liq, NM_rai}
-    mom_normed = moments ./ cloudy_params.mom_norms
-    ntuple(2) do i
-        mom_i = if i == 1
-            mom_normed[1:NM_liq]
-        else
-            mom_normed[(NM_liq + 1):(NM_liq + NM_rai)]
+function get_dists_moments(moments::NTuple{NM, FT}, NProgMoms::NTuple{ND, Int}) where {NM, ND, FT <: Real}
+    return ntuple(ND) do i
+        ntuple(3) do j
+            ind = i == 1 ? 0 : sum(NProgMoms[1:(i - 1)])
+            if j <= NProgMoms[i]
+                moments[ind + j]
+            else
+                FT(0)
+            end
         end
+    end
+end
+@inline function get_updated_pdists(moments, old_pdists, cloudy_params)
+    mom_normed = moments ./ cloudy_params.mom_norms
+    mom_i = get_dists_moments(mom_normed, cloudy_params.NProgMoms)
+    ntuple(length(old_pdists)) do i
         if old_pdists[i] isa CL.ParticleDistributions.GammaPrimitiveParticleDistribution
-            CL.ParticleDistributions.update_dist_from_moments(old_pdists[i], mom_i, param_range = (; :k => (0.1, 10.0)))
+            CL.ParticleDistributions.update_dist_from_moments(
+                old_pdists[i],
+                mom_i[i],
+                param_range = (; :k => (0.1, 10.0)),
+            )
         else
-            CL.ParticleDistributions.update_dist_from_moments(old_pdists[i], mom_i)
+            CL.ParticleDistributions.update_dist_from_moments(old_pdists[i], mom_i[i])
         end
     end
 end
@@ -171,7 +177,7 @@ end
     (; ρ) = aux.thermo_variables
     (; q_rai, N_rai, N_liq, pdists, moments) = aux.microph_variables
     (; weighted_vt) = aux.velocities
-    (; nm_cloud, nm_rain) = aux.cloudy_variables
+    (; nm_cloud) = aux.cloudy_variables
 
     _valof(::Val{NM}) where {NM} = NM
     NM1 = _valof(nm_cloud)
@@ -182,7 +188,7 @@ end
     @. q_rai = q_(Y.moments.:($$rain_mass_ind), ρ)
     @. moments = Y.moments
 
-    @. pdists = get_updated_pdists(moments, pdists, cloudy_params, nm_cloud, nm_rain)
+    @. pdists = get_updated_pdists(moments, pdists, cloudy_params)
     @. weighted_vt = get_weighted_vt(moments, pdists, cloudy_params)
 end
 

@@ -57,7 +57,7 @@ function test_cloudy_allocation(::Type{FT}) where {FT}
 
         @test_opt CO.precompute_aux_precip!(precip, Y, aux)
         CO.precompute_aux_precip!(precip, Y, aux)
-        @test 944 >= @allocated CO.precompute_aux_precip!(precip, Y, aux)
+        @test 928 >= @allocated CO.precompute_aux_precip!(precip, Y, aux)
 
         @test_opt CO.precompute_aux_moisture_sources!(moisture, dY, Y, aux, 0.0)
         CO.precompute_aux_moisture_sources!(moisture, dY, Y, aux, 0.0)

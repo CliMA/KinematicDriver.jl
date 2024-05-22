@@ -87,7 +87,7 @@ function create_kid_parameters(toml_dict)
 end
 Base.broadcastable(x::KID.Parameters.KinematicDriverParameters) = Ref(x)
 
-function create_cloudy_parameters(FT, dist_names::NTuple{2, String} = ("gamma", "gamma"))
+function create_cloudy_parameters(FT, dist_names::NTuple{ND, String} = ("gamma", "gamma")) where {ND}
 
     # Create water category distributions
     function make_dist(dist_name)
@@ -99,12 +99,12 @@ function create_cloudy_parameters(FT, dist_names::NTuple{2, String} = ("gamma", 
             return CL.ParticleDistributions.GammaPrimitiveParticleDistribution(FT(0), FT(1), FT(1))
         end
     end
-    pdists::NTuple{2, CL.ParticleDistributions.PrimitiveParticleDistribution} = map(dist_names) do name
+    pdists::NTuple{ND, CL.ParticleDistributions.PrimitiveParticleDistribution} = map(dist_names) do name
         make_dist(name)
     end
 
     # Create tuple of number of prognostic moments for each distribution
-    NProgMoms::NTuple{2, Int} = map(pdists) do dist
+    NProgMoms::NTuple{ND, Int} = map(pdists) do dist
         CL.ParticleDistributions.nparams(dist)
     end
 
@@ -120,12 +120,13 @@ function create_cloudy_parameters(FT, dist_names::NTuple{2, String} = ("gamma", 
     # kernel_func = CL.KernelFunctions.LongKernelFunction(5.236e-10, 9.44e9, 5.78)
 
     # Compute matrix of kernel tensors each approximating kernel func as polynomail serries
-    matrix_of_kernels = ntuple(2) do i
-        ntuple(2) do j
+    r = 2
+    matrix_of_kernels = ntuple(ND) do i
+        ntuple(ND) do j
             if i == j == 1
-                CL.KernelTensors.CoalescenceTensor(kernel_func, 2, FT(5e-10))
+                CL.KernelTensors.CoalescenceTensor(kernel_func, r, FT(5e-10))
             else
-                CL.KernelTensors.CoalescenceTensor(kernel_func, 2, FT(1e-6), FT(5e-10))
+                CL.KernelTensors.CoalescenceTensor(kernel_func, r, FT(1e-6), FT(5e-10))
             end
         end
     end
@@ -134,7 +135,7 @@ function create_cloudy_parameters(FT, dist_names::NTuple{2, String} = ("gamma", 
     mass_thresholds = (5e-10, Inf) # 5e-10 kg
 
     # Define coalescence data required by Cloudy
-    coal_data::CL.Coalescence.CoalescenceData{2, 3, FT, 9} = CL.Coalescence.CoalescenceData(matrix_of_kernels, NProgMoms, mass_thresholds, norms)
+    coal_data::CL.Coalescence.CoalescenceData{ND, r+1, FT, (r+1)^2} = CL.Coalescence.CoalescenceData(matrix_of_kernels, NProgMoms, mass_thresholds, norms)
     
     # Define terminal velocity coefficients, assuming vt = sum_i v_i[1] * x^(v_i[2]) 
     # v1 is normalized by mass norm; v1 = v1 * norm[2] ^ v2
