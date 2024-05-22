@@ -15,10 +15,12 @@ end
 
     (; thermo_params, activation_params, air_params, kid_params) = aux
     (; T, p, ρ) = aux.thermo_variables
-    (; q_tot, q_liq, q_ice, N_aer_0, N_aer) = aux.microph_variables
+    (; q_tot, q_liq, q_ice, N_aer, N_liq) = aux.microph_variables
     (; r_dry, std_dry, κ) = kid_params
     (; ρw) = aux.prescribed_velocity
     (; dt) = aux.TS
+
+    f_interp = CC.Operators.InterpolateF2C()
 
     FT = eltype(thermo_params)
 
@@ -26,37 +28,55 @@ end
     N_act = aux.scratch.tmp2
     S_Nl = aux.scratch.tmp3
 
-    f_interp = CC.Operators.InterpolateF2C()
+    cloud_base_S_Nl_and_z = aux.scratch.tmp_surface
 
     vol_mix_ratio = (FT(1),)
     mass_mix_ratio = (FT(1),)
-    molar_mass = (FT(0.42),) # TODO - molar mass not needed for 1 aerosol type
+    molar_mass = (FT(0.42),) # molar mass not needed for 1 aerosol type
     kappa = (κ,)
 
     S_eltype = eltype(aux.activation_sources)
     to_sources(args...) = S_eltype(tuple(args...))
 
+    # Update N_aer for netcdf output
     @. N_aer = Y.N_aer
 
+    # Compute supersaturation
     @. S_liq = TD.supersaturation(thermo_params, TD.PhasePartition(q_tot, q_liq, q_ice), ρ, T, TD.Liquid())
 
-    @. N_act = first(
-        CMAA.N_activated_per_mode(
-            activation_params,
-            CMAM.AerosolDistribution(
-                CMAM.Mode_κ(r_dry, std_dry, N_aer_0, (vol_mix_ratio,), (mass_mix_ratio,), (molar_mass,), (kappa,)),
-            ),
-            air_params,
-            thermo_params,
-            T,
-            p,
-            f_interp(ρw.components.data.:1) / ρ,
-            TD.PhasePartition(q_tot, q_liq, q_ice),
+    # Total number of activated aerosol particles
+    @. N_act = CMAA.total_N_activated(
+        activation_params,
+        CMAM.AerosolDistribution(
+            CMAM.Mode_κ(r_dry, std_dry, N_aer, (vol_mix_ratio,), (mass_mix_ratio,), (molar_mass,), (kappa,)),
         ),
+        air_params,
+        thermo_params,
+        T,
+        p,
+        f_interp(ρw.components.data.:1) / ρ,
+        TD.PhasePartition(q_tot, q_liq, q_ice),
+    )
+    # Convert the total activated number to tendency
+    @. S_Nl = ifelse(S_liq < 0 || isnan(N_act), FT(0), max(FT(0), N_act - N_liq) / dt)
+
+    # Find S_Nl and z at cloud base:
+    z = CC.Fields.coordinate_field(S_Nl).z # height
+    z_min = minimum(z) # height at first level (only works without topography)
+    CC.Operators.column_mapreduce!(
+        tuple,  # At every point map the input S_Nl and z into a tuple that will be used by reduce
+        ((target_S_Nl_value, target_z_value), (S_Nl_value, z_value)) -> ifelse(
+            target_z_value == z_min && S_Nl_value >= 1e7,
+            (S_Nl_value, z_value),
+            (target_S_Nl_value, target_z_value),
+        ), # reduction function
+        cloud_base_S_Nl_and_z, # destination for output (a field of tuples)
+        S_Nl, # input
+        z, # input
     )
 
-    @. S_Nl = ifelse(S_liq < 0 || isnan(N_act), FT(0), max(FT(0), N_act - (N_aer_0 - Y.N_aer)) / dt)
-
+    # Use the S_Nl tendnecy at cloud base
+    @. S_Nl = ifelse(z == last(cloud_base_S_Nl_and_z), S_Nl, FT(0))
     @. aux.activation_sources = to_sources(-S_Nl, S_Nl)
 end
 
@@ -284,6 +304,10 @@ end
         bottom = CC.Operators.Extrapolate(),
         top = CC.Operators.SetValue(CC.Geometry.WVector(0.0)),
     )
+    ∂ₐ = CC.Operators.DivergenceF2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
+
+    @. dY.N_aer += -∂ₐ((aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) * If(Y.N_aer))
+    @. dY.N_liq += -∂((aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) * If(Y.N_liq))
 
     @. dY.N_rai +=
         -∂(
@@ -301,6 +325,9 @@ end
         )
 
     fcc = CC.Operators.FluxCorrectionC2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
+    @. dY.N_aer += fcc((aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)), Y.N_aer)
+    @. dY.N_liq += fcc((aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)), Y.N_liq)
+
     @. dY.N_rai += fcc(
         (
             aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ) +

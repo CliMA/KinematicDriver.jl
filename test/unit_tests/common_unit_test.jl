@@ -127,85 +127,6 @@ end
 
 end
 
-@testset "Initialise aux" begin
-
-    ip = (;
-        ρ = [1.0, 1.0],
-        ρ_dry = [0.999, 1.0],
-        θ_liq_ice = [440.0, 450.0],
-        q_tot = [1e-3, 0.0],
-        q_liq = [0.0, 0.0],
-        q_ice = [0.0, 0.0],
-        p = [101300.0, 90000.0],
-        T = [300.0, 290.0],
-        θ_dry = [440.0, 450],
-        q_rai = [0.0, 0.0],
-        q_sno = [0.0, 0.0],
-        N_liq = [0.0, 0.0],
-        N_rai = [0.0, 0.0],
-        N_aer_0 = [0.0, 0.0],
-        N_aer = [0.0, 0.0],
-        zero = [0.0, 0.0],
-    )
-
-    @test_throws Exception CO.initialise_aux(FT, ip, params..., 0.0, 0.0, no_precip, no_precip)
-    @test_throws Exception CO.initialise_aux(FT, ip, params..., 0.0, 0.0, CO.AbstractMoistureStyle(), no_precip)
-
-    aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, equil_moist, precip_0m)
-    @test aux isa NamedTuple
-    @test aux.thermo_variables isa NamedTuple
-    @test aux.microph_variables isa NamedTuple
-    @test aux.cloud_sources isa Nothing
-    @test LA.norm(aux.precip_sources) == 0
-
-    aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, nequil_moist, precip_2m)
-    @test aux isa NamedTuple
-    @test aux.thermo_variables isa NamedTuple
-    @test aux.microph_variables isa NamedTuple
-    @test LA.norm(aux.cloud_sources) == 0
-    @test LA.norm(aux.precip_sources) == 0
-end
-
-@testset "Zero tendencies, sources tendencies" begin
-
-    ip = (;
-        ρ = [1.0, 1.0],
-        ρ_dry = [0.999, 1.0],
-        θ_liq_ice = [440.0, 450.0],
-        q_tot = [1e-3, 0.0],
-        q_liq = [0.0, 0.0],
-        q_ice = [0.0, 0.0],
-        ρq_tot = [1e-3, 0.0],
-        ρq_liq = [0.0, 0.0],
-        ρq_ice = [0.0, 0.0],
-        ρq_rai = [0.0, 0.0],
-        ρq_sno = [0.0, 0.0],
-        p = [101300.0, 90000.0],
-        T = [300.0, 290.0],
-        θ_dry = [440.0, 450],
-        q_rai = [0.0, 0.0],
-        q_sno = [0.0, 0.0],
-        N_liq = [0.0, 0.0],
-        N_rai = [0.0, 0.0],
-        N_aer_0 = [0.0, 0.0],
-        N_aer = [0.0, 0.0],
-        zero = [1.3, 4.2],
-    )
-    aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, equil_moist, no_precip)
-    Y = CO.initialise_state(equil_moist, no_precip, ip)
-    dY = similar(Y)
-    CO.zero_tendencies!(dY)
-    @test LA.norm(dY) == 0
-
-    aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, nequil_moist, precip_1m)
-    Y = CO.initialise_state(nequil_moist, precip_1m, ip)
-    dY = similar(Y)
-    CO.zero_tendencies!(dY)
-    @test LA.norm(dY) == 0
-
-    @test_throws Exception CO.cloud_sources_tendency!(CO.AbstractMoistureStyle(), dY, Y, aux, 1.0)
-    @test_throws Exception CO.precip_sources_tendency!(CO.AbstractPrecipitationStyle(), dY, Y, aux, 1.0)
-end
 
 @testset "Tendency helper functions" begin
 
@@ -231,7 +152,6 @@ end
         N_rai = 1e4,
         N_sno = 1e4,
         N_aer = 1e10,
-        N_aer_0 = 1e10,
         zero = 0.0,
     )
     domain = CC.Domains.IntervalDomain(
@@ -245,6 +165,50 @@ end
     ip = map(coord -> _ip, coord)
 
     get_value(x) = parent(CC.Fields.field_values(CC.Fields.level(x, 1)))
+
+    #
+    # test initialize aux
+    #
+
+    @test_throws Exception CO.initialise_aux(FT, ip, params..., 0.0, 0.0, no_precip, no_precip)
+    @test_throws Exception CO.initialise_aux(FT, ip, params..., 0.0, 0.0, CO.AbstractMoistureStyle(), no_precip)
+
+    aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, equil_moist, precip_0m)
+    @test aux isa NamedTuple
+    @test aux.thermo_variables isa NamedTuple
+    @test aux.microph_variables isa NamedTuple
+    @test aux.cloud_sources isa Nothing
+    @test LA.norm(aux.precip_sources) == 0
+
+    aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, nequil_moist, precip_2m)
+    @test aux isa NamedTuple
+    @test aux.thermo_variables isa NamedTuple
+    @test aux.microph_variables isa NamedTuple
+    @test LA.norm(aux.cloud_sources) == 0
+    @test LA.norm(aux.precip_sources) == 0
+
+    #
+    # test zero tendencies
+    #
+
+    aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, equil_moist_ρθq, no_precip)
+    Y = CO.initialise_state(equil_moist_ρθq, no_precip, ip)
+    dY = similar(Y)
+    CO.zero_tendencies!(dY)
+    @test LA.norm(dY) == 0
+
+    aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, nequil_moist, precip_1m)
+    Y = CO.initialise_state(nequil_moist, precip_1m, ip)
+    dY = similar(Y)
+    CO.zero_tendencies!(dY)
+    @test LA.norm(dY) == 0
+
+    @test_throws Exception CO.cloud_sources_tendency!(CO.AbstractMoistureStyle(), dY, Y, aux, 1.0)
+    @test_throws Exception CO.precip_sources_tendency!(CO.AbstractPrecipitationStyle(), dY, Y, aux, 1.0)
+
+    #
+    # test precompute functions
+    #
 
     # test if throws error
     aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, equil_moist, no_precip)
