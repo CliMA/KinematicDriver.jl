@@ -136,7 +136,8 @@ end
 end
 
 # helper function for precomputing aux precip for cloudy
-function get_dists_moments(moments::NTuple{NM, FT}, NProgMoms::NTuple{ND, Int}) where {NM, ND, FT <: Real}
+function get_dists_moments(moments, NProgMoms::NTuple{ND, Int}) where {ND}
+    FT = eltype(moments)
     return ntuple(ND) do i
         ntuple(3) do j
             ind = i == 1 ? 0 : sum(NProgMoms[1:(i - 1)])
