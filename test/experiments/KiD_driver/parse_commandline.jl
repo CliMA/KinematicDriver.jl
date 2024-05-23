@@ -13,15 +13,11 @@ function parse_commandline()
         arg_type = String
         default = "Float64"
         "--moisture_choice"
-        help = "Mositure model choice: EquilibriumMoisture, NonEquilibriumMoisture"
+        help = "Mositure model choice: EquilibriumMoisture, NonEquilibriumMoisture, CloudyMoisture"
         arg_type = String
         default = "NonEquilibriumMoisture"
-        "--prognostic_vars"
-        help = "Prognostic variables choice: RhoThetaQ, RhodTQ"
-        arg_type = String
-        default = "RhoThetaQ"
         "--precipitation_choice"
-        help = "Precipitation model choice: NoPrecipitation, Precipitation0M, Precipitation1M, Precipitation2M"
+        help = "Precipitation model choice: NoPrecipitation, Precipitation0M, Precipitation1M, Precipitation2M, CloudyPrecip"
         arg_type = String
         default = "Precipitation1M"
         "--rain_formation_scheme_choice"
@@ -41,11 +37,11 @@ function parse_commandline()
         arg_type = Bool
         default = true
         "--precip_sources"
-        help = "Set to true if you want to switch on autoconversion and accretion in the 1-moment scheme"
+        help = "Set to true if you want to switch on autoconversion and accretion in the 1-moment scheme, or collisional coalescence in Cloudy"
         arg_type = Bool
         default = true
         "--precip_sinks"
-        help = "Set to true if you want to switch on evaporation, deposition, sublimation and melting in the 1-moment scheme"
+        help = "Set to true if you want to switch on evaporation, deposition, sublimation and melting in the 1-moment scheme; or condensation/evaporation in Cloudy"
         arg_type = Bool
         default = true
         "--qtot_flux_correction"

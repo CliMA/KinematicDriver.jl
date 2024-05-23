@@ -17,7 +17,7 @@ end
 
 @testset "Make rhs function" begin
 
-    rhs = K1D.make_rhs_function(equil_moist_ρθq, precip_1m)
+    rhs = K1D.make_rhs_function(equil_moist, precip_1m)
     @test typeof(rhs) <: Function
 end
 
@@ -62,16 +62,16 @@ end
     @test_throws Exception K1D.initialise_aux(FT, ip, params..., 0.0, 0.0, face_space, CO.EquilibriumMoisture())
     @test_throws Exception K1D.initialise_aux(FT, ip, params..., 0.0, 0.0, face_space, CO.NonEquilibriumMoisture())
 
-    ms_styles = [equil_moist_ρθq, equil_moist_ρdTq, nequil_moist_ρθq, nequil_moist_ρdTq]
+    ms_styles = [equil_moist, nequil_moist]
     ps_styles = [no_precip, precip_1m, precip_2m, precip_2m]
     for (ms, ps) in zip(ms_styles, ps_styles)
         aux = K1D.initialise_aux(FT, ip, params..., 0.0, 0.0, face_space, ms, ps)
         @test aux isa NamedTuple
         @test LA.norm(aux.precip_sources) == 0
-        if ms in [nequil_moist_ρθq, nequil_moist_ρdTq]
+        if ms == nequil_moist
             @test LA.norm(aux.cloud_sources) == 0
         else
-            @test aux.cloud_sources == nothing
+            @test aux.cloud_sources === nothing
         end
     end
 end
@@ -86,13 +86,13 @@ end
     t = 13.0
 
     # eq
-    aux = K1D.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, equil_moist_ρθq, no_precip)
-    Y = CO.initialise_state(equil_moist_ρθq, no_precip, init)
+    aux = K1D.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, equil_moist, no_precip)
+    Y = CO.initialise_state(equil_moist, no_precip, init)
     dY = Y / 10
     @test_throws Exception K1D.advection_tendency!(CO.AbstractMoistureStyle(), dY, Y, aux, t)
     @test_throws Exception K1D.advection_tendency!(CO.AbstractPrecipitationStyle(), dY, Y, aux, t)
 
-    ms_styles = [equil_moist_ρθq, equil_moist_ρdTq, nequil_moist_ρθq, nequil_moist_ρdTq]
+    ms_styles = [equil_moist, nequil_moist]
     ps_styles = [no_precip, precip_1m, precip_2m, precip_2m]
     for (ms, ps) in zip(ms_styles, ps_styles)
         aux = K1D.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, ms, ps)
@@ -148,7 +148,7 @@ end
 
     TS = CO.TimeStepping(FT(10), FT(10), FT(20))
 
-    Y = CO.initialise_state(equil_moist_ρθq, precip_2m, ip)
+    Y = CO.initialise_state(equil_moist, precip_2m, ip)
     dY = similar(Y)
     aux = K1D.initialise_aux(
         FT,
@@ -161,7 +161,7 @@ end
         TS,
         0.0,
         face_space,
-        equil_moist_ρθq,
+        equil_moist,
         precip_2m,
     )
 

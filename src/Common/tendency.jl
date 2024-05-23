@@ -16,17 +16,17 @@ end
 function q_(ρq::FT, ρ::FT) where {FT}
     return max(FT(0), ρq / ρ)
 end
+@inline function zero_tendencies!(::CloudyPrecip, dY, Y, aux, t)
+    FT = eltype(Y.ρq_vap)
+    @. dY.N_aer = FT(0)
+    @. dY.moments = ntuple(_ -> FT(0), length(dY.moments))
+end
 
 """
     Zero out previous timestep tendencies
 """
 @inline function zero_tendencies!(dY)
     @. dY = 0
-    #for el in dY
-    #    @info(el)
-    #    FT = eltype(el)
-    #    el .= (CC.RecursiveApply.rzero(FT),)
-    #end
 end
 
 """
@@ -35,24 +35,7 @@ end
 @inline function precompute_aux_thermo!(sm::AbstractMoistureStyle, Y, aux)
     error("precompute_aux not implemented for a given $sm")
 end
-@inline function precompute_aux_thermo!(::EquilibriumMoisture_ρθq, Y, aux)
-
-    (; thermo_params) = aux
-    (; ts, ρ, ρ_dry, p, T, θ_dry, θ_liq_ice) = aux.thermo_variables
-    (; q_tot, q_liq, q_ice) = aux.microph_variables
-
-    @. ts = TD.PhaseEquil_ρθq(thermo_params, ρ, θ_liq_ice, Y.ρq_tot / ρ)
-
-    @. q_tot = TD.total_specific_humidity(thermo_params, ts)
-    @. q_liq = TD.liquid_specific_humidity(thermo_params, ts)
-    @. q_ice = TD.ice_specific_humidity(thermo_params, ts)
-
-    @. ρ_dry = ρ - Y.ρq_tot
-    @. p = TD.air_pressure(thermo_params, ts)
-    @. T = TD.air_temperature(thermo_params, ts)
-    @. θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
-end
-@inline function precompute_aux_thermo!(::EquilibriumMoisture_ρdTq, Y, aux)
+@inline function precompute_aux_thermo!(::EquilibriumMoisture, Y, aux)
 
     (; thermo_params) = aux
     (; ts, ρ, ρ_dry, p, T, θ_dry, θ_liq_ice) = aux.thermo_variables
@@ -69,27 +52,7 @@ end
     @. θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
     @. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
 end
-@inline function precompute_aux_thermo!(::NonEquilibriumMoisture_ρθq, Y, aux)
-
-    (; thermo_params) = aux
-    (; ts, ρ, ρ_dry, p, T, θ_dry, θ_liq_ice) = aux.thermo_variables
-    (; q_tot, q_liq, q_ice) = aux.microph_variables
-
-    @. q_tot = q_(Y.ρq_tot, ρ)
-    @. q_liq = q_(Y.ρq_liq, ρ)
-    @. q_ice = q_(Y.ρq_ice, ρ)
-
-    @. ts = TD.PhaseNonEquil_ρθq(thermo_params, ρ, θ_liq_ice, PP(q_tot, q_liq, q_ice))
-
-    @. ρ_dry = ρ - Y.ρq_tot
-    @. p = TD.air_pressure(thermo_params, ts)
-    @. T = TD.air_temperature(thermo_params, ts)
-    @. θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
-    #TODO - should we delete this option? the potential temperature returned from ts is different than the input
-    #@. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
-    #@info("Inside the tendency, after ts", θ_liq_ice )
-end
-@inline function precompute_aux_thermo!(::NonEquilibriumMoisture_ρdTq, Y, aux)
+@inline function precompute_aux_thermo!(::NonEquilibriumMoisture, Y, aux)
 
     (; thermo_params) = aux
     (; ts, ρ, ρ_dry, p, T, θ_dry, θ_liq_ice) = aux.thermo_variables
@@ -105,6 +68,23 @@ end
     @. p = TD.air_pressure(thermo_params, ts)
     @. θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
     @. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
+end
+@inline function precompute_aux_thermo!(::CloudyMoisture, Y, aux)
+
+    (; thermo_params) = aux
+    (; ts, ρ, ρ_dry, p, T, θ_dry, θ_liq_ice) = aux.thermo_variables
+    (; q_tot, q_liq, q_ice) = aux.microph_variables
+
+    FT = eltype(Y.ρq_vap)
+    @. q_tot = q_(Y.moments.:2 + Y.ρq_vap, ρ)
+    @. q_liq = q_(Y.moments.:2, ρ)
+    @. q_ice = FT(0)
+
+    @. ρ = ρ_dry + Y.moments.:2 + Y.ρq_vap
+    @. ts = TD.PhaseNonEquil_ρTq(thermo_params, ρ, T, PP(q_tot, q_liq, q_ice))
+    @. p = TD.air_pressure(thermo_params, ts)
+    @. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
+    @. θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
 end
 
 @inline function precompute_aux_precip!(::Union{NoPrecipitation, Precipitation0M}, Y, aux) end
@@ -155,6 +135,64 @@ end
     # TODO...
 end
 
+# helper function for precomputing aux precip for cloudy
+function get_dists_moments(moments, NProgMoms::NTuple{ND, Int}) where {ND}
+    FT = eltype(moments)
+    return ntuple(ND) do i
+        ntuple(3) do j
+            ind = i == 1 ? 0 : sum(NProgMoms[1:(i - 1)])
+            if j <= NProgMoms[i]
+                moments[ind + j]
+            else
+                FT(0)
+            end
+        end
+    end
+end
+@inline function get_updated_pdists(moments, old_pdists, cloudy_params)
+    mom_normed = moments ./ cloudy_params.mom_norms
+    mom_i = get_dists_moments(mom_normed, cloudy_params.NProgMoms)
+    ntuple(length(old_pdists)) do i
+        if old_pdists[i] isa CL.ParticleDistributions.GammaPrimitiveParticleDistribution
+            CL.ParticleDistributions.update_dist_from_moments(
+                old_pdists[i],
+                mom_i[i],
+                param_range = (; :k => (0.1, 10.0)),
+            )
+        else
+            CL.ParticleDistributions.update_dist_from_moments(old_pdists[i], mom_i[i])
+        end
+    end
+end
+@inline function get_weighted_vt(moments, pdists, cloudy_params)
+    FT = eltype(pdists[1])
+    sed_flux = CL.Sedimentation.get_sedimentation_flux(pdists, cloudy_params.vel)
+    weighted_vt = ntuple(length(moments)) do i
+        ifelse(moments[i] > FT(0), -1 * sed_flux[i] * cloudy_params.mom_norms[i] / moments[i], FT(0))
+    end
+    return weighted_vt
+end
+@inline function precompute_aux_precip!(ps::CloudyPrecip, Y, aux)
+
+    (; cloudy_params) = aux
+    (; ρ) = aux.thermo_variables
+    (; q_rai, N_rai, N_liq, pdists, moments) = aux.microph_variables
+    (; weighted_vt) = aux.velocities
+    (; nm_cloud) = aux.cloudy_variables
+
+    _valof(::Val{NM}) where {NM} = NM
+    NM1 = _valof(nm_cloud)
+    rain_number_ind = NM1 + 1
+    rain_mass_ind = NM1 + 2
+    @. N_liq = Y.moments.:1
+    @. N_rai = Y.moments.:($$rain_number_ind)
+    @. q_rai = q_(Y.moments.:($$rain_mass_ind), ρ)
+    @. moments = Y.moments
+
+    @. pdists = get_updated_pdists(moments, pdists, cloudy_params)
+    @. weighted_vt = get_weighted_vt(moments, pdists, cloudy_params)
+end
+
 @inline function precompute_aux_moisture_sources!(sm::AbstractMoistureStyle, aux)
     error("precompute_aux not implemented for a given $sm")
 end
@@ -185,6 +223,7 @@ end
 
     @. aux.cloud_sources = to_sources(S_q_liq, S_q_ice)
 end
+@inline function precompute_aux_moisture_sources!(::CloudyMoisture, dY, Y, aux, t) end
 
 @inline function precompute_aux_precip_sources!(sp::AbstractPrecipitationStyle, aux)
     error("precompute_aux not implemented for a given $sp")
@@ -446,6 +485,76 @@ end
     return nothing
 end
 
+# helper function for precomputing aux sources for cloudy
+@inline function get_coal_sources(cloudy_params, moments, pdists, dt)
+
+    dY_coal_tmp = CL.Coalescence.get_coal_ints(CL.EquationTypes.AnalyticalCoalStyle(), pdists, cloudy_params.coal_data)
+    S_coal = ntuple(length(moments)) do j
+        ifelse(
+            dY_coal_tmp[j] >= 0,
+            dY_coal_tmp[j] * cloudy_params.mom_norms[j],
+            max(dY_coal_tmp[j] * cloudy_params.mom_norms[j], -moments[j] / dt),
+        )
+    end
+
+    return S_coal
+end
+@inline function get_cond_evap_sources(
+    thermo_params,
+    air_params,
+    cloudy_params,
+    q_tot,
+    q_liq,
+    moments,
+    pdists,
+    T,
+    ρ,
+    dt,
+)
+    FT = eltype(pdists[1])
+    q = TD.PhasePartition(q_tot, q_liq, FT(0))
+
+    ξ = CM.Common.G_func(air_params, thermo_params, T, TD.Liquid())
+    ξ_normed = ξ / cloudy_params.norms[2]^(2 / 3)
+    s = TD.supersaturation(thermo_params, q, ρ, T, TD.Liquid())
+    dY_ce_tmp = CL.Condensation.get_cond_evap(pdists, s, ξ_normed) .* cloudy_params.mom_norms
+    S_cond_evap = ntuple(length(moments)) do j
+        ifelse(dY_ce_tmp[j] >= 0, dY_ce_tmp[j], max(dY_ce_tmp[j], -moments[j] / dt))
+    end
+
+    return S_cond_evap
+end
+@inline function precompute_aux_precip_sources!(ps::CloudyPrecip, aux)
+
+    (; common_params, thermo_params, air_params, cloudy_params) = aux
+    (; q_tot, q_liq, moments, pdists) = aux.microph_variables
+    (; T, ρ) = aux.thermo_variables
+    (; dt) = aux.TS
+    (; tmp_cloudy) = aux.scratch
+    (; nm_cloud) = aux.cloudy_variables
+
+    FT = eltype(thermo_params)
+    @. aux.precip_sources.moments *= FT(0)
+
+    # coalescence
+    if Bool(common_params.precip_sources)
+        @. aux.precip_sources.moments += get_coal_sources(cloudy_params, moments, pdists, dt)
+    end
+
+    # condensation or evaporations
+    if Bool(common_params.precip_sinks)
+        @. tmp_cloudy =
+            get_cond_evap_sources(thermo_params, air_params, cloudy_params, q_tot, q_liq, moments, pdists, T, ρ, dt)
+        @. aux.precip_sources.moments += tmp_cloudy
+
+        _valof(::Val{NM}) where {NM} = NM
+        NM1 = _valof(nm_cloud)
+        rain_mass_ind = NM1 + 2
+        @. aux.precip_sources.ρq_vap = -tmp_cloudy.:2 - tmp_cloudy.:($$rain_mass_ind)
+    end
+
+end
+
 """
    Additional source terms
 """
@@ -462,6 +571,11 @@ end
     return dY
 end
 @inline function cloud_sources_tendency!(::MoistureP3, dY, Y, aux, t) end
+@inline function cloud_sources_tendency!(::CloudyMoisture, dY, Y, aux, t)
+    @. dY.ρq_vap += aux.precip_sources.ρq_vap
+    @. dY.ρq_vap += aux.activation_sources.ρq_vap
+    return dY
+end
 
 
 @inline function precip_sources_tendency!(ms::AbstractMoistureStyle, ps::AbstractPrecipitationStyle, dY, Y, aux, t)
@@ -515,5 +629,14 @@ end
     return dY
 end
 @inline function precip_sources_tendency!(ms::MoistureP3, ps::PrecipitationP3, dY, Y, aux, t)
+    return dY
+end
+@inline function precip_sources_tendency!(ms::CloudyMoisture, ps::CloudyPrecip, dY, Y, aux, t)
+
+    precompute_aux_precip_sources!(ps, aux)
+
+    @. dY.moments += aux.precip_sources.moments
+    @. dY.moments += aux.activation_sources.activation
+    @. dY.N_aer += aux.activation_sources.N_aer
     return dY
 end

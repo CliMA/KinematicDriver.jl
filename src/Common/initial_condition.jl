@@ -142,6 +142,7 @@ function initial_condition_1d(
     ρq_rai::FT = q_rai * ρ
     ρq_sno::FT = q_sno * ρ
     ρq_rim::FT = q_rim * ρ
+    ρq_vap::FT = q_vap * ρ
 
     N_liq::FT = FT(0)
     N_ice::FT = FT(0)
@@ -161,6 +162,7 @@ function initial_condition_1d(
         ρq_ice,
         ρq_rai,
         ρq_sno,
+        ρq_vap,
         q_tot,
         q_liq,
         q_ice,
@@ -180,14 +182,13 @@ end
     Populate the remaining profiles based on given initial conditions including total specific water
     content (liquid + rain) and total number concentration
 """
-function initial_condition(
+function initial_condition_0d(
     ::Type{FT},
     thermo_params::TD.Parameters.ThermodynamicsParameters{FT},
     qt::FT,
     Nd::FT,
     k::FT,
     ρ_dry::FT,
-    z,
 ) where {FT}
 
     # qt represents specific water content in cloud and rain. The initialization in PySDM is
@@ -207,6 +208,7 @@ function initial_condition(
     ρq_tot::FT = ρq_liq
     ρq_ice::FT = FT(0)
     ρq_sno::FT = FT(0)
+    ρq_vap::FT = FT(0)
 
     ρ = ρ_dry + ρq_liq
 
@@ -242,6 +244,7 @@ function initial_condition(
         ρq_ice,
         ρq_rai,
         ρq_sno,
+        ρq_vap,
         q_tot,
         q_liq,
         q_ice,
@@ -252,4 +255,29 @@ function initial_condition(
         N_aer,
         zero,
     )
+end
+
+function cloudy_initial_condition(pdists, ip, k = 1)
+
+    NM = sum(CL.ParticleDistributions.nparams.(pdists))
+
+    FT = eltype(ip.ρq_liq)
+    L_tr::FT = ip.ρq_liq + ip.ρq_rai
+    Nd::FT = ip.N_liq + ip.N_rai
+
+    moments::NTuple{NM, FT} = ntuple(NM) do j
+        if j == 1
+            Nd
+        elseif j == 2
+            L_tr
+        elseif j == 3 && CL.ParticleDistributions.nparams(pdists[1]) == 3
+            ifelse(Nd < eps(FT), FT(0), L_tr^2 / Nd * (k + 1) / k)
+        else
+            FT(0)
+        end
+    end
+
+    cloudy_moments_zero::NTuple{NM, FT} = ntuple(_ -> FT(0), NM)
+
+    return merge(ip, (; moments = moments, pdists = pdists, cloudy_moments_zero))
 end

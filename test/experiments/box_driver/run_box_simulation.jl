@@ -58,15 +58,8 @@ function run_box_simulation(::Type{FT}, opts) where {FT}
 
     # Create the initial condition profiles
     init = map(
-        coord -> CO.initial_condition(
-            FT,
-            thermo_params,
-            opts["qt"],
-            opts["prescribed_Nd"],
-            opts["k"],
-            opts["rhod"],
-            coord.z,
-        ),
+        coord ->
+            CO.initial_condition_0d(FT, thermo_params, opts["qt"], opts["prescribed_Nd"], opts["k"], opts["rhod"]),
         coord,
     )
 

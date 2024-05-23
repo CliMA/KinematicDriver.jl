@@ -3,6 +3,7 @@ import KinematicDriver.K1DModel as KID
 import ClimaParams as CP
 import CloudMicrophysics as CM
 import Thermodynamics as TD
+import Cloudy as CL
 
 #! format: off
 function override_toml_dict(
@@ -82,5 +83,62 @@ function create_kid_parameters(toml_dict)
         @warn "The parameter set SHOULD be isbits in order to be stack-allocated."
     end
     return kid_params
+end
+
+function create_cloudy_parameters(FT, dist_names::NTuple{ND, String} = ("gamma", "gamma")) where {ND}
+
+    # Create water category distributions
+    function make_dist(dist_name)
+        if dist_name == "monodisperse"
+            return CL.ParticleDistributions.MonodispersePrimitiveParticleDistribution(FT(0), FT(1))
+        elseif dist_name == "exponential"
+            return CL.ParticleDistributions.GammaPrimitiveParticleDistribution(FT(0), FT(1))
+        elseif dist_name == "gamma"
+            return CL.ParticleDistributions.GammaPrimitiveParticleDistribution(FT(0), FT(1), FT(1))
+        end
+    end
+    pdists::NTuple{ND, CL.ParticleDistributions.PrimitiveParticleDistribution} = map(dist_names) do name
+        make_dist(name)
+    end
+
+    # Create tuple of number of prognostic moments for each distribution
+    NProgMoms::NTuple{ND, Int} = map(pdists) do dist
+        CL.ParticleDistributions.nparams(dist)
+    end
+
+    # Define norms of number per volume and mass of particles
+    norms::Tuple{FT, FT} = (FT(1e6), FT(1e-9)) # 1e6 1/m^3, 1e-9 kg
+
+    # Compute normalizing factors of prognostic moments
+    NM = sum(NProgMoms)
+    mom_norms::NTuple{NM, FT} = CL.get_moments_normalizing_factors(Int.(NProgMoms), norms)
+    
+    # Define collision kernel function
+    kernel_func = CL.KernelFunctions.LinearKernelFunction(5e0) # 5 m^3 / kg / s
+    # kernel_func = CL.KernelFunctions.LongKernelFunction(5.236e-10, 9.44e9, 5.78)
+
+    # Compute matrix of kernel tensors each approximating kernel func as polynomail serries
+    r = 2
+    matrix_of_kernels = ntuple(ND) do i
+        ntuple(ND) do j
+            if i == j == 1
+                CL.KernelTensors.CoalescenceTensor(kernel_func, r, FT(5e-10))
+            else
+                CL.KernelTensors.CoalescenceTensor(kernel_func, r, FT(1e-6), FT(5e-10))
+            end
+        end
+    end
+
+    # Define mass thresholds between water categories
+    mass_thresholds = (5e-10, Inf) # 5e-10 kg
+
+    # Define coalescence data required by Cloudy
+    coal_data::CL.Coalescence.CoalescenceData{ND, r+1, FT, (r+1)^2} = CL.Coalescence.CoalescenceData(matrix_of_kernels, NProgMoms, mass_thresholds, norms)
+    
+    # Define terminal velocity coefficients, assuming vt = sum_i v_i[1] * x^(v_i[2]) 
+    # v1 is normalized by mass norm; v1 = v1 * norm[2] ^ v2
+    vel = ((FT(30), FT(1.0 / 6)),) # 30 kg ^ (-1/6) * m / s
+    cloudy_params = CO.Parameters.CloudyParameters(NProgMoms, norms, mom_norms, coal_data, vel)
+    return cloudy_params, pdists
 end
 #! format: on

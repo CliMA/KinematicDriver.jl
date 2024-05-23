@@ -15,6 +15,7 @@ function run_KiD_col_sed_simulation(::Type{FT}, opts) where {FT}
     precipitation_choice = opts["precipitation_choice"]
     rain_formation_choice = opts["rain_formation_choice"]
     sedimentation_choice = opts["sedimentation_choice"]
+    @info precipitation_choice, rain_formation_choice, sedimentation_choice
 
     # Decide the output flder name based on options
     output_folder = string("Output_", precipitation_choice)
@@ -45,7 +46,8 @@ function run_KiD_col_sed_simulation(::Type{FT}, opts) where {FT}
     air_params = CMP.AirProperties(toml_dict)
     activation_params = CMP.AerosolActivationParameters(toml_dict)
 
-    moisture = CO.get_moisture_type("NonEquilibriumMoisture", toml_dict)
+    moisture_choice = precipitation_choice == "CloudyPrecip" ? "CloudyMoisture" : "NonEquilibriumMoisture"
+    moisture = CO.get_moisture_type(moisture_choice, toml_dict)
     precip = CO.get_precipitation_type(
         precipitation_choice,
         toml_dict,
@@ -53,6 +55,7 @@ function run_KiD_col_sed_simulation(::Type{FT}, opts) where {FT}
         sedimentation_choice = sedimentation_choice,
     )
 
+    @info "Initialising"
     # Initialize the timestepping struct
     TS = CO.TimeStepping(FT(opts["dt"]), FT(opts["dt_output"]), FT(opts["t_end"]))
 
@@ -79,21 +82,30 @@ function run_KiD_col_sed_simulation(::Type{FT}, opts) where {FT}
     )
 
     # Create the initial condition profiles
-    init = map(
-        coord -> CO.initial_condition(
-            FT,
-            thermo_params,
-            opts["qt"],
-            opts["prescribed_Nd"],
-            opts["k"],
-            opts["rhod"],
-            coord.z,
-        ),
-        coord,
-    )
-
-    # Create state vector and apply initial condition
-    Y = CO.initialise_state(moisture, precip, init)
+    if precipitation_choice == "CloudyPrecip"
+        cloudy_params, cloudy_pdists = create_cloudy_parameters(FT)
+        init = map(
+            coord -> CO.cloudy_initial_condition(
+                cloudy_pdists,
+                CO.initial_condition_0d(FT, thermo_params, opts["qt"], opts["prescribed_Nd"], opts["k"], opts["rhod"]),
+                opts["k"],
+            ),
+            coord,
+        )
+    else
+        cloudy_params = nothing
+        init = map(
+            coord -> CO.initial_condition_0d(
+                FT,
+                thermo_params,
+                opts["qt"],
+                opts["prescribed_Nd"],
+                opts["k"],
+                opts["rhod"],
+            ),
+            coord,
+        )
+    end
 
     # Create aux vector and apply initial condition
     aux = K1D.initialise_aux(
@@ -109,7 +121,11 @@ function run_KiD_col_sed_simulation(::Type{FT}, opts) where {FT}
         face_space,
         moisture,
         precip,
+        cloudy_params,
     )
+
+    # Create state vector and apply initial condition
+    Y = CO.initialise_state(moisture, precip, init)
 
     # Output the initial condition
     CO.simulation_output(aux, 0.0)
@@ -124,6 +140,7 @@ function run_KiD_col_sed_simulation(::Type{FT}, opts) where {FT}
 
     # Solve the ODE operator
     problem = ODE.ODEProblem(ode_rhs!, Y, (FT(opts["t_ini"]), FT(opts["t_end"])), aux)
+    @info "Solving"
     solver = ODE.solve(
         problem,
         ODE.SSPRK33(),
@@ -135,6 +152,7 @@ function run_KiD_col_sed_simulation(::Type{FT}, opts) where {FT}
     )
 
     # Some basic plots
+    @info "Plotting"
     plot_folder = string("experiments/KiD_col_sed_driver/", output_folder, "/figures/")
     plot_timeheight_no_ice_snow(
         string("experiments/KiD_col_sed_driver/", output_folder, "/Output.nc"),
@@ -148,7 +166,7 @@ opts = Dict(
     "prescribed_Nd" => 1e8,
     "k" => 2.0,
     "rhod" => 1.0,
-    "precipitation_choice" => "Precipitation1M",
+    "precipitation_choice" => "CloudyPrecip",
     "rain_formation_choice" => "CliMA_1M",
     "sedimentation_choice" => "CliMA_1M",
     "z_min" => 0.0,

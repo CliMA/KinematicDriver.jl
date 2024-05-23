@@ -10,17 +10,15 @@ export AbstractPrecipitationStyle
 #export NoMoisture
 export EquilibriumMoisture
 export NonEquilibriumMoisture
-export EquilibriumMoisture_ρθq
-export EquilibriumMoisture_ρdTq
-export NonEquilibriumMoisture_ρθq
-export NonEquilibriumMoisture_ρdTq
 export MoistureP3
+export CloudyMoisture
 
 export NoPrecipitation
 export Precipitation0M
 export Precipitation1M
 export Precipitation2M
 export PrecipitationP3
+export CloudyPrecip
 
 abstract type AbstractStyle end
 Base.broadcastable(x::AbstractStyle) = Ref(x)
@@ -29,15 +27,9 @@ abstract type AbstractMoistureStyle <: AbstractStyle end
 abstract type AbstractPrecipitationStyle <: AbstractStyle end
 
 #struct NoMoisture <: AbstractMoistureStyle end
-abstract type EquilibriumMoisture <: AbstractMoistureStyle end
-abstract type NonEquilibriumMoisture <: AbstractMoistureStyle end
-struct EquilibriumMoisture_ρθq <: EquilibriumMoisture end
-struct EquilibriumMoisture_ρdTq <: EquilibriumMoisture end
-struct NonEquilibriumMoisture_ρθq{CL, IC} <: NonEquilibriumMoisture
-    liquid::CL
-    ice::IC
-end
-struct NonEquilibriumMoisture_ρdTq{CL, IC} <: NonEquilibriumMoisture
+struct CloudyMoisture <: AbstractMoistureStyle end
+struct EquilibriumMoisture <: AbstractMoistureStyle end
+struct NonEquilibriumMoisture{CL, IC} <: AbstractMoistureStyle
     liquid::CL
     ice::IC
 end
@@ -65,3 +57,4 @@ struct PrecipitationP3{PT, ST, P3} <: AbstractPrecipitationStyle
     sedimentation::ST
     p3_parameters::P3
 end
+struct CloudyPrecip <: AbstractPrecipitationStyle end

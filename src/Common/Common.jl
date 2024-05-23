@@ -7,6 +7,7 @@ import NCDatasets as NC
 import ClimaCore as CC
 import Thermodynamics as TD
 import CloudMicrophysics as CM
+import Cloudy as CL
 
 const CMP = CM.Parameters
 const CMNe = CM.MicrophysicsNonEq
