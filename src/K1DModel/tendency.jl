@@ -112,7 +112,7 @@ end
 
     aerosol_distribution =
         CMAM.AerosolDistribution((CMAM.Mode_κ(r_dry, std_dry, N_aer, (FT(1),), (FT(1),), (FT(0),), (κ,)),))
-    N_act = CMAA.N_activated_per_mode(activation_params, aerosol_distribution, air_params, thermo_params, T, p, w, q)[1]
+    N_act = CMAA.total_N_activated(activation_params, aerosol_distribution, air_params, thermo_params, T, p, w, q)
 
     S_Nl = ifelse(S < 0 || isnan(N_act), FT(0), max(FT(0), N_act - N_liq) / dt)
 
