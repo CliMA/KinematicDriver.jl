@@ -1,6 +1,23 @@
 """
 Aerosol activation tendencies
 """
+
+@inline function find_cloud_base(S_Nl, z, cloud_base_S_Nl_and_z)
+    # Find S_Nl and z at cloud base:
+    z_min = minimum(parent(z)) # height at first level (only works without topography)
+    CC.Operators.column_mapreduce!(
+        tuple,  # At every point map the input S_Nl and z into a tuple that will be used by reduce
+        ((target_S_Nl_value, target_z_value), (S_Nl_value, z_value)) -> ifelse(
+            target_z_value == z_min && S_Nl_value >= 1e7,
+            (S_Nl_value, z_value),
+            (target_S_Nl_value, target_z_value),
+        ), # reduction function
+        cloud_base_S_Nl_and_z, # destination for output (a field of tuples)
+        S_Nl, # input
+        z, # input
+    )
+end
+
 @inline function precompute_aux_activation!(sp::CO.AbstractPrecipitationStyle, dY, Y, aux, t)
     error("activation_tendency not implemented for a given $sp")
 end
@@ -60,28 +77,16 @@ end
     # Convert the total activated number to tendency
     @. S_Nl = ifelse(S_liq < 0 || isnan(N_act), FT(0), max(FT(0), N_act - N_liq) / dt)
 
-    # Find S_Nl and z at cloud base:
-    z = CC.Fields.coordinate_field(S_Nl).z # height
-    z_min = minimum(z) # height at first level (only works without topography)
-    CC.Operators.column_mapreduce!(
-        tuple,  # At every point map the input S_Nl and z into a tuple that will be used by reduce
-        ((target_S_Nl_value, target_z_value), (S_Nl_value, z_value)) -> ifelse(
-            target_z_value == z_min && S_Nl_value >= 1e7,
-            (S_Nl_value, z_value),
-            (target_S_Nl_value, target_z_value),
-        ), # reduction function
-        cloud_base_S_Nl_and_z, # destination for output (a field of tuples)
-        S_Nl, # input
-        z, # input
-    )
-
     # Use the S_Nl tendnecy at cloud base
+    z = CC.Fields.coordinate_field(S_Nl).z # height
+    find_cloud_base(S_Nl, z, cloud_base_S_Nl_and_z)
+
     @. S_Nl = ifelse(z == last(cloud_base_S_Nl_and_z), S_Nl, FT(0))
     @. aux.activation_sources = to_sources(-S_Nl, S_Nl)
 end
 
 # helper functions for precomputing aux activation for cloudy
-@inline function get_aerosol_tendency(
+@inline function get_aerosol_activation_rate(
     kid_params,
     thermo_params,
     air_params,
@@ -98,7 +103,6 @@ end
 )
     FT = eltype(q_tot)
     S_Nl::FT = FT(0)
-    S_Na::FT = FT(0)
 
     q = TD.PhasePartition(q_tot, q_liq, FT(0))
     S::FT = TD.supersaturation(thermo_params, q, ρ, T, TD.Liquid())
@@ -111,23 +115,22 @@ end
     N_act = CMAA.N_activated_per_mode(activation_params, aerosol_distribution, air_params, thermo_params, T, p, w, q)[1]
 
     S_Nl = ifelse(S < 0 || isnan(N_act), FT(0), max(FT(0), N_act - N_liq) / dt)
-    S_Na = -S_Nl
 
-    return S_Na
+    return S_Nl
 end
-@inline function get_activation_sources(S_Na, cloudy_params)
-    FT = eltype(S_Na)
+@inline function get_activation_sources(S_Nl, cloudy_params)
+    FT = eltype(S_Nl)
     r = FT(2.0e-6) # 2.0 μm
     v = 4 / 3 * π * r^3
     m = v * FT(1000)
     shape = 2
     S_act = ntuple(length(cloudy_params.mom_norms)) do k
         if k == 1
-            -S_Na
+            S_Nl
         elseif k == 2
-            -S_Na * m * shape
+            S_Nl * m * shape
         elseif k == 3 && cloudy_params.NProgMoms[1] == 3
-            -S_Na * m^(k - 1) * shape * (shape + 1)
+            S_Nl * m^(k - 1) * shape * (shape + 1)
         else
             FT(0)
         end
@@ -142,9 +145,13 @@ end
     (; T, p, ρ) = aux.thermo_variables
     (; ρw) = aux.prescribed_velocity
     (; dt) = aux.TS
+    S_Nl = aux.scratch.tmp
+    cloud_base_S_Nl_and_z = aux.scratch.tmp_surface
+    FT = eltype(thermo_params)
+    f_interp = CC.Operators.InterpolateF2C()
 
     @. N_aer = Y.N_aer
-    @. aux.activation_sources.N_aer = get_aerosol_tendency(
+    @. S_Nl = get_aerosol_activation_rate(
         kid_params,
         thermo_params,
         air_params,
@@ -156,10 +163,16 @@ end
         T,
         p,
         ρ,
-        CC.Operators.InterpolateF2C().(ρw.components.data.:1),
+        f_interp.(ρw.components.data.:1),
         dt,
     )
-    @. aux.activation_sources.activation = get_activation_sources(aux.activation_sources.N_aer, cloudy_params)
+    # Use the S_Nl tendnecy at cloud base 
+    z = CC.Fields.coordinate_field(S_Nl).z # height
+    find_cloud_base(S_Nl, z, cloud_base_S_Nl_and_z)
+    @. S_Nl = ifelse(z == last(cloud_base_S_Nl_and_z), S_Nl, FT(0))
+
+    @. aux.activation_sources.N_aer = -1 * S_Nl
+    @. aux.activation_sources.activation = get_activation_sources(S_Nl, cloudy_params)
     @. aux.activation_sources.ρq_vap = -aux.activation_sources.activation.:2
 end
 
