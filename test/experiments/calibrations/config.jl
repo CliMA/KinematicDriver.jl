@@ -123,9 +123,9 @@ function get_model_config()
     config["κ"] = 0.9
     config["filter"] = KCP.make_filter_props(
         config["n_elem"],
-        config["t_calib"];
+        config["t_calib"],
+        [2, 2]; # nz_per_filtered_cell (for each variable)
         apply = true,
-        nz_per_filtered_cell = 2,
         nt_per_filtered_cell = 120,
     )
     # Define default parameters

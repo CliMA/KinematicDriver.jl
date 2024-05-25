@@ -2,12 +2,12 @@
 function get_obs!(config::Dict)
 
     FT = config["observations"]["data_type"]
-    _variables::Array{String} = config["observations"]["data_names"]
+    _variables::Vector{String} = config["observations"]["data_names"]
     _n_heights = get_numbers_from_config(config).n_heights
-    _dz = (config["model"]["z_max"] - config["model"]["z_min"]) / _n_heights
-    _heights::Array{FT} =
-        collect(range(config["model"]["z_min"] + _dz / 2, config["model"]["z_max"] - _dz / 2, _n_heights))
-    _times::Array{FT} = collect(config["model"]["t_calib"])
+    _dz = (config["model"]["z_max"] - config["model"]["z_min"]) ./ _n_heights
+    _heights::Vector{Vector{FT}} =
+        collect.(range.(config["model"]["z_min"] .+ _dz ./ 2, config["model"]["z_max"] .- _dz ./ 2, _n_heights))
+    _times::Vector{FT} = collect(config["model"]["t_calib"])
 
     if config["observations"]["data_source"] == "file"
         _cases::Vector{<:Any} = config["observations"]["cases"]
@@ -25,9 +25,9 @@ end
 
 function get_obs_matrix(
     cases::Vector{<:Any},
-    variables::Array{String},
-    heights::Array{FT},
-    times::Array{FT};
+    variables::Vector{String},
+    heights::Vector{Vector{FT}},
+    times::Vector{FT};
     apply_filter::Bool = false,
 ) where {FT <: Real}
 
@@ -51,14 +51,14 @@ end
 
 function get_obs_matrix(
     dir::String,
-    variables::Array{String},
-    heights::Array{FT},
-    times::Array{FT};
+    variables::Vector{String},
+    heights::Vector{Vector{FT}},
+    times::Vector{FT};
     apply_filter::Bool = false,
 ) where {FT <: Real}
 
     _n_times = apply_filter ? length(times) - 1 : length(times)
-    _n_single_data_vector_size::Int = length(heights) * _n_times * length(variables)
+    _n_single_data_vector_size::Int = sum(length.(heights)) * _n_times
 
     _data_matrix = zeros(FT, _n_single_data_vector_size, 0)
     foreach(readdir(dir)) do file
@@ -73,9 +73,9 @@ end
 
 function get_single_obs_vector(
     filename::String,
-    variables::Array{String},
-    heights::Array{FT},
-    times::Array{FT};
+    variables::Vector{String},
+    heights::Vector{Vector{FT}},
+    times::Vector{FT};
     apply_filter::Bool = false,
 ) where {FT <: Real}
     _data_dict = Dict()
@@ -96,9 +96,9 @@ end
 
 function get_single_obs_field(
     filename::String,
-    variables::Array{String},
-    heights::Array{FT},
-    times::Array{FT};
+    variables::Vector{String},
+    heights::Vector{Vector{FT}},
+    times::Vector{FT};
     apply_filter::Bool = false,
 ) where {FT <: Real}
 
@@ -122,7 +122,7 @@ function get_single_obs_field(
         end
     end
 
-    for var in variables
+    for (i, var) in enumerate(variables)
         if var == "qt"
             _r_tot = _rv .+ _data_pysdm["qc"] .* 1e-3
             _data = _r_tot ./ (1 .+ _r_tot)
@@ -170,19 +170,25 @@ function get_single_obs_field(
             _data = _data_pysdm[var]
         end
 
-        _f = linear_interpolation((_t_data, _z_data), _data, extrapolation_bc = Line())
+        _heights = heights[i]
+        if length(size(_data)) == 1
+            _f_1d = linear_interpolation(_t_data, _data, extrapolation_bc = Line())
+            _f(t, z) = _f_1d(t)
+        else
+            _f = linear_interpolation((_t_data, _z_data), _data, extrapolation_bc = Line())
+        end
         if apply_filter
             _dz_data = _z_data[2] - _z_data[1]
             _n_z_data = length(_z_data)
-            _dz_heights = heights[2] - heights[1]
-            _n_heights = length(heights)
+            _dz_heights = _heights[2] - _heights[1]
+            _n_heights = length(_heights)
             _t_data_c = [0.5 * (_t_data[i] + _t_data[i + 1]) for i in 1:(length(_t_data) - 1)]
             _data_c = [_f(t, z) for z in _z_data, t in _t_data_c]
-            _heights_f = collect(range(heights[1] - _dz_heights / 2, heights[end] + _dz_heights / 2, _n_heights + 1))
+            _heights_f = collect(range(_heights[1] - _dz_heights / 2, _heights[end] + _dz_heights / 2, _n_heights + 1))
             _z_data_f = collect(range(_z_data[1] - _dz_data / 2, _z_data[end] + _dz_data / 2, _n_z_data + 1))
             _output[var] = filter_field(_data_c, _t_data, times, _z_data_f, _heights_f)
         else
-            _output[var] = [_f(t, z) for z in heights, t in times]
+            _output[var] = [_f(t, z) for z in _heights, t in times]
         end
     end
 

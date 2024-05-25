@@ -31,17 +31,17 @@ end
         "tikhonov_noise" => 0.0,
     )
     n_cases = 1
-    n_variables = 2
-    n_heights = 3
+    n_heights = [3, 3]
+    n_variables = length(n_heights)
     n_times = 2
-    n_tot = n_cases * n_variables * n_heights * n_times
+    n_tot = n_cases * sum(n_heights) * n_times
     n_samples = 50
     case_number = 1
     obs = rand(n_tot, n_samples)
     covmat = cov(obs, dims = 2)
 
     #action
-    ref_stats = KCP.ReferenceStatistics(obs, stats_config, case_number, n_variables, n_heights, n_times)
+    ref_stats = KCP.ReferenceStatistics(obs, stats_config, case_number, n_heights, n_times)
 
     #test
     @test length(ref_stats.y_full) == n_tot
@@ -57,7 +57,6 @@ end
     @test size(ref_stats.var_std_max) == (n_cases, n_variables)
     @test ref_stats.centered == false
     @test ref_stats.case_numbers == [case_number]
-    @test ref_stats.n_variables == n_variables
     @test ref_stats.n_heights == n_heights
     @test ref_stats.n_times == n_times
 
@@ -71,7 +70,7 @@ end
     )
 
     #action
-    ref_stats = KCP.ReferenceStatistics(obs, stats_config, case_number, n_variables, n_heights, n_times)
+    ref_stats = KCP.ReferenceStatistics(obs, stats_config, case_number, n_heights, n_times)
 
     #test
     @test length(ref_stats.y_full) == n_tot
@@ -85,7 +84,6 @@ end
     @test size(ref_stats.var_std_max) == (n_cases, n_variables)
     @test ref_stats.centered == false
     @test ref_stats.case_numbers == [case_number]
-    @test ref_stats.n_variables == n_variables
     @test ref_stats.n_heights == n_heights
     @test ref_stats.n_times == n_times
 
@@ -99,7 +97,7 @@ end
     )
 
     #action
-    ref_stats = KCP.ReferenceStatistics(obs, stats_config, case_number, n_variables, n_heights, n_times)
+    ref_stats = KCP.ReferenceStatistics(obs, stats_config, case_number, n_heights, n_times)
 
     #test
     @test ref_stats.y_norm == ref_stats.var_std_max
@@ -109,11 +107,10 @@ end
 @testset "normalize observations" begin
     # setup
     n_cases = 2
-    n_heights = 2
+    n_heights = [2, 2]
     n_times = 2
-    n_vars = 2
     n_samples = 20
-    obs = rand(n_cases * n_vars * n_heights * n_times, n_samples) .* 10.0
+    obs = rand(n_cases * sum(n_heights) * n_times, n_samples) .* 10.0
     obs_m = mean(obs, dims = 2)
     norm_vecs = [
         maximum([obs_m[1:2]; obs_m[5:6]]) maximum([obs_m[3:4]; obs_m[7:8]])
@@ -130,7 +127,7 @@ end
     )
 
     #action
-    ref_stats = KCP.combine_ref_stats(KCP.make_ref_stats_list(obs, stats_config, n_cases, n_vars, n_heights, n_times))
+    ref_stats = KCP.combine_ref_stats(KCP.make_ref_stats_list(obs, stats_config, n_cases, n_heights, n_times))
 
     #test
     @test ref_stats.y_norm == ref_stats.var_mean_max == norm_vecs
