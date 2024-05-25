@@ -60,7 +60,7 @@ end
     #action
     single_case_vec = KCP.get_case_i_vec(vec, 1, n_single_case)
     fields = KCP.get_single_case_fields(single_case_vec, n_z, n_t)
-    
+
     #test
     length(single_case_vec) == n_single_case
     for i in 1:length(n_z)

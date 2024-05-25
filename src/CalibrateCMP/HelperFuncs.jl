@@ -49,19 +49,15 @@ function get_numbers_from_config(config::Dict)
     n_times =
         config["model"]["filter"]["apply"] ? length(config["model"]["t_calib"]) - 1 : length(config["model"]["t_calib"])
 
-    return (; 
-        n_cases, 
-        n_heights, 
-        n_times,
-        )
+    return (; n_cases, n_heights, n_times)
 end
 
 function get_case_i_vec(vec::Vector{FT}, i::Int, n_single_case::Int) where {FT <: Real}
-    return vec[((i-1) * n_single_case + 1):(i * n_single_case)]
+    return vec[((i - 1) * n_single_case + 1):(i * n_single_case)]
 end
 
 function get_single_case_fields(vec_single_case::Vector{FT}, n_heights::Vector{Int}, n_times::Int) where {FT <: Real}
-    
+
     n_variables = length(n_heights)
     n_single_time = sum(n_heights)
 
@@ -72,7 +68,7 @@ function get_single_case_fields(vec_single_case::Vector{FT}, n_heights::Vector{I
     m_ = reshape(vec_single_case, n_single_time, n_times)
     fields = ntuple(n_variables) do j
         _last_ind = j == 1 ? 0 : sum(n_heights[1:(j - 1)])
-        m_[_last_ind+1:_last_ind+n_heights[j], :]
+        m_[(_last_ind + 1):(_last_ind + n_heights[j]), :]
     end
     return fields
 end

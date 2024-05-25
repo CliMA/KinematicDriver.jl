@@ -242,21 +242,20 @@ function ODEsolution2Gvector(ODEsol, aux, precip, variables, filter)
         for j in 1:_nt_per_filtered_cell
             u = ODEsol[:, (i - 1) * _nt_per_filtered_cell + j]
             for (k, var) in enumerate(variables)
-                _range = sum(_nz[1:k-1])+1:sum(_nz[1:k])
-                _single_filtered_cell_data[_range, j] =
-                    CO.get_variable_data_from_ODE(u, aux, precip, var)
+                _range = (sum(_nz[1:(k - 1)]) + 1):sum(_nz[1:k])
+                _single_filtered_cell_data[_range, j] = CO.get_variable_data_from_ODE(u, aux, precip, var)
             end
         end
 
         # filter data spatially
         for j in 1:_n_variables
             for k in 1:_nz_filtered[j]
-                _ind = sum(_nz[1:j-1]) + (k-1)*_nz_per_filtered_cell[j]
-                _range = _ind+1:_ind+_nz_per_filtered_cell[j]
+                _ind = sum(_nz[1:(j - 1)]) + (k - 1) * _nz_per_filtered_cell[j]
+                _range = (_ind + 1):(_ind + _nz_per_filtered_cell[j])
                 outputs = [outputs; mean(_single_filtered_cell_data[_range, :])]
             end
         end
-        
+
     end
 
     return outputs
