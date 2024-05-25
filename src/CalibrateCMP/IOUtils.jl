@@ -177,20 +177,14 @@ function compare_model_and_obs_contours(
     levels = 10,
     linewidth = 0.5,
     fontsize = 10,
-    overlay = false,
     G_title = "model",
     obs_title = "observation",
     path = "output",
     file_base = "model_vs_obs_contours",
 ) where {FT <: Float64}
 
-    _n_heights =
-        config["model"]["filter"]["apply"] == true ? config["model"]["filter"]["nz_filtered"] :
-        config["model"]["n_elem"]
-    _dz = (config["model"]["z_max"] - config["model"]["z_min"]) / _n_heights
-    _heights::Array{FT} =
-        collect(range(config["model"]["z_min"] + _dz / 2, config["model"]["z_max"] - _dz / 2, _n_heights))
-    _heights_f::Array{FT} = collect(range(config["model"]["z_min"], config["model"]["z_max"], _n_heights + 1))
+    (; n_cases, n_heights, n_times) = get_numbers_from_config(config)
+
     _dt = (config["model"]["t_end"] - config["model"]["t_ini"]) / length(config["model"]["t_calib"])
     _times_f::Array{FT} = collect(config["model"]["t_calib"])
     _times_c::Array{FT} = collect(
@@ -201,121 +195,82 @@ function compare_model_and_obs_contours(
         ),
     )
     _times::Array{FT} = config["model"]["filter"]["apply"] == true ? _times_c : _times_f
-    _n_times = config["model"]["filter"]["apply"] == true ? length(_times_c) : length(_times_f)
     _variables_full = config["observations"]["data_names"]
     @assert issubset(Set(variables), Set(_variables_full))
-    _n_variables = length(variables)
-    _n_variables_full = length(_variables_full)
-    _n_cases = length(config["observations"]["cases"])
-    _single_case_vector_size = _n_heights * _n_times * _n_variables_full
+    n_variables = length(variables)
+    n_variables_full = length(_variables_full)
+    @assert n_variables_full == length(n_heights)
+    n_single_case = sum(n_heights) * n_times
 
-    layout = (2, _n_variables)
+    layout = (2, n_variables)
     titles = vcat([v * "_" * G_title for v in variables], [v * "_" * obs_title for v in variables])
-    legend = ": " * obs_title * " --,  " * G_title * " -"
-    titles_overlay = vcat([v * legend for v in variables], [v * " error" for v in variables])
+    
+    for case_num in 1:n_cases
+        _v_model = get_case_i_vec(G, case_num, n_single_case)
+        _v_obs = get_case_i_vec(obs, case_num, n_single_case)
+        _fields_model = get_single_case_fields(_v_model, n_heights, n_times)
+        _fields_obs = get_single_case_fields(_v_obs, n_heights, n_times)
 
-    for case_num in 1:_n_cases
-        _vector_elements_range = ((case_num - 1) * _single_case_vector_size + 1):(case_num * _single_case_vector_size)
-        _G_matrix = reshape(G[_vector_elements_range], _n_heights * _n_variables_full, _n_times)
-        _obs_matrix = reshape(obs[_vector_elements_range], _n_heights * _n_variables_full, _n_times)
+        p = Array{Plots.Plot}(undef, n_variables * 2)
 
-        p = Array{Plots.Plot}(undef, _n_variables * 2)
-
-        if overlay
-            if config["model"]["filter"]["apply"] == true
-                print("Overlaid heatmaps not possible!! Plotting contours instead!!")
-            end
+        for (i, _data) in enumerate([_fields_model, _fields_obs])
             k = 1
-            for j in 1:_n_variables_full
+            for j in 1:n_variables_full
                 if !(_variables_full[j] in variables)
                     continue
                 end
 
-                _G_matrix_var = _G_matrix[((j - 1) * _n_heights + 1):(j * _n_heights), :]
-                _f_G = LinearInterpolation((_heights, _times), _G_matrix_var, extrapolation_bc = Line())
-                _G_matrix_f = [_f_G(z, t) for z in _heights_f, t in _times_f]
-                _obs_matrix_var = _obs_matrix[((j - 1) * _n_heights + 1):(j * _n_heights), :]
-                _f_obs = LinearInterpolation((_heights, _times), _obs_matrix_var, extrapolation_bc = Line())
-                _obs_matrix_f = [_f_obs(z, t) for z in _heights_f, t in _times_f]
-
-                p[k] = contour(
-                    _times_f ./ 60,
-                    _heights_f ./ 1000,
-                    _obs_matrix_f,
-                    levels = levels,
-                    linewidth = linewidth,
-                    linestyle = :dash,
-                    xlabel = "time [min]",
-                    ylabel = "height [km]",
-                    title = titles_overlay[k],
-                )
-                p[k] = contour!(_times_f ./ 60, _heights_f ./ 1000, _G_matrix_f, levels = levels, linewidth = linewidth)
-                k = k + 1
-            end
-            k = 1
-            for j in 1:_n_variables_full
-                if !(_variables_full[j] in variables)
-                    continue
-                end
-                p[_n_variables + k] = contour(
-                    _times_f ./ 60,
-                    _heights_f ./ 1000,
-                    abs.(_G_matrix_f .- _obs_matrix_f),
-                    levels = 0:0.05:1.0,
-                    linewidth = linewidth,
-                    xlabel = "time [min]",
-                    ylabel = "height [km]",
-                    title = titles_overlay[_n_variables + k],
-                )
-                k = k + 1
-            end
-        else
-            for (i, _data) in enumerate([_G_matrix, _obs_matrix])
-                k = 1
-                for j in 1:_n_variables_full
-                    if !(_variables_full[j] in variables)
-                        continue
-                    end
-
-                    _data_var = _data[((j - 1) * _n_heights + 1):(j * _n_heights), :]
+                # find z levels for variable j
+                _dz = (config["model"]["z_max"] - config["model"]["z_min"]) / n_heights[j]
+                _heights::Array{FT} =
+                    collect(range(config["model"]["z_min"] + _dz / 2, config["model"]["z_max"] - _dz / 2, n_heights[j]))
+                _heights_f::Array{FT} = collect(range(config["model"]["z_min"], config["model"]["z_max"], n_heights[j] + 1))
+                
+                # find data for variable j
+                _data_var = _data[j]
+                if n_heights[j] == 1
+                    _f_1d = LinearInterpolation(_times, _data_var[:], extrapolation_bc = Line())
+                    _f(z, t) = _f_1d(t)
+                else
                     _f = LinearInterpolation((_heights, _times), _data_var, extrapolation_bc = Line())
-                    _data_f = [_f(z, t) for z in _heights_f, t in _times_f]
-                    _data_c = [_f(z, t) for z in _heights, t in _times_c]
-
-                    if config["model"]["filter"]["apply"] == true
-                        p[(i - 1) * _n_variables + k] = heatmap(
-                            _times_c ./ 60,
-                            _heights ./ 1000,
-                            _data_c,
-                            xlabel = "time [min]",
-                            ylabel = "height [km]",
-                            title = titles[(i - 1) * _n_variables + k],
-                        )
-                    else
-                        p[(i - 1) * _n_variables + k] = contourf(
-                            _times_f ./ 60,
-                            _heights_f ./ 1000,
-                            _data_f,
-                            levels = levels,
-                            linewidth = linewidth,
-                            xlabel = "time [min]",
-                            ylabel = "height [km]",
-                            title = titles[(i - 1) * _n_variables + k],
-                        )
-                    end
-                    k = k + 1
                 end
+                _data_f = [_f(z, t) for z in _heights_f, t in _times_f]
+                _data_c = [_f(z, t) for z in _heights, t in _times_c]
+
+                if config["model"]["filter"]["apply"] == true
+                    p[(i - 1) * n_variables + k] = heatmap(
+                        _times_c ./ 60,
+                        _heights ./ 1000,
+                        _data_c,
+                        xlabel = "time [min]",
+                        ylabel = "height [km]",
+                        title = titles[(i - 1) * n_variables + k],
+                    )
+                else
+                    p[(i - 1) * n_variables + k] = contourf(
+                        _times_f ./ 60,
+                        _heights_f ./ 1000,
+                        _data_f,
+                        levels = levels,
+                        linewidth = linewidth,
+                        xlabel = "time [min]",
+                        ylabel = "height [km]",
+                        title = titles[(i - 1) * n_variables + k],
+                    )
+                end
+                k = k + 1
             end
         end
+        
         fig = plot(
             p...,
             layout = layout,
             labelfontsize = fontsize,
             titlefontsize = fontsize,
-            size = (_n_variables * 675, 750),
-            left_margin = _n_variables * 3Plots.mm,
+            size = (n_variables * 675, 750),
+            left_margin = n_variables * 3Plots.mm,
             right_margin = 0Plots.mm,
-            bottom_margin = _n_variables * 2Plots.mm,
+            bottom_margin = n_variables * 2Plots.mm,
         )
         path = joinpath(@__DIR__, path)
         mkpath(path)

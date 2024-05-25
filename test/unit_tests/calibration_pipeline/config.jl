@@ -88,7 +88,7 @@ function get_model_config()
     config["r_dry"] = 0.04 * 1e-6
     config["std_dry"] = 1.4
     config["κ"] = 0.9
-    config["filter"] = KCP.make_filter_props(config["n_elem"], config["t_calib"]; apply = false)
+    config["filter"] = KCP.make_filter_props(config["n_elem"], config["t_calib"], [1, 1]; apply = false)
     # Define default parameters
     params = create_parameter_set()
     config["toml_dict"] = params.toml_dict
