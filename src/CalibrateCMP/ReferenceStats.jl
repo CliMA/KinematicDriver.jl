@@ -115,12 +115,7 @@ Base.@kwdef struct ReferenceStatistics{FT <: Real}
 
 end
 
-function find_mean_and_std_maximum(
-    y::Matrix{FT},
-    n_cases::Int,
-    n_heights::Vector{Int},
-    n_times::Int,
-) where {FT <: Real}
+function find_mean_and_std_maximum(y::Matrix{FT}, n_cases::Int, n_heights::Vector{Int}, n_times::Int) where {FT <: Real}
 
     _n_variables = length(n_heights)
     _n_single_case_sim = sum(n_heights) * n_times
@@ -133,15 +128,18 @@ function find_mean_and_std_maximum(
 
         _y_mean_vector_single_case = mean(_y_single_case, dims = 2)
         _y_mean_matrix::Matrix{FT} = reshape(_y_mean_vector_single_case, sum(n_heights), n_times)
-        _var_mean_max =
-            [maximum(abs.(_y_mean_matrix[sum(n_heights[1:j - 1])+1:sum(n_heights[1:j]), :])) for j in 1:_n_variables]
+        _var_mean_max = [
+            maximum(abs.(_y_mean_matrix[(sum(n_heights[1:(j - 1)]) + 1):sum(n_heights[1:j]), :])) for
+            j in 1:_n_variables
+        ]
         _var_mean_max = ifelse.(_var_mean_max .> eps(FT), _var_mean_max, 1.0)
         var_mean_max[i, :] = _var_mean_max
 
         _y_std_vector_single_case = std(_y_single_case, dims = 2)
         _y_std_matrix::Matrix{FT} = reshape(_y_std_vector_single_case, sum(n_heights), n_times)
-        _var_std_max =
-            [maximum(abs.(_y_std_matrix[sum(n_heights[1:j - 1])+1:sum(n_heights[1:j]), :])) for j in 1:_n_variables]
+        _var_std_max = [
+            maximum(abs.(_y_std_matrix[(sum(n_heights[1:(j - 1)]) + 1):sum(n_heights[1:j]), :])) for j in 1:_n_variables
+        ]
         _var_std_max = ifelse.(_var_std_max .> eps(FT), _var_std_max, 1.0)
         var_std_max[i, :] = _var_std_max
 
@@ -169,7 +167,7 @@ function normalize_obs(
         _norm_vec = ynorm[i, :]
         _norm_vec_extended_single_time = zeros(sum(n_heights))
         for j in 1:_n_variables
-            _norm_vec_extended_single_time[sum(n_heights[1:j-1])+1:sum(n_heights[1:j])] .= _norm_vec[j]
+            _norm_vec_extended_single_time[(sum(n_heights[1:(j - 1)]) + 1):sum(n_heights[1:j])] .= _norm_vec[j]
         end
         _norm_vec_extended = reshape(ones(sum(n_heights), n_times) .* _norm_vec_extended_single_time, :, 1)
         _row_indeces = ((i - 1) * _n_single_case_sim + 1):(i * _n_single_case_sim)
@@ -198,7 +196,7 @@ function normalize_sim(
         _norm_vec = _ynorm[i, :]
         _norm_vec_extended_single_time = zeros(sum(_n_heights))
         for j in 1:_n_variables
-            _norm_vec_extended_single_time[sum(_n_heights[1:j-1])+1:sum(_n_heights[1:j])] .= _norm_vec[j]
+            _norm_vec_extended_single_time[(sum(_n_heights[1:(j - 1)]) + 1):sum(_n_heights[1:j])] .= _norm_vec[j]
         end
         _norm_vec_extended = reshape(ones(sum(_n_heights), _n_times) .* _norm_vec_extended_single_time, :, 1)
         _indeces = ((i - 1) * _n_single_case_sim + 1):(i * _n_single_case_sim)
@@ -227,7 +225,7 @@ function unnormalize_sim(
         _norm_vec = _ynorm[i, :]
         _norm_vec_extended_single_time = zeros(sum(_n_heights))
         for j in 1:_n_variables
-            _norm_vec_extended_single_time[sum(_n_heights[1:j-1])+1:sum(_n_heights[1:j])] .= _norm_vec[j]
+            _norm_vec_extended_single_time[(sum(_n_heights[1:(j - 1)]) + 1):sum(_n_heights[1:j])] .= _norm_vec[j]
         end
         _norm_vec_extended = reshape(ones(sum(_n_heights), _n_times) .* _norm_vec_extended_single_time, :, 1)
         _indeces = ((i - 1) * _n_single_case_sim + 1):(i * _n_single_case_sim)
@@ -274,7 +272,7 @@ function make_ref_stats_list(
     n_heights::Vector{Int},
     n_times::Int,
 ) where {FT <: Real}
-    
+
     _n_single_case_sim = sum(n_heights) * n_times
     @assert n_cases * _n_single_case_sim == size(obs)[1]
     ref_stats_list = ReferenceStatistics[]
@@ -322,7 +320,7 @@ function combine_ref_stats(ref_stats_list::Vector{ReferenceStatistics})
         Γ_full = make_block_diagonal_matrix(Γ_full, ref_stats.Γ_full)
         Γ = make_block_diagonal_matrix(Γ, ref_stats.Γ)
     end
-    
+
     RS = ReferenceStatistics(;
         y = y,
         Γ = Γ,

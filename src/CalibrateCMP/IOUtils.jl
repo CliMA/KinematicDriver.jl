@@ -204,7 +204,7 @@ function compare_model_and_obs_contours(
 
     layout = (2, n_variables)
     titles = vcat([v * "_" * G_title for v in variables], [v * "_" * obs_title for v in variables])
-    
+
     for case_num in 1:n_cases
         _v_model = get_case_i_vec(G, case_num, n_single_case)
         _v_obs = get_case_i_vec(obs, case_num, n_single_case)
@@ -224,8 +224,9 @@ function compare_model_and_obs_contours(
                 _dz = (config["model"]["z_max"] - config["model"]["z_min"]) / n_heights[j]
                 _heights::Array{FT} =
                     collect(range(config["model"]["z_min"] + _dz / 2, config["model"]["z_max"] - _dz / 2, n_heights[j]))
-                _heights_f::Array{FT} = collect(range(config["model"]["z_min"], config["model"]["z_max"], n_heights[j] + 1))
-                
+                _heights_f::Array{FT} =
+                    collect(range(config["model"]["z_min"], config["model"]["z_max"], n_heights[j] + 1))
+
                 # find data for variable j
                 _data_var = _data[j]
                 if n_heights[j] == 1
@@ -261,7 +262,7 @@ function compare_model_and_obs_contours(
                 k = k + 1
             end
         end
-        
+
         fig = plot(
             p...,
             layout = layout,
