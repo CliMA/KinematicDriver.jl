@@ -1,11 +1,15 @@
 # KinematicDriver.jl
 
-`KinematicDriver.jl` provides tools for prescribed flow simulations for testing and calibrating microphysics schemes.
-It uses
-  [ClimaCore.jl](https://github.com/CliMA/ClimaCore.jl) operators and
-  [CloudMicrophysics.jl](https://github.com/CliMA/CloudMicrophysics.jl) tendencies
-  to create the numerical problem that is then solved using
-  [OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl).
+`KinematicDriver.jl` (KiD) is a Julia package that provides tools for prescribed flow simulations, and it is used for testing and calibrating microphysics schemes. It serves as a simple substitute for a dynamical core, acting as a driver for bulk cloud microphysics parameterization schemes. KiD is designed to facilitate the assessment of microphysical parameterizations. By prescribing both the momentum and temperature fields, it prevents any feedback between the dynamics and the microphysics, ensuring that variations in results can only be attributed to microphysics parameterizations. An important characteristic of the KiD model is its computational efficiency, which is crucial for efficient parameter calibrations.
+The prescribed flow is described by the equation:
+```math
+\begin{align}
+    \rho w(z,t) = (\rho w)_0 \sin\left(\frac{\pi t}{t_1}\right),\quad 0<t<t_1,
+\end{align}
+```
+where ``t_1`` defines the upper time limit of the updraft, ``\rho`` is the dry air density, ``w`` represents the vertical velocity component and ``(\rho w)_0`` denotes the maximum updraft momentum.
+
+Inside `KinematicDriver.jl` we use [ClimaCore.jl](https://github.com/CliMA/ClimaCore.jl) operators and [CloudMicrophysics.jl](https://github.com/CliMA/CloudMicrophysics.jl) tendencies to create the numerical problem that is then solved using [OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl).
 
 ## Documentation outline
 
