@@ -60,7 +60,7 @@ end
 function get_observations_config()
     config = Dict()
     # Define data names.
-    config["data_names"] = ["rl", "rr"]
+    config["data_names"] = ["rl", "rr", "Z_top"]
     # Define source of data: "file" or "perfect_model"
     config["data_source"] = "perfect_model"
     # Define number of samples for validation
@@ -72,7 +72,7 @@ function get_observations_config()
     # Define offset of true values from prior means for validation
     config["true_values_offset"] = 0.25
     # Define data
-    root_dir = "/Users/sajjadazimi/Postdoc/Results/01-PySDM_1D_rain_shaft/data/03-p1000/"
+    root_dir = "/Users/caterinacroci/Desktop/MasterThesis/"
     config["cases"] = [(w1 = 3.0, p0 = 100000.0, Nd = 100 * 1e6, dir = root_dir * "rhow=3.0_Nd=100/")]
     # Define type of data
     config["data_type"] = Float64
@@ -106,7 +106,7 @@ function get_model_config()
     config["precip_sources"] = true
     config["precip_sinks"] = true
     config["z_min"] = 0.0
-    config["z_max"] = 3000.0
+    config["z_max"] = 4000.0
     config["n_elem"] = 64
     config["dt"] = 2.0
     config["t_ini"] = 0.0

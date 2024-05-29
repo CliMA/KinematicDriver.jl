@@ -145,6 +145,21 @@ function get_variable_data_from_ODE(u, aux, precip, var::String)
             error("Computing rainrate for the given precipitation style is invalid!!")
         end
         output = qr .* ρ .* vt .* 3600
+    elseif var == "Z_top"
+        _qtot = parent(u.ρq_tot) ./ ρ
+        qr = parent(u.ρq_rai) ./ ρ
+        z_top = u.n_elem
+        while sum(_qtot[z_top,:]) < threshold
+            z_top -= 1 
+        end     
+        steps = Int(round(500 / (u.z_max / u.n_elem))) 
+        qr = vec(mean(qr[(z_top-steps+1):z_top,:], dims=1))
+        ρ = vec(mean(ρ[(z_top-steps+1):z_top,:], dims=1))
+        if precip isa Precipitation1M
+            output = CM2.radar_reflectivity(precip.rain, qr, ρ)
+        else
+            error("Computing radar reflectivity for the given precipitation style is invalid!!")
+        end
     else
         error("Data name \"" * var * "\" not recognized!!")
     end
