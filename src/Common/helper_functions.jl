@@ -147,16 +147,26 @@ function get_variable_data_from_ODE(u, aux, precip, var::String)
         output = qr .* ρ .* vt .* 3600
     elseif var == "Z_top"
         _qtot = parent(u.ρq_tot) ./ ρ
-        qr = parent(u.ρq_rai) ./ ρ
-        z_top = u.n_elem
-        while sum(_qtot[z_top,:]) < threshold
-            z_top -= 1 
-        end     
-        steps = Int(round(500 / (u.z_max / u.n_elem))) 
-        qr = vec(mean(qr[(z_top-steps+1):z_top,:], dims=1))
-        ρ = vec(mean(ρ[(z_top-steps+1):z_top,:], dims=1))
+        _qrai = parent(u.ρq_rai) ./ ρ
+
+        z_top = length(_qtot)
+        threshold = 1e-3
+        while sum(_qtot[z_top, :]) < threshold && z_top > 1
+            z_top -= 1
+        end
+
+        depth = 500.0
+        z = parent(CC.Fields.coordinate_field(aux.prescribed_velocity.ρw).z)
+        dz = (maximum(z) - minimum(z)) / length(z)
+        steps = Int(round(depth / dz))
+        _ind = max(z_top - steps + 1, 1)
+
+        qr = vec(mean(_qrai[_ind:z_top, :], dims = 1))
+        ρ = vec(mean(ρ[_ind:z_top, :], dims = 1))
+
         if precip isa Precipitation1M
-            output = CM2.radar_reflectivity(precip.rain, qr, ρ)
+            output = CM1.radar_reflectivity.(precip.rain, qr, ρ)
+            output = replace!(output, Inf => 0.0, NaN => 0.0)
         else
             error("Computing radar reflectivity for the given precipitation style is invalid!!")
         end

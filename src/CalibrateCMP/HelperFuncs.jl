@@ -16,15 +16,21 @@ function get_limits(u::Vector{Matrix{Float64}})
     return _ext
 end
 
-function make_filter_props(n_elem, t_calib, nz_per_filtered_cell; apply = false, nt_per_filtered_cell = 1)
+function make_filter_props(
+    n_z,
+    t_calib;
+    apply = false,
+    nz_per_filtered_cell = ones(Int, length(n_z)),
+    nt_per_filtered_cell = 1,
+)
 
-    @assert all(n_elem .% nz_per_filtered_cell .== 0)
+    @assert all(n_z .% nz_per_filtered_cell .== 0)
 
     filter = Dict()
     filter["apply"] = apply
     filter["nz_per_filtered_cell"] = nz_per_filtered_cell
     filter["nt_per_filtered_cell"] = nt_per_filtered_cell
-    filter["nz_filtered"] = Int.(n_elem ./ nz_per_filtered_cell)
+    filter["nz_filtered"] = Int.(n_z ./ nz_per_filtered_cell)
     filter["nt_filtered"] = length(t_calib) - 1
 
     saveat = Float64[]

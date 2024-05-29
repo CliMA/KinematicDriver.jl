@@ -24,10 +24,10 @@ end
     #setup
     n_elem = 10
     t_calib = [0, 100, 500]
-    nz_per_filtered_cell = [2]
 
     #action
-    filter = KCP.make_filter_props(n_elem, t_calib, nz_per_filtered_cell; apply = true, nt_per_filtered_cell = 2)
+    filter =
+        KCP.make_filter_props([n_elem], t_calib; apply = true, nz_per_filtered_cell = [2], nt_per_filtered_cell = 2)
 
     #test
     @test filter["apply"] == true
