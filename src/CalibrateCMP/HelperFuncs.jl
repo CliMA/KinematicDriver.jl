@@ -30,6 +30,7 @@ function make_filter_props(
     filter["apply"] = apply
     filter["nz_per_filtered_cell"] = nz_per_filtered_cell
     filter["nt_per_filtered_cell"] = nt_per_filtered_cell
+    filter["nz_unfiltered"] = n_z
     filter["nz_filtered"] = Int.(n_z ./ nz_per_filtered_cell)
     filter["nt_filtered"] = length(t_calib) - 1
 
@@ -46,12 +47,8 @@ end
 function get_numbers_from_config(config::Dict)
 
     n_cases = length(config["observations"]["cases"])
-    n_variables = length(config["observations"]["data_names"])
     n_heights =
-        config["model"]["filter"]["apply"] ? config["model"]["filter"]["nz_filtered"] : config["model"]["n_elem"]
-    if !(n_heights isa Array{Int})
-        n_heights = [n_heights for i in 1:n_variables]
-    end
+        config["model"]["filter"]["apply"] ? config["model"]["filter"]["nz_filtered"] : config["model"]["filter"]["nz_unfiltered"]
     n_times =
         config["model"]["filter"]["apply"] ? length(config["model"]["t_calib"]) - 1 : length(config["model"]["t_calib"])
 
