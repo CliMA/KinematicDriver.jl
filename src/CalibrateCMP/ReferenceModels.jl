@@ -183,11 +183,11 @@ function get_single_obs_field(
             _n_z_data = length(_z_data)
             _dz_data = _z_data[2] - _z_data[1]
             _z_data_f = collect(range(_z_data[1] - _dz_data / 2, _z_data[end] + _dz_data / 2, _n_z_data + 1))
-            
+
             _n_heights = length(_heights)
             _dz_heights = _n_heights == 1 ? _z_data[end] - _z_data[1] + _dz_data : _heights[2] - _heights[1]
             _heights_f = collect(range(_heights[1] - _dz_heights / 2, _heights[end] + _dz_heights / 2, _n_heights + 1))
-            
+
             _t_data_c = [0.5 * (_t_data[i] + _t_data[i + 1]) for i in 1:(length(_t_data) - 1)]
             _data_c = [_f(t, z) for z in _z_data, t in _t_data_c]
             _output[var] = filter_field(_data_c, _t_data, times, _z_data_f, _heights_f)
