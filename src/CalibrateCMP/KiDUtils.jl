@@ -335,7 +335,7 @@ function test_model(u::Array{FT, 1}, u_names::Array{String, 1}, config::Dict, ca
     a = u[findall(name -> name == "a", u_names)]
     b = u[findall(name -> name == "b", u_names)]
 
-    n_single_case = n_heights[1] * n_times
+    n_single_case = sum(n_heights) * n_times
     x = range(0.0, 1.0, n_single_case)
 
     outputs = Float64[]

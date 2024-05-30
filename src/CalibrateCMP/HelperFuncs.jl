@@ -53,6 +53,7 @@ function get_numbers_from_config(config::Dict)
     n_times =
         config["model"]["filter"]["apply"] ? length(config["model"]["t_calib"]) - 1 : length(config["model"]["t_calib"])
 
+    @assert length(n_heights) == length(config["observations"]["data_names"])
     return (; n_cases, n_heights, n_times)
 end
 

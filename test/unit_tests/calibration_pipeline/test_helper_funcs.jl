@@ -53,6 +53,8 @@ end
     #setup
     config = get_config()
     config["observations"]["data_names"] = ["rho", "ql", "qr", "rainrate"]
+    config["model"]["filter"] =
+        KCP.make_filter_props(config["model"]["n_elem"] .* ones(Int, 4), config["model"]["t_calib"])
     (n_c, n_z, n_t) = KCP.get_numbers_from_config(config)
     n_single_case = sum(n_z) * n_t
     vec = rand(n_c * n_single_case)
