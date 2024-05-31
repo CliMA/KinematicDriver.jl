@@ -146,12 +146,13 @@ function get_variable_data_from_ODE(u, aux, precip, var::String)
         end
         output = qr .* ρ .* vt .* 3600
     elseif var == "Z_top"
-        _qtot = parent(u.ρq_tot) ./ ρ
+        _qliq = parent(u.ρq_liq) ./ ρ
         _qrai = parent(u.ρq_rai) ./ ρ
+        _qlr = _qliq + _qrai
 
-        z_top = length(_qtot)
+        z_top = length(_qliq)
         threshold = 1e-3
-        while sum(_qtot[z_top, :]) < threshold && z_top > 1
+        while sum(_qlr[z_top, :]) < threshold && z_top > 1
             z_top -= 1
         end
 
@@ -166,7 +167,6 @@ function get_variable_data_from_ODE(u, aux, precip, var::String)
 
         if precip isa Precipitation1M
             output = CM1.radar_reflectivity.(precip.rain, qr, ρ)
-            output = replace!(output, Inf => 0.0, NaN => 0.0)
         else
             error("Computing radar reflectivity for the given precipitation style is invalid!!")
         end
