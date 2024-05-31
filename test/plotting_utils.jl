@@ -141,60 +141,74 @@ function plot_animation(z_centers, solver, aux, moisture, precip, KiD; output = 
     path = joinpath(@__DIR__, output)
     mkpath(path)
 
-    anim = Plots.@animate for u in solver.u
+    ρ = parent(aux.thermo_variables.ρ)
+    nz = length(z_centers)
+    nt = length(solver.u)
+    q_tot = zeros(nz, nt)
+    q_liq = zeros(nz, nt)
+    q_ice = zeros(nz, nt)
+    q_rai = zeros(nz, nt)
+    q_sno = zeros(nz, nt)
+    N_rai = zeros(nz, nt)
+    N_liq = zeros(nz, nt)
+    for (i, u) in enumerate(solver.u)
 
-        ρ = parent(aux.thermo_variables.ρ)
-        q_tot = parent(u.ρq_tot) ./ ρ .* 1e3
+        q_tot[:, i] = parent(u.ρq_tot) ./ ρ .* 1e3
 
         if moisture isa CO.NonEquilibriumMoisture
-            q_liq = parent(u.ρq_liq) ./ ρ .* 1e3
-            q_ice = parent(u.ρq_ice) ./ ρ .* 1e3
+            q_liq[:, i] = parent(u.ρq_liq) ./ ρ .* 1e3
+            q_ice[:, i] = parent(u.ρq_ice) ./ ρ .* 1e3
         elseif moisture isa CO.CloudyMoisture
-            q_liq = parent(u.ρq_liq) ./ ρ .* 1e3
-            q_ice = q_tot .* 0.0
-        else
-            q_liq = q_tot .* 0.0
-            q_ice = q_tot .* 0.0
+            q_liq[:, i] = parent(u.ρq_liq) ./ ρ .* 1e3
         end
 
         if precip isa CO.Precipitation1M
-            q_rai = parent(u.ρq_rai) ./ ρ .* 1e3
-            q_sno = parent(u.ρq_sno) ./ ρ .* 1e3
+            q_rai[:, i] = parent(u.ρq_rai) ./ ρ .* 1e3
+            q_sno[:, i] = parent(u.ρq_sno) ./ ρ .* 1e3
         elseif precip isa Union{CO.Precipitation2M, CO.CloudyPrecip}
-            q_rai = parent(u.ρq_rai) ./ ρ .* 1e3
-            q_sno = q_tot .* 0.0
-        else
-            q_rai = q_tot .* 0.0
-            q_sno = q_tot .* 0.0
+            q_rai[:, i] = parent(u.ρq_rai) ./ ρ .* 1e3
+            N_rai[:, i] = parent(u.N_rai) ./ 1e6
+            N_liq[:, i] = parent(u.N_liq) ./ 1e6
         end
+    end
 
-        if (precip isa Union{CO.Precipitation2M, CO.CloudyPrecip})
-            N_rai = parent(u.N_rai)
-            N_liq = parent(u.N_liq)
-        else
-            N_rai = q_tot .* 0.0
-            N_liq = q_tot .* 0.0
-        end
+    function plot_data(data, data_label, max_val, title = "")
+        return Plots.plot(
+            data,
+            z_centers,
+            xlabel = data_label,
+            ylabel = "z [m]",
+            legend = false,
+            title = title,
+            titlefontsize = 30,
+            xlim = [0, 1.1 * max_val],
+        )
+    end
 
-        p1 = Plots.plot(q_tot, z_centers, xlabel = "q_tot [g/kg]", ylabel = "z [m]")
-        p2 = Plots.plot(q_liq, z_centers, xlabel = "q_liq [g/kg]", ylabel = "z [m]")
-        p2a = Plots.plot(N_liq, z_centers, xlabel = "N_liq [1/m^3]", ylabel = "z [m]")
-        p3 = Plots.plot(q_rai, z_centers, xlabel = "q_rai [g/kg]", ylabel = "z [m]")
-        p3a = Plots.plot(N_rai, z_centers, xlabel = "N_rai [1/m^3]", ylabel = "z [m]")
-        p4 = Plots.plot(q_ice, z_centers, xlabel = "q_ice [g/kg]", ylabel = "z [m]")
-        p5 = Plots.plot(q_sno, z_centers, xlabel = "q_sno [g/kg]", ylabel = "z [m]")
+    anim = Plots.@animate for i in 1:nt
 
-        p = Plots.plot(
+        title = "time = " * string(floor(Int, solver.t[i])) * " [s]"
+        p1 = plot_data(q_tot[:, i], "q_tot [g/kg]", maximum(q_tot))
+        p2 = plot_data(q_liq[:, i], "q_liq [g/kg]", maximum(q_liq), title)
+        p3 = plot_data(N_liq[:, i], "N_liq [1/cm^3]", maximum(N_liq))
+        p4 = plot_data(q_rai[:, i], "q_rai [g/kg]", maximum(q_rai))
+        p5 = plot_data(N_rai[:, i], "N_rai [1/cm^3]", maximum(N_rai))
+        p6 = plot_data(q_ice[:, i], "q_ice [g/kg]", maximum(q_ice))
+        p7 = plot_data(q_sno[:, i], "q_sno [g/kg]", maximum(q_sno))
+
+        plot(
             p1,
             p2,
-            p2a,
             p3,
-            p3a,
             p4,
             p5,
-            size = (1500.0, 1500.0),
+            p6,
+            p7,
+            size = (1800.0, 1500.0),
             bottom_margin = 30.0 * Plots.PlotMeasures.px,
             left_margin = 30.0 * Plots.PlotMeasures.px,
+            top_margin = 30.0 * Plots.PlotMeasures.px,
+            right_margin = 30.0 * Plots.PlotMeasures.px,
             layout = (3, 3),
         )
     end
