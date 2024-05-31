@@ -146,15 +146,15 @@ function run_K2D_simulation(::Type{FT}, opts) where {FT}
     anim = Plots.@animate for u in solver.u
         Plots.plot(u.ρq_tot, clim = (0, qtot_max))
     end
-    Plots.mp4(anim, joinpath(path, "rhoqtot.mp4"), fps = 20)
+    Plots.mp4(anim, joinpath(path, "rhoqtot.mp4"), fps = 10)
     anim = Plots.@animate for u in solver.u
         Plots.plot(u.ρq_liq .* 1000.0, clim = (0, qliq_max .* 1000.0))
     end
-    Plots.mp4(anim, joinpath(path, "rhoqliq.mp4"), fps = 20)
+    Plots.mp4(anim, joinpath(path, "rhoqliq.mp4"), fps = 10)
     anim = Plots.@animate for u in solver.u
         Plots.plot(u.ρq_rai .* 1000.0, clim = (0, qrai_max .* 1000.0))
     end
-    Plots.mp4(anim, joinpath(path, "rhoqrai.mp4"), fps = 20)
+    Plots.mp4(anim, joinpath(path, "rhoqrai.mp4"), fps = 10)
 
     return solver
 end
