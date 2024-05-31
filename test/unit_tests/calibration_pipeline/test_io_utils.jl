@@ -1,26 +1,26 @@
 @testset "make output directory - save - load" begin
     #setup
-    tmp_dir = "/tmp/"
+    tmp_dir = joinpath(@__DIR__, "tmp")
     u_names = ["a1", "a2"]
     u_values = [1.0, 2.0]
     u_ensemble = [1.0 1.1 1.2; 2.0 2.1 2.2]
     res = [u_ensemble, u_ensemble]
     config = get_config()
-    tmp_file = pwd() * tmp_dir * "tmp_params.jld2"
+    tmp_file = joinpath(tmp_dir, "tmp_params.jld2")
 
     #action
-    KCP.make_output_directories(dir = tmp_dir)
+    KCP.make_output_directories(tmp_dir)
     KCP.save_data(res, u_values, u_names, config, file_name = tmp_file)
     tmp_data = KCP.load_data(tmp_file)
 
     #test
-    @test isdir(pwd() * tmp_dir)
+    @test isdir(tmp_dir)
     @test tmp_data.result == res
     @test tmp_data.u_names == u_names
     @test tmp_data.u_bests == u_values
     @test keys(tmp_data.config) == keys(config)
 
-    rm(pwd() * tmp_dir, recursive = true, force = true)
+    rm(tmp_dir, recursive = true, force = true)
 end
 
 @testset "plot correlation map" begin
