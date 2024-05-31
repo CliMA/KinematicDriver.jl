@@ -97,11 +97,11 @@ steps:
 
       - label: ":crystal_ball: Experiments: perfect-model calibration + EKP"
         command: "julia --color=yes --project=test test/experiments/calibrations/run_calibration.jl"
-        artifact_paths: "calibration_output/*"
+        artifact_paths: "test/experiments/calibrations/calibration_output/*"
 
       - label: ":crystal_ball: Experiments: obs(perfect-model) vs. model with 4/3 params"
         command: "julia --color=yes --project=test test/experiments/calibrations/run_model.jl"
-        artifact_paths: "run_model_output/*"
+        artifact_paths: "test/experiments/calibrations/run_model_output/*"
 
       - label: ":crystal_ball: Experiments: Box model"
         command: "julia --color=yes --project=test test/experiments/box_driver/run_box_simulation.jl"
