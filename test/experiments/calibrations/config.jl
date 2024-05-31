@@ -60,7 +60,7 @@ end
 function get_observations_config()
     config = Dict()
     # Define data names.
-    config["data_names"] = ["rl", "rr"]
+    config["data_names"] = ["rl", "rr", "Z_top"]
     # Define source of data: "file" or "perfect_model"
     config["data_source"] = "perfect_model"
     # Define number of samples for validation
@@ -122,10 +122,10 @@ function get_model_config()
     config["std_dry"] = 1.4
     config["κ"] = 0.9
     config["filter"] = KCP.make_filter_props(
-        config["n_elem"],
+        [config["n_elem"], config["n_elem"], 1], # nz (for each variable)
         config["t_calib"];
         apply = true,
-        nz_per_filtered_cell = 2,
+        nz_per_filtered_cell = [4, 4, 1],
         nt_per_filtered_cell = 120,
     )
     # Define default parameters

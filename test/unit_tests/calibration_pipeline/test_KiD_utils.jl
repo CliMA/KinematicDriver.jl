@@ -40,30 +40,32 @@ end
     u = [1e-4]
     u_names = ["cloud_liquid_water_specific_humidity_autoconversion_threshold"]
     model_settings = get_model_config()
-    n_heights = model_settings["n_elem"]
+    n_heights = [model_settings["n_elem"] for i in 1:2]
     n_times = length(model_settings["t_calib"])
+    n_elem = model_settings["n_elem"]
 
     #action
     ode_sol, aux, precip = KCP.run_KiD(u, u_names, model_settings)
 
     #test
     @test length(ode_sol) == n_times
-    @test length(parent(aux.thermo_variables.ρ_dry)) == n_heights
+    @test length(parent(aux.thermo_variables.ρ_dry)) == model_settings["n_elem"]
 
     #action
     G = KCP.ODEsolution2Gvector(ode_sol, aux, precip, ["rlr", "rv"])
 
     #test
-    @test length(G) == n_heights * n_times * 2
+    @test length(G) == sum(n_heights) * n_times
 
     #setup
     model_settings["filter"] = KCP.make_filter_props(
-        model_settings["n_elem"],
+        [n_elem, n_elem],
         model_settings["t_calib"];
         apply = true,
-        nz_per_filtered_cell = 2,
+        nz_per_filtered_cell = [2, 5],
         nt_per_filtered_cell = 5,
     )
+    n_heights = model_settings["filter"]["nz_filtered"]
 
     #action
     ode_sol, aux = KCP.run_KiD(u, u_names, model_settings)
@@ -71,7 +73,7 @@ end
 
     #test
     @test length(ode_sol) == (n_times - 1) * 5
-    @test length(G) == n_heights / 2 * (n_times - 1) * 2
+    @test length(G) == sum(n_heights) * (n_times - 1)
 
 end
 

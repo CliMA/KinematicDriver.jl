@@ -24,7 +24,6 @@ KCP.compare_model_and_obs_contours(
     config,
     levels = range(minimum([0, minimum(Gn)]), maximum([1, maximum(Gn)]), 10),
     linewidth = 0.5,
-    overlay = false,
     G_title = "KiD",
     obs_title = "PySDM",
     path = data_save_directory,

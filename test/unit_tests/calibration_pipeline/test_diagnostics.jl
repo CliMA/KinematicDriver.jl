@@ -2,23 +2,25 @@
     #setup
     config = get_config()
     config["observations"]["data_names"] = ["rho", "ql", "qr", "rainrate"]
-    (n_c, n_v, n_z, n_t) = KCP.get_numbers_from_config(config)
-    n_vht = n_v * n_z * n_t
-    vec = rand(n_c * n_vht)
-    dz = (config["model"]["z_max"] - config["model"]["z_min"]) / n_z
+    config["model"]["filter"] =
+        KCP.make_filter_props(config["model"]["n_elem"] .* ones(Int, 4), config["model"]["t_calib"])
+    (n_c, n_z, n_t) = KCP.get_numbers_from_config(config)
+    n_single_case = sum(n_z) * n_t
+    vec = rand(n_c * n_single_case)
+    dz = (config["model"]["z_max"] - config["model"]["z_min"]) / n_z[1]
     _lwp = zeros(n_t, n_c)
     _rwp = zeros(n_t, n_c)
     _rainrate = zeros(n_t, n_c)
 
     for i in 1:n_c
-        v_ = vec[((i - 1) * n_vht + 1):(i * n_vht)]
-        m_ = reshape(v_, n_v * n_z, n_t)
-        ρ = m_[1:n_z, :]
-        ql = m_[(n_z + 1):(2 * n_z), :]
-        qr = m_[(2 * n_z + 1):(3 * n_z), :]
+        v_ = KCP.get_case_i_vec(vec, i, n_single_case)
+        fields_ = KCP.get_single_case_fields(v_, n_z, n_t)
+        ρ = fields_[1]
+        ql = fields_[2]
+        qr = fields_[3]
         _lwp[:, i] = sum(ql .* ρ, dims = 1) .* dz
         _rwp[:, i] = sum(qr .* ρ, dims = 1) .* dz
-        _rr = m_[(3 * n_z + 1):(4 * n_z), :]
+        _rr = fields_[4]
         rainrate_0 = 1.5 * _rr[1, :] - 0.5 * _rr[2, :]
         rainrate_0[findall(x -> x < 0, rainrate_0)] .= Float64(0)
         _rainrate[:, i] = rainrate_0
