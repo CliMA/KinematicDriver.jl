@@ -153,23 +153,30 @@ function plot_animation(z_centers, solver, aux, moisture, precip, KiD; output = 
     N_liq = zeros(nz, nt)
     for (i, u) in enumerate(solver.u)
 
-        q_tot[:, i] = parent(u.ρq_tot) ./ ρ .* 1e3
-
-        if moisture isa CO.NonEquilibriumMoisture
+        if moisture isa CO.EquilibriumMoisture
+            q_tot[:, i] = parent(u.ρq_tot) ./ ρ .* 1e3
+        elseif moisture isa CO.NonEquilibriumMoisture
+            q_tot[:, i] = parent(u.ρq_tot) ./ ρ .* 1e3
             q_liq[:, i] = parent(u.ρq_liq) ./ ρ .* 1e3
             q_ice[:, i] = parent(u.ρq_ice) ./ ρ .* 1e3
         elseif moisture isa CO.CloudyMoisture
-            q_liq[:, i] = parent(u.ρq_liq) ./ ρ .* 1e3
+            q_tot[:, i] = (parent(u.moments.:2) .+ parent(u.ρq_vap)) ./ ρ .* 1e3
+            q_liq[:, i] = parent(u.moments.:2) ./ ρ .* 1e3
         end
 
         if precip isa CO.Precipitation1M
             q_rai[:, i] = parent(u.ρq_rai) ./ ρ .* 1e3
             q_sno[:, i] = parent(u.ρq_sno) ./ ρ .* 1e3
-        elseif precip isa Union{CO.Precipitation2M, CO.CloudyPrecip}
+        elseif precip isa CO.Precipitation2M
             q_rai[:, i] = parent(u.ρq_rai) ./ ρ .* 1e3
             N_rai[:, i] = parent(u.N_rai) ./ 1e6
             N_liq[:, i] = parent(u.N_liq) ./ 1e6
+        elseif precip isa CO.CloudyPrecip
+            q_rai[:, i] = parent(u.moments.:5) ./ ρ .* 1e3
+            N_liq[:, i] = parent(u.moments.:1) ./ 1e6
+            N_rai[:, i] = parent(u.moments.:4) ./ 1e6
         end
+
     end
 
     function plot_data(data, data_label, max_val, title = "")
