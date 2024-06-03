@@ -69,18 +69,44 @@ end
     @. θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
     @. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
 end
+function separate_liq_rai(FT, moments, pdists, size_threshold, ρ)
+    tmp = CL.ParticleDistributions.get_standard_N_q(pdists; size_cutoff=size_threshold)
+    moments_like = ntuple(length(moments)) do k
+        if k==1
+            tmp.N_liq
+        elseif k==2
+            tmp.N_rai
+        elseif k==3
+            tmp.M_liq / ρ
+        elseif k==4
+            tmp.M_rai / ρ
+        else
+            FT(0)
+        end
+    end
+    return moments_like
+end
 @inline function precompute_aux_thermo!(::CloudyMoisture, Y, aux)
 
-    (; thermo_params) = aux
+    (; thermo_params, cloudy_params) = aux
     (; ts, ρ, ρ_dry, p, T, θ_dry, θ_liq_ice) = aux.thermo_variables
-    (; q_tot, q_liq, q_ice) = aux.microph_variables
+    (; pdists, q_rai, N_rai, N_liq, q_tot, q_liq, q_ice) = aux.microph_variables
+    (; tmp_cloudy) = aux.scratch
 
     FT = eltype(Y.ρq_vap)
-    @. q_tot = q_(Y.moments.:2 + Y.ρq_vap, ρ)
-    @. q_liq = q_(Y.moments.:2, ρ)
+
+    @. pdists = get_updated_pdists(Y.moments, pdists, cloudy_params)
+    @. tmp_cloudy = separate_liq_rai(FT, Y.moments, pdists, cloudy_params.size_threshold, ρ)
+    @. N_liq = tmp_cloudy.:1
+    @. N_rai = tmp_cloudy.:2
+    @. q_liq = tmp_cloudy.:3
+    @. q_rai = tmp_cloudy.:4
+    
+    FT = eltype(Y.ρq_vap)
+    @. q_tot = q_(Y.ρq_vap, ρ) + q_liq
     @. q_ice = FT(0)
 
-    @. ρ = ρ_dry + Y.moments.:2 + Y.ρq_vap
+    @. ρ = ρ_dry + tmp_cloudy.:3 + Y.ρq_vap
     @. ts = TD.PhaseNonEquil_ρTq(thermo_params, ρ, T, PP(q_tot, q_liq, q_ice))
     @. p = TD.air_pressure(thermo_params, ts)
     @. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
@@ -178,17 +204,8 @@ end
     (; ρ) = aux.thermo_variables
     (; q_rai, N_rai, N_liq, pdists, moments) = aux.microph_variables
     (; weighted_vt) = aux.velocities
-    (; nm_cloud) = aux.cloudy_variables
 
-    _valof(::Val{NM}) where {NM} = NM
-    NM1 = _valof(nm_cloud)
-    rain_number_ind = NM1 + 1
-    rain_mass_ind = NM1 + 2
-    @. N_liq = Y.moments.:1
-    @. N_rai = Y.moments.:($$rain_number_ind)
-    @. q_rai = q_(Y.moments.:($$rain_mass_ind), ρ)
     @. moments = Y.moments
-
     @. pdists = get_updated_pdists(moments, pdists, cloudy_params)
     @. weighted_vt = get_weighted_vt(moments, pdists, cloudy_params)
 end
@@ -536,7 +553,7 @@ end
     (; dt) = aux.TS
     (; tmp_cloudy) = aux.scratch
     (; nm_cloud) = aux.cloudy_variables
-
+ 
     FT = eltype(thermo_params)
     @. aux.precip_sources.moments *= FT(0)
 
@@ -555,6 +572,11 @@ end
         NM1 = _valof(nm_cloud)
         rain_mass_ind = NM1 + 2
         @. aux.precip_sources.ρq_vap = -tmp_cloudy.:2 - tmp_cloudy.:($$rain_mass_ind)
+        mass_ind = 2
+        for j in 1:length(pdists)
+            @. aux.precip_sources.ρq_vap -= tmp_cloudy.:($$mass_ind)
+            mass_ind += 3
+        end
     end
 
 end

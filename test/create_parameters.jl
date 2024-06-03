@@ -138,7 +138,10 @@ function create_cloudy_parameters(FT, dist_names::NTuple{ND, String} = ("gamma",
     # Define terminal velocity coefficients, assuming vt = sum_i v_i[1] * x^(v_i[2]) 
     # v1 is normalized by mass norm; v1 = v1 * norm[2] ^ v2
     vel = ((FT(30), FT(1.0 / 6)),) # 30 kg ^ (-1/6) * m / s
-    cloudy_params = CO.Parameters.CloudyParameters(NProgMoms, norms, mom_norms, coal_data, vel)
+    
+    size_threshold = mass_thresholds[1]
+
+    cloudy_params = CO.Parameters.CloudyParameters(NProgMoms, norms, mom_norms, coal_data, vel, size_threshold)
     return cloudy_params, pdists
 end
 #! format: on
