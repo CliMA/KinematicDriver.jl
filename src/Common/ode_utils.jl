@@ -88,11 +88,6 @@ function initialise_state(::CloudyMoisture, ::CloudyPrecip, initial_profiles)
         ρq_vap = initial_profiles.ρq_vap,
         N_aer = initial_profiles.N_aer,
         moments = initial_profiles.moments,
-        ρq_tot = initial_profiles.ρq_tot,
-        ρq_liq = initial_profiles.ρq_liq,
-        ρq_rai = initial_profiles.ρq_rai,
-        N_liq = initial_profiles.N_liq,
-        N_rai = initial_profiles.N_rai,
     )
 end
 

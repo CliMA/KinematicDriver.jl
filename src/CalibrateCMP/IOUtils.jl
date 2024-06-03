@@ -1,6 +1,4 @@
-function make_output_directories(; dir::String = "/output/")
-    homedir = pwd()
-    data_save_directory = homedir * dir
+function make_output_directories(data_save_directory)
     if ~isdir(data_save_directory)
         mkdir(data_save_directory)
     end

@@ -97,11 +97,11 @@ steps:
 
       - label: ":crystal_ball: Experiments: perfect-model calibration + EKP"
         command: "julia --color=yes --project=test test/experiments/calibrations/run_calibration.jl"
-        artifact_paths: "calibration_output/*"
+        artifact_paths: "test/experiments/calibrations/calibration_output/*"
 
       - label: ":crystal_ball: Experiments: obs(perfect-model) vs. model with 4/3 params"
         command: "julia --color=yes --project=test test/experiments/calibrations/run_model.jl"
-        artifact_paths: "run_model_output/*"
+        artifact_paths: "test/experiments/calibrations/run_model_output/*"
 
       - label: ":crystal_ball: Experiments: Box model"
         command: "julia --color=yes --project=test test/experiments/box_driver/run_box_simulation.jl"
@@ -109,7 +109,7 @@ steps:
 
       - label: ":crystal_ball: Experiments: 1D with collision and sedimentation + Cloudy"
         command: "julia --color=yes --project=test test/experiments/KiD_col_sed_driver/run_KiD_col_sed_simulation.jl"
-        artifact_paths: "test/experiments/KiD_col_sed_driver/Output_Precipitation1M_CliMA_1M/figures/*"
+        artifact_paths: "test/experiments/KiD_col_sed_driver/Output_CloudyPrecip/figures/*"
 
       - label: ":crystal_ball: Experiments: 2D setup"
         command: "julia --color=yes --project=test test/experiments/Ki2D_driver/run_kinematic2d_simulations.jl"
