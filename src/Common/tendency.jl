@@ -519,7 +519,11 @@ end
     s = TD.supersaturation(thermo_params, q, ρ, T, TD.Liquid())
     dY_ce_tmp = CL.Condensation.get_cond_evap(pdists, s, ξ_normed) .* cloudy_params.mom_norms
     S_cond_evap = ntuple(length(moments)) do j
-        ifelse(dY_ce_tmp[j] >= 0, dY_ce_tmp[j], max(dY_ce_tmp[j], -moments[j] / dt))
+        if (j == cloudy_params.NProgMoms[1]+1 && moments[j+1] / moments[j] < 1e-11) || (j == 1 && moments[j+1] / moments[j] < 1e-14)
+            -moments[j] / dt / 4
+        else
+            ifelse(dY_ce_tmp[j] >= 0, dY_ce_tmp[j], max(dY_ce_tmp[j], -moments[j] / dt))
+        end
     end
 
     return S_cond_evap
