@@ -202,7 +202,7 @@ function plot_animation(z_centers, solver, aux, moisture, precip, KiD; output = 
     Plots.mp4(anim, joinpath(path, "animation.mp4"), fps = 10)
 end
 
-function plot_timeheight(nc_data_file; output = "output", mixed_phase = true, pysdm=false)
+function plot_timeheight(nc_data_file; output = "output", mixed_phase = true, pysdm = false)
     path = joinpath(@__DIR__, output)
     mkpath(path)
 
@@ -273,7 +273,7 @@ function plot_timeheight(nc_data_file; output = "output", mixed_phase = true, py
     Plots.png(p, joinpath(path, "timeheight.png"))
 end
 
-function plot_timeheight_no_ice_snow(nc_data_file; output = "output", pysdm=false)
+function plot_timeheight_no_ice_snow(nc_data_file; output = "output", pysdm = false)
     path = joinpath(@__DIR__, output)
     mkpath(path)
 

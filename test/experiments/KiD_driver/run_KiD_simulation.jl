@@ -163,7 +163,11 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
         z_centers = parent(CC.Fields.coordinate_field(space))
         plot_final_aux_profiles(z_centers, aux, precip, output = plot_folder)
         plot_animation(z_centers, solver, aux, moisture, precip, K1D, output = plot_folder)
-        plot_timeheight(string("experiments/KiD_driver/", output_folder, "/Output.nc"), output = plot_folder, mixed_phase = false)
+        plot_timeheight(
+            string("experiments/KiD_driver/", output_folder, "/Output.nc"),
+            output = plot_folder,
+            mixed_phase = false,
+        )
     end
 
     return

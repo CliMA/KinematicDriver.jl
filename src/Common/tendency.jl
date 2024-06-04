@@ -70,15 +70,18 @@ end
     @. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
 end
 function separate_liq_rai(FT, moments, pdists, cloudy_params, ρd)
-    tmp = CL.ParticleDistributions.get_standard_N_q(pdists; size_cutoff = cloudy_params.size_threshold / cloudy_params.norms[2])
+    tmp = CL.ParticleDistributions.get_standard_N_q(
+        pdists;
+        size_cutoff = cloudy_params.size_threshold / cloudy_params.norms[2],
+    )
     moments_like = ntuple(length(moments)) do k
-        if k==1
+        if k == 1
             max(tmp.N_liq * cloudy_params.mom_norms[1], FT(0))
-        elseif k==2
+        elseif k == 2
             max(tmp.N_rai * cloudy_params.mom_norms[1], FT(0))
-        elseif k==3
+        elseif k == 3
             max(tmp.M_liq / ρd * cloudy_params.mom_norms[2], FT(0))
-        elseif k==4
+        elseif k == 4
             max(tmp.M_rai / ρd * cloudy_params.mom_norms[2], FT(0))
         else
             FT(0)
@@ -105,7 +108,7 @@ end
     @. N_rai = tmp_cloudy.:2
     @. q_liq = tmp_cloudy.:3
     @. q_rai = tmp_cloudy.:4
-    
+
     FT = eltype(Y.ρq_vap)
     @. q_tot = q_(Y.ρq_vap, ρ) + q_liq
     @. q_ice = FT(0)
@@ -169,16 +172,12 @@ end
     mom_normed = moments ./ cloudy_params.mom_norms
     ind_i = 0:0
     ntuple(length(old_pdists)) do i
-        ind_i = (ind_i[end]+1):(ind_i[end]+cloudy_params.NProgMoms[i])
+        ind_i = (ind_i[end] + 1):(ind_i[end] + cloudy_params.NProgMoms[i])
         mom_i = ntuple(length(ind_i)) do j
             mom_normed[ind_i[j]]
         end
         if old_pdists[i] isa CL.ParticleDistributions.GammaPrimitiveParticleDistribution
-            CL.ParticleDistributions.update_dist_from_moments(
-                old_pdists[i],
-                mom_i,
-                param_range = (; :k => (1.0, 10.0)),
-            )
+            CL.ParticleDistributions.update_dist_from_moments(old_pdists[i], mom_i, param_range = (; :k => (1.0, 10.0)))
         else
             CL.ParticleDistributions.update_dist_from_moments(old_pdists[i], mom_i)
         end
@@ -522,7 +521,8 @@ end
     s = TD.supersaturation(thermo_params, q, ρ, T, TD.Liquid())
     dY_ce_tmp = CL.Condensation.get_cond_evap(pdists, s, ξ_normed) .* cloudy_params.mom_norms
     S_cond_evap = ntuple(length(moments)) do j
-        if (j == cloudy_params.NProgMoms[1]+1 && moments[j+1] / moments[j] < 1e-11) || (j == 1 && moments[j+1] / moments[j] < 1e-14)
+        if (j == cloudy_params.NProgMoms[1] + 1 && moments[j + 1] / moments[j] < 1e-11) ||
+           (j == 1 && moments[j + 1] / moments[j] < 1e-14)
             -moments[j] / dt / 4
         else
             ifelse(dY_ce_tmp[j] >= 0, dY_ce_tmp[j], max(dY_ce_tmp[j], -moments[j] / dt))
@@ -538,7 +538,7 @@ end
     (; T, ρ) = aux.thermo_variables
     (; dt) = aux.TS
     (; tmp_cloudy) = aux.scratch
- 
+
     FT = eltype(thermo_params)
     @. aux.precip_sources.moments *= FT(0)
 

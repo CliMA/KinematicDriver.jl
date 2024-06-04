@@ -63,7 +63,7 @@ Base.@kwdef struct CloudyParameters{FT, NM, ND, N, P, T} <: ACP
         mom_norms::NTuple{NM, FT},
         coal_data::CL.Coalescence.CoalescenceData{N, P, FT, T},
         vel::Tuple{Tuple{FT, FT}},
-        size_threshold::FT = 5e-10
+        size_threshold::FT = 5e-10,
     ) where {NM, ND, N, P, T, FT <: Real}
         normed_vel = map(vel) do v
             (v[1] * norms[2]^v[2], v[2])
