@@ -78,15 +78,15 @@ end
     cases = get_observations_config()["cases"]
     dirs = [case.dir for case in cases]
     n_samples = 50
-    n_heights = 50
+    n_heights = [50, 50]
     n_times = 31
     n_cases = length(dirs)
     generate_fake_pysdm_data(dirs; n_files = n_samples, z_max = 3000.0, n_z = 60, t_max = 240.0, n_t = 41)
-    heights = collect(range(0.0, 3000, n_heights))
+    heights = collect.(range.(0.0, 3000, n_heights))
     times = collect(range(0.0, 240.0, n_times))
     variables = ["qlr", "rr"]
     n_variables = length(variables)
-    n_single_case = n_heights * n_times * n_variables
+    n_single_case = sum(n_heights) * n_times
     n_multiple_cases = n_single_case * n_cases
 
     #action
@@ -127,11 +127,11 @@ end
     @test size(result_tot) == (n_multiple_cases, n_samples)
 
     #setup
-    n_heights = 30
+    n_heights = [30, 30]
     n_times = 21
-    heights = collect(range(50.0, 2950, n_heights))
+    heights = collect.(range.(50.0, 2950, n_heights))
     times = collect(range(0.0, 240.0, n_times))
-    n_single_case = n_heights * (n_times - 1) * n_variables
+    n_single_case = sum(n_heights) * (n_times - 1)
     n_multiple_cases = n_single_case * n_cases
 
     #action
@@ -147,11 +147,11 @@ end
 @testset "Get Observations" begin
     #setup
     config = get_config()
-    n_heights = config["model"]["n_elem"]
+    n_heights = [config["model"]["n_elem"] for i in 1:2]
     n_times = length(config["model"]["t_calib"])
     n_vars = length(config["observations"]["data_names"])
     n_cases = length(config["observations"]["cases"])
-    n_tot = n_heights * n_times * n_vars * n_cases
+    n_tot = sum(n_heights) * n_times * n_cases
     n_samples = config["observations"]["number_of_samples"]
 
     #action

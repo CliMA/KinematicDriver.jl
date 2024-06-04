@@ -16,11 +16,6 @@ end
 function q_(ρq::FT, ρ::FT) where {FT}
     return max(FT(0), ρq / ρ)
 end
-@inline function zero_tendencies!(::CloudyPrecip, dY, Y, aux, t)
-    FT = eltype(Y.ρq_vap)
-    @. dY.N_aer = FT(0)
-    @. dY.moments = ntuple(_ -> FT(0), length(dY.moments))
-end
 
 """
     Zero out previous timestep tendencies

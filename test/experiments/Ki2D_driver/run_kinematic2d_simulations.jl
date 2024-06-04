@@ -16,13 +16,12 @@ function run_K2D_simulation(::Type{FT}, opts) where {FT}
 
     # Equations to solve for mositure and precipitation variables
     moisture_choice = opts["moisture_choice"]
-    prognostics_choice = opts["prognostic_vars"]
     precipitation_choice = opts["precipitation_choice"]
     rain_formation_choice = opts["rain_formation_choice"]
     sedimentation_choice = opts["sedimentation_choice"]
 
     # Decide the output flder name based on options
-    output_folder = string("Output_", moisture_choice, "_", prognostics_choice, "_", precipitation_choice)
+    output_folder = string("Output_", moisture_choice, "_", precipitation_choice)
     if precipitation_choice in ["Precipitation1M", "Precipitation2M"]
         output_folder = output_folder * "_" * rain_formation_choice
         if sedimentation_choice == "Chen2022"
@@ -147,22 +146,21 @@ function run_K2D_simulation(::Type{FT}, opts) where {FT}
     anim = Plots.@animate for u in solver.u
         Plots.plot(u.ρq_tot, clim = (0, qtot_max))
     end
-    Plots.mp4(anim, joinpath(path, "rhoqtot.mp4"), fps = 20)
+    Plots.mp4(anim, joinpath(path, "rhoqtot.mp4"), fps = 10)
     anim = Plots.@animate for u in solver.u
         Plots.plot(u.ρq_liq .* 1000.0, clim = (0, qliq_max .* 1000.0))
     end
-    Plots.mp4(anim, joinpath(path, "rhoqliq.mp4"), fps = 20)
+    Plots.mp4(anim, joinpath(path, "rhoqliq.mp4"), fps = 10)
     anim = Plots.@animate for u in solver.u
         Plots.plot(u.ρq_rai .* 1000.0, clim = (0, qrai_max .* 1000.0))
     end
-    Plots.mp4(anim, joinpath(path, "rhoqrai.mp4"), fps = 20)
+    Plots.mp4(anim, joinpath(path, "rhoqrai.mp4"), fps = 10)
 
     return solver
 end
 
 opts = Dict(
     "moisture_choice" => "NonEquilibriumMoisture",
-    "prognostic_vars" => "RhodTQ",
     "precipitation_choice" => "Precipitation1M",
     "rain_formation_choice" => "CliMA_1M",
     "sedimentation_choice" => "CliMA_1M",

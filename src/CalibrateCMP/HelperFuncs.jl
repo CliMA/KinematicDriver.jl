@@ -16,15 +16,22 @@ function get_limits(u::Vector{Matrix{Float64}})
     return _ext
 end
 
-function make_filter_props(n_elem, t_calib; apply = false, nz_per_filtered_cell = 1, nt_per_filtered_cell = 1)
+function make_filter_props(
+    n_z,
+    t_calib;
+    apply = false,
+    nz_per_filtered_cell = ones(Int, length(n_z)),
+    nt_per_filtered_cell = 1,
+)
 
-    @assert n_elem % nz_per_filtered_cell == 0
+    @assert all(n_z .% nz_per_filtered_cell .== 0)
 
     filter = Dict()
     filter["apply"] = apply
     filter["nz_per_filtered_cell"] = nz_per_filtered_cell
     filter["nt_per_filtered_cell"] = nt_per_filtered_cell
-    filter["nz_filtered"] = Int(n_elem / nz_per_filtered_cell)
+    filter["nz_unfiltered"] = n_z
+    filter["nz_filtered"] = Int.(n_z ./ nz_per_filtered_cell)
     filter["nt_filtered"] = length(t_calib) - 1
 
     saveat = Float64[]
@@ -40,14 +47,38 @@ end
 function get_numbers_from_config(config::Dict)
 
     n_cases = length(config["observations"]["cases"])
-    n_variables = length(config["observations"]["data_names"])
     n_heights =
-        config["model"]["filter"]["apply"] ? config["model"]["filter"]["nz_filtered"] : config["model"]["n_elem"]
+        config["model"]["filter"]["apply"] ? config["model"]["filter"]["nz_filtered"] :
+        config["model"]["filter"]["nz_unfiltered"]
     n_times =
         config["model"]["filter"]["apply"] ? length(config["model"]["t_calib"]) - 1 : length(config["model"]["t_calib"])
 
-    return (n_cases = n_cases, n_variables = n_variables, n_heights = n_heights, n_times = n_times)
+    @assert length(n_heights) == length(config["observations"]["data_names"])
+    return (; n_cases, n_heights, n_times)
 end
+
+function get_case_i_vec(vec::Vector{FT}, i::Int, n_single_case::Int) where {FT <: Real}
+    return vec[((i - 1) * n_single_case + 1):(i * n_single_case)]
+end
+
+function get_single_case_fields(vec_single_case::Vector{FT}, n_heights::Vector{Int}, n_times::Int) where {FT <: Real}
+
+    n_variables = length(n_heights)
+    n_single_time = sum(n_heights)
+
+    if length(vec_single_case) != n_times * n_single_time
+        error("Inconsistent vector size and provided numbers!")
+    end
+
+    m_ = reshape(vec_single_case, n_single_time, n_times)
+    fields = ntuple(n_variables) do j
+        _last_ind = j == 1 ? 0 : sum(n_heights[1:(j - 1)])
+        m_[(_last_ind + 1):(_last_ind + n_heights[j]), :]
+    end
+    return fields
+end
+
+
 
 function make_block_diagonal_matrix(a::AbstractMatrix, b::AbstractMatrix)
 

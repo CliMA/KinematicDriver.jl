@@ -229,25 +229,33 @@ function ODEsolution2Gvector(ODEsol, aux, precip, variables, filter)
     outputs = Float64[]
     _nz_filtered = filter["nz_filtered"]
     _nz_per_filtered_cell = filter["nz_per_filtered_cell"]
-    _nz = _nz_filtered * _nz_per_filtered_cell
+    _nz = _nz_filtered .* _nz_per_filtered_cell
     _nt_filtered = filter["nt_filtered"]
     _nt_per_filtered_cell = filter["nt_per_filtered_cell"]
-    _nvar = length(variables)
+    _n_variables = length(variables)
+
+    _n_single_time_unfiltered = sum(_nz)
 
     for i in 1:_nt_filtered
-        _single_filtered_cell_data = zeros(_nz * _nvar, _nt_per_filtered_cell)
+        # get unfiltered data in a filtered time interval 
+        _single_filtered_cell_data = zeros(_n_single_time_unfiltered, _nt_per_filtered_cell)
         for j in 1:_nt_per_filtered_cell
             u = ODEsol[:, (i - 1) * _nt_per_filtered_cell + j]
             for (k, var) in enumerate(variables)
-                _single_filtered_cell_data[((k - 1) * _nz + 1):(k * _nz), j] =
-                    CO.get_variable_data_from_ODE(u, aux, precip, var)
+                _range = (sum(_nz[1:(k - 1)]) + 1):sum(_nz[1:k])
+                _single_filtered_cell_data[_range, j] = CO.get_variable_data_from_ODE(u, aux, precip, var)
             end
         end
-        single_var_filtered_vec = [
-            mean(_single_filtered_cell_data[((j - 1) * _nz_per_filtered_cell + 1):(j * _nz_per_filtered_cell), :])
-            for j in 1:(_nz_filtered * _nvar)
-        ]
-        outputs = [outputs; single_var_filtered_vec]
+
+        # filter data spatially
+        for j in 1:_n_variables
+            for k in 1:_nz_filtered[j]
+                _ind = sum(_nz[1:(j - 1)]) + (k - 1) * _nz_per_filtered_cell[j]
+                _range = (_ind + 1):(_ind + _nz_per_filtered_cell[j])
+                outputs = [outputs; mean(_single_filtered_cell_data[_range, :])]
+            end
+        end
+
     end
 
     return outputs
@@ -318,18 +326,17 @@ function create_kid_parameters(
 end
 
 function test_model(u::Array{FT, 1}, u_names::Array{String, 1}, config::Dict, case_numbers::Vector{Int})
-    (n_c, n_v, n_z, n_t) = get_numbers_from_config(config)
+    (; n_heights, n_times) = get_numbers_from_config(config)
 
     @assert !isempty(case_numbers)
     @assert length(u) == length(u_names) == 2
     @assert Set(u_names) == Set(["a", "b"])
-    @assert n_v == 1
 
     a = u[findall(name -> name == "a", u_names)]
     b = u[findall(name -> name == "b", u_names)]
 
-    n_zt = n_z * n_t
-    x = range(0.0, 1.0, n_zt)
+    n_single_case = sum(n_heights) * n_times
+    x = range(0.0, 1.0, n_single_case)
 
     outputs = Float64[]
     for case in config["observations"]["cases"][case_numbers]

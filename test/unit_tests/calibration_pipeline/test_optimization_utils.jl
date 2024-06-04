@@ -56,6 +56,8 @@ end
         "b" => (mean = 5.0, var = 0.5, lbound = -Inf, ubound = Inf),
     )
     config["observations"]["data_names"] = ["test data"]
+    config["model"]["filter"] =
+        KCP.make_filter_props(config["model"]["n_elem"] .* ones(Int, 1), config["model"]["t_calib"])
     config["observations"]["cases"] = [
         (power = 1.0,),
         (power = 2.0,),
