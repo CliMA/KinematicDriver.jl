@@ -92,7 +92,7 @@ function create_cloudy_parameters(FT, dist_names::NTuple{ND, String} = ("gamma",
         if dist_name == "monodisperse"
             return CL.ParticleDistributions.MonodispersePrimitiveParticleDistribution(FT(0), FT(1))
         elseif dist_name == "exponential"
-            return CL.ParticleDistributions.GammaPrimitiveParticleDistribution(FT(0), FT(1))
+            return CL.ParticleDistributions.ExponentialPrimitiveParticleDistribution(FT(0), FT(1))
         elseif dist_name == "gamma"
             return CL.ParticleDistributions.GammaPrimitiveParticleDistribution(FT(0), FT(1), FT(1))
         end
@@ -139,7 +139,7 @@ function create_cloudy_parameters(FT, dist_names::NTuple{ND, String} = ("gamma",
     # v1 is normalized by mass norm; v1 = v1 * norm[2] ^ v2
     vel = ((FT(30), FT(1.0 / 6)),) # 30 kg ^ (-1/6) * m / s
     
-    size_threshold = mass_thresholds[1]
+    size_threshold = FT(5e-10)
 
     cloudy_params = CO.Parameters.CloudyParameters(NProgMoms, norms, mom_norms, coal_data, vel, size_threshold)
     return cloudy_params, pdists
