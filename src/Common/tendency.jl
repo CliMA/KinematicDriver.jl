@@ -167,12 +167,12 @@ end
 
 @inline function get_updated_pdists(moments, old_pdists, cloudy_params)
     mom_normed = moments ./ cloudy_params.mom_norms
-    ind_i = 1:cloudy_params.NProgMoms[1]
+    ind_i = 0:0
     ntuple(length(old_pdists)) do i
+        ind_i = (ind_i[end]+1):(ind_i[end]+cloudy_params.NProgMoms[i])
         mom_i = ntuple(length(ind_i)) do j
             mom_normed[ind_i[j]]
         end
-        ind_i = ind_i .+ cloudy_params.NProgMoms[i]
         if old_pdists[i] isa CL.ParticleDistributions.GammaPrimitiveParticleDistribution
             CL.ParticleDistributions.update_dist_from_moments(
                 old_pdists[i],
