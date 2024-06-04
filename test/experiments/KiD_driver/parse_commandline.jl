@@ -15,11 +15,15 @@ function parse_commandline()
         "--moisture_choice"
         help = "Mositure model choice: EquilibriumMoisture, NonEquilibriumMoisture, CloudyMoisture"
         arg_type = String
-        default = "NonEquilibriumMoisture"
+        default = "CloudyMoisture"
         "--precipitation_choice"
         help = "Precipitation model choice: NoPrecipitation, Precipitation0M, Precipitation1M, Precipitation2M, CloudyPrecip"
         arg_type = String
-        default = "Precipitation1M"
+        default = "CloudyPrecip"
+        "--num_moments"
+        help = "Number of moments to use for CloudyPrecip (ignored otherwise)"
+        arg_type = Int
+        default = 7
         "--rain_formation_scheme_choice"
         help = "Rain formation scheme choice: CliMA_1M, KK2000, B1994, TC1980, LD2004, VarTimeScaleAcnv for Precipitation1M; and SB2006 for Precipitation2M"
         arg_type = String
