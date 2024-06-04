@@ -158,7 +158,6 @@ function run_KiD_col_sed_simulation(::Type{FT}, opts) where {FT}
         string("experiments/KiD_col_sed_driver/", output_folder, "/Output.nc"),
         output = plot_folder,
     )
-    return solver
 end
 
 opts = Dict(
