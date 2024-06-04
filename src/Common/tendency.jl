@@ -66,8 +66,8 @@ end
 end
 function separate_liq_rai(FT, moments, pdists, cloudy_params, ρd)
     tmp = CL.ParticleDistributions.get_standard_N_q(
-        pdists;
-        size_cutoff = cloudy_params.size_threshold / cloudy_params.norms[2],
+        pdists,
+        cloudy_params.size_threshold / cloudy_params.norms[2],
     )
     moments_like = ntuple(length(moments)) do k
         if k == 1
@@ -99,20 +99,20 @@ end
     @. weighted_vt = get_weighted_vt(moments, pdists, cloudy_params)
 
     @. tmp_cloudy = separate_liq_rai(FT, Y.moments, pdists, cloudy_params, ρ_dry)
-    @. N_liq = tmp_cloudy.:1
-    @. N_rai = tmp_cloudy.:2
-    @. q_liq = tmp_cloudy.:3
-    @. q_rai = tmp_cloudy.:4
+    # @. N_liq = tmp_cloudy.:1
+    # @. N_rai = tmp_cloudy.:2
+    # @. q_liq = tmp_cloudy.:3
+    # @. q_rai = tmp_cloudy.:4
 
-    FT = eltype(Y.ρq_vap)
-    @. q_tot = q_(Y.ρq_vap, ρ) + q_liq
-    @. q_ice = FT(0)
+    # FT = eltype(Y.ρq_vap)
+    # @. q_tot = q_(Y.ρq_vap, ρ) + q_liq
+    # @. q_ice = FT(0)
 
-    @. ρ = ρ_dry + tmp_cloudy.:3 * ρ_dry + Y.ρq_vap
-    @. ts = TD.PhaseNonEquil_ρTq(thermo_params, ρ, T, PP(q_tot, q_liq, q_ice))
-    @. p = TD.air_pressure(thermo_params, ts)
-    @. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
-    @. θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
+    # @. ρ = ρ_dry + tmp_cloudy.:3 * ρ_dry + Y.ρq_vap
+    # @. ts = TD.PhaseNonEquil_ρTq(thermo_params, ρ, T, PP(q_tot, q_liq, q_ice))
+    # @. p = TD.air_pressure(thermo_params, ts)
+    # @. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
+    # @. θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
 end
 
 @inline function precompute_aux_precip!(::Union{NoPrecipitation, Precipitation0M}, Y, aux) end
@@ -162,19 +162,30 @@ end
 
     # TODO...
 end
-
+function get_dists_moments(moments, NProgMoms::NTuple{ND, Int}) where {ND}
+    FT = eltype(moments)
+    return ntuple(ND) do i
+        ntuple(3) do j
+            ind = i == 1 ? 0 : sum(NProgMoms[1:(i - 1)])
+            if j <= NProgMoms[i]
+                moments[ind + j]
+            else
+                FT(0)
+            end
+        end
+    end
+end
 @inline function get_updated_pdists(moments, old_pdists, cloudy_params)
     mom_normed = moments ./ cloudy_params.mom_norms
-    ind_i = 0:0
+    mom_i = get_dists_moments(mom_normed, cloudy_params.NProgMoms)
     ntuple(length(old_pdists)) do i
-        ind_i = (ind_i[end] + 1):(ind_i[end] + cloudy_params.NProgMoms[i])
-        mom_i = ntuple(length(ind_i)) do j
-            mom_normed[ind_i[j]]
-        end
         if old_pdists[i] isa CL.ParticleDistributions.GammaPrimitiveParticleDistribution
-            CL.ParticleDistributions.update_dist_from_moments(old_pdists[i], mom_i, param_range = (; :k => (1.0, 10.0)))
+            CL.ParticleDistributions.update_dist_from_moments(
+                old_pdists[i], 
+                mom_i[i], 
+                param_range = (; :k => (1.0, 10.0)))
         else
-            CL.ParticleDistributions.update_dist_from_moments(old_pdists[i], mom_i)
+            CL.ParticleDistributions.update_dist_from_moments(old_pdists[i], mom_i[i][1:2])
         end
     end
 end

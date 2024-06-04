@@ -128,7 +128,7 @@ function determine_cloudy_disttypes(NM::Int, default_gamma=true)
     return dist_names
 end
 
-function create_cloudy_parameters(FT, dist_names::NTuple{ND, String} = ("exponential", "gamma")) where {ND}
+function create_cloudy_parameters(FT, dist_names::NTuple{ND, String} = ("gamma", "gamma")) where {ND}
 
     # Create water category distributions
     function make_dist(dist_name)

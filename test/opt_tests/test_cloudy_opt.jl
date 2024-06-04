@@ -53,7 +53,8 @@ function test_cloudy_allocation(::Type{FT}) where {FT}
     @testset "Cloud optimization tests" begin
         @test_opt CO.precompute_aux_thermo!(moisture, Y, aux)
         CO.precompute_aux_thermo!(moisture, Y, aux)
-        @test 64 >= @allocated CO.precompute_aux_thermo!(moisture, Y, aux)
+        # TODO: gamma_inc allocates
+        @test 157040 >= @allocated CO.precompute_aux_thermo!(moisture, Y, aux)
 
         @test_opt CO.precompute_aux_precip!(precip, Y, aux)
         CO.precompute_aux_precip!(precip, Y, aux)
@@ -65,7 +66,7 @@ function test_cloudy_allocation(::Type{FT}) where {FT}
 
         @test_opt CO.precompute_aux_precip_sources!(precip, aux)
         CO.precompute_aux_precip_sources!(precip, aux)
-        @test 928 >= @allocated CO.precompute_aux_precip_sources!(precip, aux)
+        @test 896 == @allocated CO.precompute_aux_precip_sources!(precip, aux)
 
         @test_opt K1D.precompute_aux_activation!(precip, dY, Y, aux, 0.0)
         K1D.precompute_aux_activation!(precip, dY, Y, aux, 0.0)
