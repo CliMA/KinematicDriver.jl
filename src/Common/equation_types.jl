@@ -48,9 +48,10 @@ struct Precipitation1M{CL, IC, RN, SN, CE, PT, ST} <: AbstractPrecipitationStyle
     rain_formation::PT
     sedimentation::ST
 end
-struct Precipitation2M{PT, ST} <: AbstractPrecipitationStyle
+struct Precipitation2M{PT, ST, AA} <: AbstractPrecipitationStyle
     rain_formation::PT
     sedimentation::ST
+    aerosol_activation::AA
 end
 struct PrecipitationP3{PT, ST, P3} <: AbstractPrecipitationStyle
     rain_formation::PT

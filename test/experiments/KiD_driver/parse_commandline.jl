@@ -28,6 +28,14 @@ function parse_commandline()
         help = "Sedimentation scheme choice: CliMA_1M, Chen2022 for Precipitation1M; and Chen2022, SB2006 for Precipitation2M"
         arg_type = String
         default = "CliMA_1M"
+        "--aerosol_activation_choice"
+        help = "Aerosol activation choice for the 2M and Cloudy models: ARG2000, ML"
+        arg_type = String
+        default = "ARG2000"
+        "--ML_activation_model"
+        help = "Path to where the data driven aerosol activation model is stored"
+        arg_type = String
+        default = "none"
         "--prescribed_Nd"
         help = "Prescribed number of cloud droplets (used in KK2000, B1994, TC1980, LD2004, VarTimeScaleAcnv and SB2006 rain formation schemes)"
         arg_type = Float64
