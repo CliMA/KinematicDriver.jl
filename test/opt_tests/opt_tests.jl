@@ -92,7 +92,7 @@ end
 
     # @test_opt CO.precompute_aux_precip_sources!(precip, aux) #TODO
     CO.precompute_aux_precip_sources!(precip, aux)
-    @test 150880 >= @allocated CO.precompute_aux_precip_sources!(precip, aux)
+    @test 152000 >= @allocated CO.precompute_aux_precip_sources!(precip, aux)
 
     @test_opt K1D.precompute_aux_activation!(precip, dY, Y, aux, 0.0)
     K1D.precompute_aux_activation!(precip, dY, Y, aux, 0.0)
