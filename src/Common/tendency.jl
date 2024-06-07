@@ -218,7 +218,7 @@ end
 
     @. aux.cloud_sources = to_sources(S_q_liq, S_q_ice)
 end
-@inline function precompute_aux_moisture_sources!(::CloudyMoisture, dY, Y, aux, t) end
+@inline function precompute_aux_moisture_sources!(::CloudyMoisture, aux) end
 
 @inline function precompute_aux_precip_sources!(sp::AbstractPrecipitationStyle, aux)
     error("precompute_aux not implemented for a given $sp")
