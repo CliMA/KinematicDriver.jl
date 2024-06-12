@@ -99,20 +99,20 @@ end
     @. weighted_vt = get_weighted_vt(moments, pdists, cloudy_params)
 
     @. tmp_cloudy = separate_liq_rai(FT, Y.moments, pdists, cloudy_params, ρ_dry)
-    # @. N_liq = tmp_cloudy.:1
-    # @. N_rai = tmp_cloudy.:2
-    # @. q_liq = tmp_cloudy.:3
-    # @. q_rai = tmp_cloudy.:4
+    @. N_liq = tmp_cloudy.:1
+    @. N_rai = tmp_cloudy.:2
+    @. q_liq = tmp_cloudy.:3
+    @. q_rai = tmp_cloudy.:4
 
-    # FT = eltype(Y.ρq_vap)
-    # @. q_tot = q_(Y.ρq_vap, ρ) + q_liq
-    # @. q_ice = FT(0)
+    FT = eltype(Y.ρq_vap)
+    @. q_tot = q_(Y.ρq_vap, ρ) + q_liq
+    @. q_ice = FT(0)
 
-    # @. ρ = ρ_dry + tmp_cloudy.:3 * ρ_dry + Y.ρq_vap
-    # @. ts = TD.PhaseNonEquil_ρTq(thermo_params, ρ, T, PP(q_tot, q_liq, q_ice))
-    # @. p = TD.air_pressure(thermo_params, ts)
-    # @. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
-    # @. θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
+    @. ρ = ρ_dry + tmp_cloudy.:3 * ρ_dry + Y.ρq_vap
+    @. ts = TD.PhaseNonEquil_ρTq(thermo_params, ρ, T, PP(q_tot, q_liq, q_ice))
+    @. p = TD.air_pressure(thermo_params, ts)
+    @. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
+    @. θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
 end
 
 @inline function precompute_aux_precip!(::Union{NoPrecipitation, Precipitation0M}, Y, aux) end
