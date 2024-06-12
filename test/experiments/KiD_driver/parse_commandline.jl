@@ -80,7 +80,7 @@ function parse_commandline()
         "--t_end"
         help = "Time at the end of the simulation [s]"
         arg_type = Float64
-        default = Float64(3600)
+        default = Float64(10)
         "--w1"
         help = "Maximum prescribed updraft momentum flux [m/s * kg/m3]"
         arg_type = Float64
