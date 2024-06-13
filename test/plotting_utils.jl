@@ -277,9 +277,9 @@ function plot_timeheight_no_ice_snow(nc_data_file; output = "output", pysdm = fa
     if pysdm
         t_plt = Array(ds["time"])
         z_plt = Array(ds["height"])
-        q_liq_plt = transpose(Array(ds["cloud water mixing ratio"]))
-        q_rai_plt = transpose(Array(ds["rain water mixing ratio"]))
-        q_vap = transpose(Array(ds["water_vapour_mixing_ratio"])) * 1e3
+        q_liq_plt = transpose(Array(ds["cloud water mixing ratio"])) / 1e3
+        q_rai_plt = transpose(Array(ds["rain water mixing ratio"])) / 1e3
+        q_vap = transpose(Array(ds["water_vapour_mixing_ratio"]))
         q_tot_plt = q_vap + q_liq_plt
     else
         t_plt = Array(ds.group["profiles"]["t"])
