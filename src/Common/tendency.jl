@@ -411,14 +411,14 @@ end
     #tot, liq, rai, Na, Nl, Nr
     if Bool(common_params.precip_sources)
         # autoconversion liquid to rain (mass)
-        @. S₁ = limit(q_liq, dt, CM2.autoconversion(sb2006.acnv, q_liq, q_rai, ρ, N_liq).dq_rai_dt)
+        @. S₁ = limit(q_liq, dt, CM2.autoconversion(sb2006.acnv, sb2006.pdf_c, q_liq, q_rai, ρ, N_liq).dq_rai_dt)
         @. aux.precip_sources += to_sources(-S₁, -S₁, S₁, 0, 0, 0)
 
         # autoconversion liquid to rain (number)
-        @. S₂ = limit(N_liq, dt, CM2.autoconversion(sb2006.acnv, q_liq, q_rai, ρ, N_liq).dN_rai_dt, 2)
+        @. S₂ = limit(N_liq, dt, CM2.autoconversion(sb2006.acnv, sb2006.pdf_c, q_liq, q_rai, ρ, N_liq).dN_rai_dt, 2)
         @. aux.precip_sources += to_sources(0, 0, 0, 0, -2 * S₂, S₂)
         # liquid self_collection
-        @. S₁ = -limit(N_liq, dt, -CM2.liquid_self_collection(sb2006.acnv, q_liq, ρ, -2 * S₂))
+        @. S₁ = -limit(N_liq, dt, -CM2.liquid_self_collection(sb2006.acnv, sb2006.pdf_c, q_liq, ρ, -2 * S₂))
         @. aux.precip_sources += to_sources(0, 0, 0, 0, S₁, 0)
 
         # rain self_collection

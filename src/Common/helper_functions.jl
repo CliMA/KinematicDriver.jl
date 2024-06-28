@@ -122,37 +122,84 @@ function get_variable_data_from_ODE(u, aux, precip, var::String)
     elseif var == "rho"
         output = ρ
     elseif var == "rain averaged terminal velocity"
-        qr = parent(u.ρq_rai) ./ ρ
+        _qrai = parent(u.ρq_rai) ./ ρ
         if precip isa Precipitation1M
-            vt = CM1.terminal_velocity.(precip.rain, precip.sedimentation.rain, ρ, qr)
+            vt = CM1.terminal_velocity.(precip.rain, precip.sedimentation.rain, ρ, _qrai)
         elseif precip isa Precipitation2M
-            Nr = parent(u.N_rai)
+            _Nrai = parent(u.N_rai)
             f1(xx, yy, zz) = CM2.rain_terminal_velocity(precip.rain_formation, precip.sedimentation, xx, yy, zz)[2]
-            vt = f1.(qr, ρ, Nr)
+            vt = f1.(_qrai, ρ, _Nrai)
         else
             error("Computing rain averaged terminal velocity for the given precipitation style is invalid!!")
         end
         output = vt
     elseif var == "rainrate"
-        qr = parent(u.ρq_rai) ./ ρ
+        _qrai = parent(u.ρq_rai) ./ ρ
         if precip isa Precipitation1M
-            vt = CM1.terminal_velocity.(precip.rain, precip.sedimentation.rain, ρ, qr)
+            vt = CM1.terminal_velocity.(precip.rain, precip.sedimentation.rain, ρ, _qrai)
         elseif precip isa Precipitation2M
-            Nr = parent(u.N_rai)
+            _Nrai = parent(u.N_rai)
             f2(xx, yy, zz) = CM2.rain_terminal_velocity(precip.rain_formation, precip.sedimentation, xx, yy, zz)[2]
-            vt = f2.(qr, ρ, Nr)
+            vt = f2.(_qrai, ρ, _Nrai)
         else
             error("Computing rainrate for the given precipitation style is invalid!!")
         end
-        output = qr .* ρ .* vt .* 3600
+        output = _qrai .* ρ .* vt .* 3600
+    elseif var == "rainrate_surface"
+        _qrai = parent(u.ρq_rai) ./ ρ
+        if precip isa Precipitation1M
+            vt = CM1.terminal_velocity.(precip.rain, precip.sedimentation.rain, ρ, _qrai)
+        elseif precip isa Precipitation2M
+            _Nrai = parent(u.N_rai)
+            f(xx, yy, zz) = CM2.rain_terminal_velocity(precip.rain_formation, precip.sedimentation, xx, yy, zz)[2]
+            vt = f.(_qrai, ρ, _Nrai)
+        else
+            error("Computing rainrate for the given precipitation style is invalid!!")
+        end
+        rainrate_ = _qrai .* ρ .* vt .* 3600
+        rainrate = 1.5 .* rainrate_[1] - 0.5 .* rainrate_[2]
+        output = [max(0.0, rainrate)]
+    elseif var == "reff"
+        _qliq = parent(u.ρq_liq) ./ ρ
+        _qrai = parent(u.ρq_rai) ./ ρ
+        _Nliq = parent(u.N_liq)
+        _Nrai = parent(u.N_rai)
+
+        z_top = length(_qliq)
+        threshold = 1e-6
+        while _qliq[z_top] < threshold && z_top > 1
+            z_top -= 1 
+        end     
+
+        depth = 500.0
+        z = parent(CC.Fields.coordinate_field(aux.prescribed_velocity.ρw).z)
+        dz = (maximum(z) - minimum(z)) / length(z)
+        steps = Int(round(depth / dz))
+        _ind = max(z_top - steps + 1, 1)
+
+        ql = mean(_qliq[_ind:z_top])
+        qr = mean(_qrai[_ind:z_top])
+        Nl = mean(_Nliq[_ind:z_top])
+        Nr = mean(_Nrai[_ind:z_top])
+        ρ = mean(ρ[_ind:z_top])
+        if precip isa Precipitation2M
+            if ql != 0.0 
+                output = [CM2.effective_radius(precip.rain_formation, ql, qr, Nl, Nr, ρ)]
+            else 
+                output = [0.0]
+            end
+        else
+            error("Computing effectve radius for the given precipitation style is invalid!!")
+        end
     elseif var == "Z_top"
         _qliq = parent(u.ρq_liq) ./ ρ
         _qrai = parent(u.ρq_rai) ./ ρ
-        _qlr = _qliq + _qrai
+        _Nliq = parent(u.N_liq)
+        _Nrai = parent(u.N_rai)
 
         z_top = length(_qliq)
-        threshold = 1e-3
-        while sum(_qlr[z_top, :]) < threshold && z_top > 1
+        threshold = 1e-6
+        while _qliq[z_top] < threshold && z_top > 1
             z_top -= 1
         end
 
@@ -162,12 +209,88 @@ function get_variable_data_from_ODE(u, aux, precip, var::String)
         steps = Int(round(depth / dz))
         _ind = max(z_top - steps + 1, 1)
 
-        qr = vec(mean(_qrai[_ind:z_top, :], dims = 1))
-        ρ = vec(mean(ρ[_ind:z_top, :], dims = 1))
-
+        ql = mean(_qliq[_ind:z_top])
+        qr = mean(_qrai[_ind:z_top])
+        Nl = mean(_Nliq[_ind:z_top])
+        Nr = mean(_Nrai[_ind:z_top])
+        ρ = mean(ρ[_ind:z_top])
         if precip isa Precipitation1M
-            output = CM1.radar_reflectivity.(precip.rain, qr, ρ)
-            output = replace!(output, -Inf => -300.0, Inf => 300.0, NaN => 0.0) # TODO this should be captured in CM1
+            output = [CM1.radar_reflectivity(precip.rain, qr, ρ)]
+        elseif precip isa Precipitation2M
+            output = [CM2.radar_reflectivity(precip.rain_formation, ql, qr, Nl, Nr, ρ)]
+            #output = output < -50.0 ? -50.0 : output
+        else
+            error("Computing radar reflectivity for the given precipitation style is invalid!!")
+        end
+    elseif var == "Z_1"
+        _qliq = parent(u.ρq_liq) ./ ρ
+        _qrai = parent(u.ρq_rai) ./ ρ
+        _Nliq = parent(u.N_liq)
+        _Nrai = parent(u.N_rai)
+
+        z_top = length(_qliq)
+        threshold = 1e-6
+        while _qliq[z_top] < threshold && z_top > 1
+            z_top -= 1
+        end 
+
+        depth = 500.0
+        z = parent(CC.Fields.coordinate_field(aux.prescribed_velocity.ρw).z)
+        dz = (maximum(z) - minimum(z)) / length(z)
+        steps = Int(round(depth / dz))
+        z_1 =  z_top - steps
+        _ind = max(z_1 - steps + 1, 1)
+
+        ql = mean(_qliq[_ind:z_1])
+        qr = mean(_qrai[_ind:z_1])
+        Nl = mean(_Nliq[_ind:z_1])
+        Nr = mean(_Nrai[_ind:z_1])
+        ρ = mean(ρ[_ind:z_1])
+        if precip isa Precipitation1M
+            output = [CM1.radar_reflectivity(precip.rain, qr, ρ)]
+        elseif precip isa Precipitation2M
+            output = [CM2.radar_reflectivity(precip.rain_formation, ql, qr, Nl, Nr, ρ)]
+            #output = output < FT(-50) ? FT(-50) : output
+        else
+            error("Computing radar reflectivity for the given precipitation style is invalid!!")
+        end
+    elseif var == "Z_2"
+        _qliq = parent(u.ρq_liq) ./ ρ
+        _qrai = parent(u.ρq_rai) ./ ρ
+        _Nliq = parent(u.N_liq)
+        _Nrai = parent(u.N_rai)
+
+        z_top = length(_qliq)
+        threshold = 1e-6
+        while _qliq[z_top] < threshold && z_top > 1
+            z_top -= 1
+        end
+
+        depth = 500.0
+        z = parent(CC.Fields.coordinate_field(aux.prescribed_velocity.ρw).z)
+        dz = (maximum(z) - minimum(z)) / length(z)
+        steps = Int(round(depth / dz))
+        z_2 = z_top - (2 * steps)
+        _ind = max(z_2 - steps + 1, 1)
+
+        ql = mean(_qliq[_ind:z_2])
+        #println(ql)
+        qr = mean(_qrai[_ind:z_2])
+        #println(qr)
+        Nl = mean(_Nliq[_ind:z_2])
+        #println(Nl)
+        Nr = mean(_Nrai[_ind:z_2])
+        #println(Nr)
+        ρ = mean(ρ[_ind:z_2])
+        #println(ρ)
+        if precip isa Precipitation1M
+            output = [CM1.radar_reflectivity(precip.rain, qr, ρ)]
+            #println(output)
+        elseif precip isa Precipitation2M
+            output = [CM2.radar_reflectivity(precip.rain_formation, ql, qr, Nl, Nr, ρ)]
+            #output = output < FT(-50) ? FT(-50) : output
+            #println("Z_2")
+            #println(output)
         else
             error("Computing radar reflectivity for the given precipitation style is invalid!!")
         end

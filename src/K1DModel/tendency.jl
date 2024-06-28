@@ -124,7 +124,7 @@ end
     find_cloud_base(S_Nl, z, cloud_base_S_Nl_and_z)
     @. S_Nl = ifelse(z == last(cloud_base_S_Nl_and_z), S_Nl, FT(0))
 
-    @. aux.activation_sources.N_aer = -1 * S_Nl
+    #@. aux.activation_sources.N_aer = -1 * S_Nl
     @. aux.activation_sources.N_liq = S_Nl
 end
 
@@ -162,7 +162,7 @@ end
     find_cloud_base(S_Nl, z, cloud_base_S_Nl_and_z)
     @. S_Nl = ifelse(z == last(cloud_base_S_Nl_and_z), S_Nl, FT(0))
 
-    @. aux.activation_sources.N_aer = -1 * S_Nl
+    #@. aux.activation_sources.N_aer = -1 * S_Nl
     @. aux.activation_sources.activation = get_activation_sources(S_Nl, cloudy_params)
     @. aux.activation_sources.ρq_vap = -aux.activation_sources.activation.:2
 end

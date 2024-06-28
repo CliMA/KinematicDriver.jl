@@ -1,6 +1,7 @@
 abstract type AbstractOptimizationStyle end
 struct EKPStyle <: AbstractOptimizationStyle end
 struct OptimStyle <: AbstractOptimizationStyle end
+using NCDatasets
 
 function compute_loss(u::Array{Float64, 1}, u_names::Array{String, 1}, config::Dict, RS::ReferenceStatistics)
     G_n = run_dyn_model(u, u_names, config, RS = RS)
@@ -56,6 +57,13 @@ function calibrate(::EKPStyle, priors, config, ref_stats_list::Vector{ReferenceS
     n_cases = length(ref_stats_list)
     batch_size = config["process"]["batch_size"]
     n_batches = floor(Int, n_cases / batch_size)
+
+    ds_loss = NCDataset("calibration_output.nc", "c")
+    defDim(ds_loss, "n_iter", n_iter)
+    defVar(ds_loss, "loss", Float64, ("n_iter",))
+    defVar(ds_loss, "mse_m", Float64, ("n_iter",))
+    defVar(ds_loss, "mse_s", Float64, ("n_iter",))
+
     for n in 1:n_iter
 
         if verbose >= 1
@@ -73,6 +81,9 @@ function calibrate(::EKPStyle, priors, config, ref_stats_list::Vector{ReferenceS
                     ",\t mse_s = ",
                     model_error.mse_s,
                 )
+                ds_loss["loss"][n] = model_error.loss
+                ds_loss["mse_m"][n] = model_error.mse_m
+                ds_loss["mse_s"][n] = model_error.mse_s
             end
         end
 
@@ -110,7 +121,7 @@ function calibrate(::EKPStyle, priors, config, ref_stats_list::Vector{ReferenceS
             param_ensemble = [param_ensemble; [get_u_final(ekpobj)]]
         end
     end
-
+    close(ds_loss)
     return param_ensemble
 end
 
