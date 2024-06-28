@@ -15,11 +15,11 @@ function parse_commandline()
         "--moisture_choice"
         help = "Mositure model choice: EquilibriumMoisture, NonEquilibriumMoisture, CloudyMoisture"
         arg_type = String
-        default = "CloudyMoisture"
+        default = "EquilibriumMoisture"
         "--precipitation_choice"
         help = "Precipitation model choice: NoPrecipitation, Precipitation0M, Precipitation1M, Precipitation2M, CloudyPrecip"
         arg_type = String
-        default = "CloudyPrecip"
+        default = "Precipitation1M"
         "--num_moments"
         help = "Number of moments to use for CloudyPrecip (ignored otherwise)"
         arg_type = Int
@@ -80,7 +80,7 @@ function parse_commandline()
         "--t_end"
         help = "Time at the end of the simulation [s]"
         arg_type = Float64
-        default = Float64(10)
+        default = Float64(3600)
         "--w1"
         help = "Maximum prescribed updraft momentum flux [m/s * kg/m3]"
         arg_type = Float64

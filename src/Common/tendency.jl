@@ -65,10 +65,7 @@ end
     @. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
 end
 function separate_liq_rai(FT, moments, pdists, cloudy_params, ρd)
-    tmp = CL.ParticleDistributions.get_standard_N_q(
-        pdists,
-        cloudy_params.size_threshold / cloudy_params.norms[2],
-    )
+    tmp = CL.ParticleDistributions.get_standard_N_q(pdists, cloudy_params.size_threshold / cloudy_params.norms[2])
     moments_like = ntuple(length(moments)) do k
         if k == 1
             max(tmp.N_liq * cloudy_params.mom_norms[1], FT(0))
@@ -90,13 +87,11 @@ end
     (; ts, ρ, ρ_dry, p, T, θ_dry, θ_liq_ice) = aux.thermo_variables
     (; moments, pdists, q_rai, N_rai, N_liq, q_tot, q_liq, q_ice) = aux.microph_variables
     (; tmp_cloudy) = aux.scratch
-    (; weighted_vt) = aux.velocities
 
     FT = eltype(Y.ρq_vap)
 
     @. moments = Y.moments
     @. pdists = get_updated_pdists(moments, pdists, cloudy_params)
-    @. weighted_vt = get_weighted_vt(moments, pdists, cloudy_params)
 
     @. tmp_cloudy = separate_liq_rai(FT, Y.moments, pdists, cloudy_params, ρ_dry)
     @. N_liq = tmp_cloudy.:1
@@ -181,10 +176,13 @@ end
     ntuple(length(old_pdists)) do i
         if old_pdists[i] isa CL.ParticleDistributions.GammaPrimitiveParticleDistribution
             CL.ParticleDistributions.update_dist_from_moments(
-                old_pdists[i], 
-                mom_i[i], 
-                param_range = (; :k => (1.0, 10.0)))
-        else
+                old_pdists[i],
+                mom_i[i],
+                param_range = (; :k => (1.0, 10.0)),
+            )
+        elseif old_pdists[i] isa CL.ParticleDistributions.LognormalPrimitiveParticleDistribution
+            CL.ParticleDistributions.update_dist_from_moments(old_pdists[i], mom_i[i])
+        else # Exponential or monodisperse
             CL.ParticleDistributions.update_dist_from_moments(old_pdists[i], mom_i[i][1:2])
         end
     end
@@ -198,7 +196,11 @@ end
     return weighted_vt
 end
 @inline function precompute_aux_precip!(ps::CloudyPrecip, Y, aux)
-    nothing
+    (; weighted_vt) = aux.velocities
+    (; cloudy_params) = aux
+    (; moments, pdists) = aux.microph_variables
+
+    @. weighted_vt = get_weighted_vt(moments, pdists, cloudy_params)
 end
 
 @inline function precompute_aux_moisture_sources!(sm::AbstractMoistureStyle, aux)
