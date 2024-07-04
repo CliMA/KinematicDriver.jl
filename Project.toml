@@ -30,7 +30,7 @@ Thermodynamics = "b60c26fb-14c3-4610-9d3e-2d17fe7ff00c"
 [compat]
 ClimaCore = "0.14"
 ClimaParams = "0.10.7"
-CloudMicrophysics = "0.20"
+CloudMicrophysics = "0.20, 0.22"
 Cloudy = "0.5.3"
 DiffEqBase = "6"
 Distributions = "0.25"
