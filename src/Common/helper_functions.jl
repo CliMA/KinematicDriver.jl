@@ -69,7 +69,7 @@ function get_precipitation_type(
             error("Invalid sedimentation choice: $sedimentation_choice")
         end
         if rain_formation_choice == "SB2006" || rain_formation_choice === nothing
-            precip = Precipitation2M(CMP.SB2006(toml_dict), st)
+            precip = Precipitation2M(CMP.SB2006(toml_dict, false), st)
         else
             error("Invalid rain formation choice: $rain_formation_choice")
         end
@@ -145,6 +145,19 @@ function get_variable_data_from_ODE(u, aux, precip, var::String)
             error("Computing rainrate for the given precipitation style is invalid!!")
         end
         output = _qrai .* ρ .* vt .* 3600
+    elseif var == "Z"
+        _qliq = parent(u.ρq_liq) ./ ρ
+        _qrai = parent(u.ρq_rai) ./ ρ
+        _Nliq = parent(u.N_liq)
+        _Nrai = parent(u.N_rai)
+
+        if precip isa Precipitation1M
+            output = CM1.radar_reflectivity.(precip.rain, _qrai, ρ)
+        elseif precip isa Precipitation2M
+            output = CM2.radar_reflectivity.(precip.rain_formation, _qliq, _qrai, _Nliq, _Nrai, ρ)
+        else
+            error("Computing radar reflectivity for the given precipitation style is invalid!!")
+        end
     elseif var == "rainrate_surface"
         _qrai = parent(u.ρq_rai) ./ ρ
         if precip isa Precipitation1M
@@ -214,6 +227,74 @@ function get_variable_data_from_ODE(u, aux, precip, var::String)
         Nl = mean(_Nliq[_ind:z_top])
         Nr = mean(_Nrai[_ind:z_top])
         ρ = mean(ρ[_ind:z_top])
+        if precip isa Precipitation1M
+            output = [CM1.radar_reflectivity(precip.rain, qr, ρ)]
+        elseif precip isa Precipitation2M
+            output = [CM2.radar_reflectivity(precip.rain_formation, ql, qr, Nl, Nr, ρ)]
+            #output = output < -50.0 ? -50.0 : output
+        else
+            error("Computing radar reflectivity for the given precipitation style is invalid!!")
+        end
+    elseif var == "Z_mid"
+        _qliq = parent(u.ρq_liq) ./ ρ
+        _qrai = parent(u.ρq_rai) ./ ρ
+        _Nliq = parent(u.N_liq)
+        _Nrai = parent(u.N_rai)
+
+        z_top = length(_qliq)
+        threshold = 1e-6
+        while _qliq[z_top] < threshold && z_top > 1
+            z_top -= 1
+        end
+        
+        depth = 500.0
+        height = 500.0
+        z = parent(CC.Fields.coordinate_field(aux.prescribed_velocity.ρw).z)
+        dz = (maximum(z) - minimum(z)) / length(z)
+        steps = Int(round(depth / (2 * dz)))
+        _bottom_ind = Int(round(height / dz))
+        _ind = Int(round((z_top + _bottom_ind) / 2))
+        _ind1 = max(_ind - steps + 1, 1)
+        _ind2 = min(_ind + steps - 1, z_top)
+
+        ql = mean(_qliq[_ind1:_ind2])
+        qr = mean(_qrai[_ind1:_ind2])
+        Nl = mean(_Nliq[_ind1:_ind2])
+        Nr = mean(_Nrai[_ind1:_ind2])
+        ρ = mean(ρ[_ind1:_ind2])
+        if precip isa Precipitation1M
+            output = [CM1.radar_reflectivity(precip.rain, qr, ρ)]
+        elseif precip isa Precipitation2M
+            output = [CM2.radar_reflectivity(precip.rain_formation, ql, qr, Nl, Nr, ρ)]
+            #output = output < -50.0 ? -50.0 : output
+        else
+            error("Computing radar reflectivity for the given precipitation style is invalid!!")
+        end
+    elseif var == "Z_bottom"
+        _qliq = parent(u.ρq_liq) ./ ρ
+        _qrai = parent(u.ρq_rai) ./ ρ
+        _Nliq = parent(u.N_liq)
+        _Nrai = parent(u.N_rai)
+
+        z_top = length(_qliq)
+        threshold = 1e-6
+        while _qliq[z_top] < threshold && z_top > 1
+            z_top -= 1
+        end
+
+        depth = 500.0
+        height = 500.0
+        z = parent(CC.Fields.coordinate_field(aux.prescribed_velocity.ρw).z)
+        dz = (maximum(z) - minimum(z)) / length(z)
+        steps = Int(round(depth / dz))
+        _ind = Int(round(height / dz))
+        _final_ind = min(_ind + steps - 1, z_top)
+
+        ql = mean(_qliq[_ind:_final_ind])
+        qr = mean(_qrai[_ind:_final_ind])
+        Nl = mean(_Nliq[_ind:_final_ind])
+        Nr = mean(_Nrai[_ind:_final_ind])
+        ρ = mean(ρ[_ind:_final_ind])
         if precip isa Precipitation1M
             output = [CM1.radar_reflectivity(precip.rain, qr, ρ)]
         elseif precip isa Precipitation2M

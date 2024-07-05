@@ -158,9 +158,11 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
         plot_folder = string("experiments/KiD_driver/", output_folder, "/figures/")
 
         z_centers = parent(CC.Fields.coordinate_field(space))
+
         plot_final_aux_profiles(z_centers, aux, precip, output = plot_folder)
-        plot_animation(z_centers, solver, aux, moisture, precip, K1D, output = plot_folder)
-        plot_timeheight(string("experiments/KiD_driver/", output_folder, "/Output.nc"), output = plot_folder)
+        #plot_animation(z_centers, solver, aux, moisture, precip, K1D, output = plot_folder)
+        plot_timeheight_q(string("experiments/KiD_driver/", output_folder, "/Output.nc"), output = plot_folder)
+        plot_timeheight_N(string("experiments/KiD_driver/", output_folder, "/Output.nc"), output = plot_folder)
     end
 
     return
