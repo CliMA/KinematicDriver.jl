@@ -64,7 +64,7 @@ function parse_commandline()
         "--n_elem"
         help = "Number of computational elements"
         arg_type = Int
-        default = 256
+        default = 128
         "--dt"
         help = "Simulation time step [s]"
         arg_type = Float64
