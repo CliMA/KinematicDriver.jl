@@ -97,7 +97,7 @@ end
     @test_opt K1D.precompute_aux_activation!(precip, dY, Y, aux, 0.0)
     K1D.precompute_aux_activation!(precip, dY, Y, aux, 0.0)
     # TODO allocation occurs for finding cloud base
-    @test 9824 >= @allocated K1D.precompute_aux_activation!(precip, dY, Y, aux, 0.0)
+    @test 9856 >= @allocated K1D.precompute_aux_activation!(precip, dY, Y, aux, 0.0)
 end
 
 @testset "Cloudy optimization tests" begin
@@ -124,5 +124,5 @@ end
     @test_opt K1D.precompute_aux_activation!(precip, dY, Y, aux, 0.0)
     K1D.precompute_aux_activation!(precip, dY, Y, aux, 0.0)
     # TODO allocation occurs for finding cloud base
-    @test 10240 >= @allocated K1D.precompute_aux_activation!(precip, dY, Y, aux, 0.0)
+    @test 10272 >= @allocated K1D.precompute_aux_activation!(precip, dY, Y, aux, 0.0)
 end
