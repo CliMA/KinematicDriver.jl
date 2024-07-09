@@ -43,7 +43,7 @@ function get_process_config()
     # Define number of parameter ensemle for EKP (Inversion)
     config["n_ens"] = 15
     # Define EKP time step
-    config["Δt"] = 1.0
+    config["Δt"] = 0.75
     config["EKP_method"] = "EKI"
     # Choose regularization factor α ∈ (0,1] for UKI, when enough observation data α=1: no regularization
     config["α_reg"] = 1.0
