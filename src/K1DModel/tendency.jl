@@ -39,7 +39,7 @@ end
 )
     FT = eltype(q_tot)
     S_Nl::FT = FT(0)
-    
+
     if N_aer < eps(FT)
         return S_Nl
     end
