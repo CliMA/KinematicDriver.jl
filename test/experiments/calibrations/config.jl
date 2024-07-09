@@ -99,7 +99,7 @@ function get_model_config()
     config["model"] = "KiD"
     config["moisture_choice"] = "NonEquilibriumMoisture"
     config["precipitation_choice"] = "Precipitation1M"
-    # Define rain formation choice: "CliMA_1M", "KK2000", "B1994", "TC1980", "LD2004", "VarTimeScaleAcnv", "SB2006"
+    # Define rain formation choice: "CliMA_1M", "KK2000", "B1994", "TC1980", "LD2004", "VarTimeScaleAcnv", "SB2006", "SB2006NL"
     config["rain_formation_choice"] = "CliMA_1M"
     # Define sedimentation choice: "CliMA_1M", "Chen2022", "SB2006"
     config["sedimentation_choice"] = "CliMA_1M"
@@ -118,6 +118,7 @@ function get_model_config()
     config["p0"] = 100000.0
     config["Nd"] = 100 * 1e6
     config["qtot_flux_correction"] = false
+    config["open_system_activation"] = true
     config["r_dry"] = 0.04 * 1e-6
     config["std_dry"] = 1.4
     config["κ"] = 0.9

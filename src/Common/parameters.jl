@@ -22,6 +22,8 @@ Base.@kwdef struct CommonParameters{FT} <: ACP
     precip_sinks::Bool
     "Prescribed number concentration of cloud droplets (needed for some schemes) [1/m3]"
     prescribed_Nd::FT
+    "Switch to define aerosol activation approach; open system vs. closed system"
+    open_system_activation::Bool
 end
 
 function CommonParameters(td::CP.AbstractTOMLDict)
@@ -29,6 +31,7 @@ function CommonParameters(td::CP.AbstractTOMLDict)
         :precipitation_sources_flag => :precip_sources,
         :precipitation_sinks_flag => :precip_sinks,
         :prescribed_Nd => :prescribed_Nd,
+        :open_system_activation => :open_system_activation,
     )
     parameters = CP.get_parameter_values(td, name_map, "Common")
     FT = CP.float_type(td)
