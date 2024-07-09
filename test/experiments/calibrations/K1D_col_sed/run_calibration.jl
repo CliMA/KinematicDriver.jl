@@ -2,7 +2,7 @@ import KinematicDriver.CalibrateCMP as KCP
 
 include("./config.jl")
 
-data_save_directory = KCP.make_output_directories()
+data_save_directory = KCP.make_output_directories(joinpath(@__DIR__, "calibration_output"))
 
 config = get_config()
 
@@ -15,7 +15,7 @@ u_names = keys(config["prior"]["parameters"])
 
 if config["process"]["method"] == "EKP"
     res = KCP.calibrate(KCP.EKPStyle(), priors, config, ref_stats_list)
-    KCP.ensemble_convergence(res, priors, config, file_name = data_save_directory * "ensemble_convergence.gif")
+    KCP.ensemble_convergence(res, priors, config, file_name = joinpath(data_save_directory, "ensemble_convergence.gif"))
 elseif config["process"]["method"] == "Optim"
     res = KCP.calibrate(KCP.OptimStyle(), priors, config, KCP.combine_ref_stats(ref_stats_list))
 elseif config["process"]["method"] == "both"
@@ -37,5 +37,5 @@ KCP.save_data(
     ϕ_bests,
     collect(u_names),
     config,
-    file_name = data_save_directory * config["process"]["output_file_name"],
+    file_name = joinpath(data_save_directory, config["process"]["output_file_name"]),
 )

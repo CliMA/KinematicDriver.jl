@@ -4,7 +4,7 @@ import KinematicDriver.CalibrateCMP as KCP
 
 include("./config.jl")
 
-data_save_directory = KCP.make_output_directories()
+data_save_directory = KCP.make_output_directories(joinpath(@__DIR__, "run_model_output"))
 output_file_name_base = "model_vs_obs_contours"
 
 config = get_config()

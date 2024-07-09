@@ -21,7 +21,7 @@ function parse_commandline()
         arg_type = String
         default = "Precipitation1M"
         "--rain_formation_scheme_choice"
-        help = "Rain formation scheme choice: CliMA_1M, KK2000, B1994, TC1980, LD2004, VarTimeScaleAcnv for Precipitation1M; and SB2006 for Precipitation2M"
+        help = "Rain formation scheme choice: CliMA_1M, KK2000, B1994, TC1980, LD2004, VarTimeScaleAcnv for Precipitation1M; and SB2006, SB2006NL for Precipitation2M"
         arg_type = String
         default = "CliMA_1M"
         "--sedimentation_scheme_choice"
@@ -32,6 +32,10 @@ function parse_commandline()
         help = "Prescribed number of cloud droplets (used in KK2000, B1994, TC1980, LD2004, VarTimeScaleAcnv and SB2006 rain formation schemes)"
         arg_type = Float64
         default = Float64(1e8)
+        "--open_system_activation"
+        help = "Set to true if you want to assume an open system for aerosol activation with an aerosol concentration budget equal to prescribed_Nd"
+        arg_type = Bool
+        default = false
         "--plotting_flag"
         help = "Set to true if you want to generate some basic plots at the end of the simulation"
         arg_type = Bool
