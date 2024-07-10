@@ -27,7 +27,6 @@ function get_prior_config()
             (mean = 400.0, var = 100.0, lbound = 0.0, ubound = Inf),
         "SB2006_collection_kernel_coeff_kcr" => (mean = 5.25, var = 1.3125, lbound = 0.0, ubound = Inf),
         "SB2006_collection_kernel_coeff_krr" => (mean = 7.12, var = 1.78, lbound = 0.0, ubound = Inf),
-        "SB2006_raindrops_terminal_velocity_coeff_aR" => (mean = 9.65, var = 2.4125, lbound = 0.0, ubound = Inf),
     )
     return config
 end
@@ -105,8 +104,8 @@ function get_model_config()
     config["k"] = 2.0
     config["rhod"] = 1.0
     config["precipitation_choice"] = "Precipitation2M"
-    # Define rain formation choice: "CliMA_1M", "KK2000", "B1994", "TC1980", "LD2004", "VarTimeScaleAcnv", "SB2006"
-    config["rain_formation_choice"] = "SB2006"
+    # Define rain formation choice: "CliMA_1M", "KK2000", "B1994", "TC1980", "LD2004", "VarTimeScaleAcnv", "SB2006", "SB2006NL"
+    config["rain_formation_choice"] = "SB2006NL"
     # Define sedimentation choice: "CliMA_1M", "Chen2022", "SB2006"
     config["sedimentation_choice"] = "SB2006"
     config["precip_sources"] = true
@@ -120,19 +119,17 @@ function get_model_config()
     config["dt_calib"] = 150.0
     config["t_calib"] = config["t_ini"]:config["dt_calib"]:config["t_end"]
     config["filter"] = KCP.make_filter_props(
-        config["n_elem"],
+        config["n_elem"] .* ones(Int, 5),
         config["t_calib"];
         apply = true,
-        nz_per_filtered_cell = 4,
+        nz_per_filtered_cell = 4 .* ones(Int, 5),
         nt_per_filtered_cell = 30,
     )
-    config["param_dependencies"] = [(
-        base = "SB2006_raindrops_terminal_velocity_coeff_aR",
-        dependant = "SB2006_raindrops_terminal_velocity_coeff_bR",
-        ratio = 10.3 / 9.65,
-    )]
     # Define default parameters
     config["toml_dict"] = CP.create_toml_dict(Float64)
+    config["toml_dict"]["SB2006_raindrops_terminal_velocity_coeff_aR"]["value"] = 6.0
+    config["toml_dict"]["SB2006_raindrops_terminal_velocity_coeff_bR"]["value"] = 9.76
+    config["toml_dict"]["SB2006_raindrops_terminal_velocity_coeff_cR"]["value"] = 1490.0
     config["thermo_params"] = TD.Parameters.ThermodynamicsParameters(config["toml_dict"])
     config["air_params"] = CM.Parameters.AirProperties(config["toml_dict"])
     config["activation_params"] = CM.Parameters.AerosolActivationParameters(config["toml_dict"])

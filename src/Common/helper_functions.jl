@@ -70,6 +70,8 @@ function get_precipitation_type(
         end
         if rain_formation_choice == "SB2006" || rain_formation_choice === nothing
             precip = Precipitation2M(CMP.SB2006(toml_dict), st)
+        elseif rain_formation_choice == "SB2006NL"
+            precip = Precipitation2M(CMP.SB2006(toml_dict, false), st)
         else
             error("Invalid rain formation choice: $rain_formation_choice")
         end

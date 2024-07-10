@@ -33,6 +33,9 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     if opts["qtot_flux_correction"]
         output_folder = output_folder * "_wFC"
     end
+    if opts["open_system_activation"]
+        output_folder = output_folder * "_OSA"
+    end
     path = joinpath(@__DIR__, output_folder)
     mkpath(path)
 
@@ -57,6 +60,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
         precip_sinks = Int(opts["precip_sinks"]),
         qtot_flux_correction = Int(opts["qtot_flux_correction"]),
         prescribed_Nd = FT(opts["prescribed_Nd"]),
+        open_system_activation = Int(opts["open_system_activation"]),
         r_dry = FT(opts["r_dry"]),
         std_dry = FT(opts["std_dry"]),
         κ = FT(opts["kappa"]),

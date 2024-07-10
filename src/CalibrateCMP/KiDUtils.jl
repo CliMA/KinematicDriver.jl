@@ -60,6 +60,7 @@ function run_KiD(u::Array{FT, 1}, u_names::Array{String, 1}, model_settings::Dic
         precip_sources = model_settings["precip_sources"],
         precip_sinks = model_settings["precip_sinks"],
         Nd = model_settings["Nd"],
+        open_system_activation = model_settings["open_system_activation"],
     )
     kid_params = create_kid_parameters(
         FT,
@@ -175,14 +176,13 @@ function run_KiD_col_sed(u::Array{FT, 1}, u_names::Array{String, 1}, model_setti
     coord = CC.Fields.coordinate_field(space)
 
     init = map(
-        coord -> CO.initial_condition(
+        coord -> CO.initial_condition_0d(
             FT,
             model_settings["thermo_params"],
             model_settings["qt"],
             model_settings["Nd"],
             model_settings["k"],
             model_settings["rhod"],
-            coord.z,
         ),
         coord,
     )
@@ -276,11 +276,12 @@ function apply_param_dependency!(model_settings::Dict)
     end
 end
 
-function create_common_parameters(FT; precip_sources = 1, precip_sinks = 1, Nd = 1e8)
+function create_common_parameters(FT; precip_sources = 1, precip_sinks = 1, Nd = 1e8, open_system_activation = false)
     common_params = CO.Parameters.CommonParameters{FT}(;
         precip_sources = precip_sources,
         precip_sinks = precip_sinks,
         prescribed_Nd = Nd,
+        open_system_activation = open_system_activation,
     )
     return common_params
 end

@@ -21,6 +21,7 @@ end
 
 # Compute activation fraction
 @inline function get_aerosol_activation_rate(
+    common_params,
     kid_params,
     thermo_params,
     air_params,
@@ -39,18 +40,30 @@ end
     FT = eltype(q_tot)
     S_Nl::FT = FT(0)
 
+    if N_aer < eps(FT)
+        return S_Nl
+    end
+
     q = TD.PhasePartition(q_tot, q_liq, q_ice)
     S::FT = TD.supersaturation(thermo_params, q, ρ, T, TD.Liquid())
 
     (; r_dry, std_dry, κ) = kid_params
     w = ρw / ρ
 
+    if common_params.open_system_activation
+        _aerosol_budget = common_params.prescribed_Nd
+        _already_activated_particles = N_liq
+    else
+        _aerosol_budget = N_aer
+        _already_activated_particles = FT(0)
+    end
+
     aerosol_distribution =
-        CMAM.AerosolDistribution((CMAM.Mode_κ(r_dry, std_dry, N_aer, (FT(1),), (FT(1),), (FT(0),), (κ,)),))
+        CMAM.AerosolDistribution((CMAM.Mode_κ(r_dry, std_dry, _aerosol_budget, (FT(1),), (FT(1),), (FT(0),), (κ,)),))
     N_act = CMAA.total_N_activated(activation_params, aerosol_distribution, air_params, thermo_params, T, p, w, q)
 
     # Convert the total activated number to tendency
-    S_Nl = ifelse(S < 0 || isnan(N_act), FT(0), max(FT(0), N_act - N_liq) / dt)
+    S_Nl = ifelse(S < 0 || isnan(N_act), FT(0), max(FT(0), N_act - _already_activated_particles) / dt)
 
     return S_Nl
 end
@@ -92,7 +105,7 @@ end
 ) end
 @inline function precompute_aux_activation!(::CO.Precipitation2M, dY, Y, aux, t)
 
-    (; thermo_params, activation_params, air_params, kid_params) = aux
+    (; thermo_params, activation_params, air_params, kid_params, common_params) = aux
     (; q_tot, q_liq, q_ice, N_aer, N_liq) = aux.microph_variables
     (; T, p, ρ) = aux.thermo_variables
     (; ρw) = aux.prescribed_velocity
@@ -104,6 +117,7 @@ end
 
     @. N_aer = Y.N_aer
     @. S_Nl = get_aerosol_activation_rate(
+        common_params,
         kid_params,
         thermo_params,
         air_params,
@@ -124,13 +138,13 @@ end
     find_cloud_base(S_Nl, z, cloud_base_S_Nl_and_z)
     @. S_Nl = ifelse(z == last(cloud_base_S_Nl_and_z), S_Nl, FT(0))
 
-    @. aux.activation_sources.N_aer = -1 * S_Nl
+    @. aux.activation_sources.N_aer = -1 * !common_params.open_system_activation * S_Nl
     @. aux.activation_sources.N_liq = S_Nl
 end
 
 @inline function precompute_aux_activation!(::CO.CloudyPrecip, dY, Y, aux, t)
 
-    (; kid_params, thermo_params, air_params, activation_params, cloudy_params) = aux
+    (; common_params, kid_params, thermo_params, air_params, activation_params, cloudy_params) = aux
     (; q_tot, q_liq, q_ice, N_liq, N_aer) = aux.microph_variables
     (; T, p, ρ) = aux.thermo_variables
     (; ρw) = aux.prescribed_velocity
@@ -142,6 +156,7 @@ end
 
     @. N_aer = Y.N_aer
     @. S_Nl = get_aerosol_activation_rate(
+        common_params,
         kid_params,
         thermo_params,
         air_params,
@@ -162,7 +177,7 @@ end
     find_cloud_base(S_Nl, z, cloud_base_S_Nl_and_z)
     @. S_Nl = ifelse(z == last(cloud_base_S_Nl_and_z), S_Nl, FT(0))
 
-    @. aux.activation_sources.N_aer = -1 * S_Nl
+    @. aux.activation_sources.N_aer = -1 * !common_params.open_system_activation * S_Nl
     @. aux.activation_sources.activation = get_activation_sources(S_Nl, cloudy_params)
     @. aux.activation_sources.ρq_vap = -aux.activation_sources.activation.:2
 end
