@@ -119,19 +119,22 @@ function plot_final_aux_profiles(z_centers, aux, precip; output = "output")
     end
 
     p = Plots.plot(
-        p1,
+        #p1,
         p2,
-        p3,
-        p4,
+        #p3,
         p5,
-        p6,
-        p8,
+        p4,
+        #p6,
+        #p8,
         p9,
         p10,
         p7,
-        size = (1800.0, 1200.0),
-        bottom_margin = 40.0 * Plots.PlotMeasures.px,
-        left_margin = 80.0 * Plots.PlotMeasures.px,
+        size = (1400.0, 900.0),
+        bottom_margin = 30.0 * Plots.PlotMeasures.px,
+        left_margin = 30.0 * Plots.PlotMeasures.px,
+        top_margin = 30.0 * Plots.PlotMeasures.px,
+        right_margin = 30.0 * Plots.PlotMeasures.px,
+        layout = (2, 3),
     )
     Plots.png(p, joinpath(path, "final_aux_profiles.png"))
 end
@@ -223,7 +226,7 @@ function plot_animation(z_centers, solver, aux, moisture, precip, KiD; output = 
     Plots.mp4(anim, joinpath(path, "animation.mp4"), fps = 10)
 end
 
-function plot_timeheight(nc_data_file; output = "output")
+function plot_timeheight_q(nc_data_file; output = "output")
     path = joinpath(@__DIR__, output)
     mkpath(path)
 
@@ -249,20 +252,66 @@ function plot_timeheight(nc_data_file; output = "output")
     p8 = Plots.heatmap(t_plt, z_plt, N_rai_plt .* 1e-6, title = "N_rai [1/cm3]", xlabel = "time [s]", ylabel = "z [m]", color = :viridis)
     #! format: on
     p = Plots.plot(
-        p1,
+        #p1,
         p2,
-        p3,
+        #p3,
         p4,
-        p5,
-        p6,
-        p7,
-        p8,
-        size = (2000.0, 1500.0),
+        #p5,
+        #p6,
+        #p7,
+        #p8,
+        size = (1100.0, 350.0),
         bottom_margin = 30.0 * Plots.PlotMeasures.px,
         left_margin = 30.0 * Plots.PlotMeasures.px,
-        layout = (3, 3),
+        top_margin = 35.0 * Plots.PlotMeasures.px,
+        right_margin = 20.0 * Plots.PlotMeasures.px,
+        layout = (1, 2),
     )
-    Plots.png(p, joinpath(path, "timeheight.png"))
+    Plots.png(p, joinpath(path, "timeheight_q.png"))
+end
+
+function plot_timeheight_N(nc_data_file; output = "output")
+    path = joinpath(@__DIR__, output)
+    mkpath(path)
+
+    ds = NC.NCDataset(joinpath(@__DIR__, nc_data_file))
+    t_plt = Array(ds.group["profiles"]["t"])
+    z_plt = Array(ds.group["profiles"]["zc"])
+    q_tot_plt = Array(ds.group["profiles"]["q_tot"])
+    q_liq_plt = Array(ds.group["profiles"]["q_liq"])
+    q_ice_plt = Array(ds.group["profiles"]["q_ice"])
+    q_rai_plt = Array(ds.group["profiles"]["q_rai"])
+    q_sno_plt = Array(ds.group["profiles"]["q_sno"])
+    N_aer_plt = Array(ds.group["profiles"]["N_aer"])
+    N_liq_plt = Array(ds.group["profiles"]["N_liq"])
+    N_rai_plt = Array(ds.group["profiles"]["N_rai"])
+    #! format: off
+    p1 = Plots.heatmap(t_plt, z_plt, q_tot_plt .* 1e3, title = "q_tot [g/kg]", xlabel = "time [s]", ylabel = "z [m]", color = :viridis)
+    p2 = Plots.heatmap(t_plt, z_plt, q_liq_plt .* 1e3, title = "q_liq [g/kg]", xlabel = "time [s]", ylabel = "z [m]", color = :viridis)
+    p3 = Plots.heatmap(t_plt, z_plt, q_ice_plt .* 1e3, title = "q_ice [g/kg]", xlabel = "time [s]", ylabel = "z [m]", color = :viridis)
+    p4 = Plots.heatmap(t_plt, z_plt, q_rai_plt .* 1e3, title = "q_rai [g/kg]", xlabel = "time [s]", ylabel = "z [m]", color = :viridis)
+    p5 = Plots.heatmap(t_plt, z_plt, q_sno_plt .* 1e3, title = "q_sno [g/kg]", xlabel = "time [s]", ylabel = "z [m]", color = :viridis)
+    p6 = Plots.heatmap(t_plt, z_plt, N_aer_plt .* 1e-6, title = "N_aer [1/cm3]", xlabel = "time [s]", ylabel = "z [m]", color = :viridis, clims=(0, 100))
+    p7 = Plots.heatmap(t_plt, z_plt, N_liq_plt .* 1e-6, title = "N_liq [1/cm3]", xlabel = "time [s]", ylabel = "z [m]", color = :viridis)
+    p8 = Plots.heatmap(t_plt, z_plt, N_rai_plt .* 1e-6, title = "N_rai [1/cm3]", xlabel = "time [s]", ylabel = "z [m]", color = :viridis)
+    #! format: on
+    p = Plots.plot(
+        #p1,
+        #p2,
+        #p3,
+        #p4,
+        #p5,
+        #p6,
+        p7,
+        p8,
+        size = (1100.0, 350.0),
+        bottom_margin = 30.0 * Plots.PlotMeasures.px,
+        left_margin = 30.0 * Plots.PlotMeasures.px,
+        top_margin = 35.0 * Plots.PlotMeasures.px,
+        right_margin = 20.0 * Plots.PlotMeasures.px,
+        layout = (1, 2),
+    )
+    Plots.png(p, joinpath(path, "timeheight_N.png"))
 end
 function plot_timeheight_no_ice_snow(nc_data_file; output = "output")
     path = joinpath(@__DIR__, output)
