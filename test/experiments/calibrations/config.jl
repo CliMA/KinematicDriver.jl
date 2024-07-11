@@ -59,10 +59,10 @@ function get_process_config()
     # Define number of iterations for EKP
     config["n_iter"] = 20
     # Define number of parameter ensemle for EKP (Inversion)
-    config["n_ens"] = 5
+    config["n_ens"] = 15
     # Define EKP time step
-    config["Δt"] = 0.05
-    config["EKP_method"] = "UKI"
+    config["Δt"] = 0.1
+    config["EKP_method"] = "EKI"
     # Choose regularization factor α ∈ (0,1] for UKI, when enough observation data α=1: no regularization
     config["α_reg"] = 1.0
     # UKI parameter
@@ -81,7 +81,7 @@ end
 function get_observations_config()
     config = Dict()
     # Define data names.
-    config["data_names"] = ["reff", "Z", "rainrate_surface"]
+    config["data_names"] = ["reff_top", "Z", "rainrate_surface"]
     # Define source of data: "file" or "perfect_model"
     config["data_source"] = "file"
     # Define number of samples for validation
@@ -91,7 +91,7 @@ function get_observations_config()
     # Define the ratio of square root of covariance to G for adding artificial noise to data in the perfect-model setting
     config["scov_G_ratio"] = 0.2
     # Define offset of true values from prior means for validation
-    config["true_values_offset"] = 0.1
+    config["true_values_offset"] = 0.15
     # Define data
     root_dir = "/Users/caterinacroci/Desktop/data/"
     config["cases"] = [(w1 = 2.0, p0 = 99000.0, Nd = 50 * 1e6, std_dry = 1.1, 
@@ -269,9 +269,9 @@ function create_parameter_set()
         println(io, "alias = \"molmass_water\"")
         println(io, "value = 0.018015")
         println(io, "type = \"float\"")
-        #println(io, "[SB2006_raindrops_terminal_velocity_coeff_aR]")
-        #println(io, "value = 8.499")
-        #println(io, "type = \"float\"")
+        println(io, "[SB2006_raindrops_terminal_velocity_coeff_aR]")
+        println(io, "value = 8.935")
+        println(io, "type = \"float\"")
     end
     toml_dict = CP.create_toml_dict(FT; override_file)
     isfile(override_file) && rm(override_file; force = true)
