@@ -158,6 +158,17 @@ function get_variable_data_from_ODE(u, aux, precip, var::String)
         else
             error("Computing radar reflectivity for the given precipitation style is invalid!!")
         end
+    elseif var == "reff"
+        _qliq = parent(u.ρq_liq) ./ ρ
+        _qrai = parent(u.ρq_rai) ./ ρ
+        _Nliq = parent(u.N_liq)
+        _Nrai = parent(u.N_rai)
+
+        if precip isa Precipitation2M
+            output = CM2.effective_radius.(precip.rain_formation, _qliq, _qrai, _Nliq, _Nrai, ρ)
+        else
+            error("Computing effective radius for the given precipitation style is invalid!!")
+        end
     elseif var == "rainrate_surface"
         _qrai = parent(u.ρq_rai) ./ ρ
         if precip isa Precipitation1M
@@ -172,7 +183,7 @@ function get_variable_data_from_ODE(u, aux, precip, var::String)
         rainrate_ = _qrai .* ρ .* vt .* 3600
         rainrate = 1.5 .* rainrate_[1] - 0.5 .* rainrate_[2]
         output = [max(0.0, rainrate)]
-    elseif var == "reff"
+    elseif var == "reff_top"
         _qliq = parent(u.ρq_liq) ./ ρ
         _qrai = parent(u.ρq_rai) ./ ρ
         _Nliq = parent(u.N_liq)
@@ -196,11 +207,7 @@ function get_variable_data_from_ODE(u, aux, precip, var::String)
         Nr = mean(_Nrai[_ind:z_top])
         ρ = mean(ρ[_ind:z_top])
         if precip isa Precipitation2M
-            if ql != 0.0 
                 output = [CM2.effective_radius(precip.rain_formation, ql, qr, Nl, Nr, ρ)]
-            else 
-                output = [0.0]
-            end
         else
             error("Computing effectve radius for the given precipitation style is invalid!!")
         end

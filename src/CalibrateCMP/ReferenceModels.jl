@@ -168,6 +168,8 @@ function get_single_obs_field(
                 FT(3600)
         elseif var == "Z"
             _data = _data_pysdm["radar_refl"]
+        elseif var == "reff"
+            _data = _data_pysdm["r_eff"]
         elseif var == "rainrate_surface"
             _rainrate = 
                 _data_pysdm["qr"] .* 1e-3 .* _data_pysdm["rhod"] .* _data_pysdm["rain averaged terminal velocity"] .*
@@ -175,7 +177,7 @@ function get_single_obs_field(
             rainrate = 1.5 .* _rainrate[:, 1] - 0.5 .* _rainrate[:, 2]
             rainrate[findall(x -> x < 0, rainrate)] .= FT(0)
             _data = rainrate
-        elseif var == "reff"
+        elseif var == "reff_top"
             _data = _data_pysdm["reff"]
         elseif var == "Z_top"
             _data = _data_pysdm["Z_top"]

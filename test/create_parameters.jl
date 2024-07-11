@@ -59,10 +59,6 @@ function override_toml_dict(
         "init_cond_theta1" => Dict("value" => tht_1, "type" => "float"),
         "init_cond_theta2" => Dict("value" => tht_2, "type" => "float"),
         "SB2006_raindrops_min_mass" => Dict("value" => 6.54e-11, "type" => "float"),
-        #="SB2006_raindrops_size_distribution_coeff_N0_min" => Dict("value" => 3.5e5, "type" => "float"),
-        "SB2006_raindrops_size_distribution_coeff_N0_max" => Dict("value" => 2e11, "type" => "float"),
-        "SB2006_raindrops_size_distribution_coeff_lambda_min" => Dict("value" => 1e3, "type" => "float"),
-        "SB2006_raindrops_size_distribution_coeff_lambda_max" => Dict("value" => 4e4, "type" => "float"),=#
         # NEW!!!!
         #"SB2006_collection_kernel_coeff_krr" => Dict("value" => 3.328, "type" => "float"),
         #"SB2006_collection_kernel_coeff_kcc" => Dict("value" => 9.231e9, "type" => "float"),
@@ -73,7 +69,7 @@ function override_toml_dict(
         #"SB2006_autoconversion_correcting_function_coeff_b" => Dict("value" => 1.0, "type" => "float"),
         #"SB2006_accretion_correcting_function_coeff_c" => Dict("value" => 2, "type" => "float"),
         #"SB2006_collection_kernel_coeff_kapparr" => Dict("value" => 80.0, "type" => "float"),
-        #"SB2006_raindrops_terminal_velocity_coeff_aR" => Dict("value" => 8.499, "type" => "float"),
+        "SB2006_raindrops_terminal_velocity_coeff_aR" => Dict("value" => 8.37, "type" => "float"),
         #"SB2006_raindrops_terminal_velocity_coeff_bR" => Dict("value" => 9.5, "type" => "float"),
         #"SB2006_raindrops_terminal_velocity_coeff_cR" => Dict("value" => 700.0, "type" => "float"),    
     )

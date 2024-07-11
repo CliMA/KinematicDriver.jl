@@ -24,8 +24,8 @@ function get_prior_config()
     config["parameters"] = Dict(
         #"SB2006_raindrops_min_mass" => 
         #    (mean = 6.54e-11, var = 1.635e-11, lbound = 1.4e-11, ubound = 1.0e-10),
-        #"SB2006_collection_kernel_coeff_kcc" =>
-        #    (mean = 4.44 * 1e9, var = 1.11 * 1e9, lbound = 1.0 * 1e8, ubound = 1.0 * 1e11),
+        "SB2006_collection_kernel_coeff_kcc" =>
+            (mean = 4.44 * 1e9, var = 8.88* 1e8, lbound = 1.0 * 1e8, ubound = 1.0 * 1e11),
         #"SB2006_cloud_gamma_distribution_parameter" => 
         #    (mean = 2.0, var = 0.5, lbound = 1.0, ubound = 10.0),
         #"SB2006_autoconversion_correcting_function_coeff_A" => 
@@ -34,16 +34,16 @@ function get_prior_config()
         #    (mean = 0.7, var = 0.14, lbound = 0.0, ubound = 2.0),
         #"SB2006_autoconversion_correcting_function_coeff_b" =>   
         #    (mean = 3.0, var = 0.75, lbound = 0.0, ubound = 10.0),
-        #"SB2006_collection_kernel_coeff_kcr" =>
-        #   (mean = 5.25, var = 1.05, lbound = 3.0, ubound = 20.0),
-        #"SB2006_collection_kernel_coeff_krr" => 
-        #    (mean = 7.12, var = 1.424, lbound = 3.0, ubound = 10.0),
+        "SB2006_collection_kernel_coeff_kcr" =>
+           (mean = 5.25, var = 1.05, lbound = 3.0, ubound = 20.0),
+        "SB2006_collection_kernel_coeff_krr" => 
+            (mean = 7.12, var = 1.424, lbound = 3.0, ubound = 10.0),
         #"SB2006_collection_kernel_coeff_kapparr" =>
         #    (mean = 60.7, var = 12.175, lbound = 0.0, ubound = 120.0),
         #"SB2006_raindrops_terminal_velocity_coeff_aR" => 
-        #    (mean = 9.65, var = 0.4, lbound = 8.4, ubound = 10.5),
-        "SB2006_raindrops_terminal_velocity_coeff_bR" => 
-            (mean = 10.3, var = 0.5, lbound = 8.0, ubound = 11.0),
+        #    (mean = 9.65, var = 0.5, lbound = 8.0, ubound = 10.5),
+        #"SB2006_raindrops_terminal_velocity_coeff_bR" => 
+        #    (mean = 10.3, var = 0.5, lbound = 8.0, ubound = 11.0),
         #"SB2006_raindrops_terminal_velocity_coeff_cR" => 
         #    (mean = 600.0, var = 60.0, lbound = 0.0, ubound = 1000.0),
     )
@@ -57,9 +57,9 @@ function get_process_config()
     # Define mini batch size for EKP
     config["batch_size"] = 15
     # Define number of iterations for EKP
-    config["n_iter"] = 20
+    config["n_iter"] = 15
     # Define number of parameter ensemle for EKP (Inversion)
-    config["n_ens"] = 5
+    config["n_ens"] = 15
     # Define EKP time step
     config["Δt"] = 0.1
     config["EKP_method"] = "EKI"
@@ -81,7 +81,7 @@ end
 function get_observations_config()
     config = Dict()
     # Define data names.
-    config["data_names"] = ["reff", "Z", "rainrate_surface"]
+    config["data_names"] = ["reff_top", "Z", "rainrate_surface"]
     # Define source of data: "file" or "perfect_model"
     config["data_source"] = "file"
     # Define number of samples for validation
@@ -94,38 +94,12 @@ function get_observations_config()
     config["true_values_offset"] = 0.1
     # Define data
     root_dir = "/Users/caterinacroci/Desktop/data/"
-    config["cases"] = [ #(w1 = 1.0, p0 = 99000.0, Nd = 50 * 1e6, std_dry = 1.1, 
-                        #    r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_1/mean=0.04_std=1.1_p0=990_Nd=50/"),
-                        (w1 = 2.0, p0 = 99000.0, Nd = 50 * 1e6, std_dry = 1.1, 
+    config["cases"] = [ (w1 = 2.0, p0 = 99000.0, Nd = 50 * 1e6, std_dry = 1.1, 
                             r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_2/mean=0.04_std=1.1_p0=990_Nd=50/"),
                         (w1 = 4.0, p0 = 99000.0, Nd = 50 * 1e6, std_dry = 1.1, 
                             r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_4/mean=0.04_std=1.1_p0=990_Nd=50/"),
                         (w1 = 5.0, p0 = 99000.0, Nd = 50 * 1e6, std_dry = 1.1, 
                             r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_5/mean=0.04_std=1.1_p0=990_Nd=50/"),
-
-                        #=(w1 = 1.0, p0 = 99000.0, Nd = 100 * 1e6, std_dry = 1.1, 
-                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_1/mean=0.04_std=1.1_p0=990_Nd=100/"),
-                        (w1 = 1.0, p0 = 99000.0, Nd = 500 * 1e6, std_dry = 1.1, 
-                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_1/mean=0.04_std=1.1_p0=990_Nd=500/"),
-                        (w1 = 1.0, p0 = 100700.0, Nd = 50 * 1e6, std_dry = 1.1, 
-                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_1/mean=0.04_std=1.1_p0=1007_Nd=50/"),
-                        (w1 = 1.0, p0 = 100700.0, Nd = 100 * 1e6, std_dry = 1.1, 
-                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_1/mean=0.04_std=1.1_p0=1007_Nd=100/"),
-                        (w1 = 1.0, p0 = 100700.0, Nd = 500 * 1e6, std_dry = 1.1, 
-                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_1/mean=0.04_std=1.1_p0=1007_Nd=500/"),
-
-                        (w1 = 1.0, p0 = 99000.0, Nd = 50 * 1e6, std_dry = 1.8, 
-                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_1/mean=0.06_std=1.8_p0=990_Nd=50/"),
-                        (w1 = 1.0, p0 = 99000.0, Nd = 100 * 1e6, std_dry = 1.8, 
-                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_1/mean=0.06_std=1.8_p0=990_Nd=100/"),
-                        (w1 = 1.0, p0 = 99000.0, Nd = 500 * 1e6, std_dry = 1.8, 
-                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_1/mean=0.06_std=1.8_p0=990_Nd=500/"),
-                        (w1 = 1.0, p0 = 100700.0, Nd = 50 * 1e6, std_dry = 1.8, 
-                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_1/mean=0.06_std=1.8_p0=1007_Nd=50/"),
-                        (w1 = 1.0, p0 = 100700.0, Nd = 100 * 1e6, std_dry = 1.8, 
-                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_1/mean=0.06_std=1.8_p0=1007_Nd=100/"),
-                        (w1 = 1.0, p0 = 100700.0, Nd = 500 * 1e6, std_dry = 1.8, 
-                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_1/mean=0.06_std=1.8_p0=1007_Nd=500/"),=#
 
                         (w1 = 2.0, p0 = 99000.0, Nd = 100 * 1e6, std_dry = 1.1, 
                             r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_2/mean=0.04_std=1.1_p0=990_Nd=100/"),
@@ -312,18 +286,9 @@ function create_parameter_set()
         println(io, "alias = \"lambda_max\"")
         println(io, "value = 4e4")
         println(io, "type = \"float\"")
-        #println(io, "[SB2006_cloud_gamma_distribution_parameter]")
-        #println(io, "value = 5.0")
-        #println(io, "type = \"float\"")
-        #println(io, "[SB2006_raindrops_terminal_velocity_coeff_aR]")
-        #println(io, "value = 8.499")
-        #println(io, "type = \"float\"")
-        #=println(io, "[SB2006_raindrops_terminal_velocity_coeff_bR]")
-        println(io, "value = 10.01")
+        println(io, "[SB2006_raindrops_terminal_velocity_coeff_aR]")
+        println(io, "value = 8.371")
         println(io, "type = \"float\"")
-        println(io, "[SB2006_raindrops_terminal_velocity_coeff_cR]")
-        println(io, "value = 401.2")
-        println(io, "type = \"float\"")=#
     end
     toml_dict = CP.create_toml_dict(FT; override_file)
     isfile(override_file) && rm(override_file; force = true)
