@@ -55,7 +55,7 @@ function get_process_config()
     # Define method of calibration : currently only EKP and Optim are supported
     config["method"] = "EKP"
     # Define mini batch size for EKP
-    config["batch_size"] = 18
+    config["batch_size"] = 15
     # Define number of iterations for EKP
     config["n_iter"] = 20
     # Define number of parameter ensemle for EKP (Inversion)
