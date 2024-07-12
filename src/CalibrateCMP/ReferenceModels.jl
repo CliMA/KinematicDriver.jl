@@ -169,7 +169,7 @@ function get_single_obs_field(
         elseif var == "Z"
             _data = _data_pysdm["radar_refl"]
         elseif var == "reff"
-            _data = _data_pysdm["r_eff"]
+            _data = _data_pysdm["effective_radius"]
         elseif var == "rainrate_surface"
             _rainrate = 
                 _data_pysdm["qr"] .* 1e-3 .* _data_pysdm["rhod"] .* _data_pysdm["rain averaged terminal velocity"] .*
