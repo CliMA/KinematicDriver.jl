@@ -78,8 +78,6 @@ function get_single_case_fields(vec_single_case::Vector{FT}, n_heights::Vector{I
     return fields
 end
 
-
-
 function make_block_diagonal_matrix(a::AbstractMatrix, b::AbstractMatrix)
 
     if (a isa Diagonal) && (b isa Diagonal)
