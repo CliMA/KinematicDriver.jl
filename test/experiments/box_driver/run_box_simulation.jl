@@ -30,7 +30,7 @@ function run_box_simulation(::Type{FT}, opts) where {FT}
         default_toml_dict,
         precip_sources = 1,
         precip_sinks = 0,
-        prescribed_Nd = FT(opts["prescribed_Nd"]),
+        prescribed_Nd = FT(opts["Nd"]),
     )
     for (k, v) in opts["microphys_params"]
         toml_dict[k]["value"] = v
@@ -57,11 +57,8 @@ function run_box_simulation(::Type{FT}, opts) where {FT}
     coord = CC.Fields.coordinate_field(space)
 
     # Create the initial condition profiles
-    init = map(
-        coord ->
-            CO.initial_condition_0d(FT, thermo_params, opts["qt"], opts["prescribed_Nd"], opts["k"], opts["rhod"]),
-        coord,
-    )
+    init =
+        map(coord -> CO.initial_condition_0d(FT, thermo_params, opts["qt"], opts["Nd"], opts["k"], opts["rhod"]), coord)
 
     # Create state vector and apply initial condition
     Y = CO.initialise_state(moisture, precip, init)
@@ -129,7 +126,7 @@ end
 
 opts = Dict(
     "qt" => 1e-3,
-    "prescribed_Nd" => 1e8,
+    "Nd" => 1e8,
     "k" => 2.0,
     "rhod" => 1.22,
     "precipitation_choice" => "Precipitation2M",
