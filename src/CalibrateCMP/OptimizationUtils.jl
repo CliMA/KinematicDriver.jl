@@ -102,10 +102,14 @@ function calibrate(::EKPStyle, priors, config, ref_stats_list::Vector{ReferenceS
                 end
             end
 
-            ekpobj = generate_ekp(param_ensemble[end], RS, config["process"])
+            ekpobj = generate_ekp(param_ensemble[end], RS, priors, config["process"])
             ϕ_n = get_ϕ_ensemble(param_ensemble[end], priors)
             G_n = [run_dyn_model(ϕ_n[:, i], u_names, config, RS = RS) for i in 1:n_ensemble]
             G_ens = hcat(G_n...)
+            if config["process"]["augmented"]
+                θ_mean = repeat(mean(param_ensemble[end], dims = 2)[:], 1, n_ensemble)
+                G_ens = vcat(G_ens, θ_mean)
+            end
             EnsembleKalmanProcesses.update_ensemble!(ekpobj, G_ens)
             param_ensemble = [param_ensemble; [get_u_final(ekpobj)]]
         end
@@ -114,12 +118,28 @@ function calibrate(::EKPStyle, priors, config, ref_stats_list::Vector{ReferenceS
     return param_ensemble
 end
 
-function generate_ekp(param_ensemble::Matrix{FT}, RS::ReferenceStatistics, process_settings) where {FT <: Real}
+function generate_ekp(
+    param_ensemble::Matrix{FT},
+    RS::ReferenceStatistics,
+    priors::ParameterDistribution,
+    process_settings,
+) where {FT <: Real}
+
+    if process_settings["augmented"]
+        μ = vcat(mean(priors)...)
+        Γ_θ = cov(priors)
+        y = vcat(RS.y, μ)
+        Γ = cat(RS.Γ, Γ_θ .* process_settings["reg_degree_scale"], dims = (1, 2))
+    else
+        y = RS.y
+        Γ = RS.Γ
+    end
+
     if process_settings["EKP_method"] == "EKI"
         ekpobj = EnsembleKalmanProcess(
             param_ensemble,
-            RS.y,
-            RS.Γ,
+            y,
+            Γ,
             Inversion(),
             scheduler = DefaultScheduler(process_settings["Δt"]),
         )
@@ -130,7 +150,7 @@ function generate_ekp(param_ensemble::Matrix{FT}, RS::ReferenceStatistics, proce
             α_reg = process_settings["α_reg"],
             update_freq = process_settings["update_freq"],
         )
-        ekpobj = EnsembleKalmanProcess(RS.y, RS.Γ, process, scheduler = DefaultScheduler(process_settings["Δt"]))
+        ekpobj = EnsembleKalmanProcess(y, Γ, process, scheduler = DefaultScheduler(process_settings["Δt"]))
     end
     return ekpobj
 end
