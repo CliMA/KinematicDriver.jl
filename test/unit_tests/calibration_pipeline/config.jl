@@ -30,6 +30,7 @@ function get_process_config()
     config["n_ens"] = 10
     config["Δt"] = 1.0
     config["EKP_method"] = "EKI"
+    config["augmented"] = false
     config["α_reg"] = 1.0
     config["update_freq"] = 1
     config["tol"] = 1e-8

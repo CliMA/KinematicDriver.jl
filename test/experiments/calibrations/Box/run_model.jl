@@ -1,4 +1,5 @@
 using Plots
+using LinearAlgebra
 
 import KinematicDriver.CalibrateCMP as KCP
 
