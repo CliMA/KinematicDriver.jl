@@ -45,7 +45,7 @@ function get_process_config()
     config["Δt"] = 1.0
     config["EKP_method"] = "EKI"
     # Define whether state vector is augmented by parameters for Bayesian regularization
-    config["augmented"] = true
+    config["augmented"] = false
     # Define Bayesian regularization degree scale (prior cov * scale)
     config["reg_degree_scale"] = 1.0
     # Choose regularization factor α ∈ (0,1] for UKI, when enough observation data α=1: no regularization

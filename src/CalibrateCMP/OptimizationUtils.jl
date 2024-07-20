@@ -107,8 +107,7 @@ function calibrate(::EKPStyle, priors, config, ref_stats_list::Vector{ReferenceS
             G_n = [run_dyn_model(ϕ_n[:, i], u_names, config, RS = RS) for i in 1:n_ensemble]
             G_ens = hcat(G_n...)
             if config["process"]["augmented"]
-                θ_mean = repeat(mean(param_ensemble[end], dims = 2)[:], 1, n_ensemble)
-                G_ens = vcat(G_ens, θ_mean)
+                G_ens = vcat(G_ens, param_ensemble[end])
             end
             EnsembleKalmanProcesses.update_ensemble!(ekpobj, G_ens)
             param_ensemble = [param_ensemble; [get_u_final(ekpobj)]]
