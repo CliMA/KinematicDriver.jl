@@ -115,14 +115,25 @@ steps:
         command: "julia --color=yes --project=test test/experiments/box_driver/run_box_simulation.jl"
         artifact_paths: "test/experiments/box_driver/Output_Precipitation2M_SB2006/*"
 
-      - label: ":crystal_ball: Experiments: 1D with collision and sedimentation + Cloudy"
+      - label: ":partly_sunny: Experiments: 1D with collision and sedimentation + Cloudy (5 moments)"
         command: "julia --color=yes --project=test test/experiments/KiD_col_sed_driver/run_KiD_col_sed_simulation.jl"
-        artifact_paths: "test/experiments/KiD_col_sed_driver/Output_CloudyPrecip/figures/*"
+        artifact_paths: "test/experiments/KiD_col_sed_driver/Output_CloudyPrecip_5/figures/*"
 
       - label: ":crystal_ball: Experiments: 2D setup"
         command: "julia --color=yes --project=test test/experiments/Ki2D_driver/run_kinematic2d_simulations.jl"
         artifact_paths: "test/experiments/Ki2D_driver/Output_NonEquilibriumMoisture_Precipitation1M_CliMA_1M/*"
 
-      - label: ":partly_sunny: Experiment: 1D with Cloudy"
-        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=CloudyMoisture --precipitation_choice=CloudyPrecip"
-        artifact_paths: "test/experiments/KiD_driver/Output_CloudyMoisture_CloudyPrecip/figures/*"
+      - label: ":partly_sunny: Experiment: 1D with Cloudy, 6 moments (default)"
+        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=CloudyMoisture --precipitation_choice=CloudyPrecip --n_elem=128"
+        artifact_paths: "test/experiments/KiD_driver/Output_CloudyMoisture_CloudyPrecip_6/figures/*"
+
+      - label: ":partly_sunny: Experiment: 1D with Cloudy, 4 moments"
+        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=CloudyMoisture --precipitation_choice=CloudyPrecip --n_elem=128 --num_moments=4"
+        artifact_paths: "test/experiments/KiD_driver/Output_CloudyMoisture_CloudyPrecip_4/figures/*"
+
+      - label: ":partly_sunny: Experiment: 1D with Cloudy, 7 moments"
+        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=CloudyMoisture --precipitation_choice=CloudyPrecip --n_elem=128 --num_moments=7"
+        artifact_paths: "test/experiments/KiD_driver/Output_CloudyMoisture_CloudyPrecip_7/figures/*"
+
+
+

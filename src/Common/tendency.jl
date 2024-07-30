@@ -64,18 +64,46 @@ end
     @. θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
     @. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
 end
+function separate_liq_rai(FT, moments, pdists, cloudy_params, ρd)
+    tmp = CL.ParticleDistributions.get_standard_N_q(pdists, cloudy_params.size_threshold / cloudy_params.norms[2])
+    moments_like = ntuple(length(moments)) do k
+        if k == 1
+            max(tmp.N_liq * cloudy_params.mom_norms[1], FT(0))
+        elseif k == 2
+            max(tmp.N_rai * cloudy_params.mom_norms[1], FT(0))
+        elseif k == 3
+            max(tmp.M_liq / ρd * cloudy_params.mom_norms[2], FT(0))
+        elseif k == 4
+            max(tmp.M_rai / ρd * cloudy_params.mom_norms[2], FT(0))
+        else
+            FT(0)
+        end
+    end
+    return moments_like
+end
 @inline function precompute_aux_thermo!(::CloudyMoisture, Y, aux)
 
-    (; thermo_params) = aux
+    (; thermo_params, cloudy_params) = aux
     (; ts, ρ, ρ_dry, p, T, θ_dry, θ_liq_ice) = aux.thermo_variables
-    (; q_tot, q_liq, q_ice) = aux.microph_variables
+    (; moments, pdists, q_rai, N_rai, N_liq, q_tot, q_liq, q_ice) = aux.microph_variables
+    (; tmp_cloudy) = aux.scratch
 
     FT = eltype(Y.ρq_vap)
-    @. q_tot = q_(Y.moments.:2 + Y.ρq_vap, ρ)
-    @. q_liq = q_(Y.moments.:2, ρ)
+
+    @. moments = Y.moments
+    @. pdists = get_updated_pdists(moments, pdists, cloudy_params)
+
+    @. tmp_cloudy = separate_liq_rai(FT, Y.moments, pdists, cloudy_params, ρ_dry)
+    @. N_liq = tmp_cloudy.:1
+    @. N_rai = tmp_cloudy.:2
+    @. q_liq = tmp_cloudy.:3
+    @. q_rai = tmp_cloudy.:4
+
+    FT = eltype(Y.ρq_vap)
+    @. q_tot = q_(Y.ρq_vap, ρ) + q_liq
     @. q_ice = FT(0)
 
-    @. ρ = ρ_dry + Y.moments.:2 + Y.ρq_vap
+    @. ρ = ρ_dry + tmp_cloudy.:3 * ρ_dry + Y.ρq_vap
     @. ts = TD.PhaseNonEquil_ρTq(thermo_params, ρ, T, PP(q_tot, q_liq, q_ice))
     @. p = TD.air_pressure(thermo_params, ts)
     @. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
@@ -129,8 +157,6 @@ end
 
     # TODO...
 end
-
-# helper function for precomputing aux precip for cloudy
 function get_dists_moments(moments, NProgMoms::NTuple{ND, Int}) where {ND}
     FT = eltype(moments)
     return ntuple(ND) do i
@@ -152,10 +178,12 @@ end
             CL.ParticleDistributions.update_dist_from_moments(
                 old_pdists[i],
                 mom_i[i],
-                param_range = (; :k => (0.1, 10.0)),
+                param_range = (; :k => (1.0, 10.0)),
             )
-        else
+        elseif old_pdists[i] isa CL.ParticleDistributions.LognormalPrimitiveParticleDistribution
             CL.ParticleDistributions.update_dist_from_moments(old_pdists[i], mom_i[i])
+        else # Exponential or monodisperse
+            CL.ParticleDistributions.update_dist_from_moments(old_pdists[i], mom_i[i][1:2])
         end
     end
 end
@@ -168,23 +196,10 @@ end
     return weighted_vt
 end
 @inline function precompute_aux_precip!(ps::CloudyPrecip, Y, aux)
-
-    (; cloudy_params) = aux
-    (; ρ) = aux.thermo_variables
-    (; q_rai, N_rai, N_liq, pdists, moments) = aux.microph_variables
     (; weighted_vt) = aux.velocities
-    (; nm_cloud) = aux.cloudy_variables
+    (; cloudy_params) = aux
+    (; moments, pdists) = aux.microph_variables
 
-    _valof(::Val{NM}) where {NM} = NM
-    NM1 = _valof(nm_cloud)
-    rain_number_ind = NM1 + 1
-    rain_mass_ind = NM1 + 2
-    @. N_liq = Y.moments.:1
-    @. N_rai = Y.moments.:($$rain_number_ind)
-    @. q_rai = q_(Y.moments.:($$rain_mass_ind), ρ)
-    @. moments = Y.moments
-
-    @. pdists = get_updated_pdists(moments, pdists, cloudy_params)
     @. weighted_vt = get_weighted_vt(moments, pdists, cloudy_params)
 end
 
@@ -514,7 +529,12 @@ end
     s = TD.supersaturation(thermo_params, q, ρ, T, TD.Liquid())
     dY_ce_tmp = CL.Condensation.get_cond_evap(pdists, s, ξ_normed) .* cloudy_params.mom_norms
     S_cond_evap = ntuple(length(moments)) do j
-        ifelse(dY_ce_tmp[j] >= 0, dY_ce_tmp[j], max(dY_ce_tmp[j], -moments[j] / dt))
+        if (j == cloudy_params.NProgMoms[1] + 1 && moments[j + 1] / moments[j] < 1e-11) ||
+           (j == 1 && moments[j + 1] / moments[j] < 1e-14)
+            -moments[j] / dt / 4
+        else
+            ifelse(dY_ce_tmp[j] >= 0, dY_ce_tmp[j], max(dY_ce_tmp[j], -moments[j] / dt))
+        end
     end
 
     return S_cond_evap
@@ -526,7 +546,6 @@ end
     (; T, ρ) = aux.thermo_variables
     (; dt) = aux.TS
     (; tmp_cloudy) = aux.scratch
-    (; nm_cloud) = aux.cloudy_variables
 
     FT = eltype(thermo_params)
     @. aux.precip_sources.moments *= FT(0)
@@ -542,10 +561,12 @@ end
             get_cond_evap_sources(thermo_params, air_params, cloudy_params, q_tot, q_liq, moments, pdists, T, ρ, dt)
         @. aux.precip_sources.moments += tmp_cloudy
 
-        _valof(::Val{NM}) where {NM} = NM
-        NM1 = _valof(nm_cloud)
-        rain_mass_ind = NM1 + 2
-        @. aux.precip_sources.ρq_vap = -tmp_cloudy.:2 - tmp_cloudy.:($$rain_mass_ind)
+        @. aux.precip_sources.ρq_vap *= FT(0)
+        mass_ind = 2
+        for j in 1:length(pdists)
+            @. aux.precip_sources.ρq_vap -= tmp_cloudy.:($$mass_ind)
+            mass_ind += cloudy_params.NProgMoms[j]
+        end
     end
 
 end

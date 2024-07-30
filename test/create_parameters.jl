@@ -87,6 +87,55 @@ function create_kid_parameters(toml_dict)
     return kid_params
 end
 
+function determine_cloudy_disttypes(NM::Int, default_gamma=true, initial_gamma=false)
+    if NM < 2
+        error("At least two moments are required")
+    end
+    if default_gamma
+        if NM % 3 == 0
+            ND = Int(NM / 3)
+            dist_names = ntuple(_ -> "gamma", ND)
+        elseif NM % 3 == 2
+            ND = Int((NM - 2) / 3 + 1)
+            expmode = initial_gamma ? ND : 1
+            dist_names = ntuple(ND) do k
+                if k == expmode
+                    "exponential"
+                else
+                    "gamma"
+                end
+            end
+        else
+            ND = Int((NM - 4) / 3 + 2)
+            expmodes = initial_gamma ? (ND - 1, ND) : (1, 2)
+            dist_names = ntuple(ND) do k
+                if k <= expmodes[2] && k >= expmodes[1]
+                    "exponential"
+                else
+                    "gamma"
+                end
+            end
+        end
+    else # default exponential
+        if NM % 2 == 0
+            ND = Int(NM / 2)
+            dist_names = ntuple(_ -> "exponential", ND)
+        else
+            ND = Int((NM - 3)/2 + 1)
+            gmode = initial_gamma ? 1 : ND
+            dist_names = ntuple(ND) do k
+                if k == gmode
+                    "gamma"
+                else
+                    "exponential"
+                end
+            end
+        end
+    end
+    @show dist_names
+    return dist_names
+end
+
 function create_cloudy_parameters(FT, dist_names::NTuple{ND, String} = ("gamma", "gamma")) where {ND}
 
     # Create water category distributions
@@ -94,7 +143,7 @@ function create_cloudy_parameters(FT, dist_names::NTuple{ND, String} = ("gamma",
         if dist_name == "monodisperse"
             return CL.ParticleDistributions.MonodispersePrimitiveParticleDistribution(FT(0), FT(1))
         elseif dist_name == "exponential"
-            return CL.ParticleDistributions.GammaPrimitiveParticleDistribution(FT(0), FT(1))
+            return CL.ParticleDistributions.ExponentialPrimitiveParticleDistribution(FT(0), FT(1))
         elseif dist_name == "gamma"
             return CL.ParticleDistributions.GammaPrimitiveParticleDistribution(FT(0), FT(1), FT(1))
         end
@@ -132,7 +181,15 @@ function create_cloudy_parameters(FT, dist_names::NTuple{ND, String} = ("gamma",
     end
 
     # Define mass thresholds between water categories
-    mass_thresholds = (5e-10, Inf) # 5e-10 kg
+    size_threshold = FT(5e-10)
+    mass_thresholds = ntuple(ND) do k
+        if k < ND
+            size_threshold * 10^(k - ND/2)
+        else
+            Inf
+        end
+    end
+    @show mass_thresholds
 
     # Define coalescence data required by Cloudy
     coal_data::CL.Coalescence.CoalescenceData{ND, r+1, FT, (r+1)^2} = CL.Coalescence.CoalescenceData(matrix_of_kernels, NProgMoms, mass_thresholds, norms)
@@ -140,7 +197,10 @@ function create_cloudy_parameters(FT, dist_names::NTuple{ND, String} = ("gamma",
     # Define terminal velocity coefficients, assuming vt = sum_i v_i[1] * x^(v_i[2]) 
     # v1 is normalized by mass norm; v1 = v1 * norm[2] ^ v2
     vel = ((FT(30), FT(1.0 / 6)),) # 30 kg ^ (-1/6) * m / s
-    cloudy_params = CO.Parameters.CloudyParameters(NProgMoms, norms, mom_norms, coal_data, vel)
+    
+    
+
+    cloudy_params = CO.Parameters.CloudyParameters(NProgMoms, norms, mom_norms, coal_data, vel, size_threshold)
     return cloudy_params, pdists
 end
 #! format: on
