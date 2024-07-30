@@ -115,19 +115,28 @@ end
 end
 @inline function precompute_aux_precip!(ps::PrecipitationP3, Y, aux)
 
+    # TODO preserve functionality of generic 2-moment scheme
+    # for rain while adding and changing for P3 snow/ice behavior
+
     FT = eltype(Y.ρq_rai)
     (; ρ) = aux.thermo_variables
-    (; q_rai, q_ice, q_rim, B_rim, N_rai, N_ice, N_liq) = aux.microph_variables
+    L = Y.ρq_ice
+    N = Y.N_ice
+    ρ_r = Y.ρq_rim / Y.B_rim
+    F_rim = Y.ρq_rim / Y.ρq_ice
 
-    @. q_rai = q_(Y.ρq_rai, ρ)
-    @. q_ice = q_(Y.ρq_ice, ρ)
-    @. q_rim = q_(Y.ρq_rim, ρ)
-    @. B_rim = q_(Y.ρq_rim, ρ)
-    @. N_rai = max(FT(0), Y.N_rai)
-    @. N_liq = max(FT(0), Y.N_liq)
-    @. N_ice = max(FT(0), Y.N_ice)
+    # TODO add F_liq compat once PR is merged to CloudMicrophysics
+    # F_liq = Y.ρq_liq / L
 
-    # TODO...
+    p3 = ps.p3_params
+    Chen2022 = ps.Chen2022.snow_ice
+
+    (; term_vel_ice, term_vel_N_ice, term_vel_rain, term_vel_N_rain) = aux.velocities
+
+    @. term_vel_N_rain = FT(0)
+    @. term_vel_rain = FT(0)
+    @. term_vel_N_ice = getindex(P3.ice_terminal_velocity(p3, Chen2022, L, N, ρ_r, F_rim, ρ), 1)
+    @. term_vel_ice = getindex(P3.ice_terminal_velocity(p3, Chen2022, L, N, ρ_r, F_rim, ρ), 2)
 end
 
 # helper function for precomputing aux precip for cloudy

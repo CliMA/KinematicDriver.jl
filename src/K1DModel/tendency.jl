@@ -395,3 +395,39 @@ end
 
     return dY
 end
+
+@inline function advection_tendency!(::CO.PrecipitationP3, dY, Y, aux, t)
+    FT = eltype(Y.ρq_tot)
+
+    If = CC.Operators.InterpolateC2F()
+    ∂ = CC.Operators.DivergenceF2C(
+        bottom = CC.Operators.Extrapolate(),
+        top = CC.Operators.SetValue(CC.Geometry.WVector(0.0)),
+    )
+    ∂ₐ = CC.Operators.DivergenceF2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
+
+    @. dY.ρq_ice += ∂((CC.Geometry.WVector(If(aux.velocities.term_vel_ice))) * If(Y.ρq_ice))
+    @. dY.ρq_rim += ∂((CC.Geometry.WVector(If(aux.velocities.term_vel_ice))) * If(Y.ρq_rim))
+    @. dY.B_rim += ∂((CC.Geometry.WVector(If(aux.velocities.term_vel_ice))) * If(Y.B_rim))
+    # TODO add for liquid fraction
+    # @. dY.ρq_liq +=
+    #     ∂(
+    #         (
+    #             CC.Geometry.WVector(If(aux.velocities.term_vel_ice))
+    #         ) * If(Y.ρq_liq),
+    #     )
+    @. dY.N_ice += ∂((CC.Geometry.WVector(If(aux.velocities.term_vel_N_ice))) * If(Y.N_ice))
+    fcc = CC.Operators.FluxCorrectionC2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
+    @. dY.ρq_ice += fcc((CC.Geometry.WVector(If(aux.velocities.term_vel_ice) * FT(-1))), Y.ρq_ice)
+    @. dY.ρq_rim += fcc((CC.Geometry.WVector(If(aux.velocities.term_vel_ice) * FT(-1))), Y.ρq_rim)
+    # TODO add for liquid fraction
+    # @. dY.ρq_liq += fcc(
+    #     (
+    #         CC.Geometry.WVector(If(aux.velocities.term_vel_ice) * FT(-1))
+    #     ),
+    #     Y.ρq_liq,
+    # )
+    @. dY.B_rim += fcc((CC.Geometry.WVector(If(aux.velocities.term_vel_ice) * FT(-1))), Y.B_rim)
+    @. dY.N_ice += fcc((CC.Geometry.WVector(If(aux.velocities.term_vel_N_ice) * FT(-1))), Y.N_ice)
+    return dY
+end
