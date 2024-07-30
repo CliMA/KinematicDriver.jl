@@ -88,13 +88,16 @@ function create_kid_parameters(toml_dict)
 end
 
 function determine_cloudy_disttypes(NM::Int, default_gamma=true, initial_gamma=false)
+    if NM < 2
+        error("At least two moments are required")
+    end
     if default_gamma
         if NM % 3 == 0
             ND = Int(NM / 3)
             dist_names = ntuple(_ -> "gamma", ND)
         elseif NM % 3 == 2
             ND = Int((NM - 2) / 3 + 1)
-            expmode = ND ? initial_gamma : 1
+            expmode = initial_gamma ? ND : 1
             dist_names = ntuple(ND) do k
                 if k == expmode
                     "exponential"
@@ -104,9 +107,9 @@ function determine_cloudy_disttypes(NM::Int, default_gamma=true, initial_gamma=f
             end
         else
             ND = Int((NM - 4) / 3 + 2)
-            expmodes = (ND - 1, ND) ? initial_gamma : (1, 2)
+            expmodes = initial_gamma ? (ND - 1, ND) : (1, 2)
             dist_names = ntuple(ND) do k
-                if k <= expmodes[2] & k >=1 expmodes[1]
+                if k <= expmodes[2] && k >= expmodes[1]
                     "exponential"
                 else
                     "gamma"
@@ -119,7 +122,7 @@ function determine_cloudy_disttypes(NM::Int, default_gamma=true, initial_gamma=f
             dist_names = ntuple(_ -> "exponential", ND)
         else
             ND = Int((NM - 3)/2 + 1)
-            gmode = 1 ? initial_gamma : ND
+            gmode = initial_gamma ? 1 : ND
             dist_names = ntuple(ND) do k
                 if k == gmode
                     "gamma"
