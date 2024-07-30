@@ -183,7 +183,7 @@ function compare_model_and_obs_contours(
 
     (; n_cases, n_heights, n_times) = get_numbers_from_config(config)
 
-    _dt = (config["model"]["t_end"] - config["model"]["t_ini"]) / length(config["model"]["t_calib"])
+    _dt = (config["model"]["t_end"] - config["model"]["t_ini"]) / (length(config["model"]["t_calib"]) - 1)
     _times_f::Array{FT} = collect(config["model"]["t_calib"])
     _times_c::Array{FT} = collect(
         range(
@@ -312,4 +312,90 @@ function plot_correlation_map(
         size = (800, 600),
     )
     Plots.png(fig, output_filename)
+end
+
+"""
+    plot_box_results(G, obs, config; fontsize, path, file_base)
+
+Plots box simulation results and compares model with observations.
+
+# Inputs:
+- `G` :: vector containing model outputs
+- `obs` :: vector containing observations
+- `config` :: dictionary containing settings
+- `path` :: directory where the outputs are saved
+- `file_base` :: file name base
+"""
+function plot_box_results(
+    G::Vector{FT},
+    obs_mean::Vector{FT},
+    obs_std::Vector{FT},
+    config::Dict;
+    path = "output",
+    file_base = "box_model_vs_obs",
+) where {FT <: Real}
+
+    if config["model"]["filter"]["apply"]
+        _dt = (config["model"]["t_end"] - config["model"]["t_ini"]) / (length(config["model"]["t_calib"]) - 1)
+        _times::Array{FT} = collect(
+            range(
+                config["model"]["t_ini"] + _dt / 2,
+                config["model"]["t_end"] - _dt / 2,
+                length(config["model"]["t_calib"]) - 1,
+            ),
+        )
+    else
+        _times = collect(config["model"]["t_calib"])
+    end
+    (; n_cases, n_heights, n_times) = get_numbers_from_config(config)
+    variables = config["observations"]["data_names"]
+    n_variables = length(variables)
+    n_single_case = n_variables * n_times
+
+    _n_rows = floor(Int, sqrt(n_variables))
+    _n_cols = _n_rows + 1
+    _layout = _n_rows * _n_cols < n_variables ? (_n_rows + 1, _n_cols) : (_n_rows, _n_cols)
+
+    for case_num in 1:n_cases
+        _v_model = get_case_i_vec(G, case_num, n_single_case)
+        _v_obs_mean = get_case_i_vec(obs_mean, case_num, n_single_case)
+        _v_obs_std = get_case_i_vec(obs_std, case_num, n_single_case)
+        _fields_model = get_single_case_fields(_v_model, n_heights, n_times)
+        _fields_obs_mean = get_single_case_fields(_v_obs_mean, n_heights, n_times)
+        _fields_obs_std = get_single_case_fields(_v_obs_std, n_heights, n_times)
+
+        p = Array{Plots.Plot}(undef, n_variables)
+
+        for j in 1:n_variables
+            plot(_times / 60, _fields_model[j][1, :], lw = 2, label = "model")
+            plot!(
+                _times / 60,
+                _fields_obs_mean[j][1, :],
+                ribbon = (min.(_fields_obs_mean[j][1, :], _fields_obs_std[j][1, :]), _fields_obs_std[j][1, :]),
+                lw = 2,
+                fillalpha = 0.4,
+                label = "observation",
+            )
+            p[j] = plot!(
+                xlim = [config["model"]["t_ini"], config["model"]["t_end"]] ./ 60,
+                xlabel = "Time [min]",
+                ylabel = variables[j],
+            )
+        end
+
+        fig = plot(
+            p...,
+            layout = _layout,
+            labelfontsize = 10,
+            titlefontsize = 10,
+            size = (_n_cols * 350, _n_rows * 300),
+            left_margin = n_variables * 3Plots.mm,
+            right_margin = 0Plots.mm,
+            bottom_margin = n_variables * 2Plots.mm,
+        )
+        path = joinpath(@__DIR__, path)
+        mkpath(path)
+        file_name = file_base * "_case_" * string(case_num) * ".png"
+        Plots.png(fig, joinpath(path, file_name))
+    end
 end

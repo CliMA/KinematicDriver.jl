@@ -20,6 +20,7 @@ const DS = Distributions
 const FT = Float64
 
 import ..Common as CO
+import ..BoxModel as BX
 import ..K1DModel as KD
 
 include("ReferenceStats.jl")

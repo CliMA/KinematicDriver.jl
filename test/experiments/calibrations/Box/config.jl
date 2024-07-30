@@ -22,9 +22,11 @@ function get_prior_config()
     config = Dict()
     # Define prior mean and bounds on the parameters.
     config["parameters"] = Dict(
-        "rain_terminal_velocity_size_relation_coefficient_chiv" =>
-            (mean = 0.1, var = 0.03, lbound = 0.0, ubound = 1.0),
-        "rain_cross_section_size_relation_coefficient_chia" => (mean = 4.0, var = 1.0, lbound = 0.0, ubound = 10.0),
+        "SB2006_collection_kernel_coeff_kcc" => (mean = 4.44e9, var = 1.11e9, lbound = 0.0, ubound = Inf),
+        "SB2006_autoconversion_correcting_function_coeff_A" =>
+            (mean = 400.0, var = 100.0, lbound = 0.0, ubound = Inf),
+        "SB2006_collection_kernel_coeff_kcr" => (mean = 5.25, var = 1.3125, lbound = 0.0, ubound = Inf),
+        "SB2006_collection_kernel_coeff_krr" => (mean = 7.12, var = 1.78, lbound = 0.0, ubound = Inf),
     )
     return config
 end
@@ -41,7 +43,7 @@ function get_process_config()
     config["n_ens"] = 15
     # Define EKP time step
     config["Δt"] = 1.0
-    config["EKP_method"] = "UKI"
+    config["EKP_method"] = "EKI"
     # Define whether state vector is augmented by parameters for Bayesian regularization
     config["augmented"] = false
     # Define Bayesian regularization degree scale (prior cov * scale)
@@ -64,9 +66,9 @@ end
 function get_observations_config()
     config = Dict()
     # Define data names.
-    config["data_names"] = ["rl", "rr", "Z_top"]
+    config["data_names"] = ["ql", "qr", "Nl", "Nr"]
     # Define source of data: "file" or "perfect_model"
-    config["data_source"] = "perfect_model"
+    config["data_source"] = "file"
     # Define number of samples for validation
     config["number_of_samples"] = 1000
     # Define random seed for generating validation samples
@@ -76,8 +78,8 @@ function get_observations_config()
     # Define offset of true values from prior means for validation
     config["true_values_offset"] = 0.25
     # Define data
-    root_dir = "/Users/sajjadazimi/Postdoc/Results/01-PySDM_1D_rain_shaft/data/03-p1000/"
-    config["cases"] = [(w1 = 3.0, p0 = 100000.0, Nd = 100 * 1e6, dir = root_dir * "rhow=3.0_Nd=100/")]
+    root_dir = "/Users/sajjadazimi/Postdoc/Results/04-PySDM_0D_BoxModel/data/"
+    config["cases"] = [(qt = 1.6e-3, Nd = 80 * 1e6, k = 2.0, dir = root_dir * "qt=1.6_Nd=80_k=2/")]
     # Define type of data
     config["data_type"] = Float64
     return config
@@ -100,88 +102,35 @@ end
 
 function get_model_config()
     config = Dict()
-    config["model"] = "KiD"
-    config["moisture_choice"] = "NonEquilibriumMoisture"
-    config["precipitation_choice"] = "Precipitation1M"
+    config["model"] = "Box"
+    config["qt"] = 1.6e-3
+    config["Nd"] = 80 * 1e6
+    config["k"] = 2.0
+    config["rhod"] = 1.0
+    config["precipitation_choice"] = "Precipitation2M"
     # Define rain formation choice: "CliMA_1M", "KK2000", "B1994", "TC1980", "LD2004", "VarTimeScaleAcnv", "SB2006", "SB2006NL"
-    config["rain_formation_choice"] = "CliMA_1M"
+    config["rain_formation_choice"] = "SB2006NL"
     # Define sedimentation choice: "CliMA_1M", "Chen2022", "SB2006"
-    config["sedimentation_choice"] = "CliMA_1M"
+    config["sedimentation_choice"] = "SB2006"
     config["precip_sources"] = true
-    config["precip_sinks"] = true
-    config["z_min"] = 0.0
-    config["z_max"] = 3000.0
-    config["n_elem"] = 64
+    config["precip_sinks"] = false
     config["dt"] = 2.0
     config["t_ini"] = 0.0
     config["t_end"] = 3600.0
-    config["dt_calib"] = 600.0
+    config["dt_calib"] = 150.0
     config["t_calib"] = config["t_ini"]:config["dt_calib"]:config["t_end"]
-    config["w1"] = 3.0
-    config["t1"] = 600.0
-    config["p0"] = 100000.0
-    config["Nd"] = 100 * 1e6
-    config["qtot_flux_correction"] = false
-    config["open_system_activation"] = true
-    config["r_dry"] = 0.04 * 1e-6
-    config["std_dry"] = 1.4
-    config["κ"] = 0.9
     config["filter"] = KCP.make_filter_props(
-        [config["n_elem"], config["n_elem"], 1], # nz (for each variable)
+        ones(Int, 4),
         config["t_calib"];
         apply = true,
-        nz_per_filtered_cell = [4, 4, 1],
-        nt_per_filtered_cell = 120,
+        nz_per_filtered_cell = ones(Int, 4),
+        nt_per_filtered_cell = 30,
     )
     # Define default parameters
-    params = create_parameter_set()
-    config["toml_dict"] = params.toml_dict
-    config["thermo_params"] = params.thermo_params
-    config["air_params"] = params.air_params
-    config["activation_params"] = params.activation_params
+    config["toml_dict"] = CP.create_toml_dict(Float64)
+    config["thermo_params"] = TD.Parameters.ThermodynamicsParameters(config["toml_dict"])
+    config["air_params"] = CM.Parameters.AirProperties(config["toml_dict"])
+    config["activation_params"] = CM.Parameters.AerosolActivationParameters(config["toml_dict"])
 
     return config
-end
-
-function create_parameter_set()
-    FT = Float64
-    override_file = joinpath("override_dict.toml")
-    open(override_file, "w") do io
-        println(io, "[mean_sea_level_pressure]")
-        println(io, "alias = \"MSLP\"")
-        println(io, "value = 100000.0")
-        println(io, "type = \"float\"")
-        println(io, "[gravitational_acceleration]")
-        println(io, "alias = \"grav\"")
-        println(io, "value = 9.80665")
-        println(io, "type = \"float\"")
-        println(io, "[gas_constant]")
-        println(io, "alias = \"gas_constant\"")
-        println(io, "value = 8.314462618")
-        println(io, "type = \"float\"")
-        println(io, "[adiabatic_exponent_dry_air]")
-        println(io, "alias = \"kappa_d\"")
-        println(io, "value = 0.2855747338575384")
-        println(io, "type = \"float\"")
-        println(io, "[isobaric_specific_heat_vapor]")
-        println(io, "alias = \"cp_v\"")
-        println(io, "value = 1850.0")
-        println(io, "type = \"float\"")
-        println(io, "[molar_mass_dry_air]")
-        println(io, "alias = \"molmass_dryair\"")
-        println(io, "value = 0.02896998")
-        println(io, "type = \"float\"")
-        println(io, "[molar_mass_water]")
-        println(io, "alias = \"molmass_water\"")
-        println(io, "value = 0.018015")
-        println(io, "type = \"float\"")
-    end
-    toml_dict = CP.create_toml_dict(FT; override_file)
-    isfile(override_file) && rm(override_file; force = true)
-
-    thermo_params = TD.Parameters.ThermodynamicsParameters(toml_dict)
-    air_params = CM.Parameters.AirProperties(toml_dict)
-    activation_params = CM.Parameters.AerosolActivationParameters(toml_dict)
-
-    return (; toml_dict, thermo_params, air_params, activation_params)
 end

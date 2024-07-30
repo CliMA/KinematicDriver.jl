@@ -20,6 +20,8 @@ function run_dyn_model(
         sim_vec = run_KiD_multiple_cases(u, u_names, config, case_numbers)
     elseif config["model"]["model"] == "KiD_col_sed"
         sim_vec = run_KiD_col_sed_multiple_cases(u, u_names, config, case_numbers)
+    elseif config["model"]["model"] == "Box"
+        sim_vec = run_box_multiple_cases(u, u_names, config, case_numbers)
     elseif config["model"]["model"] == "test_model" # for testing
         @assert config["observations"]["data_names"] == ["test data"]
         sim_vec = test_model(u, u_names, config, case_numbers)
@@ -202,6 +204,91 @@ function run_KiD_col_sed(u::Array{FT, 1}, u_names::Array{String, 1}, model_setti
         precip,
     )
     ode_rhs! = KD.make_rhs_function_col_sed(moisture, precip)
+    problem = ODE.ODEProblem(ode_rhs!, Y, (model_settings["t_ini"], model_settings["t_end"]), aux)
+    saveat = model_settings["filter"]["apply"] ? model_settings["filter"]["saveat_t"] : model_settings["t_calib"]
+    solution = ODE.solve(problem, ODE.SSPRK33(), dt = model_settings["dt"], saveat = saveat)
+
+    return solution, aux, precip
+end
+
+"""
+    Run 0D box simulations with only collisional processes
+"""
+function run_box_multiple_cases(u::Array{FT, 1}, u_names::Array{String, 1}, config::Dict, case_numbers::Vector{Int})
+
+    @assert !isempty(case_numbers)
+
+    outputs = Float64[]
+    for case in config["observations"]["cases"][case_numbers]
+        config["model"]["qt"] = case.qt
+        config["model"]["Nd"] = case.Nd
+        config["model"]["k"] = case.k
+        ode_sol, aux, precip = run_box(u, u_names, config["model"])
+        single_case_Gvector =
+            config["model"]["filter"]["apply"] ?
+            ODEsolution2Gvector(ode_sol, aux, precip, config["observations"]["data_names"], config["model"]["filter"]) :
+            ODEsolution2Gvector(ode_sol, aux, precip, config["observations"]["data_names"])
+        outputs = [outputs; single_case_Gvector]
+    end
+
+    return outputs
+end
+
+function run_box(u::Array{FT, 1}, u_names::Array{String, 1}, model_settings::Dict)
+
+    update_parameters!(model_settings, u, u_names)
+    apply_param_dependency!(model_settings)
+    model_settings["toml_dict"]["SB2006_cloud_gamma_distribution_parameter"]["value"] = model_settings["k"]
+    common_params = create_common_parameters(
+        FT,
+        precip_sources = model_settings["precip_sources"],
+        precip_sinks = model_settings["precip_sinks"],
+        Nd = model_settings["Nd"],
+    )
+
+    moisture = CO.get_moisture_type("NonEquilibriumMoisture", model_settings["toml_dict"])
+    precip = CO.get_precipitation_type(
+        model_settings["precipitation_choice"],
+        model_settings["toml_dict"];
+        rain_formation_choice = model_settings["rain_formation_choice"],
+    )
+
+    TS = CO.TimeStepping(model_settings["dt"], model_settings["dt_calib"], model_settings["t_end"])
+
+    domain = CC.Domains.IntervalDomain(
+        CC.Geometry.ZPoint{FT}(0),
+        CC.Geometry.ZPoint{FT}(1),
+        boundary_names = (:bottom, :top),
+    )
+    mesh = CC.Meshes.IntervalMesh(domain, nelems = 1)
+    space = CC.Spaces.CenterFiniteDifferenceSpace(mesh)
+    coord = CC.Fields.coordinate_field(space)
+
+    init = map(
+        coord -> CO.initial_condition_0d(
+            FT,
+            model_settings["thermo_params"],
+            model_settings["qt"],
+            model_settings["Nd"],
+            model_settings["k"],
+            model_settings["rhod"],
+        ),
+        coord,
+    )
+    Y = CO.initialise_state(moisture, precip, init)
+    aux = CO.initialise_aux(
+        FT,
+        init,
+        common_params,
+        model_settings["thermo_params"],
+        model_settings["air_params"],
+        model_settings["activation_params"],
+        TS,
+        nothing,
+        moisture,
+        precip,
+    )
+    ode_rhs! = BX.make_rhs_function(moisture, precip)
     problem = ODE.ODEProblem(ode_rhs!, Y, (model_settings["t_ini"], model_settings["t_end"]), aux)
     saveat = model_settings["filter"]["apply"] ? model_settings["filter"]["saveat_t"] : model_settings["t_calib"]
     solution = ODE.solve(problem, ODE.SSPRK33(), dt = model_settings["dt"], saveat = saveat)

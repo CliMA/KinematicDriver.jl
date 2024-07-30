@@ -4,9 +4,15 @@ function get_obs!(config::Dict)
     FT = config["observations"]["data_type"]
     _variables::Vector{String} = config["observations"]["data_names"]
     _n_heights = get_numbers_from_config(config).n_heights
-    _dz = (config["model"]["z_max"] - config["model"]["z_min"]) ./ _n_heights
-    _heights::Vector{Vector{FT}} =
-        collect.(range.(config["model"]["z_min"] .+ _dz ./ 2, config["model"]["z_max"] .- _dz ./ 2, _n_heights))
+    if config["model"]["model"] == "Box"
+        _z_min = FT(0)
+        _z_max = FT(1)
+    else
+        _z_min = config["model"]["z_min"]
+        _z_max = config["model"]["z_max"]
+    end
+    _dz = (_z_max - _z_min) ./ _n_heights
+    _heights::Vector{Vector{FT}} = collect.(range.(_z_min .+ _dz ./ 2, _z_max .- _dz ./ 2, _n_heights))
     _times::Vector{FT} = collect(config["model"]["t_calib"])
 
     if config["observations"]["data_source"] == "file"
@@ -102,12 +108,17 @@ function get_single_obs_field(
     apply_filter::Bool = false,
 ) where {FT <: Real}
 
-    _data_pysdm = read_pysdm_data(filename).variables
-    _z_data = _data_pysdm["height"]
-    _t_data = _data_pysdm["time"]
-
     _output = Dict()
 
+    _data_pysdm = read_pysdm_data(filename).variables
+    _t_data = _data_pysdm["time"]
+
+    if "height" in keys(_data_pysdm)
+        _z_data = _data_pysdm["height"]
+    else
+        # if height is not provided in pysdm data then the simulation is 0D
+        _z_data = [FT(0.5)]
+    end
     if "qv" in keys(_data_pysdm)
         _rv = _data_pysdm["qv"]
     elseif "water_vapour_mixing_ratio" in keys(_data_pysdm)
@@ -181,11 +192,11 @@ function get_single_obs_field(
         end
         if apply_filter
             _n_z_data = length(_z_data)
-            _dz_data = _z_data[2] - _z_data[1]
+            _dz_data = _n_z_data == 1 ? FT(0.5) : _z_data[2] - _z_data[1]
             _z_data_f = collect(range(_z_data[1] - _dz_data / 2, _z_data[end] + _dz_data / 2, _n_z_data + 1))
 
             _n_heights = length(_heights)
-            _dz_heights = _n_heights == 1 ? _z_data[end] - _z_data[1] + _dz_data : _heights[2] - _heights[1]
+            _dz_heights = _n_heights == 1 ? FT(0.5) : _heights[2] - _heights[1]
             _heights_f = collect(range(_heights[1] - _dz_heights / 2, _heights[end] + _dz_heights / 2, _n_heights + 1))
 
             _t_data_c = [0.5 * (_t_data[i] + _t_data[i + 1]) for i in 1:(length(_t_data) - 1)]
