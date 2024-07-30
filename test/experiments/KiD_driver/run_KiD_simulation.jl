@@ -104,6 +104,33 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
             ),
             coord,
         )
+    elseif precipitation_choice == "PrecipitationP3"
+        # commenting here the configuration which has been used for p3:
+        # config["precipitation_choice"] = "PrecipitationP3"
+        # config["moisture_choice"] = "MoistureP3"
+        # config["n_elem"] = 24
+        # config["z_max"] = 3000
+        # config["t_end"] = 75
+        # config["w1"] = 0
+        # config["rv_0"] = 0
+        # config["rv_1"] = 0
+        # config["rv_2"] = 0
+        # config["dt"] = Float64(0.5)
+        cloudy_params = nothing
+        init = map(
+            coord -> CO.p3_initial_condition(
+                FT,
+                thermo_params,
+                FT(0.65e-4),
+                FT(40000),
+                coord.z,
+                F_rim = FT(0.2),
+                F_liq = FT(0.2),
+                z_top = FT(opts["z_max"]),
+                ice_start = false,
+            ),
+            coord,
+        )
     else
         cloudy_params = nothing
         init = map(
@@ -164,7 +191,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
         z_centers = parent(CC.Fields.coordinate_field(space))
         plot_final_aux_profiles(z_centers, aux, precip, output = plot_folder)
         plot_animation(z_centers, solver, aux, moisture, precip, K1D, output = plot_folder)
-        plot_timeheight(string("experiments/KiD_driver/", output_folder, "/Output.nc"), output = plot_folder)
+        plot_timeheight(string("experiments/KiD_driver/", output_folder, "/Output.nc"), precip, output = plot_folder)
     end
 
     return

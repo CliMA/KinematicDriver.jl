@@ -76,6 +76,7 @@ function initialise_state(::MoistureP3, ::PrecipitationP3, initial_profiles)
         ρq_rai = initial_profiles.ρq_rai,
         ρq_ice = initial_profiles.ρq_ice,
         ρq_rim = initial_profiles.ρq_rim,
+        ρq_liqonice = initial_profiles.ρq_liqonice,
         B_rim = initial_profiles.B_rim,
         N_liq = initial_profiles.N_liq,
         N_rai = initial_profiles.N_rai,
@@ -116,7 +117,7 @@ function initialise_aux(
     if moisture isa EquilibriumMoisture
         ts = @. TD.PhaseEquil_ρθq(thermo_params, ip.ρ, ip.θ_liq_ice, ip.q_tot)
         cloud_sources = nothing
-    elseif moisture isa NonEquilibriumMoisture
+    elseif moisture isa NonEquilibriumMoisture || moisture isa MoistureP3
         q = @. TD.PhasePartition(ip.q_tot, ip.q_liq, ip.q_ice)
         ts = @. TD.PhaseNonEquil_ρθq(thermo_params, ip.ρ, ip.θ_liq_ice, q)
 
@@ -181,11 +182,18 @@ function initialise_aux(
             q_rai = ip.q_rai,
             q_ice = ip.q_ice,
             q_rim = ip.q_rim,
+            q_liqonice = ip.q_liqonice,
             B_rim = ip.B_rim,
             N_liq = ip.N_liq,
             N_rai = ip.N_rai,
             N_ice = ip.N_ice,
             N_aer = ip.N_aer,
+            ρq_tot = ip.ρq_tot,
+            ρq_liq = ip.ρq_liq,
+            ρq_rai = ip.ρq_rai,
+            ρq_ice = ip.ρq_ice,
+            ρq_rim = ip.ρq_rim,
+            ρq_liqonice = ip.ρq_liqonice,
         )
         velocities = (;
             term_vel_rai = copy(ip.zero),
@@ -199,6 +207,7 @@ function initialise_aux(
             q_rai::FT,
             q_ice::FT,
             q_rim::FT,
+            q_liqonice::FT,
             N_aer::FT,
             N_liq::FT,
             N_rai::FT,
@@ -217,11 +226,11 @@ function initialise_aux(
                 copy(ip.zero),
                 copy(ip.zero),
                 copy(ip.zero),
+                copy(ip.zero),
             ),
         )
 
         activation_sources = nothing
-        @assert moisture isa NonEquilibrumMoisture
     elseif precip isa CloudyPrecip
         microph_variables = (;
             q_tot = ip.q_tot,
@@ -241,7 +250,7 @@ function initialise_aux(
         cloudy_variables = (; nm_cloud = Val(cloudy_params.NProgMoms[1]))
         scratch = merge(scratch, (; tmp_cloudy = similar(ip.cloudy_moments_zero)))
     else
-        error("Wrong precipitation choise $precip")
+        error("Wrong precipitation choice $precip")
     end
 
     aux = (;

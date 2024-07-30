@@ -30,9 +30,12 @@ thermo_params = create_thermodynamics_parameters(toml_dict)
 kid_params = create_kid_parameters(toml_dict)
 air_params = CMP.AirProperties(toml_dict)
 activation_params = CMP.AerosolActivationParameters(toml_dict)
+p3 = CMP.ParametersP3(FT)
+Chen2022 = CMP.Chen2022VelType(FT)
 # ... for cloud condensate options ...
 equil_moist = CO.EquilibriumMoisture()
 nequil_moist = CO.NonEquilibriumMoisture(CMP.CloudLiquid(toml_dict), CMP.CloudIce(toml_dict))
+p3_moist = CO.MoistureP3()
 # ... and precipitation options
 no_precip = CO.NoPrecipitation()
 precip_0m = CO.Precipitation0M(CMP.Parameters0M(toml_dict))
@@ -46,6 +49,7 @@ precip_1m = CO.Precipitation1M(
     CMP.Blk1MVelType(toml_dict),
 )
 precip_2m = CO.Precipitation2M(CMP.SB2006(toml_dict), CMP.SB2006VelType(toml_dict))
+precip_p3 = CO.PrecipitationP3(p3, Chen2022, CMP.SB2006(toml_dict))
 
 # common unit tests
 include("./common_unit_test.jl")
