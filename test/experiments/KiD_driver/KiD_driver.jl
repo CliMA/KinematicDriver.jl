@@ -9,9 +9,12 @@
 # Get the parameter values for the simulation
 include("parse_commandline.jl")
 
-if !(@isdefined config)
+#if !(@isdefined config)
     config = parse_commandline()
-end
+    config["precipitation_choice"] = "PrecipitationP3"
+    config["moisture_choice"] = "MoistureP3"
+    config["n_elem"] = 15
+#end
 
 ft_choice = config["FLOAT_TYPE"]
 

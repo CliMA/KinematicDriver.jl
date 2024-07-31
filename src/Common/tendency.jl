@@ -47,7 +47,7 @@ end
     @. θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
     @. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
 end
-@inline function precompute_aux_thermo!(::NonEquilibriumMoisture, Y, aux)
+@inline function precompute_aux_thermo!(::Union{NonEquilibriumMoisture, MoistureP3}, Y, aux)
 
     (; thermo_params) = aux
     (; ts, ρ, ρ_dry, p, T, θ_dry, θ_liq_ice) = aux.thermo_variables
@@ -122,21 +122,23 @@ end
     (; ρ) = aux.thermo_variables
     L = Y.ρq_ice
     N = Y.N_ice
-    ρ_r = Y.ρq_rim / Y.B_rim
-    F_rim = Y.ρq_rim / Y.ρq_ice
+    ρ_r = aux.scratch.tmp
+    F_rim = aux.scratch.tmp2
+    @. ρ_r = ifelse(Y.B_rim < eps(FT), FT(0), Y.ρq_rim / Y.B_rim)
+    @. F_rim = ifelse(Y.ρq_ice < eps(FT), FT(0), Y.ρq_rim / Y.ρq_ice)
 
     # TODO add F_liq compat once PR is merged to CloudMicrophysics
-    # F_liq = Y.ρq_liq / L
+    # @. F_liq = Y.ρq_liq / L
 
     p3 = ps.p3_params
     Chen2022 = ps.Chen2022.snow_ice
 
-    (; term_vel_ice, term_vel_N_ice, term_vel_rain, term_vel_N_rain) = aux.velocities
+    (; term_vel_ice, term_vel_N_ice, term_vel_rai, term_vel_N_rai) = aux.velocities
 
-    @. term_vel_N_rain = FT(0)
-    @. term_vel_rain = FT(0)
-    @. term_vel_N_ice = getindex(P3.ice_terminal_velocity(p3, Chen2022, L, N, ρ_r, F_rim, ρ), 1)
-    @. term_vel_ice = getindex(P3.ice_terminal_velocity(p3, Chen2022, L, N, ρ_r, F_rim, ρ), 2)
+    @. term_vel_N_rai = FT(0)
+    @. term_vel_rai = FT(0)
+    @. term_vel_N_ice = getindex(CMP3.ice_terminal_velocity(p3, Chen2022, L, N, ρ_r, F_rim, ρ), 1)
+    @. term_vel_ice = getindex(CMP3.ice_terminal_velocity(p3, Chen2022, L, N, ρ_r, F_rim, ρ), 2)
 end
 
 # helper function for precomputing aux precip for cloudy

@@ -53,6 +53,7 @@ struct Precipitation2M{PT, ST} <: AbstractPrecipitationStyle
     sedimentation::ST
 end
 struct PrecipitationP3{P3, CH} <: AbstractPrecipitationStyle
-    p3_params::P3, Chen2022::CH
+    p3_params::P3
+    Chen2022::CH
 end
 struct CloudyPrecip <: AbstractPrecipitationStyle end

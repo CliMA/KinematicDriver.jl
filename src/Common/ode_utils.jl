@@ -116,7 +116,7 @@ function initialise_aux(
     if moisture isa EquilibriumMoisture
         ts = @. TD.PhaseEquil_ρθq(thermo_params, ip.ρ, ip.θ_liq_ice, ip.q_tot)
         cloud_sources = nothing
-    elseif moisture isa NonEquilibriumMoisture
+    elseif moisture isa NonEquilibriumMoisture || moisture isa MoistureP3
         q = @. TD.PhasePartition(ip.q_tot, ip.q_liq, ip.q_ice)
         ts = @. TD.PhaseNonEquil_ρθq(thermo_params, ip.ρ, ip.θ_liq_ice, q)
 
@@ -221,7 +221,7 @@ function initialise_aux(
         )
 
         activation_sources = nothing
-        @assert moisture isa NonEquilibrumMoisture
+        # @assert moisture isa NonEquilibriumMoisture
     elseif precip isa CloudyPrecip
         microph_variables = (;
             q_tot = ip.q_tot,

@@ -97,7 +97,7 @@ Aerosol activation tendencies
     error("activation_tendency not implemented for a given $sp")
 end
 @inline function precompute_aux_activation!(
-    ::Union{CO.NoPrecipitation, CO.Precipitation0M, CO.Precipitation1M},
+    ::Union{CO.NoPrecipitation, CO.Precipitation0M, CO.Precipitation1M, CO.PrecipitationP3},
     dY,
     Y,
     aux,
@@ -240,7 +240,7 @@ end
 
     return dY
 end
-@inline function advection_tendency!(::CO.NonEquilibriumMoisture, dY, Y, aux, t)
+@inline function advection_tendency!(::Union{CO.NonEquilibriumMoisture, CO.MoistureP3}, dY, Y, aux, t)
     FT = eltype(Y.ρq_tot)
 
     If = CC.Operators.InterpolateC2F()
@@ -399,12 +399,13 @@ end
 @inline function advection_tendency!(::CO.PrecipitationP3, dY, Y, aux, t)
     FT = eltype(Y.ρq_tot)
 
+    # TODO add compat with 2M rain scheme
+
     If = CC.Operators.InterpolateC2F()
     ∂ = CC.Operators.DivergenceF2C(
         bottom = CC.Operators.Extrapolate(),
         top = CC.Operators.SetValue(CC.Geometry.WVector(0.0)),
     )
-    ∂ₐ = CC.Operators.DivergenceF2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
 
     @. dY.ρq_ice += ∂((CC.Geometry.WVector(If(aux.velocities.term_vel_ice))) * If(Y.ρq_ice))
     @. dY.ρq_rim += ∂((CC.Geometry.WVector(If(aux.velocities.term_vel_ice))) * If(Y.ρq_rim))

@@ -282,7 +282,7 @@ function cloudy_initial_condition(pdists, ip, k = 1)
     return merge(ip, (; moments = moments, pdists = pdists, cloudy_moments_zero))
 end
 
-function p3_initial_condition(::Type{FT}, thermo_params, q_init, N_init, z; F_rim, F_liq, z_top = FT(3000))
+function p3_initial_condition(::Type{FT}, thermo_params, q_init, N_init, z; F_rim, F_liq, z_top = FT(3000)) where {FT}
 
     _ρ_r::FT = FT(900) # fixed initial ρ_r
 
@@ -300,12 +300,13 @@ function p3_initial_condition(::Type{FT}, thermo_params, q_init, N_init, z; F_ri
     # use approximate temperature values from
     # sounding: kin1d/soundings/Tsfc2.txt
     # (path in p3 github repo)
-    T::FT = -0.004 * (z - 500) # temperature
+    T::FT = -0.004 * (z - 500) + 273.15 # temperature
     p::FT = 990 - (0.1 * z) # pressure
-    ρ::FT = TD.air_density(thermo_params, T, p, q_tot) # total density
+    _q = TD.PhasePartition(q_tot, q_liq, q_ice)
+    ρ::FT = TD.air_density(thermo_params, T, p, _q) # total density
+    ρ_dry::FT =  TD.air_density(thermo_params, T, p)
 
-    # TODO check if we need Equil or PhaseNonEquil_ρTq
-    ts = TD.PhaseEquil_ρTq(thermo_params, ρ, T, q_tot) # thermodynamic state
+    ts = TD.PhaseNonEquil_ρTq(thermo_params, ρ, T, _q) # thermodynamic state
 
     # P3 scheme uses L (kg/m3) = ρ * q
     # so we compute ρq and pass that to P3

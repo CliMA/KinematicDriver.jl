@@ -95,7 +95,6 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     # Solve the initial value problem for density profile
     ρ_profile = CO.ρ_ivp(FT, kid_params, thermo_params)
     # Create the initial condition profiles
-    # TODO: add condition for P3
     if precipitation_choice == "CloudyPrecip"
         p3_params = nothing
         cloudy_params, cloudy_pdists = create_cloudy_parameters(FT)
@@ -115,6 +114,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
                 thermo_params,
                 FT(2.65e-4),
                 FT(5000),
+                coord.z,
                 F_rim = 0,
                 F_liq = 0,
                 z_top = FT(opts["z_max"]),
@@ -129,7 +129,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
             coord,
         )
     end
-
+    
     # Create aux vector and apply initial condition
     aux = K1D.initialise_aux(
         FT,
@@ -145,7 +145,6 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
         moisture,
         precip,
         cloudy_params,
-        p3_params,
     )
 
     # Create state vector and apply initial condition
