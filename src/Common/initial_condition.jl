@@ -290,11 +290,21 @@ function p3_initial_condition(::Type{FT}, thermo_params, q_init, N_init, z; F_ri
     # TODO: investigate whether we may need to change
     # the z-domain which the initial population inhabits
     # in order to increase the amount of particles
-    q_tot::FT = z > (z_top - eps(FT)) ? q_init : FT(0)
-    N_ice_kg::FT = z > (z_top - eps(FT)) ? N_init : FT(0)
-    q_ice::FT = z > (z_top - eps(FT)) ? q_init : FT(0)
-    q_rim::FT = z > (z_top - eps(FT)) ? F_rim * (1 - F_liq) * q_init : FT(0)
-    q_liq::FT = z > (z_top - eps(FT)) ? F_liq * q_init : FT(0)
+    _z_band = z_top * FT(0.05)
+    has_ice(z) = z > (z_top - _z_band)
+    # has_ice(z) = false
+    q_tot::FT = has_ice(z) ? q_init : FT(0)
+    N_ice_kg::FT = has_ice(z) ? N_init : FT(0)
+    q_ice::FT = has_ice(z) ? q_init : FT(0)
+    q_rim::FT = has_ice(z) ? F_rim * (1 - F_liq) * q_init : FT(0)
+    q_liqonice::FT = has_ice(z) ? F_liq * q_init : FT(0)
+    q_liq::FT = FT(0)
+    ρq_liq::FT = FT(0)
+    q_sno::FT = FT(0)
+    ρq_sno::FT = FT(0)
+    ρq_vap::FT = FT(0)
+    q_rai::FT = FT(0)
+    ρq_rai::FT = FT(0)
 
     # for Case 1 of Cholette et al 2019 paper
     # use approximate temperature values from
@@ -317,7 +327,7 @@ function p3_initial_condition(::Type{FT}, thermo_params, q_init, N_init, z; F_ri
     N_ice::FT = ρ * N_ice_kg
     ρq_ice::FT = ρ * q_ice
     ρq_rim::FT = ρ * q_rim
-    ρq_liq::FT = ρ * q_liq
+    ρq_liqonice::FT = ρ * q_liqonice
     B_rim::FT = ρq_rim / _ρ_r
 
     # unused quantities:
@@ -326,11 +336,7 @@ function p3_initial_condition(::Type{FT}, thermo_params, q_init, N_init, z; F_ri
     N_rai::FT = FT(0)
     N_aer::FT = FT(0)
     θ_dry::FT = TD.dry_pottemp(thermo_params, T, ρ)
-    q_sno::FT = FT(0)
-    ρq_sno::FT = FT(0)
-    ρq_vap::FT = FT(0)
-    q_rai::FT = FT(0)
-    ρq_rai::FT = FT(0)
+
 
     zero::FT = FT(0)
 
@@ -348,12 +354,14 @@ function p3_initial_condition(::Type{FT}, thermo_params, q_init, N_init, z; F_ri
         ρq_rim,
         ρq_sno,
         ρq_vap,
+        ρq_liqonice,
         q_tot,
         q_liq,
         q_ice,
         q_rai,
         q_sno,
         q_rim,
+        q_liqonice,
         B_rim,
         N_liq,
         N_ice,

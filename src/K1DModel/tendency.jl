@@ -407,28 +407,29 @@ end
         top = CC.Operators.SetValue(CC.Geometry.WVector(0.0)),
     )
 
-    @. dY.ρq_ice += ∂((CC.Geometry.WVector(If(aux.velocities.term_vel_ice))) * If(Y.ρq_ice))
-    @. dY.ρq_rim += ∂((CC.Geometry.WVector(If(aux.velocities.term_vel_ice))) * If(Y.ρq_rim))
-    @. dY.B_rim += ∂((CC.Geometry.WVector(If(aux.velocities.term_vel_ice))) * If(Y.B_rim))
+    @. dY.ρq_ice += ∂(FT(-1) * (aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) + (CC.Geometry.WVector(If(aux.velocities.term_vel_ice))) * If(Y.ρq_ice))
+    @. dY.ρq_rim += ∂(FT(-1) * (aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) + (CC.Geometry.WVector(If(aux.velocities.term_vel_ice))) * If(Y.ρq_rim))
+    @. dY.B_rim += ∂(FT(-1) * (aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) + (CC.Geometry.WVector(If(aux.velocities.term_vel_ice))) * If(Y.B_rim))
     # TODO add for liquid fraction
-    # @. dY.ρq_liq +=
+    # @. dY.ρq_liqonice +=
     #     ∂(
     #         (
+    #             FT(-1) * (aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) + 
     #             CC.Geometry.WVector(If(aux.velocities.term_vel_ice))
-    #         ) * If(Y.ρq_liq),
+    #         ) * If(Y.ρq_liqonice),
     #     )
-    @. dY.N_ice += ∂((CC.Geometry.WVector(If(aux.velocities.term_vel_N_ice))) * If(Y.N_ice))
+    @. dY.N_ice += ∂(FT(-1) * (aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) + (CC.Geometry.WVector(If(aux.velocities.term_vel_N_ice))) * If(Y.N_ice))
     fcc = CC.Operators.FluxCorrectionC2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
-    @. dY.ρq_ice += fcc((CC.Geometry.WVector(If(aux.velocities.term_vel_ice) * FT(-1))), Y.ρq_ice)
-    @. dY.ρq_rim += fcc((CC.Geometry.WVector(If(aux.velocities.term_vel_ice) * FT(-1))), Y.ρq_rim)
+    @. dY.ρq_ice += fcc((aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) + (CC.Geometry.WVector(If(aux.velocities.term_vel_ice) * FT(-1))), Y.ρq_ice)
+    @. dY.ρq_rim += fcc((aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) + (CC.Geometry.WVector(If(aux.velocities.term_vel_ice) * FT(-1))), Y.ρq_rim)
     # TODO add for liquid fraction
-    # @. dY.ρq_liq += fcc(
+    # @. dY.ρq_liqonice += fcc(
     #     (
-    #         CC.Geometry.WVector(If(aux.velocities.term_vel_ice) * FT(-1))
+    #         (aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) + CC.Geometry.WVector(If(aux.velocities.term_vel_ice) * FT(-1))
     #     ),
-    #     Y.ρq_liq,
+    #     Y.ρq_liqonice,
     # )
-    @. dY.B_rim += fcc((CC.Geometry.WVector(If(aux.velocities.term_vel_ice) * FT(-1))), Y.B_rim)
-    @. dY.N_ice += fcc((CC.Geometry.WVector(If(aux.velocities.term_vel_N_ice) * FT(-1))), Y.N_ice)
+    @. dY.B_rim += fcc((aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) + (CC.Geometry.WVector(If(aux.velocities.term_vel_ice) * FT(-1))), Y.B_rim)
+    @. dY.N_ice += fcc((aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) + (CC.Geometry.WVector(If(aux.velocities.term_vel_N_ice) * FT(-1))), Y.N_ice)
     return dY
 end

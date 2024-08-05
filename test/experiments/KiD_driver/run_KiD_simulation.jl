@@ -129,7 +129,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
             coord,
         )
     end
-    
+
     # Create aux vector and apply initial condition
     aux = K1D.initialise_aux(
         FT,

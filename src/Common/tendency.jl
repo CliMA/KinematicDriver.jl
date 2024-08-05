@@ -48,6 +48,8 @@ end
     @. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
 end
 @inline function precompute_aux_thermo!(::Union{NonEquilibriumMoisture, MoistureP3}, Y, aux)
+    
+    FT = eltype(Y.ρq_liq)
 
     (; thermo_params) = aux
     (; ts, ρ, ρ_dry, p, T, θ_dry, θ_liq_ice) = aux.thermo_variables
@@ -62,7 +64,7 @@ end
     @. ts = TD.PhaseNonEquil_ρTq(thermo_params, ρ, T, PP(q_tot, q_liq, q_ice))
     @. p = TD.air_pressure(thermo_params, ts)
     @. θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
-    @. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
+    @. θ_liq_ice = θ_dry #TD.liquid_ice_pottemp(thermo_params, ts) - prevents error...
 end
 @inline function precompute_aux_thermo!(::CloudyMoisture, Y, aux)
 
@@ -128,7 +130,7 @@ end
     @. F_rim = ifelse(Y.ρq_ice < eps(FT), FT(0), Y.ρq_rim / Y.ρq_ice)
 
     # TODO add F_liq compat once PR is merged to CloudMicrophysics
-    # @. F_liq = Y.ρq_liq / L
+    # @. F_liq = Y.ρq_liqonice / L
 
     p3 = ps.p3_params
     Chen2022 = ps.Chen2022.snow_ice
@@ -488,6 +490,7 @@ end
 end
 
 @inline function precompute_aux_precip_sources!(ps::PrecipitationP3, aux)
+    # TODO [P3]
     return nothing
 end
 
