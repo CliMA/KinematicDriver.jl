@@ -281,3 +281,92 @@ function cloudy_initial_condition(pdists, ip, k = 1)
 
     return merge(ip, (; moments = moments, pdists = pdists, cloudy_moments_zero))
 end
+
+function p3_initial_condition(::Type{FT}, thermo_params, q_init, N_init, z; F_rim, F_liq, z_top = FT(3000)) where {FT}
+
+    _ρ_r::FT = FT(900) # fixed initial ρ_r
+
+    # for now: small particle population at domain top
+    # TODO: investigate whether we may need to change
+    # the z-domain which the initial population inhabits
+    # in order to increase the amount of particles
+    _z_band = z_top * FT(0.05)
+    has_ice(z) = z > (z_top - _z_band)
+    # has_ice(z) = false
+    q_tot::FT = has_ice(z) ? q_init : FT(0)
+    N_ice_kg::FT = has_ice(z) ? N_init : FT(0)
+    q_ice::FT = has_ice(z) ? q_init : FT(0)
+    q_rim::FT = has_ice(z) ? F_rim * (1 - F_liq) * q_init : FT(0)
+    q_liqonice::FT = has_ice(z) ? F_liq * q_init : FT(0)
+    q_liq::FT = FT(0)
+    ρq_liq::FT = FT(0)
+    q_sno::FT = FT(0)
+    ρq_sno::FT = FT(0)
+    ρq_vap::FT = FT(0)
+    q_rai::FT = FT(0)
+    ρq_rai::FT = FT(0)
+
+    # for Case 1 of Cholette et al 2019 paper
+    # use approximate temperature values from
+    # sounding: kin1d/soundings/Tsfc2.txt
+    # (path in p3 github repo)
+    T::FT = -0.004 * (z - 500) + 273.15 # temperature
+    p::FT = 990 - (0.1 * z) # pressure
+    _q = TD.PhasePartition(q_tot, q_liq, q_ice)
+    ρ::FT = TD.air_density(thermo_params, T, p, _q) # total density
+    ρ_dry::FT =  TD.air_density(thermo_params, T, p)
+
+    ts = TD.PhaseNonEquil_ρTq(thermo_params, ρ, T, _q) # thermodynamic state
+
+    # P3 scheme uses L (kg/m3) = ρ * q
+    # so we compute ρq and pass that to P3
+    # also we convert N to (1/m3)
+    # since paper init values are given
+    # in (kg/kg), (1/kg)
+    ρq_tot::FT = ρ * q_tot
+    N_ice::FT = ρ * N_ice_kg
+    ρq_ice::FT = ρ * q_ice
+    ρq_rim::FT = ρ * q_rim
+    ρq_liqonice::FT = ρ * q_liqonice
+    B_rim::FT = ρq_rim / _ρ_r
+
+    # unused quantities:
+    θ_liq_ice::FT = TD.liquid_ice_pottemp(thermo_params, ts)
+    N_liq::FT = FT(0)
+    N_rai::FT = FT(0)
+    N_aer::FT = FT(0)
+    θ_dry::FT = TD.dry_pottemp(thermo_params, T, ρ)
+
+
+    zero::FT = FT(0)
+
+    return (;
+        ρ,
+        ρ_dry,
+        T,
+        p,
+        θ_liq_ice,
+        θ_dry,
+        ρq_tot,
+        ρq_liq,
+        ρq_ice,
+        ρq_rai,
+        ρq_rim,
+        ρq_sno,
+        ρq_vap,
+        ρq_liqonice,
+        q_tot,
+        q_liq,
+        q_ice,
+        q_rai,
+        q_sno,
+        q_rim,
+        q_liqonice,
+        B_rim,
+        N_liq,
+        N_ice,
+        N_rai,
+        N_aer,
+        zero,
+    )
+end

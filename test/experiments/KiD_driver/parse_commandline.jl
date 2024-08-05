@@ -13,11 +13,11 @@ function parse_commandline()
         arg_type = String
         default = "Float64"
         "--moisture_choice"
-        help = "Mositure model choice: EquilibriumMoisture, NonEquilibriumMoisture, CloudyMoisture"
+        help = "Mositure model choice: EquilibriumMoisture, NonEquilibriumMoisture, CloudyMoisture, MoistureP3"
         arg_type = String
         default = "NonEquilibriumMoisture"
         "--precipitation_choice"
-        help = "Precipitation model choice: NoPrecipitation, Precipitation0M, Precipitation1M, Precipitation2M, CloudyPrecip"
+        help = "Precipitation model choice: NoPrecipitation, Precipitation0M, Precipitation1M, Precipitation2M, CloudyPrecip, PrecipitationP3"
         arg_type = String
         default = "Precipitation1M"
         "--rain_formation_scheme_choice"

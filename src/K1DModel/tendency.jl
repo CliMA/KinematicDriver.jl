@@ -97,7 +97,7 @@ Aerosol activation tendencies
     error("activation_tendency not implemented for a given $sp")
 end
 @inline function precompute_aux_activation!(
-    ::Union{CO.NoPrecipitation, CO.Precipitation0M, CO.Precipitation1M},
+    ::Union{CO.NoPrecipitation, CO.Precipitation0M, CO.Precipitation1M, CO.PrecipitationP3},
     dY,
     Y,
     aux,
@@ -240,7 +240,7 @@ end
 
     return dY
 end
-@inline function advection_tendency!(::CO.NonEquilibriumMoisture, dY, Y, aux, t)
+@inline function advection_tendency!(::Union{CO.NonEquilibriumMoisture, CO.MoistureP3}, dY, Y, aux, t)
     FT = eltype(Y.ρq_tot)
 
     If = CC.Operators.InterpolateC2F()
@@ -393,5 +393,43 @@ end
         )
     end
 
+    return dY
+end
+
+@inline function advection_tendency!(::CO.PrecipitationP3, dY, Y, aux, t)
+    FT = eltype(Y.ρq_tot)
+
+    # TODO add compat with 2M rain scheme
+
+    If = CC.Operators.InterpolateC2F()
+    ∂ = CC.Operators.DivergenceF2C(
+        bottom = CC.Operators.Extrapolate(),
+        top = CC.Operators.SetValue(CC.Geometry.WVector(0.0)),
+    )
+
+    @. dY.ρq_ice += ∂(FT(-1) * (aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) + (CC.Geometry.WVector(If(aux.velocities.term_vel_ice))) * If(Y.ρq_ice))
+    @. dY.ρq_rim += ∂(FT(-1) * (aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) + (CC.Geometry.WVector(If(aux.velocities.term_vel_ice))) * If(Y.ρq_rim))
+    @. dY.B_rim += ∂(FT(-1) * (aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) + (CC.Geometry.WVector(If(aux.velocities.term_vel_ice))) * If(Y.B_rim))
+    # TODO add for liquid fraction
+    # @. dY.ρq_liqonice +=
+    #     ∂(
+    #         (
+    #             FT(-1) * (aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) + 
+    #             CC.Geometry.WVector(If(aux.velocities.term_vel_ice))
+    #         ) * If(Y.ρq_liqonice),
+    #     )
+    @. dY.N_ice += ∂(FT(-1) * (aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) + (CC.Geometry.WVector(If(aux.velocities.term_vel_N_ice))) * If(Y.N_ice))
+    fcc = CC.Operators.FluxCorrectionC2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
+    @. dY.ρq_ice += fcc((aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) + (CC.Geometry.WVector(If(aux.velocities.term_vel_ice) * FT(-1))), Y.ρq_ice)
+    @. dY.ρq_rim += fcc((aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) + (CC.Geometry.WVector(If(aux.velocities.term_vel_ice) * FT(-1))), Y.ρq_rim)
+    # TODO add for liquid fraction
+    # @. dY.ρq_liqonice += fcc(
+    #     (
+    #         (aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) + CC.Geometry.WVector(If(aux.velocities.term_vel_ice) * FT(-1))
+    #     ),
+    #     Y.ρq_liqonice,
+    # )
+    @. dY.B_rim += fcc((aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) + (CC.Geometry.WVector(If(aux.velocities.term_vel_ice) * FT(-1))), Y.B_rim)
+    @. dY.N_ice += fcc((aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) + (CC.Geometry.WVector(If(aux.velocities.term_vel_N_ice) * FT(-1))), Y.N_ice)
     return dY
 end

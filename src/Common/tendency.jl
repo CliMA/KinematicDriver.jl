@@ -47,7 +47,9 @@ end
     @. θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
     @. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
 end
-@inline function precompute_aux_thermo!(::NonEquilibriumMoisture, Y, aux)
+@inline function precompute_aux_thermo!(::Union{NonEquilibriumMoisture, MoistureP3}, Y, aux)
+    
+    FT = eltype(Y.ρq_liq)
 
     (; thermo_params) = aux
     (; ts, ρ, ρ_dry, p, T, θ_dry, θ_liq_ice) = aux.thermo_variables
@@ -62,7 +64,7 @@ end
     @. ts = TD.PhaseNonEquil_ρTq(thermo_params, ρ, T, PP(q_tot, q_liq, q_ice))
     @. p = TD.air_pressure(thermo_params, ts)
     @. θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
-    @. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
+    @. θ_liq_ice = θ_dry #TD.liquid_ice_pottemp(thermo_params, ts) - prevents error...
 end
 @inline function precompute_aux_thermo!(::CloudyMoisture, Y, aux)
 
@@ -115,19 +117,30 @@ end
 end
 @inline function precompute_aux_precip!(ps::PrecipitationP3, Y, aux)
 
+    # TODO preserve functionality of generic 2-moment scheme
+    # for rain while adding and changing for P3 snow/ice behavior
+
     FT = eltype(Y.ρq_rai)
     (; ρ) = aux.thermo_variables
-    (; q_rai, q_ice, q_rim, B_rim, N_rai, N_ice, N_liq) = aux.microph_variables
+    L = Y.ρq_ice
+    N = Y.N_ice
+    ρ_r = aux.scratch.tmp
+    F_rim = aux.scratch.tmp2
+    @. ρ_r = ifelse(Y.B_rim < eps(FT), FT(0), Y.ρq_rim / Y.B_rim)
+    @. F_rim = ifelse(Y.ρq_ice < eps(FT), FT(0), Y.ρq_rim / Y.ρq_ice)
 
-    @. q_rai = q_(Y.ρq_rai, ρ)
-    @. q_ice = q_(Y.ρq_ice, ρ)
-    @. q_rim = q_(Y.ρq_rim, ρ)
-    @. B_rim = q_(Y.ρq_rim, ρ)
-    @. N_rai = max(FT(0), Y.N_rai)
-    @. N_liq = max(FT(0), Y.N_liq)
-    @. N_ice = max(FT(0), Y.N_ice)
+    # TODO add F_liq compat once PR is merged to CloudMicrophysics
+    # @. F_liq = Y.ρq_liqonice / L
 
-    # TODO...
+    p3 = ps.p3_params
+    Chen2022 = ps.Chen2022.snow_ice
+
+    (; term_vel_ice, term_vel_N_ice, term_vel_rai, term_vel_N_rai) = aux.velocities
+
+    @. term_vel_N_rai = FT(0)
+    @. term_vel_rai = FT(0)
+    @. term_vel_N_ice = getindex(CMP3.ice_terminal_velocity(p3, Chen2022, L, N, ρ_r, F_rim, ρ), 1)
+    @. term_vel_ice = getindex(CMP3.ice_terminal_velocity(p3, Chen2022, L, N, ρ_r, F_rim, ρ), 2)
 end
 
 # helper function for precomputing aux precip for cloudy
@@ -477,6 +490,7 @@ end
 end
 
 @inline function precompute_aux_precip_sources!(ps::PrecipitationP3, aux)
+    # TODO [P3]
     return nothing
 end
 

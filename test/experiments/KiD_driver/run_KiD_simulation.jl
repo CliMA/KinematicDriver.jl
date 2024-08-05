@@ -96,6 +96,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     ρ_profile = CO.ρ_ivp(FT, kid_params, thermo_params)
     # Create the initial condition profiles
     if precipitation_choice == "CloudyPrecip"
+        p3_params = nothing
         cloudy_params, cloudy_pdists = create_cloudy_parameters(FT)
         init = map(
             coord -> CO.cloudy_initial_condition(
@@ -104,7 +105,24 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
             ),
             coord,
         )
+    elseif precipitation_choice == "PrecipitationP3"
+        cloudy_params = nothing
+        p3_params = CMP.ParametersP3(FT)
+        init = map(
+            coord -> CO.p3_initial_condition(
+                FT,
+                thermo_params,
+                FT(2.65e-4),
+                FT(5000),
+                coord.z,
+                F_rim = 0,
+                F_liq = 0,
+                z_top = FT(opts["z_max"]),
+            ),
+            coord,
+        )
     else
+        p3_params = nothing
         cloudy_params = nothing
         init = map(
             coord -> CO.initial_condition_1d(FT, common_params, kid_params, thermo_params, ρ_profile, coord.z),
