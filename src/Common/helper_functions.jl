@@ -194,8 +194,8 @@ function get_variable_data_from_ODE(u, aux, precip, var::String)
         z_top = length(_qliq)
         threshold = 1e-6
         while _qliq[z_top] < threshold && z_top > 1
-            z_top -= 1 
-        end     
+            z_top -= 1
+        end
 
         depth = 500.0
         z = parent(CC.Fields.coordinate_field(aux.prescribed_velocity.ρw).z)
@@ -209,7 +209,7 @@ function get_variable_data_from_ODE(u, aux, precip, var::String)
         Nr = mean(_Nrai[_ind:z_top])
         ρ = mean(ρ[_ind:z_top])
         if precip isa Precipitation2M
-                output = [CM2.effective_radius(precip.rain_formation, ql, qr, Nl, Nr, ρ)]
+            output = [CM2.effective_radius(precip.rain_formation, ql, qr, Nl, Nr, ρ)]
         else
             error("Computing effectve radius for the given precipitation style is invalid!!")
         end
@@ -254,7 +254,7 @@ function get_variable_data_from_ODE(u, aux, precip, var::String)
         while _qliq[z_top] < threshold && z_top > 1
             z_top -= 1
         end
-        
+
         depth = 500.0
         height = 500.0
         z = parent(CC.Fields.coordinate_field(aux.prescribed_velocity.ρw).z)

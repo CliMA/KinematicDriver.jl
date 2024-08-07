@@ -24,12 +24,9 @@ function get_prior_config()
     config["parameters"] = Dict(
         "SB2006_collection_kernel_coeff_kcc" =>
             (mean = 4.44 * 1e9, var = 8.88 * 1e8, lbound = 1.0 * 1e8, ubound = 1.0 * 1e11),
-        "SB2006_collection_kernel_coeff_kcr" =>
-           (mean = 5.25, var = 1.05, lbound = 3.0, ubound = 20.0),
-        "SB2006_collection_kernel_coeff_krr" => 
-            (mean = 7.12, var = 1.424, lbound = 4.0, ubound = 10.0),
-        "SB2006_raindrops_terminal_velocity_coeff_aR" => 
-            (mean = 8.262, var = 0.5, lbound = 7.6, ubound = 10.5),
+        "SB2006_collection_kernel_coeff_kcr" => (mean = 5.25, var = 1.05, lbound = 3.0, ubound = 20.0),
+        "SB2006_collection_kernel_coeff_krr" => (mean = 7.12, var = 1.424, lbound = 4.0, ubound = 10.0),
+        "SB2006_raindrops_terminal_velocity_coeff_aR" => (mean = 8.262, var = 0.5, lbound = 7.6, ubound = 10.5),
     )
     return config
 end
@@ -82,10 +79,26 @@ function get_observations_config()
     config["true_values_offset"] = 0.1
     # Define data
     root_dir = "/Users/caterinacroci/Desktop/data/"
-    config["cases"] = [ (w1 = 2.0, p0 = 99000.0, Nd = 50 * 1e6, std_dry = 1.1, t_cal = 600:100:1500,
-                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_2/mean=0.04_std=1.1_p0=990_Nd=50/"),
-                        (w1 = 2.0, p0 = 99000.0, Nd = 100 * 1e6, std_dry = 1.1, t_cal = 800:120:1520,
-                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_2/mean=0.04_std=1.1_p0=990_Nd=100/"),]
+    config["cases"] = [
+        (
+            w1 = 2.0,
+            p0 = 99000.0,
+            Nd = 50 * 1e6,
+            std_dry = 1.1,
+            t_cal = 600:100:1500,
+            r_dry = 0.04 * 1e-6,
+            dir = root_dir * "rhow_2/mean=0.04_std=1.1_p0=990_Nd=50/",
+        ),
+        (
+            w1 = 2.0,
+            p0 = 99000.0,
+            Nd = 100 * 1e6,
+            std_dry = 1.1,
+            t_cal = 800:120:1520,
+            r_dry = 0.04 * 1e-6,
+            dir = root_dir * "rhow_2/mean=0.04_std=1.1_p0=990_Nd=100/",
+        ),
+    ]
     # Define type of data
     config["data_type"] = Float64
     return config
@@ -96,7 +109,7 @@ function get_stats_config()
     # Define normalization method: mean_normalized or std_normalized
     config["normalization"] = "std_normalized"
     # Define if pca is performed
-    config["perform_pca"] = true 
+    config["perform_pca"] = true
     # Define fraction of variance loss when performing PCA.
     config["variance_loss"] = 0.01
     # Define tikhonov mode: absolute or relative
