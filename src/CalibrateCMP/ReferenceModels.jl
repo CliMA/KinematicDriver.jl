@@ -40,6 +40,10 @@ function get_obs_matrix(
     _data_matrix = Matrix{FT}
     for (i, case) in enumerate(cases)
         _dir::String = case.dir
+
+        if "t_cal" in collect(keys(case))
+            times = case.t_cal
+        end
         _data_matrix_single_case::Matrix{FT} =
             get_obs_matrix(_dir, variables, heights, times; apply_filter = apply_filter)
 
@@ -177,8 +181,25 @@ function get_single_obs_field(
             _data =
                 _data_pysdm["qr"] .* 1e-3 .* _data_pysdm["rhod"] .* _data_pysdm["rain averaged terminal velocity"] .*
                 FT(3600)
+        elseif var == "Z"
+            _data = _data_pysdm["radar_refl"]
+        elseif var == "reff"
+            _data = _data_pysdm["effective_radius"]
+        elseif var == "rainrate_surface"
+            _rainrate = 
+                _data_pysdm["qr"] .* 1e-3 .* _data_pysdm["rhod"] .* _data_pysdm["rain averaged terminal velocity"] .*
+                FT(3600)
+            rainrate = 1.5 .* _rainrate[:, 1] - 0.5 .* _rainrate[:, 2]
+            rainrate[findall(x -> x < 0, rainrate)] .= FT(0)
+            _data = rainrate
+        elseif var == "reff_top"
+            _data = _data_pysdm["reff"]
         elseif var == "Z_top"
             _data = _data_pysdm["Z_top"]
+        elseif var == "Z_mid"
+            _data = _data_pysdm["Z_mid"]
+        elseif var == "Z_bottom"
+            _data = _data_pysdm["Z_bottom"]
         else
             _data = _data_pysdm[var]
         end
