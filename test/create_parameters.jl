@@ -60,18 +60,10 @@ function override_toml_dict(
         "init_cond_theta2" => Dict("value" => tht_2, "type" => "float"),
         "SB2006_raindrops_min_mass" => Dict("value" => 6.54e-11, "type" => "float"),
         # NEW!!!!
-        #"SB2006_collection_kernel_coeff_krr" => Dict("value" => 3.328, "type" => "float"),
-        #"SB2006_collection_kernel_coeff_kcc" => Dict("value" => 9.231e9, "type" => "float"),
-        #"SB2006_collection_kernel_coeff_kcr" => Dict("value" => 13.33, "type" => "float"),
-        #"SB2006_autoconversion_correcting_function_coeff_A" => Dict("value" => 300.1, "type" => "float"),
-        #"SB2006_cloud_gamma_distribution_parameter" => Dict("value" => 2.5, "type" => "float"),
-        #"SB2006_autoconversion_correcting_function_coeff_a" => Dict("value" => 0.3395, "type" => "float"),
-        #"SB2006_autoconversion_correcting_function_coeff_b" => Dict("value" => 1.0, "type" => "float"),
-        #"SB2006_accretion_correcting_function_coeff_c" => Dict("value" => 2, "type" => "float"),
-        #"SB2006_collection_kernel_coeff_kapparr" => Dict("value" => 80.0, "type" => "float"),
-        "SB2006_raindrops_terminal_velocity_coeff_aR" => Dict("value" => 8.37, "type" => "float"),
-        #"SB2006_raindrops_terminal_velocity_coeff_bR" => Dict("value" => 9.5, "type" => "float"),
-        #"SB2006_raindrops_terminal_velocity_coeff_cR" => Dict("value" => 700.0, "type" => "float"),    
+        #"SB2006_collection_kernel_coeff_krr" => Dict("value" => 6.284, "type" => "float"),
+        #"SB2006_collection_kernel_coeff_kcc" => Dict("value" => 7.086e8, "type" => "float"),
+        #"SB2006_collection_kernel_coeff_kcr" => Dict("value" => 6.646, "type" => "float"),
+        #"SB2006_raindrops_terminal_velocity_coeff_aR" => Dict("value" => 10.16, "type" => "float"),   
     )
     toml_dict = CP.create_toml_dict(FT; override_file)
     return toml_dict
