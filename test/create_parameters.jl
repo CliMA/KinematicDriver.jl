@@ -62,9 +62,9 @@ function override_toml_dict(
         "init_cond_theta2" => Dict("value" => tht_2, "type" => "float"),
         "SB2006_raindrops_min_mass" => Dict("value" => 6.54e-11, "type" => "float"),
         # NEW!!!!
-        "SB2006_collection_kernel_coeff_krr" => Dict("value" => 9.9, "type" => "float"),
-        "SB2006_collection_kernel_coeff_kcc" => Dict("value" => 3e9, "type" => "float"),
-        "SB2006_collection_kernel_coeff_kcr" => Dict("value" => 6, "type" => "float"),
+        "SB2006_collection_kernel_coeff_krr" => Dict("value" => 4.0, "type" => "float"),
+        "SB2006_collection_kernel_coeff_kcc" => Dict("value" => 1e9, "type" => "float"),
+        "SB2006_collection_kernel_coeff_kcr" => Dict("value" => 9.9, "type" => "float"),
         "SB2006_raindrops_terminal_velocity_coeff_aR" => Dict("value" => 8.2, "type" => "float"), 
     )
     toml_dict = CP.create_toml_dict(FT; override_file)

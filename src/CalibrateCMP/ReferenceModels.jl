@@ -40,6 +40,10 @@ function get_obs_matrix(
     _data_matrix = Matrix{FT}
     for (i, case) in enumerate(cases)
         _dir::String = case.dir
+        
+        if "t_cal" in collect(keys(case))
+            times = case.t_cal
+        end
         _data_matrix_single_case::Matrix{FT} =
             get_obs_matrix(_dir, variables, heights, times; apply_filter = apply_filter)
 

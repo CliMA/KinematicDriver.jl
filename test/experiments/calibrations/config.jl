@@ -39,7 +39,7 @@ function get_process_config()
     # Define method of calibration : currently only EKP and Optim are supported
     config["method"] = "EKP"
     # Define mini batch size for EKP
-    config["batch_size"] = 12
+    config["batch_size"] = 15
     # Define number of iterations for EKP
     config["n_iter"] = 15
     # Define number of parameter ensemle for EKP (Inversion)
@@ -95,10 +95,10 @@ function get_observations_config()
                             r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_2/mean=0.04_std=1.1_p0=1000_Nd=100/"),
                         (w1 = 2.0, p0 = 100000.0, Nd = 500 * 1e6, std_dry = 1.1, 
                             r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_2/mean=0.04_std=1.1_p0=1000_Nd=500/"),
-                        (w1 = 2.0, p0 = 100700.0, Nd = 50 * 1e6, std_dry = 1.1, 
+                        #=(w1 = 2.0, p0 = 100700.0, Nd = 50 * 1e6, std_dry = 1.1, 
                             r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_2/mean=0.04_std=1.1_p0=1007_Nd=50/"),
                         (w1 = 2.0, p0 = 100700.0, Nd = 100 * 1e6, std_dry = 1.1, 
-                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_2/mean=0.04_std=1.1_p0=1007_Nd=100/"),
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_2/mean=0.04_std=1.1_p0=1007_Nd=100/"),=#
 
                         (w1 = 2.0, p0 = 99000.0, Nd = 50 * 1e6, std_dry = 1.8, 
                             r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_2/mean=0.06_std=1.8_p0=990_Nd=50/"),
@@ -106,10 +106,10 @@ function get_observations_config()
                             r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_2/mean=0.06_std=1.8_p0=990_Nd=100/"),
                         (w1 = 2.0, p0 = 99000.0, Nd = 500 * 1e6, std_dry = 1.8, 
                             r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_2/mean=0.06_std=1.8_p0=990_Nd=500/"),
-                        (w1 = 2.0, p0 = 100700.0, Nd = 50 * 1e6, std_dry = 1.8, 
+                        #=(w1 = 2.0, p0 = 100700.0, Nd = 50 * 1e6, std_dry = 1.8, 
                             r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_2/mean=0.06_std=1.8_p0=1007_Nd=50/"),
                         (w1 = 2.0, p0 = 100700.0, Nd = 100 * 1e6, std_dry = 1.8, 
-                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_2/mean=0.06_std=1.8_p0=1007_Nd=100/"),
+                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_2/mean=0.06_std=1.8_p0=1007_Nd=100/"),=#
                         
                         # w = 4.0 m/s
                         (w1 = 4.0, p0 = 99000.0, Nd = 50 * 1e6, std_dry = 1.1, 
