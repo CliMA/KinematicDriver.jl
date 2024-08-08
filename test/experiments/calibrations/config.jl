@@ -77,7 +77,8 @@ function get_observations_config()
     config["true_values_offset"] = 0.25
     # Define data
     root_dir = "/Users/sajjadazimi/Postdoc/Results/01-PySDM_1D_rain_shaft/data/03-p1000/"
-    config["cases"] = [(w1 = 3.0, p0 = 100000.0, Nd = 100 * 1e6, dir = root_dir * "rhow=3.0_Nd=100/")]
+    config["cases"] =
+        [(w1 = 3.0, p0 = 100000.0, Nd = 100 * 1e6, t_cal = 0.0:600.0:3600.0, dir = root_dir * "rhow=3.0_Nd=100/")]
     # Define type of data
     config["data_type"] = Float64
     return config
