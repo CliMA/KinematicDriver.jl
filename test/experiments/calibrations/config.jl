@@ -22,11 +22,9 @@ function get_prior_config()
     config = Dict()
     # Define prior mean and bounds on the parameters.
     config["parameters"] = Dict(
-        "SB2006_collection_kernel_coeff_kcc" =>
-            (mean = 4.44 * 1e9, var = 8.88 * 1e8, lbound = 1.0 * 1e8, ubound = 1.0 * 1e11),
-        "SB2006_collection_kernel_coeff_kcr" => (mean = 5.25, var = 1.05, lbound = 3.0, ubound = 20.0),
-        "SB2006_collection_kernel_coeff_krr" => (mean = 7.12, var = 1.424, lbound = 4.0, ubound = 10.0),
-        "SB2006_raindrops_terminal_velocity_coeff_aR" => (mean = 8.262, var = 0.5, lbound = 7.6, ubound = 10.5),
+        "rain_terminal_velocity_size_relation_coefficient_chiv" =>
+            (mean = 0.1, var = 0.03, lbound = 0.0, ubound = 1.0),
+        "rain_cross_section_size_relation_coefficient_chia" => (mean = 4.0, var = 1.0, lbound = 0.0, ubound = 10.0),
     )
     return config
 end
@@ -38,12 +36,12 @@ function get_process_config()
     # Define mini batch size for EKP
     config["batch_size"] = 1
     # Define number of iterations for EKP
-    config["n_iter"] = 15
+    config["n_iter"] = 10
     # Define number of parameter ensemle for EKP (Inversion)
-    config["n_ens"] = 16
+    config["n_ens"] = 15
     # Define EKP time step
-    config["Δt"] = 0.1
-    config["EKP_method"] = "EKI"
+    config["Δt"] = 1.0
+    config["EKP_method"] = "UKI"
     # Define whether state vector is augmented by parameters for Bayesian regularization
     config["augmented"] = false
     # Define Bayesian regularization degree scale (prior cov * scale)
@@ -66,9 +64,9 @@ end
 function get_observations_config()
     config = Dict()
     # Define data names.
-    config["data_names"] = ["reff_top", "Z", "rainrate_surface"]
+    config["data_names"] = ["rl", "rr", "Z_top"]
     # Define source of data: "file" or "perfect_model"
-    config["data_source"] = "file"
+    config["data_source"] = "perfect_model"
     # Define number of samples for validation
     config["number_of_samples"] = 1000
     # Define random seed for generating validation samples
@@ -76,29 +74,11 @@ function get_observations_config()
     # Define the ratio of square root of covariance to G for adding artificial noise to data in the perfect-model setting
     config["scov_G_ratio"] = 0.2
     # Define offset of true values from prior means for validation
-    config["true_values_offset"] = 0.1
+    config["true_values_offset"] = 0.25
     # Define data
-    root_dir = "/Users/caterinacroci/Desktop/data/"
-    config["cases"] = [
-        (
-            w1 = 2.0,
-            p0 = 99000.0,
-            Nd = 50 * 1e6,
-            std_dry = 1.1,
-            t_cal = 600:100:1500,
-            r_dry = 0.04 * 1e-6,
-            dir = root_dir * "rhow_2/mean=0.04_std=1.1_p0=990_Nd=50/",
-        ),
-        (
-            w1 = 2.0,
-            p0 = 99000.0,
-            Nd = 100 * 1e6,
-            std_dry = 1.1,
-            t_cal = 800:120:1520,
-            r_dry = 0.04 * 1e-6,
-            dir = root_dir * "rhow_2/mean=0.04_std=1.1_p0=990_Nd=100/",
-        ),
-    ]
+    root_dir = "/Users/sajjadazimi/Postdoc/Results/01-PySDM_1D_rain_shaft/data/03-p1000/"
+    config["cases"] =
+        [(w1 = 3.0, p0 = 100000.0, Nd = 100 * 1e6, t_cal = 0.0:600.0:3600.0, dir = root_dir * "rhow=3.0_Nd=100/")]
     # Define type of data
     config["data_type"] = Float64
     return config
@@ -112,12 +92,10 @@ function get_stats_config()
     config["perform_pca"] = true
     # Define fraction of variance loss when performing PCA.
     config["variance_loss"] = 0.01
-    # Define tikhonov mode: absolute or relative
+    # Define tikhonov mode: absulute or relative
     config["tikhonov_mode"] = "absolute"
     # Define tikhonov noise
     config["tikhonov_noise"] = config["perform_pca"] ? 0.0 : 1e-3
-    # Define weights
-    #config["weights"] = [1.0, 1.0, 1.0]
     return config
 end
 
@@ -125,35 +103,35 @@ function get_model_config()
     config = Dict()
     config["model"] = "KiD"
     config["moisture_choice"] = "NonEquilibriumMoisture"
-    config["precipitation_choice"] = "Precipitation2M"
+    config["precipitation_choice"] = "Precipitation1M"
     # Define rain formation choice: "CliMA_1M", "KK2000", "B1994", "TC1980", "LD2004", "VarTimeScaleAcnv", "SB2006", "SB2006NL"
-    config["rain_formation_choice"] = "SB2006NL"
+    config["rain_formation_choice"] = "CliMA_1M"
     # Define sedimentation choice: "CliMA_1M", "Chen2022", "SB2006"
-    config["sedimentation_choice"] = "SB2006"
+    config["sedimentation_choice"] = "CliMA_1M"
     config["precip_sources"] = true
     config["precip_sinks"] = true
     config["z_min"] = 0.0
-    config["z_max"] = 4000.0
-    config["n_elem"] = 80
-    config["dt"] = 0.75
+    config["z_max"] = 3000.0
+    config["n_elem"] = 64
+    config["dt"] = 2.0
     config["t_ini"] = 0.0
-    config["t_end"] = 2480.0
-    config["dt_calib"] = 60.0
-    config["t_calib"] = 800.0:config["dt_calib"]:config["t_end"]
+    config["t_end"] = 3600.0
+    config["dt_calib"] = 600.0
+    config["t_calib"] = config["t_ini"]:config["dt_calib"]:config["t_end"]
     config["w1"] = 3.0
     config["t1"] = 600.0
-    config["p0"] = 99000.0
-    config["Nd"] = 50 * 1e6
+    config["p0"] = 100000.0
+    config["Nd"] = 100 * 1e6
     config["qtot_flux_correction"] = false
     config["open_system_activation"] = true
     config["r_dry"] = 0.04 * 1e-6
-    config["std_dry"] = 1.1
+    config["std_dry"] = 1.4
     config["κ"] = 0.9
     config["filter"] = KCP.make_filter_props(
-        [1, config["n_elem"], 1], # nz (for each variable)
+        [config["n_elem"], config["n_elem"], 1], # nz (for each variable)
         config["t_calib"];
         apply = true,
-        nz_per_filtered_cell = [1, 4, 1],
+        nz_per_filtered_cell = [4, 4, 1],
         nt_per_filtered_cell = 120,
     )
     # Define default parameters
@@ -197,10 +175,6 @@ function create_parameter_set()
         println(io, "[molar_mass_water]")
         println(io, "alias = \"molmass_water\"")
         println(io, "value = 0.018015")
-        println(io, "type = \"float\"")
-        println(io, "[SB2006_raindrops_min_mass]")
-        println(io, "alias = \"raindrops_min_mass\"")
-        println(io, "value = 6.54e-11")
         println(io, "type = \"float\"")
     end
     toml_dict = CP.create_toml_dict(FT; override_file)

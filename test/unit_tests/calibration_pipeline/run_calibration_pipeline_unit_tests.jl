@@ -1,6 +1,5 @@
 using Statistics, LinearAlgebra, Random, Optim
 using EnsembleKalmanProcesses
-using EnsembleKalmanProcesses.Observations
 using EnsembleKalmanProcesses.ParameterDistributions
 
 import KinematicDriver

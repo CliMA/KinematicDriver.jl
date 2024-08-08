@@ -43,8 +43,6 @@ function run_KiD_multiple_cases(u::Array{FT, 1}, u_names::Array{String, 1}, conf
         config["model"]["w1"] = case.w1
         config["model"]["p0"] = case.p0
         config["model"]["Nd"] = case.Nd
-        ode_sol, aux, precip = run_KiD(u, u_names, config["model"])
-
         if "t_cal" in collect(keys(case))
             config["model"]["filter"] = make_filter_props(
                 config["model"]["filter"]["nz_unfiltered"],
@@ -55,6 +53,7 @@ function run_KiD_multiple_cases(u::Array{FT, 1}, u_names::Array{String, 1}, conf
             )
         end
 
+        ode_sol, aux, precip = run_KiD(u, u_names, config["model"])
         single_case_Gvector =
             config["model"]["filter"]["apply"] ?
             ODEsolution2Gvector(ode_sol, aux, precip, config["observations"]["data_names"], config["model"]["filter"]) :
