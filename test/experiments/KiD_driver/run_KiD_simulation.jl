@@ -58,6 +58,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
         r_dry = FT(opts["r_dry"]),
         std_dry = FT(opts["std_dry"]),
         κ = FT(opts["kappa"]),
+        alpha = FT(opts["alpha"]),
     )
     # Create Thermodynamics.jl and KinematicDriver model parameters
     # (some of the CloudMicrophysics.jl parameters structs are created later based on model choices)
@@ -107,7 +108,6 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
             coord,
         )
     end
-
     # Create aux vector and apply initial condition
     aux = K1D.initialise_aux(
         FT,
@@ -117,6 +117,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
         thermo_params,
         air_params,
         activation_params,
+        toml_dict["alpha"]["value"],
         TS,
         Stats,
         face_space,

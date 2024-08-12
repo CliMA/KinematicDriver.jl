@@ -26,6 +26,7 @@ end
     thermo_params,
     air_params,
     activation_params,
+    alpha,
     q_tot,
     q_liq,
     q_ice,
@@ -60,7 +61,7 @@ end
 
     aerosol_distribution =
         CMAM.AerosolDistribution((CMAM.Mode_κ(r_dry, std_dry, _aerosol_budget, (FT(1),), (FT(1),), (FT(0),), (κ,)),))
-    N_act = CMAA.total_N_activated(activation_params, aerosol_distribution, air_params, thermo_params, T, p, w, q)
+    N_act = alpha * CMAA.total_N_activated(activation_params, aerosol_distribution, air_params, thermo_params, T, p, w, q)
 
     # Convert the total activated number to tendency
     S_Nl = ifelse(S < 0 || isnan(N_act), FT(0), max(FT(0), N_act - _already_activated_particles) / dt)
@@ -105,7 +106,7 @@ end
 ) end
 @inline function precompute_aux_activation!(::CO.Precipitation2M, dY, Y, aux, t)
 
-    (; thermo_params, activation_params, air_params, kid_params, common_params) = aux
+    (; thermo_params, activation_params, alpha, air_params, kid_params, common_params) = aux
     (; q_tot, q_liq, q_ice, N_aer, N_liq) = aux.microph_variables
     (; T, p, ρ) = aux.thermo_variables
     (; ρw) = aux.prescribed_velocity
@@ -122,6 +123,7 @@ end
         thermo_params,
         air_params,
         activation_params,
+        alpha,
         q_tot,
         q_liq,
         q_ice,
@@ -144,7 +146,7 @@ end
 
 @inline function precompute_aux_activation!(::CO.CloudyPrecip, dY, Y, aux, t)
 
-    (; common_params, kid_params, thermo_params, air_params, activation_params, cloudy_params) = aux
+    (; common_params, kid_params, thermo_params, air_params, activation_params, alpha, cloudy_params) = aux
     (; q_tot, q_liq, q_ice, N_liq, N_aer) = aux.microph_variables
     (; T, p, ρ) = aux.thermo_variables
     (; ρw) = aux.prescribed_velocity
@@ -161,6 +163,7 @@ end
         thermo_params,
         air_params,
         activation_params,
+        alpha,
         q_tot,
         q_liq,
         q_ice,

@@ -141,6 +141,10 @@ function parse_commandline()
         help = "Initial condition theta2 [K]"
         arg_type = Float64
         default = Float64(312.66)
+        "--alpha"
+        help = "alpha"
+        arg_type = Float64
+        default = Float64(1.0)
     end
 
     return AP.parse_args(s)

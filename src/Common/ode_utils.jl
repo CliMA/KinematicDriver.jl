@@ -103,6 +103,7 @@ function initialise_aux(
     thermo_params,
     air_params,
     activation_params,
+    alpha,
     TS,
     Stats,
     moisture,
@@ -256,6 +257,7 @@ function initialise_aux(
         thermo_params,
         air_params,
         activation_params,
+        alpha,
         Stats,
         TS,
     )
