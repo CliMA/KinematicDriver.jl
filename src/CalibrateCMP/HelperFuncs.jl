@@ -18,6 +18,8 @@ end
 
 function make_filter_props(
     n_z,
+    z_min,
+    z_max,
     t_calib;
     apply = false,
     nz_per_filtered_cell = ones(Int, length(n_z)),
@@ -28,6 +30,8 @@ function make_filter_props(
 
     filter = Dict()
     filter["apply"] = apply
+    filter["z_min"] = z_min
+    filter["z_max"] = z_max
     filter["nz_per_filtered_cell"] = nz_per_filtered_cell
     filter["nt_per_filtered_cell"] = nt_per_filtered_cell
     filter["nz_unfiltered"] = n_z
@@ -55,6 +59,14 @@ function get_numbers_from_config(config::Dict)
 
     @assert length(n_heights) == length(config["observations"]["data_names"])
     return (; n_cases, n_heights, n_times)
+end
+
+function get_z_bounds_from_config(config::Dict)
+
+    _z_min = config["model"]["filter"]["z_min"]
+    _z_max = config["model"]["filter"]["z_max"]
+
+    return (; _z_min, _z_max)
 end
 
 function get_case_i_vec(vec::Vector{FT}, i::Int, n_single_case::Int) where {FT <: Real}
