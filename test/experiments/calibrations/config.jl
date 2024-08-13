@@ -25,12 +25,12 @@ function get_prior_config()
         "SB2006_collection_kernel_coeff_kcc" =>
             (mean = 4.44 * 1e9, var = 8.88 * 1e8, lbound = 5.0 * 1e8, ubound = 1.0 * 1e10),
         "SB2006_collection_kernel_coeff_kcr" =>
-           (mean = 5.25, var = 1.05, lbound = 3.0, ubound = 8.0),
+           (mean = 5.25, var = 1.05, lbound = 3.0, ubound = 10.0),
         "SB2006_collection_kernel_coeff_krr" => 
-            (mean = 7.12, var = 1.424, lbound = 5.0, ubound = 10.0),
+            (mean = 7.12, var = 1.424, lbound = 3.0, ubound = 10.0),
         #"SB2006_raindrops_terminal_velocity_coeff_aR" => 
         #   (mean = 9.65, var = 0.4, lbound = 8.2, ubound = 10.2),
-        "alpha" => (mean = 1.0, var = 0.2, lbound = 0.7, ubound = 2.5),
+        #"alpha" => (mean = 1.0, var = 0.2, lbound = 0.7, ubound = 2.5),
     )
     return config
 end
@@ -40,11 +40,11 @@ function get_process_config()
     # Define method of calibration : currently only EKP and Optim are supported
     config["method"] = "EKP"
     # Define mini batch size for EKP
-    config["batch_size"] = 10
+    config["batch_size"] = 15
     # Define number of iterations for EKP
     config["n_iter"] = 15
     # Define number of parameter ensemle for EKP (Inversion)
-    config["n_ens"] = 20
+    config["n_ens"] = 15
     # Define EKP time step
     config["Δt"] = 1.0
     config["EKP_method"] = "EKI"
@@ -310,7 +310,7 @@ function get_model_config()
         [4000.0, 4000.0, 4000.0], # z_max (for each variable)
         config["t_calib"];
         apply = true,
-        nz_per_filtered_cell = [4, 4, 1],
+        nz_per_filtered_cell = [5, 4, 1],
         nt_per_filtered_cell = 120,
     )
     # Define default parameters
@@ -359,7 +359,7 @@ function create_parameter_set()
         println(io, "alias = \"raindrops_min_mass\"")
         println(io, "value = 6.54e-11")
         println(io, "[SB2006_raindrops_terminal_velocity_coeff_aR]")
-        println(io, "value = 8.412")
+        println(io, "value = 8.772")
         println(io, "type = \"float\"")
         println(io, "[alpha]")
         println(io, "alias = \"alpha\"")
