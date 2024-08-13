@@ -70,7 +70,7 @@ end
 function get_observations_config()
     config = Dict()
     # Define data names.
-    config["data_names"] = ["reff", "Z", "rainrate_surface"]
+    config["data_names"] = ["reff_top", "Z", "rainrate_surface"]
     # Define source of data: "file" or "perfect_model"
     config["data_source"] = "file"
     # Define number of samples for validation
@@ -305,12 +305,12 @@ function get_model_config()
     config["std_dry"] = 1.1
     config["κ"] = 0.9
     config["filter"] = KCP.make_filter_props(
-        [config["n_elem"], config["n_elem"], 1], # nz (for each variable)
-        [500.0, 0.0, 0.0], # z_min (for each variable)
+        [1, config["n_elem"], 1], # nz (for each variable)
+        [0.0, 0.0, 0.0], # z_min (for each variable)
         [4000.0, 4000.0, 4000.0], # z_max (for each variable)
         config["t_calib"];
         apply = true,
-        nz_per_filtered_cell = [5, 4, 1],
+        nz_per_filtered_cell = [1, 4, 1],
         nt_per_filtered_cell = 120,
     )
     # Define default parameters
@@ -359,7 +359,7 @@ function create_parameter_set()
         println(io, "alias = \"raindrops_min_mass\"")
         println(io, "value = 6.54e-11")
         println(io, "[SB2006_raindrops_terminal_velocity_coeff_aR]")
-        println(io, "value = 8.772")
+        println(io, "value = 8.412")
         println(io, "type = \"float\"")
         println(io, "[alpha]")
         println(io, "alias = \"alpha\"")
