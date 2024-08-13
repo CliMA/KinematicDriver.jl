@@ -121,6 +121,8 @@ function get_model_config()
     config["t_calib"] = config["t_ini"]:config["dt_calib"]:config["t_end"]
     config["filter"] = KCP.make_filter_props(
         ones(Int, 4),
+        zeros(Int, 4),
+        zeros(Int, 4),
         config["t_calib"];
         apply = true,
         nz_per_filtered_cell = ones(Int, 4),
