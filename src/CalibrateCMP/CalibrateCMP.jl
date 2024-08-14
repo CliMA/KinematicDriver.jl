@@ -12,7 +12,6 @@ using Interpolations
 using Optim
 using EnsembleKalmanProcesses
 using EnsembleKalmanProcesses.ParameterDistributions
-using EnsembleKalmanProcesses.Observations
 using JLD2
 
 const EKP = EnsembleKalmanProcesses
