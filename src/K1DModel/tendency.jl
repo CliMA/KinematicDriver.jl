@@ -6,16 +6,14 @@ Aerosol activation helper functions
 @inline function find_cloud_base(S_Nl, z, cloud_base_S_Nl_and_z)
     # Find S_Nl and z at cloud base:
     z_min = minimum(parent(z)) # height at first level (only works without topography)
-    CC.Operators.column_mapreduce!(
-        tuple,  # At every point map the input S_Nl and z into a tuple that will be used by reduce
+    CC.Operators.column_reduce!(
         ((target_S_Nl_value, target_z_value), (S_Nl_value, z_value)) -> ifelse(
             target_z_value == z_min && S_Nl_value >= 1e7,
             (S_Nl_value, z_value),
             (target_S_Nl_value, target_z_value),
         ), # reduction function
         cloud_base_S_Nl_and_z, # destination for output (a field of tuples)
-        S_Nl, # input
-        z, # input
+        Base.broadcasted(tuple, S_Nl, z),
     )
 end
 
@@ -172,7 +170,7 @@ end
         f_interp.(ρw.components.data.:1),
         dt,
     )
-    # Use the S_Nl tendnecy at cloud base 
+    # Use the S_Nl tendnecy at cloud base
     z = CC.Fields.coordinate_field(S_Nl).z # height
     find_cloud_base(S_Nl, z, cloud_base_S_Nl_and_z)
     @. S_Nl = ifelse(z == last(cloud_base_S_Nl_and_z), S_Nl, FT(0))
