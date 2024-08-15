@@ -23,7 +23,7 @@ function parse_commandline()
         "--num_moments"
         help = "Number of moments to use for CloudyPrecip (ignored otherwise)"
         arg_type = Int
-        default = 7
+        default = 6
         "--rain_formation_scheme_choice"
         help = "Rain formation scheme choice: CliMA_1M, KK2000, B1994, TC1980, LD2004, VarTimeScaleAcnv for Precipitation1M; and SB2006, SB2006NL for Precipitation2M"
         arg_type = String
