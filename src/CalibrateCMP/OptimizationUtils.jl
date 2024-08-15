@@ -142,6 +142,14 @@ function generate_ekp(
             Inversion(),
             scheduler = DefaultScheduler(process_settings["Δt"]),
         )
+    elseif process_settings["EKP_method"] == "ETKI"
+        ekpobj = EnsembleKalmanProcess(
+            param_ensemble,
+            y,
+            Γ,
+            TransformInversion(),
+            scheduler = DefaultScheduler(process_settings["Δt"]),
+        )
     elseif process_settings["EKP_method"] == "UKI"
         process = Unscented(
             mean(param_ensemble, dims = 2)[:],

@@ -30,7 +30,7 @@ function get_prior_config()
             (mean = 7.12, var = 1.424, lbound = 3.0, ubound = 10.0),
         #"SB2006_raindrops_terminal_velocity_coeff_aR" => 
         #   (mean = 9.65, var = 0.4, lbound = 8.2, ubound = 10.2),
-        #"alpha" => (mean = 1.0, var = 0.2, lbound = 0.7, ubound = 2.5),
+        #"alpha" => (mean = 1.0, var = 0.2, lbound = 0.7, ubound = 2.35),
     )
     return config
 end
@@ -42,7 +42,7 @@ function get_process_config()
     # Define mini batch size for EKP
     config["batch_size"] = 15
     # Define number of iterations for EKP
-    config["n_iter"] = 15
+    config["n_iter"] = 12
     # Define number of parameter ensemle for EKP (Inversion)
     config["n_ens"] = 15
     # Define EKP time step
@@ -96,10 +96,10 @@ function get_observations_config()
                             r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_2/mean=0.04_std=1.1_p0=1000_Nd=100/"),
                         (w1 = 2.0, p0 = 100000.0, Nd = 500 * 1e6, std_dry = 1.1,  
                             r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_2/mean=0.04_std=1.1_p0=1000_Nd=500/"),
-                        #=(w1 = 2.0, p0 = 100700.0, Nd = 50 * 1e6, std_dry = 1.1, 
+                        (w1 = 2.0, p0 = 100700.0, Nd = 50 * 1e6, std_dry = 1.1, 
                             r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_2/mean=0.04_std=1.1_p0=1007_Nd=50/"),
                         (w1 = 2.0, p0 = 100700.0, Nd = 100 * 1e6, std_dry = 1.1, 
-                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_2/mean=0.04_std=1.1_p0=1007_Nd=100/"),=#
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_2/mean=0.04_std=1.1_p0=1007_Nd=100/"),
 
                         (w1 = 2.0, p0 = 99000.0, Nd = 50 * 1e6, std_dry = 1.8, 
                             r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_2/mean=0.06_std=1.8_p0=990_Nd=50/"),
@@ -107,10 +107,10 @@ function get_observations_config()
                             r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_2/mean=0.06_std=1.8_p0=990_Nd=100/"),
                         (w1 = 2.0, p0 = 99000.0, Nd = 500 * 1e6, std_dry = 1.8, 
                             r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_2/mean=0.06_std=1.8_p0=990_Nd=500/"),
-                        #=(w1 = 2.0, p0 = 100700.0, Nd = 50 * 1e6, std_dry = 1.8,  
+                        (w1 = 2.0, p0 = 100700.0, Nd = 50 * 1e6, std_dry = 1.8,  
                             r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_2/mean=0.06_std=1.8_p0=1007_Nd=50/"),
                         (w1 = 2.0, p0 = 100700.0, Nd = 100 * 1e6, std_dry = 1.8, 
-                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_2/mean=0.06_std=1.8_p0=1007_Nd=100/"),=#
+                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_2/mean=0.06_std=1.8_p0=1007_Nd=100/"),
                         
                         # w = 4.0 m/s
                         (w1 = 4.0, p0 = 99000.0, Nd = 50 * 1e6, std_dry = 1.1, 
@@ -294,7 +294,7 @@ function get_model_config()
     config["t_ini"] = 0.0
     config["t_end"] = 2480.0
     config["dt_calib"] = 120.0
-    config["t_calib"] = 800.0:config["dt_calib"]:config["t_end"]
+    config["t_calib"] = 620.0:config["dt_calib"]:config["t_end"]
     config["w1"] = 3.0
     config["t1"] = 600.0
     config["p0"] = 99000.0
@@ -359,11 +359,11 @@ function create_parameter_set()
         println(io, "alias = \"raindrops_min_mass\"")
         println(io, "value = 6.54e-11")
         println(io, "[SB2006_raindrops_terminal_velocity_coeff_aR]")
-        println(io, "value = 8.412")
+        println(io, "value = 8.62")
         println(io, "type = \"float\"")
         println(io, "[alpha]")
         println(io, "alias = \"alpha\"")
-        println(io, "value = 1.0")
+        println(io, "value = 2.334")
         println(io, "type = \"float\"")
     end
     toml_dict = CP.create_toml_dict(FT; override_file)
