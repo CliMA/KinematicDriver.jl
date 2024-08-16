@@ -41,7 +41,7 @@ function get_process_config()
     config["n_ens"] = 15
     # Define EKP time step
     config["Δt"] = 1.0
-    config["EKP_method"] = "UKI"
+    config["EKP_method"] = "ETKI"
     # Define whether state vector is augmented by parameters for Bayesian regularization
     config["augmented"] = false
     # Define Bayesian regularization degree scale (prior cov * scale)
