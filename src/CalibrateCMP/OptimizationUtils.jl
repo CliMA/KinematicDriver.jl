@@ -47,11 +47,15 @@ end
 
 # EKP
 function calibrate(::EKPStyle, priors, config, ref_stats_list::Vector{ReferenceStatistics}; verbose::Int = 3)
-    @assert config["process"]["EKP_method"] == "EKI" || config["process"]["EKP_method"] == "UKI"
+    @assert config["process"]["EKP_method"] == "EKI" || config["process"]["EKP_method"] == "UKI" || config["process"]["EKP_method"] == "ETKI"
 
     u_names = collect(keys(config["prior"]["parameters"]))
     n_iter = config["process"]["n_iter"]
-    n_ensemble = config["process"]["EKP_method"] == "EKI" ? config["process"]["n_ens"] : 2 * length(u_names) + 1
+    if config["process"]["EKP_method"] == "EKI" || config["process"]["EKP_method"] == "ETKI"
+        n_ensemble = config["process"]["n_ens"]
+    else
+        n_ensemble = 2 * length(u_names) + 1
+    end
     param_ensemble = [initial_parameter_ensemble(priors, n_ensemble)]
     n_cases = length(ref_stats_list)
     batch_size = config["process"]["batch_size"]
@@ -104,7 +108,7 @@ function calibrate(::EKPStyle, priors, config, ref_stats_list::Vector{ReferenceS
 
             ekpobj = generate_ekp(param_ensemble[end], RS, priors, config["process"])
             ϕ_n = get_ϕ_ensemble(param_ensemble[end], priors)
-            G_n = [run_dyn_model(ϕ_n[:, i], u_names, config, RS = RS) for i in 1:n_ensemble]
+            G_n = run_ensembles(ϕ_n, u_names, config, n_ensemble, RS = RS)
             G_ens = hcat(G_n...)
             if config["process"]["augmented"]
                 G_ens = vcat(G_ens, param_ensemble[end])
@@ -180,4 +184,20 @@ function get_results(param_ensemble::Vector{Matrix{FT}}, priors::ParameterDistri
     _cov_optim = cov(param_ensemble[end], dims = 2)
     _cov_optim = _cov_optim ./ tr(_cov_optim) .* length(_ϕ_optim)
     return (ϕ_optim = _ϕ_optim, cov_optim = _cov_optim)
+end
+
+function run_ensembles(
+    u::Array{FT, 2},
+    u_names::Array{String, 1},
+    config::Dict,
+    n_ensemble::Int;
+    RS::Union{Nothing, ReferenceStatistics} = nothing,
+    case_numbers::Vector{Int} = Int[],
+)
+    G_n = zeros(length(RS.y), n_ensemble)
+    Threads.@threads for i in 1:n_ensemble
+        # run the model with the current parameters, i.e., map θ to G(θ)
+        G_n[:, i] = run_dyn_model(u[:, i], u_names, config, RS = RS, case_numbers=case_numbers) 
+    end
+    return [G_n[:,i] for i in 1:n_ensemble]
 end

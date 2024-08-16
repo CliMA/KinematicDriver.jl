@@ -30,7 +30,7 @@ function run_dyn_model(
     end
 
     outputs = RS === nothing ? sim_vec : outputs = pca_transform(normalize_sim(sim_vec, RS), RS)
-
+    
     return outputs
 end
 
@@ -46,6 +46,8 @@ function run_KiD_multiple_cases(u::Array{FT, 1}, u_names::Array{String, 1}, conf
         if "t_cal" in collect(keys(case))
             config["model"]["filter"] = make_filter_props(
                 config["model"]["filter"]["nz_unfiltered"],
+                z_min,
+                z_max,
                 case.t_cal;
                 apply = config["model"]["filter"]["apply"],
                 nz_per_filtered_cell = config["model"]["filter"]["nz_per_filtered_cell"],
