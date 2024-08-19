@@ -41,7 +41,7 @@ function override_toml_dict(
         "molar_mass_dry_air" => Dict("value" => 0.02896998, "type" => "float"),
         "molar_mass_water" => Dict("value" => 0.018015, "type" => "float"),
         "cloud_liquid_water_specific_humidity_autoconversion_threshold" => Dict("value" => 0.0001, "type" => "float"),
-        "prescribed_flow_w1" => Dict("value" => 3.0, "type" => "float"),
+        "prescribed_flow_w1" => Dict("value" => 4.0, "type" => "float"),
         "prescribed_flow_t1" => Dict("value" => t1, "type" => "float"),
         "surface_pressure" => Dict("value" => 99000.0, "type" => "float"),
         "precipitation_sources_flag" => Dict("value" => precip_sources, "type" => "bool"),
@@ -63,10 +63,10 @@ function override_toml_dict(
         "init_cond_theta2" => Dict("value" => tht_2, "type" => "float"),
         "SB2006_raindrops_min_mass" => Dict("value" => 6.54e-11, "type" => "float"),
         # NEW!!!!
-        "SB2006_collection_kernel_coeff_krr" => Dict("value" => 9.992, "type" => "float"),
-        "SB2006_collection_kernel_coeff_kcc" => Dict("value" => 5.494e9, "type" => "float"),
-        "SB2006_collection_kernel_coeff_kcr" => Dict("value" => 8.033, "type" => "float"),
-        "SB2006_raindrops_terminal_velocity_coeff_aR" => Dict("value" => 8.62, "type" => "float"),
+        #="SB2006_collection_kernel_coeff_krr" => Dict("value" => 5.0, "type" => "float"),
+        "SB2006_collection_kernel_coeff_kcc" => Dict("value" => 5.9e9, "type" => "float"),
+        "SB2006_collection_kernel_coeff_kcr" => Dict("value" => 6.7, "type" => "float"),
+        "SB2006_raindrops_terminal_velocity_coeff_aR" => Dict("value" => 9.02, "type" => "float"),=#
         "alpha" => Dict("value" => 1.0, "type" => "float")
     )
     toml_dict = CP.create_toml_dict(FT; override_file)

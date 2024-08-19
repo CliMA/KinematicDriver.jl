@@ -75,6 +75,7 @@ end
 precip_sources(ps::ACP) = ps.precip_sources
 precip_sinks(ps::ACP) = ps.precip_sinks
 prescribed_Nd(ps::ACP) = ps.prescribed_Nd
+open_system_activation(ps::ACP) = ps.open_system_activation
 
 Base.eltype(::CommonParameters{FT}) where {FT} = FT
 Base.eltype(::CloudyParameters{FT}) where {FT} = FT

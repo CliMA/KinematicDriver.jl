@@ -23,13 +23,13 @@ function get_prior_config()
     # Define prior mean and bounds on the parameters.
     config["parameters"] = Dict(
         "SB2006_collection_kernel_coeff_kcc" =>
-            (mean = 4.44 * 1e9, var = 8.88 * 1e8, lbound = 5.0 * 1e8, ubound = 1.0 * 1e10),
+            (mean = 4.44 * 1e9, var = 8.88 * 1e8, lbound = 8.0 * 1e8, ubound = 6.0 * 1e9),
         "SB2006_collection_kernel_coeff_kcr" =>
-           (mean = 5.25, var = 1.05, lbound = 3.0, ubound = 10.0),
+           (mean = 5.25, var = 1.05, lbound = 3.5, ubound = 7.0),
         "SB2006_collection_kernel_coeff_krr" => 
-            (mean = 7.12, var = 1.424, lbound = 3.0, ubound = 10.0),
-        #"SB2006_raindrops_terminal_velocity_coeff_aR" => 
-        #   (mean = 9.65, var = 0.4, lbound = 8.2, ubound = 10.2),
+            (mean = 7.12, var = 1.424, lbound = 4.0, ubound = 9.0),
+        "SB2006_raindrops_terminal_velocity_coeff_aR" => 
+           (mean = 9.65, var = 0.3, lbound = 9.2, ubound = 10.5),
         #"alpha" => (mean = 1.0, var = 0.2, lbound = 0.7, ubound = 2.35),
     )
     return config
@@ -40,14 +40,14 @@ function get_process_config()
     # Define method of calibration : currently only EKP and Optim are supported
     config["method"] = "EKP"
     # Define mini batch size for EKP
-    config["batch_size"] = 15
+    config["batch_size"] = 13
     # Define number of iterations for EKP
-    config["n_iter"] = 12
+    config["n_iter"] = 15
     # Define number of parameter ensemle for EKP (Inversion)
-    config["n_ens"] = 15
+    config["n_ens"] = 16
     # Define EKP time step
     config["Δt"] = 1.0
-    config["EKP_method"] = "EKI"
+    config["EKP_method"] = "ETKI"
     # Define whether state vector is augmented by parameters for Bayesian regularization
     config["augmented"] = false
     # Define Bayesian regularization degree scale (prior cov * scale)
@@ -183,10 +183,10 @@ function get_observations_config()
                             r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_2/mean=0.04_std=1.1_p0=1000_Nd=100/"),
                         (w1 = 2.0, p0 = 100000.0, Nd = 500 * 1e6, std_dry = 1.1,  t_cal = 2210:890:3100,
                             r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_2/mean=0.04_std=1.1_p0=1000_Nd=500/"),
-                        #=(w1 = 2.0, p0 = 100700.0, Nd = 50 * 1e6, std_dry = 1.1, 
-                        r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_2/mean=0.04_std=1.1_p0=1007_Nd=50/"),
-                        (w1 = 2.0, p0 = 100700.0, Nd = 100 * 1e6, std_dry = 1.1, 
-                        r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_2/mean=0.04_std=1.1_p0=1007_Nd=100/"),=#
+                        (w1 = 2.0, p0 = 100700.0, Nd = 50 * 1e6, std_dry = 1.1, t_cal = 2000:700:2700,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_2/mean=0.04_std=1.1_p0=1007_Nd=50/"),
+                        (w1 = 2.0, p0 = 100700.0, Nd = 100 * 1e6, std_dry = 1.1, t_cal = 2400:600:3000,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_2/mean=0.04_std=1.1_p0=1007_Nd=100/"),
 
                         (w1 = 2.0, p0 = 99000.0, Nd = 50 * 1e6, std_dry = 1.8, t_cal = 900:500:1400,
                             r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_2/mean=0.06_std=1.8_p0=990_Nd=50/"),
@@ -194,10 +194,10 @@ function get_observations_config()
                             r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_2/mean=0.06_std=1.8_p0=990_Nd=100/"),
                         (w1 = 2.0, p0 = 99000.0, Nd = 500 * 1e6, std_dry = 1.8, t_cal = 1450:550:2100, 
                             r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_2/mean=0.06_std=1.8_p0=990_Nd=500/"),
-                        #=(w1 = 2.0, p0 = 100700.0, Nd = 50 * 1e6, std_dry = 1.8,  
-                        r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_2/mean=0.06_std=1.8_p0=1007_Nd=50/"),
-                        (w1 = 2.0, p0 = 100700.0, Nd = 100 * 1e6, std_dry = 1.8, 
-                        r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_2/mean=0.06_std=1.8_p0=1007_Nd=100/"),=#
+                        (w1 = 2.0, p0 = 100700.0, Nd = 50 * 1e6, std_dry = 1.8, t_cal = 1750:650:2400,
+                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_2/mean=0.06_std=1.8_p0=1007_Nd=50/"),
+                        (w1 = 2.0, p0 = 100700.0, Nd = 100 * 1e6, std_dry = 1.8, t_cal = 2400:350:2750,
+                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_2/mean=0.06_std=1.8_p0=1007_Nd=100/"),
 
                         # w = 4.0 m/s
                         (w1 = 4.0, p0 = 99000.0, Nd = 50 * 1e6, std_dry = 1.1, t_cal = 800:450:1250,
@@ -300,7 +300,7 @@ function get_model_config()
     config["p0"] = 99000.0
     config["Nd"] = 50 * 1e6
     config["qtot_flux_correction"] = false
-    config["open_system_activation"] = true
+    config["open_system_activation"] = false
     config["r_dry"] = 0.04 * 1e-6
     config["std_dry"] = 1.1
     config["κ"] = 0.9
@@ -310,7 +310,7 @@ function get_model_config()
         [4000.0, 4000.0, 4000.0], # z_max (for each variable)
         config["t_calib"];
         apply = true,
-        nz_per_filtered_cell = [1, 4, 1],
+        nz_per_filtered_cell = [1, 2, 1],
         nt_per_filtered_cell = 120,
     )
     # Define default parameters
@@ -358,12 +358,12 @@ function create_parameter_set()
         println(io, "[SB2006_raindrops_min_mass]")
         println(io, "alias = \"raindrops_min_mass\"")
         println(io, "value = 6.54e-11")
-        println(io, "[SB2006_raindrops_terminal_velocity_coeff_aR]")
-        println(io, "value = 8.62")
-        println(io, "type = \"float\"")
+        #println(io, "[SB2006_raindrops_terminal_velocity_coeff_aR]")
+        #println(io, "value = 8.402")
+        #println(io, "type = \"float\"")
         println(io, "[alpha]")
         println(io, "alias = \"alpha\"")
-        println(io, "value = 2.334")
+        println(io, "value = 1.0")
         println(io, "type = \"float\"")
     end
     toml_dict = CP.create_toml_dict(FT; override_file)
