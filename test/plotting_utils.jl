@@ -149,23 +149,22 @@ function plot_final_aux_profiles(z_centers, aux, precip; output = "output")
             Plots.plot!([r.d_ln_pp_d_ln_q_rai for r in precip_sus_acc], z_centers, label = "acc, q_rai", color = :green)
             Plots.plot!(legend = :outerright)
         end
-            p = Plots.plot(
-                p1,
-                p2,
-                p3,
-                p4,
-                p5,
-                p6,
-                p7,
-                p8,
-                p9,
-                p10,
-                p11,
-                size = (1800.0, 1200.0),
-                bottom_margin = 40.0 * Plots.PlotMeasures.px,
-                left_margin = 80.0 * Plots.PlotMeasures.px,
-            )
-            Plots.png(p, joinpath(path, "final_aux_profiles.png"))
+        p = Plots.plot(
+            p1,
+            p2,
+            p3,
+            p4,
+            p5,
+            p6,
+            p7,
+            p8,
+            p9,
+            p10,
+            size = (1800.0, 1200.0),
+            bottom_margin = 40.0 * Plots.PlotMeasures.px,
+            left_margin = 80.0 * Plots.PlotMeasures.px,
+        )
+        Plots.png(p, joinpath(path, "final_aux_profiles.png"))
     end
 end
 
