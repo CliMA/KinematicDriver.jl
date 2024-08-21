@@ -117,6 +117,7 @@ function plot_final_aux_profiles(z_centers, aux, precip; output = "output")
             left_margin = 80.0 * Plots.PlotMeasures.px,
             layout = (2, 5),
         )
+        Plots.png(p, joinpath(path, "final_aux_profiles.png"))
     else
         p6 = Plots.plot(q_sno_end .* 1e3, z_centers, xlabel = "q_sno [g/kg]", ylabel = "z [m]")
         p8 = Plots.plot(N_aer_end .* 1e-6, z_centers, xlabel = "N_aer [1/cm3]", ylabel = "z [m]")
@@ -163,9 +164,9 @@ function plot_final_aux_profiles(z_centers, aux, precip; output = "output")
                 bottom_margin = 40.0 * Plots.PlotMeasures.px,
                 left_margin = 80.0 * Plots.PlotMeasures.px,
             )
+            Plots.png(p, joinpath(path, "final_aux_profiles.png"))
         end
     end
-    Plots.png(p, joinpath(path, "final_aux_profiles.png"))
 end
 
 function plot_animation_p3(z_centers, solver, aux, moisture, precip, K1D, output = plot_folder)
