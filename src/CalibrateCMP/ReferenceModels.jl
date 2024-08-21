@@ -8,8 +8,7 @@ function get_obs!(config::Dict)
         _z_min = FT(0)
         _z_max = FT(1)
     else
-        _z_min = config["model"]["z_min"]
-        _z_max = config["model"]["z_max"]
+        _z_min, _z_max = get_z_bounds_from_config(config)
     end
     _dz = (_z_max - _z_min) ./ _n_heights
     _heights::Vector{Vector{FT}} = collect.(range.(_z_min .+ _dz ./ 2, _z_max .- _dz ./ 2, _n_heights))

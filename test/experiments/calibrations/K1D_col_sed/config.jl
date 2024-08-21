@@ -124,6 +124,8 @@ function get_model_config()
     config["t_calib"] = config["t_ini"]:config["dt_calib"]:config["t_end"]
     config["filter"] = KCP.make_filter_props(
         config["n_elem"] .* ones(Int, 5),
+        config["z_min"] .* ones(Int, 5),
+        config["z_max"] .* ones(Int, 5),
         config["t_calib"];
         apply = true,
         nz_per_filtered_cell = 4 .* ones(Int, 5),

@@ -24,10 +24,19 @@ end
     #setup
     n_elem = 10
     t_calib = [0, 100, 500]
+    z_min = 0.0
+    z_max = 500.0
 
     #action
-    filter =
-        KCP.make_filter_props([n_elem], t_calib; apply = true, nz_per_filtered_cell = [2], nt_per_filtered_cell = 2)
+    filter = KCP.make_filter_props(
+        [n_elem],
+        [z_min],
+        [z_max],
+        t_calib;
+        apply = true,
+        nz_per_filtered_cell = [2],
+        nt_per_filtered_cell = 2,
+    )
 
     #test
     @test filter["apply"] == true
@@ -53,8 +62,12 @@ end
     #setup
     config = get_config()
     config["observations"]["data_names"] = ["rho", "ql", "qr", "rainrate"]
-    config["model"]["filter"] =
-        KCP.make_filter_props(config["model"]["n_elem"] .* ones(Int, 4), config["model"]["t_calib"])
+    config["model"]["filter"] = KCP.make_filter_props(
+        config["model"]["n_elem"] .* ones(Int, 4),
+        config["model"]["z_min"] .* ones(Int, 4),
+        config["model"]["z_max"] .* ones(Int, 4),
+        config["model"]["t_calib"],
+    )
     (n_c, n_z, n_t) = KCP.get_numbers_from_config(config)
     n_single_case = sum(n_z) * n_t
     vec = rand(n_c * n_single_case)

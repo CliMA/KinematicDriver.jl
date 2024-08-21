@@ -43,6 +43,8 @@ end
     n_heights = [model_settings["n_elem"] for i in 1:2]
     n_times = length(model_settings["t_calib"])
     n_elem = model_settings["n_elem"]
+    z_min = model_settings["z_min"]
+    z_max = model_settings["z_max"]
 
     #action
     ode_sol, aux, precip = KCP.run_KiD(u, u_names, model_settings)
@@ -60,6 +62,8 @@ end
     #setup
     model_settings["filter"] = KCP.make_filter_props(
         [n_elem, n_elem],
+        [z_min, z_min],
+        [z_max, z_max],
         model_settings["t_calib"];
         apply = true,
         nz_per_filtered_cell = [2, 5],

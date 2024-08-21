@@ -2,12 +2,17 @@
     #setup
     config = get_config()
     config["observations"]["data_names"] = ["rho", "ql", "qr", "rainrate"]
-    config["model"]["filter"] =
-        KCP.make_filter_props(config["model"]["n_elem"] .* ones(Int, 4), config["model"]["t_calib"])
+    config["model"]["filter"] = KCP.make_filter_props(
+        config["model"]["n_elem"] .* ones(Int, 4),
+        config["model"]["z_min"] .* ones(Int, 4),
+        config["model"]["z_max"] .* ones(Int, 4),
+        config["model"]["t_calib"],
+    )
     (n_c, n_z, n_t) = KCP.get_numbers_from_config(config)
+    z_min, z_max = KCP.get_z_bounds_from_config(config)
     n_single_case = sum(n_z) * n_t
     vec = rand(n_c * n_single_case)
-    dz = (config["model"]["z_max"] - config["model"]["z_min"]) / n_z[1]
+    dz = (z_max - z_min) / n_z[1]
     _lwp = zeros(n_t, n_c)
     _rwp = zeros(n_t, n_c)
     _rainrate = zeros(n_t, n_c)
@@ -18,8 +23,8 @@
         ρ = fields_[1]
         ql = fields_[2]
         qr = fields_[3]
-        _lwp[:, i] = sum(ql .* ρ, dims = 1) .* dz
-        _rwp[:, i] = sum(qr .* ρ, dims = 1) .* dz
+        _lwp[:, i] = sum(ql .* ρ, dims = 1) .* dz[i]
+        _rwp[:, i] = sum(qr .* ρ, dims = 1) .* dz[i]
         _rr = fields_[4]
         rainrate_0 = 1.5 * _rr[1, :] - 0.5 * _rr[2, :]
         rainrate_0[findall(x -> x < 0, rainrate_0)] .= Float64(0)
