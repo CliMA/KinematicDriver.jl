@@ -24,6 +24,8 @@ function run_KiD_col_sed_simulation(::Type{FT}, opts) where {FT}
         if sedimentation_choice == "Chen2022"
             output_folder = output_folder * "_Chen2022"
         end
+    elseif precipitation_choice == "CloudyPrecip"
+        output_folder = output_folder * "_" * string(opts["num_moments"])
     end
     path = joinpath(@__DIR__, output_folder)
     mkpath(path)
@@ -83,7 +85,8 @@ function run_KiD_col_sed_simulation(::Type{FT}, opts) where {FT}
 
     # Create the initial condition profiles
     if precipitation_choice == "CloudyPrecip"
-        cloudy_params, cloudy_pdists = create_cloudy_parameters(FT)
+        cloudy_disttypes = determine_cloudy_disttypes(opts["num_moments"])
+        cloudy_params, cloudy_pdists = create_cloudy_parameters(FT, cloudy_disttypes)
         init = map(
             coord -> CO.cloudy_initial_condition(
                 cloudy_pdists,
@@ -155,7 +158,6 @@ function run_KiD_col_sed_simulation(::Type{FT}, opts) where {FT}
     @info "Plotting"
     plot_folder = joinpath(path, "figures")
     plot_timeheight_no_ice_snow(joinpath(path, "Output.nc"), output = plot_folder)
-    return solver
 end
 
 opts = Dict(
@@ -164,6 +166,7 @@ opts = Dict(
     "k" => 2.0,
     "rhod" => 1.0,
     "precipitation_choice" => "CloudyPrecip",
+    "num_moments" => 6,
     "rain_formation_choice" => "CliMA_1M",
     "sedimentation_choice" => "CliMA_1M",
     "z_min" => 0.0,

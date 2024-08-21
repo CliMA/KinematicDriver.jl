@@ -27,6 +27,8 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
         if sedimentation_choice == "Chen2022"
             output_folder = output_folder * "_Chen2022"
         end
+    elseif precipitation_choice == "CloudyPrecip"
+        output_folder = output_folder * "_" * string(opts["num_moments"])
     end
     if opts["qtot_flux_correction"]
         output_folder = output_folder * "_wFC"
@@ -102,7 +104,8 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     ρ_profile = CO.ρ_ivp(FT, kid_params, thermo_params)
     # Create the initial condition profiles
     if precipitation_choice == "CloudyPrecip"
-        cloudy_params, cloudy_pdists = create_cloudy_parameters(FT)
+        pdist_types = determine_cloudy_disttypes(opts["num_moments"])
+        cloudy_params, cloudy_pdists = create_cloudy_parameters(FT, pdist_types)
         init = map(
             coord -> CO.cloudy_initial_condition(
                 cloudy_pdists,
@@ -188,8 +191,17 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
 
         z_centers = parent(CC.Fields.coordinate_field(space))
         plot_final_aux_profiles(z_centers, aux, precip, output = plot_folder)
-        plot_animation(z_centers, solver, aux, moisture, precip, K1D, output = plot_folder)
-        plot_timeheight(string("experiments/KiD_driver/", output_folder, "/Output.nc"), precip, output = plot_folder)
+        if precip isa PrecipitationP3
+          plot_animation_p3(z_centers, solver, aux, moisture, precip, K1D, output = plot_folder)
+          plot_timeheight_p3(string("experiments/KiD_driver/", output_folder, "/Output.nc"), precip, output = plot_folder)
+        else
+          plot_animation(string("experiments/KiD_driver/", output_folder, "/Output.nc"), output = plot_folder)
+          plot_timeheight(
+              string("experiments/KiD_driver/", output_folder, "/Output.nc"),
+              output = plot_folder,
+              mixed_phase = false,
+          )
+        end
     end
 
     return
