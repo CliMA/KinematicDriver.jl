@@ -229,6 +229,7 @@ function plot_animation_p3(z_centers, solver, aux, moisture, precip, K1D, output
             N_liq[:, i] = parent(u.moments.:1) ./ 1e6
             N_rai[:, i] = parent(u.moments.:4) ./ 1e6
         end
+    end
 
     function plot_data(data, data_label, max_val, title = "")
         return Plots.plot(
@@ -304,7 +305,7 @@ function plot_animation_p3(z_centers, solver, aux, moisture, precip, K1D, output
 
     Plots.mp4(anim, joinpath(path, "animation.mp4"), fps = 10)
 end
-      
+
 function plot_animation(nc_data_file; output = "output")
 
     path = joinpath(@__DIR__, output)
