@@ -34,6 +34,11 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     if opts["open_system_activation"]
         output_folder = output_folder * "_OSA"
     end
+    if precipitation_choice == "PrecipitationP3"
+        p3_boundary_condition = opts["p3_boundary_condition"]
+    else
+        p3_boundary_condition = nothing
+    end
     path = joinpath(@__DIR__, output_folder)
     mkpath(path)
 
@@ -77,6 +82,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
         toml_dict;
         rain_formation_choice = rain_formation_choice,
         sedimentation_choice = sedimentation_choice,
+        boundary = p3_boundary_condition,
     )
 
     @info "Initialising"
@@ -105,29 +111,21 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
             coord,
         )
     elseif precipitation_choice == "PrecipitationP3"
-        # commenting here the configuration which has been used for p3:
-        # config["precipitation_choice"] = "PrecipitationP3"
-        # config["moisture_choice"] = "MoistureP3"
-        # config["n_elem"] = 24
-        # config["z_max"] = 3000
-        # config["t_end"] = 75
-        # config["w1"] = 0
-        # config["rv_0"] = 0
-        # config["rv_1"] = 0
-        # config["rv_2"] = 0
-        # config["dt"] = Float64(0.5)
         cloudy_params = nothing
+        (; ice_start, _q_flux, _N_flux, _F_rim, _F_liq, _ρ_r_init) = precip.p3_boundary_condition
         init = map(
             coord -> CO.p3_initial_condition(
                 FT,
+                kid_params,
                 thermo_params,
-                FT(0.65e-4),
-                FT(40000),
-                coord.z,
-                F_rim = FT(0.2),
-                F_liq = FT(0.2),
+                coord.z;
+                _q_init = _q_flux,
+                _N_init = _N_flux,
+                _F_rim = _F_rim,
+                _F_liq = _F_liq,
+                _ρ_r = _ρ_r_init,
                 z_top = FT(opts["z_max"]),
-                ice_start = false,
+                ice_start = ice_start,
             ),
             coord,
         )

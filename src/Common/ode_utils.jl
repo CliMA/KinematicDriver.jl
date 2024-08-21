@@ -82,6 +82,9 @@ function initialise_state(::MoistureP3, ::PrecipitationP3, initial_profiles)
         N_rai = initial_profiles.N_rai,
         N_ice = initial_profiles.N_ice,
         N_aer = initial_profiles.N_aer,
+        q_vap = initial_profiles.q_vap,
+        ρq_vap = initial_profiles.ρq_vap,
+        q_rai = initial_profiles.q_rai,
     )
 end
 function initialise_state(::CloudyMoisture, ::CloudyPrecip, initial_profiles)
@@ -194,6 +197,8 @@ function initialise_aux(
             ρq_ice = ip.ρq_ice,
             ρq_rim = ip.ρq_rim,
             ρq_liqonice = ip.ρq_liqonice,
+            q_vap = ip.q_vap,
+            ρq_vap = ip.ρq_vap,
         )
         velocities = (;
             term_vel_rai = copy(ip.zero),
@@ -227,6 +232,26 @@ function initialise_aux(
                 copy(ip.zero),
                 copy(ip.zero),
                 copy(ip.zero),
+            ),
+        )
+        p3_boundary_condition_eltype = @NamedTuple{
+            ice_start::Bool,
+            _magnitude::FT,
+            _q_flux::FT,
+            _N_flux::FT,
+            _F_rim::FT,
+            _F_liq::FT,
+            _ρ_r_init::FT,
+        }
+        p3_boundary_condition = @. p3_boundary_condition_eltype(
+            tuple(
+                copy(precip.p3_boundary_condition.ice_start),
+                copy(precip.p3_boundary_condition._magnitude),
+                copy(precip.p3_boundary_condition._q_flux),
+                copy(precip.p3_boundary_condition._N_flux),
+                copy(precip.p3_boundary_condition._F_rim),
+                copy(precip.p3_boundary_condition._F_liq),
+                copy(precip.p3_boundary_condition._ρ_r_init),
             ),
         )
 
@@ -271,6 +296,8 @@ function initialise_aux(
 
     if precip isa CloudyPrecip
         aux = merge(aux, (; cloudy_params, cloudy_variables))
+    elseif precip isa PrecipitationP3
+        aux = merge(aux, (; p3_boundary_condition))
     end
 
     return aux

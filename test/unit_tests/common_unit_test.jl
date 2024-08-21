@@ -92,6 +92,9 @@ end
         ρq_liqonice = 0,
         N_ice = 0,
         B_rim = 0,
+        q_vap = 0,
+        ρq_vap = 0,
+        q_rai = 0,
     )
 
     state = CO.initialise_state(equil_moist, no_precip, initial_profiles)
@@ -175,6 +178,7 @@ end
         q_sno = 2e-3 / 1.2,
         q_rim = 0.5e-3 / 1.2,
         q_liqonice = 0.5e-3 / 1.2,
+        q_vap = 1e-2 / 1.2,
         ρq_tot = 15e-3,
         ρq_liq = 1e-3,
         ρq_ice = 2e-3,
@@ -182,6 +186,7 @@ end
         ρq_sno = 2e-3,
         ρq_rim = 0.5e-3,
         ρq_liqonice = 0.5e-3,
+        ρq_vap = 1e-2,
         p = 101300.0,
         T = 280.0,
         θ_dry = 360.0,
@@ -190,7 +195,8 @@ end
         N_rai = 1e4,
         N_sno = 1e4,
         N_aer = 1e10,
-        B_rim = zero = 0.0,
+        B_rim = 0.5e-3 / 900,
+        zero = 0.0,
     )
     domain = CC.Domains.IntervalDomain(
         CC.Geometry.ZPoint{FT}(0),
@@ -283,6 +289,29 @@ end
         #TODO - check Thermodynamics?
         #@test get_value(θ_liq_ice)[1] == TD.liquid_ice_pottemp(thermo_params, get_value(ts)[1])
     end
+
+    # test p3 precompute_aux_thermo
+    ms = p3_moist
+    Y = CO.initialise_state(ms, precip_p3, ip)
+    aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, ms, precip_p3)
+    CO.precompute_aux_thermo!(ms, Y, aux)
+    (; ρ_dry, p, T, θ_dry, θ_liq_ice, ts, ρ, ρ_dry) = aux.thermo_variables
+    (; q_tot, q_liq, q_ice) = aux.microph_variables
+    for el in aux.thermo_variables
+        if el != aux.thermo_variables.ts
+            @test all(isfinite, get_value(el))
+        end
+    end
+    @test get_value(q_tot)[1] >= 0.0
+    @test get_value(q_liq)[1] >= 0.0
+    @test get_value(q_ice)[1] >= 0.0
+
+    @test ρ_dry == ρ .- Y.ρq_tot
+    @test p == TD.air_pressure.(thermo_params, ts)
+    @test T == TD.air_temperature.(thermo_params, ts)
+    @test θ_dry == TD.dry_pottemp.(thermo_params, T, ρ_dry)
+    #TODO - check Thermodynamics?
+    #@test get_value(θ_liq_ice)[1] == TD.liquid_ice_pottemp(thermo_params, get_value(ts)[1])
 
     # test precompute_aux_precip
     for ps in (precip_1m, precip_2m)

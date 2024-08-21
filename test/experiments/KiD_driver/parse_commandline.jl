@@ -141,6 +141,18 @@ function parse_commandline()
         help = "Initial condition theta2 [K]"
         arg_type = Float64
         default = Float64(312.66)
+        "--p3_boundary_condition"
+        help = "Characteristics of particle flux being introduced into P3 domain top (if ice_start = false) or of the initial ice signal (if ice_start = true)"
+        arg_type = NamedTuple
+        default = (;
+            ice_start = false,
+            _magnitude = Float64(0.5),
+            _q_flux = Float64(0.65e-4),
+            _N_flux = Float64(40000),
+            _F_rim = Float64(0.2),
+            _F_liq = Float64(0.2),
+            _ρ_r_init = Float64(900),
+        )
     end
 
     return AP.parse_args(s)

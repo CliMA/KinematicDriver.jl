@@ -27,6 +27,7 @@ function NetCDFIO_Stats(
         :q_liqonice => "q_liqonice",
         :q_rai => "q_rai",
         :q_sno => "q_sno",
+        :q_vap => "q_vap",
         :N_aer => "N_aer",
         :N_liq => "N_liq",
         :N_rai => "N_rai",
@@ -35,6 +36,8 @@ function NetCDFIO_Stats(
         :ρq_ice => "ρq_ice",
         :ρq_rim => "ρq_rim",
         :ρq_liqonice => "ρq_liqonice",
+        :ρq_vap => "ρq_vap",
+        :ρq_rai => "ρq_rai",
     ),
 )
     FT = Float64

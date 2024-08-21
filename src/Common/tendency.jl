@@ -53,24 +53,30 @@ end
 
     (; thermo_params) = aux
     (; ts, ρ, ρ_dry, p, T, θ_dry, θ_liq_ice) = aux.thermo_variables
-    (; q_tot, q_liq, q_ice, q_rim, q_liqonice, ρq_tot, ρq_liq, ρq_ice, ρq_rim, ρq_liqonice) = aux.microph_variables
+    (; ρq_liq, ρq_ice, ρq_rim, ρq_liqonice, ρq_vap, ρq_rai, q_tot, q_liq, q_ice, q_rim, q_liqonice, q_vap, q_rai) =
+        aux.microph_variables
 
     @. ρ = ρ_dry + Y.ρq_tot
-    @. ρq_tot = Y.ρq_tot
     @. ρq_rim = Y.ρq_rim
     @. ρq_ice = Y.ρq_ice
     @. ρq_liqonice = Y.ρq_liqonice
+    @. ρq_liq = Y.ρq_liq
+    @. ρq_rai = Y.ρq_rai
+    @. ρq_vap = Y.ρq_vap
 
-    @. q_tot = q_(Y.ρq_tot, ρ)
     @. q_liq = q_(Y.ρq_liq, ρ)
     @. q_ice = q_(Y.ρq_ice, ρ)
     @. q_rim = q_(Y.ρq_rim, ρ)
     @. q_liqonice = q_(Y.ρq_liqonice, ρ)
+    @. q_vap = q_(Y.ρq_vap, ρ)
+    @. q_rai = q_(Y.ρq_rai, ρ)
+    @. q_tot = q_liq + q_ice + q_rai + q_vap
 
     @. ts = TD.PhaseNonEquil_ρTq(thermo_params, ρ, T, PP(q_tot, q_liq, q_ice))
     @. p = TD.air_pressure(thermo_params, ts)
     @. θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
-    @. θ_liq_ice = θ_dry #TD.liquid_ice_pottemp(thermo_params, ts) - prevents error...
+    @. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
+
 end
 @inline function precompute_aux_thermo!(::NonEquilibriumMoisture, Y, aux)
 
@@ -89,7 +95,7 @@ end
     @. ts = TD.PhaseNonEquil_ρTq(thermo_params, ρ, T, PP(q_tot, q_liq, q_ice))
     @. p = TD.air_pressure(thermo_params, ts)
     @. θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
-    @. θ_liq_ice = θ_dry #TD.liquid_ice_pottemp(thermo_params, ts) - prevents error...
+    @. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
 end
 @inline function precompute_aux_thermo!(::CloudyMoisture, Y, aux)
 
