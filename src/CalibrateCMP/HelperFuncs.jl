@@ -50,15 +50,24 @@ function get_numbers_from_config(config::Dict)
     n_heights =
         config["model"]["filter"]["apply"] ? config["model"]["filter"]["nz_filtered"] :
         config["model"]["filter"]["nz_unfiltered"]
-    n_times =
+    _n_times_default =
         config["model"]["filter"]["apply"] ? length(config["model"]["t_calib"]) - 1 : length(config["model"]["t_calib"])
+    n_times = Int[]
+    for case in config["observations"]["cases"]
+        if :t_cal in collect(keys(case))
+            _n_times_case_i = config["model"]["filter"]["apply"] ? length(case.t_cal) - 1 : length(case.t_cal)
+        else
+            _n_times_case_i = _n_times_default
+        end
+        n_times = [n_times; _n_times_case_i]
+    end
 
     @assert length(n_heights) == length(config["observations"]["data_names"])
     return (; n_cases, n_heights, n_times)
 end
 
-function get_case_i_vec(vec::Vector{FT}, i::Int, n_single_case::Int) where {FT <: Real}
-    return vec[((i - 1) * n_single_case + 1):(i * n_single_case)]
+function get_case_i_vec(vec::Vector{FT}, i::Int, n_single_case::Vector{Int}) where {FT <: Real}
+    return vec[(sum(n_single_case[1:(i - 1)]) + 1):sum(n_single_case[1:i])]
 end
 
 function get_single_case_fields(vec_single_case::Vector{FT}, n_heights::Vector{Int}, n_times::Int) where {FT <: Real}
@@ -147,7 +156,7 @@ function compute_error_metrics(
     config::Dict,
     obs::Matrix{FT},
 ) where {FT <: Real}
-    n_cases = n_cases = length(config["observations"]["cases"])
+    n_cases = length(config["observations"]["cases"])
 
     ref_stats_list = make_ref_stats_list(obs, config["statistics"], get_numbers_from_config(config)...)
     model_error = zeros(3)

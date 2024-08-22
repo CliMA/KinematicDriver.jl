@@ -45,7 +45,7 @@ end
 
     #test
     @test length(nums) == 3
-    @test typeof(nums) == @NamedTuple{n_cases::Int, n_heights::Vector{Int}, n_times::Int}
+    @test typeof(nums) == @NamedTuple{n_cases::Int, n_heights::Vector{Int}, n_times::Vector{Int}}
     @test length(nums.n_heights) == length(config["observations"]["data_names"])
 end
 
@@ -57,11 +57,11 @@ end
         KCP.make_filter_props(config["model"]["n_elem"] .* ones(Int, 4), config["model"]["t_calib"])
     (n_c, n_z, n_t) = KCP.get_numbers_from_config(config)
     n_single_case = sum(n_z) * n_t
-    vec = rand(n_c * n_single_case)
+    vec = rand(sum(n_single_case))
 
     #action
     single_case_vec = KCP.get_case_i_vec(vec, 1, n_single_case)
-    fields = KCP.get_single_case_fields(single_case_vec, n_z, n_t)
+    fields = KCP.get_single_case_fields(single_case_vec, n_z, n_t[1])
 
     #test
     length(single_case_vec) == n_single_case
