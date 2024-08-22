@@ -65,7 +65,7 @@ end
 
     # Convert the total activated number to tendency
     S_Nl = ifelse(S < 0 || isnan(N_act), FT(0), max(FT(0), N_act - _already_activated_particles) / dt)
-    #@info(common_params.open_system_activation)
+
     return S_Nl
 end
 

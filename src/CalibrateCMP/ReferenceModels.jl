@@ -8,7 +8,8 @@ function get_obs!(config::Dict)
         _z_min = FT(0)
         _z_max = FT(1)
     else
-        _z_min, _z_max = get_z_bounds_from_config(config)
+        _z_min = config["model"]["z_min"]
+        _z_max = config["model"]["z_max"]
     end
     _dz = (_z_max - _z_min) ./ _n_heights
     _heights::Vector{Vector{FT}} = collect.(range.(_z_min .+ _dz ./ 2, _z_max .- _dz ./ 2, _n_heights))
@@ -39,12 +40,12 @@ function get_obs_matrix(
     _data_matrix = Matrix{FT}
     for (i, case) in enumerate(cases)
         _dir::String = case.dir
-        
+
         if "t_cal" in collect(keys(case))
             times = case.t_cal
         end
         _data_matrix_single_case::Matrix{FT} =
-            get_obs_matrix(_dir, variables, heights, times; apply_filter = apply_filter)
+                get_obs_matrix(_dir, variables, heights, times; apply_filter = apply_filter) 
 
         if i == 1
             _data_matrix = _data_matrix_single_case

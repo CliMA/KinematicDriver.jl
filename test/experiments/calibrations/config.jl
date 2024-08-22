@@ -23,14 +23,14 @@ function get_prior_config()
     # Define prior mean and bounds on the parameters.
     config["parameters"] = Dict(
         "SB2006_collection_kernel_coeff_kcc" =>
-            (mean = 4.44 * 1e9, var = 8.88 * 1e8, lbound = 8.0 * 1e8, ubound = 6.0 * 1e9),
+            (mean = 4.44 * 1e9, var = 8.88 * 1e8, lbound = 2.5 * 1e9, ubound = 6.0 * 1e9),
         "SB2006_collection_kernel_coeff_kcr" =>
-           (mean = 5.25, var = 1.05, lbound = 3.5, ubound = 7.0),
+           (mean = 5.25, var = 1.05, lbound = 3.5, ubound = 8.0),
         "SB2006_collection_kernel_coeff_krr" => 
-            (mean = 7.12, var = 1.424, lbound = 4.0, ubound = 9.0),
-        "SB2006_raindrops_terminal_velocity_coeff_aR" => 
-           (mean = 9.65, var = 0.3, lbound = 9.2, ubound = 10.5),
-        #"alpha" => (mean = 1.0, var = 0.2, lbound = 0.7, ubound = 2.35),
+            (mean = 7.12, var = 1.424, lbound = 4.0, ubound = 10.0),
+        #"SB2006_raindrops_terminal_velocity_coeff_aR" => 
+        #   (mean = 9.65, var = 0.4, lbound = 8.4, ubound = 10.2),
+        #"alpha" => (mean = 1.0, var = 0.2, lbound = 0.7, ubound = 1.3),
     )
     return config
 end
@@ -42,9 +42,9 @@ function get_process_config()
     # Define mini batch size for EKP
     config["batch_size"] = 13
     # Define number of iterations for EKP
-    config["n_iter"] = 15
+    config["n_iter"] = 12
     # Define number of parameter ensemle for EKP (Inversion)
-    config["n_ens"] = 16
+    config["n_ens"] = 15
     # Define EKP time step
     config["Δt"] = 1.0
     config["EKP_method"] = "ETKI"
@@ -255,7 +255,180 @@ function get_observations_config()
                         (w1 = 5.0, p0 = 100700.0, Nd = 50 * 1e6, std_dry = 1.8, t_cal = 1200:700:1900,
                             r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_5/mean=0.06_std=1.8_p0=1007_Nd=50/"),
                         (w1 = 5.0, p0 = 100700.0, Nd = 100 * 1e6, std_dry = 1.8, t_cal = 1360:640:2000,
-                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_5/mean=0.06_std=1.8_p0=1007_Nd=100/"),=#]
+                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_5/mean=0.06_std=1.8_p0=1007_Nd=100/"),=#
+
+                        #=(w1 = 2.0, p0 = 99000.0, Nd = 50 * 1e6, std_dry = 1.1, t_cal = 620:260:880,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_2/mean=0.04_std=1.1_p0=990_Nd=50/"),
+                        (w1 = 2.0, p0 = 99000.0, Nd = 100 * 1e6, std_dry = 1.1, t_cal = 835:165:1000,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_2/mean=0.04_std=1.1_p0=990_Nd=100/"),
+                        (w1 = 2.0, p0 = 99000.0, Nd = 500 * 1e6, std_dry = 1.1, t_cal = 1310:110:1420,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_2/mean=0.04_std=1.1_p0=990_Nd=500/"),
+                        (w1 = 2.0, p0 = 100000.0, Nd = 50 * 1e6, std_dry = 1.1, t_cal = 920:475:1395,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_2/mean=0.04_std=1.1_p0=1000_Nd=50/"),
+                        (w1 = 2.0, p0 = 100000.0, Nd = 100 * 1e6, std_dry = 1.1,  t_cal = 1295:255:1550,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_2/mean=0.04_std=1.1_p0=1000_Nd=100/"),
+                        (w1 = 2.0, p0 = 100000.0, Nd = 500 * 1e6, std_dry = 1.1,  t_cal = 1960:250:2210,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_2/mean=0.04_std=1.1_p0=1000_Nd=500/"),
+                        (w1 = 2.0, p0 = 100700.0, Nd = 50 * 1e6, std_dry = 1.1, t_cal = 1250:750:2000,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_2/mean=0.04_std=1.1_p0=1007_Nd=50/"),
+                        (w1 = 2.0, p0 = 100700.0, Nd = 100 * 1e6, std_dry = 1.1, t_cal = 1500:900:2400,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_2/mean=0.04_std=1.1_p0=1007_Nd=100/"),
+
+                        (w1 = 2.0, p0 = 99000.0, Nd = 50 * 1e6, std_dry = 1.8, t_cal = 600:300:900,
+                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_2/mean=0.06_std=1.8_p0=990_Nd=50/"),
+                        (w1 = 2.0, p0 = 99000.0, Nd = 100 * 1e6, std_dry = 1.8, t_cal = 835:215:1050, 
+                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_2/mean=0.06_std=1.8_p0=990_Nd=100/"),
+                        (w1 = 2.0, p0 = 99000.0, Nd = 500 * 1e6, std_dry = 1.8, t_cal = 1310:140:1450, 
+                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_2/mean=0.06_std=1.8_p0=990_Nd=500/"),
+                        (w1 = 2.0, p0 = 100700.0, Nd = 50 * 1e6, std_dry = 1.8, t_cal = 1000:750:1750,
+                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_2/mean=0.06_std=1.8_p0=1007_Nd=50/"),
+                        (w1 = 2.0, p0 = 100700.0, Nd = 100 * 1e6, std_dry = 1.8, t_cal = 1500:900:2400,
+                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_2/mean=0.06_std=1.8_p0=1007_Nd=100/"),
+
+                        # w = 4.0 m/s
+                        (w1 = 4.0, p0 = 99000.0, Nd = 50 * 1e6, std_dry = 1.1, t_cal = 620:180:800,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_4/mean=0.04_std=1.1_p0=990_Nd=50/"),
+                        (w1 = 4.0, p0 = 99000.0, Nd = 100 * 1e6, std_dry = 1.1, t_cal = 620:180:800,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_4/mean=0.04_std=1.1_p0=990_Nd=100/"),
+                        (w1 = 4.0, p0 = 99000.0, Nd = 500 * 1e6, std_dry = 1.1, t_cal = 1020:140:1160,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_4/mean=0.04_std=1.1_p0=990_Nd=500/"),
+                        (w1 = 4.0, p0 = 100000.0, Nd = 50 * 1e6, std_dry = 1.1, t_cal = 600:400:1000,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_4/mean=0.04_std=1.1_p0=1000_Nd=50/"),
+                        (w1 = 4.0, p0 = 100000.0, Nd = 100 * 1e6, std_dry = 1.1, t_cal = 880:200:1080,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_4/mean=0.04_std=1.1_p0=1000_Nd=100/"),
+                        (w1 = 4.0, p0 = 100000.0, Nd = 500 * 1e6, std_dry = 1.1, t_cal = 1440:220:1660,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_4/mean=0.04_std=1.1_p0=1000_Nd=500/"),
+                        (w1 = 4.0, p0 = 100700.0, Nd = 50 * 1e6, std_dry = 1.1, t_cal = 825:640:1465,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_4/mean=0.04_std=1.1_p0=1007_Nd=50/"),
+                        (w1 = 4.0, p0 = 100700.0, Nd = 100 * 1e6, std_dry = 1.1, t_cal = 1205:465:1670,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_4/mean=0.04_std=1.1_p0=1007_Nd=100/"),
+
+                        (w1 = 4.0, p0 = 99000.0, Nd = 50 * 1e6, std_dry = 1.8, t_cal = 620:180:800,
+                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_4/mean=0.06_std=1.8_p0=990_Nd=50/"),
+                        (w1 = 4.0, p0 = 99000.0, Nd = 100 * 1e6, std_dry = 1.8, t_cal = 620:220:840,
+                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_4/mean=0.06_std=1.8_p0=990_Nd=100/"),
+                        (w1 = 4.0, p0 = 99000.0, Nd = 500 * 1e6, std_dry = 1.8, t_cal = 1000:120:1120,
+                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_4/mean=0.06_std=1.8_p0=990_Nd=500/"),
+                        (w1 = 4.0, p0 = 100700.0, Nd = 50 * 1e6, std_dry = 1.8, t_cal = 825:575:1400,
+                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_4/mean=0.06_std=1.8_p0=1007_Nd=50/"),
+                        (w1 = 4.0, p0 = 100700.0, Nd = 100 * 1e6, std_dry = 1.8, t_cal = 1205:295:1500,
+                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_4/mean=0.06_std=1.8_p0=1007_Nd=100/"),
+
+                        # w = 5.0 m/s
+                        (w1 = 5.0, p0 = 99000.0, Nd = 50 * 1e6, std_dry = 1.1, t_cal = 620:180:800,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_5/mean=0.04_std=1.1_p0=990_Nd=50/"),
+                        (w1 = 5.0, p0 = 99000.0, Nd = 100 * 1e6, std_dry = 1.1, t_cal = 620:180:800,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_5/mean=0.04_std=1.1_p0=990_Nd=100/"),
+                        (w1 = 5.0, p0 = 99000.0, Nd = 500 * 1e6, std_dry = 1.1, t_cal = 925:140:1065,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_5/mean=0.04_std=1.1_p0=990_Nd=500/"),
+                        (w1 = 5.0, p0 = 100000.0, Nd = 50 * 1e6, std_dry = 1.1, t_cal = 620:180:800,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_5/mean=0.04_std=1.1_p0=1000_Nd=50/"),
+                        (w1 = 5.0, p0 = 100000.0, Nd = 100 * 1e6, std_dry = 1.1, t_cal = 755:325:1080,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_5/mean=0.04_std=1.1_p0=1000_Nd=100/"),
+                        (w1 = 5.0, p0 = 100000.0, Nd = 500 * 1e6, std_dry = 1.1, t_cal = 1240:210:1450,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_5/mean=0.04_std=1.1_p0=1000_Nd=500/"),
+                        (w1 = 5.0, p0 = 100700.0, Nd = 50 * 1e6, std_dry = 1.1, t_cal = 620:630:1250,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_5/mean=0.04_std=1.1_p0=1007_Nd=50/"),
+                        (w1 = 5.0, p0 = 100700.0, Nd = 100 * 1e6, std_dry = 1.1, t_cal = 1020:405:1425,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_5/mean=0.04_std=1.1_p0=1007_Nd=100/"),
+
+                        (w1 = 5.0, p0 = 99000.0, Nd = 50 * 1e6, std_dry = 1.8, t_cal = 620:180:800,
+                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_5/mean=0.06_std=1.8_p0=990_Nd=50/"),
+                        (w1 = 5.0, p0 = 99000.0, Nd = 100 * 1e6, std_dry = 1.8, t_cal = 620:180:800,
+                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_5/mean=0.06_std=1.8_p0=990_Nd=100/"),
+                        (w1 = 5.0, p0 = 99000.0, Nd = 500 * 1e6, std_dry = 1.8, t_cal = 850:150:1000,
+                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_5/mean=0.06_std=1.8_p0=990_Nd=500/"),
+                        (w1 = 5.0, p0 = 100700.0, Nd = 50 * 1e6, std_dry = 1.8, t_cal = 620:580:1200,
+                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_5/mean=0.06_std=1.8_p0=1007_Nd=50/"),
+                        (w1 = 5.0, p0 = 100700.0, Nd = 100 * 1e6, std_dry = 1.8, t_cal = 1020:340:1360,
+                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_5/mean=0.06_std=1.8_p0=1007_Nd=100/"),=#
+
+                        # w = 2.0 m/s
+                        #=(w1 = 2.0, p0 = 99000.0, Nd = 50 * 1e6, std_dry = 1.1, t_cal = 1250:600:1850,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_2/mean=0.04_std=1.1_p0=990_Nd=50/"),
+                        (w1 = 2.0, p0 = 99000.0, Nd = 100 * 1e6, std_dry = 1.1, t_cal = 1500:600:2100,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_2/mean=0.04_std=1.1_p0=990_Nd=100/"),
+                        (w1 = 2.0, p0 = 99000.0, Nd = 500 * 1e6, std_dry = 1.1, t_cal = 2100:600:2700,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_2/mean=0.04_std=1.1_p0=990_Nd=500/"),
+                        (w1 = 2.0, p0 = 100000.0, Nd = 50 * 1e6, std_dry = 1.1, t_cal = 2000:600:2600,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_2/mean=0.04_std=1.1_p0=1000_Nd=50/"),
+                        (w1 = 2.0, p0 = 100000.0, Nd = 100 * 1e6, std_dry = 1.1,  t_cal = 2250:600:2850,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_2/mean=0.04_std=1.1_p0=1000_Nd=100/"),
+                        (w1 = 2.0, p0 = 100000.0, Nd = 500 * 1e6, std_dry = 1.1,  t_cal = 3100:500:3600,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_2/mean=0.04_std=1.1_p0=1000_Nd=500/"),
+                        (w1 = 2.0, p0 = 100700.0, Nd = 50 * 1e6, std_dry = 1.1, t_cal = 2700:600:3300,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_2/mean=0.04_std=1.1_p0=1007_Nd=50/"),
+                        (w1 = 2.0, p0 = 100700.0, Nd = 100 * 1e6, std_dry = 1.1, t_cal = 3000:600:3600,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_2/mean=0.04_std=1.1_p0=1007_Nd=100/"),
+
+                        (w1 = 2.0, p0 = 99000.0, Nd = 50 * 1e6, std_dry = 1.8, t_cal = 1400:600:2000,
+                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_2/mean=0.06_std=1.8_p0=990_Nd=50/"),
+                        (w1 = 2.0, p0 = 99000.0, Nd = 100 * 1e6, std_dry = 1.8, t_cal = 1700:600:2300, 
+                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_2/mean=0.06_std=1.8_p0=990_Nd=100/"),
+                        (w1 = 2.0, p0 = 99000.0, Nd = 500 * 1e6, std_dry = 1.8, t_cal = 2100:600:2700, 
+                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_2/mean=0.06_std=1.8_p0=990_Nd=500/"),
+                        (w1 = 2.0, p0 = 100700.0, Nd = 50 * 1e6, std_dry = 1.8, t_cal = 2400:600:3000,
+                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_2/mean=0.06_std=1.8_p0=1007_Nd=50/"),
+                        (w1 = 2.0, p0 = 100700.0, Nd = 100 * 1e6, std_dry = 1.8, t_cal = 2750:600:2350,
+                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_2/mean=0.06_std=1.8_p0=1007_Nd=100/"),
+
+                        # w = 4.0 m/s
+                        (w1 = 4.0, p0 = 99000.0, Nd = 50 * 1e6, std_dry = 1.1, t_cal = 1250:600:1850,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_4/mean=0.04_std=1.1_p0=990_Nd=50/"),
+                        (w1 = 4.0, p0 = 99000.0, Nd = 100 * 1e6, std_dry = 1.1, t_cal = 1450:600:1950,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_4/mean=0.04_std=1.1_p0=990_Nd=100/"),
+                        (w1 = 4.0, p0 = 99000.0, Nd = 500 * 1e6, std_dry = 1.1, t_cal = 1800:600:2400,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_4/mean=0.04_std=1.1_p0=990_Nd=500/"),
+                        (w1 = 4.0, p0 = 100000.0, Nd = 50 * 1e6, std_dry = 1.1, t_cal = 1800:600:2400,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_4/mean=0.04_std=1.1_p0=1000_Nd=50/"),
+                        (w1 = 4.0, p0 = 100000.0, Nd = 100 * 1e6, std_dry = 1.1, t_cal = 1750:600:2350,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_4/mean=0.04_std=1.1_p0=1000_Nd=100/"),
+                        (w1 = 4.0, p0 = 100000.0, Nd = 500 * 1e6, std_dry = 1.1, t_cal = 2400:600:3000,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_4/mean=0.04_std=1.1_p0=1000_Nd=500/"),
+                        (w1 = 4.0, p0 = 100700.0, Nd = 50 * 1e6, std_dry = 1.1, t_cal = 2100:600:2700,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_4/mean=0.04_std=1.1_p0=1007_Nd=50/"),
+                        (w1 = 4.0, p0 = 100700.0, Nd = 100 * 1e6, std_dry = 1.1, t_cal = 2400:600:3000,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_4/mean=0.04_std=1.1_p0=1007_Nd=100/"),
+
+                        (w1 = 4.0, p0 = 99000.0, Nd = 50 * 1e6, std_dry = 1.8, t_cal = 1400:600:2000,
+                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_4/mean=0.06_std=1.8_p0=990_Nd=50/"),
+                        (w1 = 4.0, p0 = 99000.0, Nd = 100 * 1e6, std_dry = 1.8, t_cal = 1400:600:2000,
+                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_4/mean=0.06_std=1.8_p0=990_Nd=100/"),
+                        (w1 = 4.0, p0 = 99000.0, Nd = 500 * 1e6, std_dry = 1.8, t_cal = 1800:600:2400,
+                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_4/mean=0.06_std=1.8_p0=990_Nd=500/"),
+                        (w1 = 4.0, p0 = 100700.0, Nd = 50 * 1e6, std_dry = 1.8, t_cal = 2200:600:2800,
+                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_4/mean=0.06_std=1.8_p0=1007_Nd=50/"),
+                        (w1 = 4.0, p0 = 100700.0, Nd = 100 * 1e6, std_dry = 1.8, t_cal = 2350:600:2950,
+                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_4/mean=0.06_std=1.8_p0=1007_Nd=100/"),
+
+                        # w = 5.0 m/s
+                        (w1 = 5.0, p0 = 99000.0, Nd = 50 * 1e6, std_dry = 1.1, t_cal = 1500:600:2100,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_5/mean=0.04_std=1.1_p0=990_Nd=50/"),
+                        (w1 = 5.0, p0 = 99000.0, Nd = 100 * 1e6, std_dry = 1.1, t_cal = 1600:600:2200,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_5/mean=0.04_std=1.1_p0=990_Nd=100/"),
+                        (w1 = 5.0, p0 = 99000.0, Nd = 500 * 1e6, std_dry = 1.1, t_cal = 1750:600:2350,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_5/mean=0.04_std=1.1_p0=990_Nd=500/"),
+                        (w1 = 5.0, p0 = 100000.0, Nd = 50 * 1e6, std_dry = 1.1, t_cal = 1600:600:2200,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_5/mean=0.04_std=1.1_p0=1000_Nd=50/"),
+                        (w1 = 5.0, p0 = 100000.0, Nd = 100 * 1e6, std_dry = 1.1, t_cal = 1750:600:2350,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_5/mean=0.04_std=1.1_p0=1000_Nd=100/"),
+                        (w1 = 5.0, p0 = 100000.0, Nd = 500 * 1e6, std_dry = 1.1, t_cal = 2200:600:2800,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_5/mean=0.04_std=1.1_p0=1000_Nd=500/"),
+                        (w1 = 5.0, p0 = 100700.0, Nd = 50 * 1e6, std_dry = 1.1, t_cal = 2100:600:2700,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_5/mean=0.04_std=1.1_p0=1007_Nd=50/"),
+                        (w1 = 5.0, p0 = 100700.0, Nd = 100 * 1e6, std_dry = 1.1, t_cal = 2200:600:2800,
+                            r_dry = 0.04 * 1e-6, dir = root_dir * "rhow_5/mean=0.04_std=1.1_p0=1007_Nd=100/"),
+
+                        (w1 = 5.0, p0 = 99000.0, Nd = 50 * 1e6, std_dry = 1.8, t_cal = 1200:600:1800,
+                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_5/mean=0.06_std=1.8_p0=990_Nd=50/"),
+                        (w1 = 5.0, p0 = 99000.0, Nd = 100 * 1e6, std_dry = 1.8, t_cal = 1250:600:1850,
+                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_5/mean=0.06_std=1.8_p0=990_Nd=100/"),
+                        (w1 = 5.0, p0 = 99000.0, Nd = 500 * 1e6, std_dry = 1.8, t_cal = 1600:600:2200,
+                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_5/mean=0.06_std=1.8_p0=990_Nd=500/"),
+                        (w1 = 5.0, p0 = 100700.0, Nd = 50 * 1e6, std_dry = 1.8, t_cal = 1900:600:2500,
+                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_5/mean=0.06_std=1.8_p0=1007_Nd=50/"),
+                        (w1 = 5.0, p0 = 100700.0, Nd = 100 * 1e6, std_dry = 1.8, t_cal = 2000:600:2600,
+                            r_dry = 0.06 * 1e-6, dir = root_dir * "rhow_5/mean=0.06_std=1.8_p0=1007_Nd=100/")=#]
     # Define type of data
     config["data_type"] = Float64
     return config
@@ -294,23 +467,21 @@ function get_model_config()
     config["t_ini"] = 0.0
     config["t_end"] = 2480.0
     config["dt_calib"] = 120.0
-    config["t_calib"] = 620.0:config["dt_calib"]:config["t_end"]
+    config["t_calib"] = 800.0:config["dt_calib"]:config["t_end"]
     config["w1"] = 3.0
     config["t1"] = 600.0
     config["p0"] = 99000.0
     config["Nd"] = 50 * 1e6
     config["qtot_flux_correction"] = false
-    config["open_system_activation"] = false
+    config["open_system_activation"] = true
     config["r_dry"] = 0.04 * 1e-6
     config["std_dry"] = 1.1
     config["κ"] = 0.9
     config["filter"] = KCP.make_filter_props(
         [1, config["n_elem"], 1], # nz (for each variable)
-        [0.0, 0.0, 0.0], # z_min (for each variable)
-        [4000.0, 4000.0, 4000.0], # z_max (for each variable)
         config["t_calib"];
         apply = true,
-        nz_per_filtered_cell = [1, 2, 1],
+        nz_per_filtered_cell = [1, 10, 1],
         nt_per_filtered_cell = 120,
     )
     # Define default parameters
@@ -358,9 +529,9 @@ function create_parameter_set()
         println(io, "[SB2006_raindrops_min_mass]")
         println(io, "alias = \"raindrops_min_mass\"")
         println(io, "value = 6.54e-11")
-        #println(io, "[SB2006_raindrops_terminal_velocity_coeff_aR]")
-        #println(io, "value = 8.402")
-        #println(io, "type = \"float\"")
+        println(io, "[SB2006_raindrops_terminal_velocity_coeff_aR]")
+        println(io, "value = 10.2")
+        println(io, "type = \"float\"")
         println(io, "[alpha]")
         println(io, "alias = \"alpha\"")
         println(io, "value = 1.0")

@@ -43,11 +43,9 @@ function run_KiD_multiple_cases(u::Array{FT, 1}, u_names::Array{String, 1}, conf
         config["model"]["w1"] = case.w1
         config["model"]["p0"] = case.p0
         config["model"]["Nd"] = case.Nd
-        if "t_cal" in collect(keys(case))
+        if :t_cal in collect(keys(case))
             config["model"]["filter"] = make_filter_props(
                 config["model"]["filter"]["nz_unfiltered"],
-                z_min,
-                z_max,
                 case.t_cal;
                 apply = config["model"]["filter"]["apply"],
                 nz_per_filtered_cell = config["model"]["filter"]["nz_per_filtered_cell"],

@@ -291,9 +291,9 @@ function plot_timeheight_N(nc_data_file; output = "output")
     p3 = Plots.heatmap(t_plt, z_plt, q_ice_plt .* 1e3, title = "q_ice [g/kg]", xlabel = "time [s]", ylabel = "z [m]", color = :viridis)
     p4 = Plots.heatmap(t_plt, z_plt, q_rai_plt .* 1e3, title = "q_rai [g/kg]", xlabel = "time [s]", ylabel = "z [m]", color = :viridis)
     p5 = Plots.heatmap(t_plt, z_plt, q_sno_plt .* 1e3, title = "q_sno [g/kg]", xlabel = "time [s]", ylabel = "z [m]", color = :viridis)
-    p6 = Plots.heatmap(t_plt, z_plt, N_aer_plt .* 1e-6, title = "N_aer [1/cm3]", xlabel = "time [s]", ylabel = "z [m]", color = :viridis, clims=(0, 100))
-    p7 = Plots.heatmap(t_plt, z_plt, N_liq_plt .* 1e-6, title = "N_liq [1/cm3]", xlabel = "time [s]", ylabel = "z [m]", color = :viridis)
-    p8 = Plots.heatmap(t_plt, z_plt, N_rai_plt .* 1e-6, title = "N_rai [1/cm3]", xlabel = "time [s]", ylabel = "z [m]", color = :viridis)
+    p6 = Plots.heatmap(t_plt, z_plt, N_aer_plt, title = "N_aer [1/m3]", xlabel = "time [s]", ylabel = "z [m]", color = :viridis, clims=(0, 100))
+    p7 = Plots.heatmap(t_plt, z_plt, N_liq_plt, title = "N_liq [1/m3]", xlabel = "time [s]", ylabel = "z [m]", color = :viridis)
+    p8 = Plots.heatmap(t_plt, z_plt, N_rai_plt, title = "N_rai [1/m3]", xlabel = "time [s]", ylabel = "z [m]", color = :viridis)
     #! format: on
     p = Plots.plot(
         #p1,
