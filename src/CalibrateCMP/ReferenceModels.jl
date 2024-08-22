@@ -42,12 +42,11 @@ function get_obs_matrix(
         _dir::String = case.dir
 
         if :t_cal in collect(keys(case))
-            times_ = collect(case.t_cal)
-            _data_matrix_single_case = get_obs_matrix(_dir, variables, heights, times_; apply_filter = apply_filter)
+            _times = collect(case.t_cal)
         else
-            _data_matrix_single_case =
-                get_obs_matrix(_dir, variables, heights, times; apply_filter = apply_filter) 
+            _times = times
         end
+        _data_matrix_single_case = get_obs_matrix(_dir, variables, heights, _times; apply_filter = apply_filter)
 
         if i == 1
             _data_matrix = _data_matrix_single_case

@@ -9,8 +9,7 @@ config = get_config()
 priors = KCP.construct_priors(config["prior"]["parameters"])
 
 obs = KCP.get_obs!(config)
-#ref_stats_list = KCP.make_ref_stats_list(obs, config["statistics"], KCP.get_numbers_from_config(config)...)
-ref_stats_list = KCP.make_ref_stats_list(obs, config["statistics"], config["observations"]["cases"], config)
+ref_stats_list = KCP.make_ref_stats_list(obs, config["statistics"], KCP.get_numbers_from_config(config)...)
 
 u_names = keys(config["prior"]["parameters"])
 

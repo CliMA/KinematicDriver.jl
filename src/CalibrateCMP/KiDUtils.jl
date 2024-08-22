@@ -434,10 +434,9 @@ function test_model(u::Array{FT, 1}, u_names::Array{String, 1}, config::Dict, ca
     b = u[findall(name -> name == "b", u_names)]
 
     n_single_case = sum(n_heights) * n_times
-    x = range(0.0, 1.0, n_single_case)
-
     outputs = Float64[]
-    for case in config["observations"]["cases"][case_numbers]
+    for (i, case) in enumerate(config["observations"]["cases"][case_numbers])
+        x = range(0.0, 1.0, n_single_case[case_numbers[i]])
         p = case.power
         y = a .* x .^ p .+ b
         outputs = [outputs; y]
