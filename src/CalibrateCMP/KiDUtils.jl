@@ -51,6 +51,14 @@ function run_KiD_multiple_cases(u::Array{FT, 1}, u_names::Array{String, 1}, conf
                 nz_per_filtered_cell = config["model"]["filter"]["nz_per_filtered_cell"],
                 nt_per_filtered_cell = config["model"]["filter"]["nt_per_filtered_cell"],
             )
+        else
+            config["model"]["filter"] = make_filter_props(
+                config["model"]["filter"]["nz_unfiltered"],
+                config["model"]["t_calib"];
+                apply = config["model"]["filter"]["apply"],
+                nz_per_filtered_cell = config["model"]["filter"]["nz_per_filtered_cell"],
+                nt_per_filtered_cell = config["model"]["filter"]["nt_per_filtered_cell"],
+            )
         end
 
         ode_sol, aux, precip = run_KiD(u, u_names, config["model"])
