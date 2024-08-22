@@ -147,9 +147,9 @@ function compute_error_metrics(
     config::Dict,
     obs::Matrix{FT},
 ) where {FT <: Real}
-    n_cases = n_cases = length(config["observations"]["cases"])
+    n_cases = length(config["observations"]["cases"])
 
-    ref_stats_list = make_ref_stats_list(obs, config["statistics"], get_numbers_from_config(config)...)
+    ref_stats_list = make_ref_stats_list(obs, config["statistics"], config["observations"]["cases"], config)
     model_error = zeros(3)
     for i in 1:n_cases
         model_error_ = compute_error_metrics(ϕ_values, ϕ_names, config, ref_stats_list[i])

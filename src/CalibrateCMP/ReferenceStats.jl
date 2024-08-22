@@ -268,16 +268,28 @@ end
 function make_ref_stats_list(
     obs::Matrix{FT},
     stats_config::Dict,
-    n_cases::Int,
-    n_heights::Vector{Int},
-    n_times::Int,
+    cases::Vector{<:Any},
+    config::Dict,
 ) where {FT <: Real}
 
-    _n_single_case_sim = sum(n_heights) * n_times
-    @assert n_cases * _n_single_case_sim == size(obs)[1]
+    (; n_heights, n_times) = get_numbers_from_config(config)
     ref_stats_list = ReferenceStatistics[]
-    for i in 1:n_cases
-        _single_case_row_indices = ((i - 1) * _n_single_case_sim + 1):(i * _n_single_case_sim)
+    _index = Int(0)
+    for (i, case) in enumerate(cases)
+        if :t_cal in collect(keys(case))
+            n_times = config["model"]["filter"]["apply"] ? length(case.t_cal) - 1 : length(case.t_cal)
+        end
+
+        _n_single_case_sim = sum(n_heights) * n_times
+
+        if i == 1
+            _index = _n_single_case_sim
+            _single_case_row_indices = 1:_index
+        else
+            _single_case_row_indices = (_index + 1):(_index + _n_single_case_sim)
+            _index += _n_single_case_sim
+        end
+
         _obs_single_case = obs[_single_case_row_indices, :]
 
         ref_stats_list = [
@@ -308,7 +320,7 @@ function combine_ref_stats(ref_stats_list::Vector{ReferenceStatistics})
     for ref_stats in ref_stats_list[2:end]
         @assert centered == ref_stats.centered
         @assert n_heights == ref_stats.n_heights
-        @assert n_times == ref_stats.n_times
+        #@assert n_times == ref_stats.n_times
         case_numbers = [case_numbers; ref_stats.case_numbers]
         y_norm = [y_norm; ref_stats.y_norm]
         var_mean_max = [var_mean_max; ref_stats.var_mean_max]
