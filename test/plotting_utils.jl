@@ -194,46 +194,24 @@ function plot_animation_p3(z_centers, solver, aux, moisture, precip, K1D, output
 
     for (i, u) in enumerate(solver.u)
 
-        if moisture isa CO.EquilibriumMoisture
-            q_tot[:, i] = parent(u.ρq_tot) ./ ρ .* 1e3
-        elseif moisture isa CO.NonEquilibriumMoisture
-            q_tot[:, i] = parent(u.ρq_tot) ./ ρ .* 1e3
-            q_liq[:, i] = parent(u.ρq_liq) ./ ρ .* 1e3
-            q_ice[:, i] = parent(u.ρq_ice) ./ ρ .* 1e3
-        elseif moisture isa CO.CloudyMoisture
-            q_tot[:, i] = (parent(u.moments.:2) .+ parent(u.ρq_vap)) ./ ρ .* 1e3
-            q_liq[:, i] = parent(u.moments.:2) ./ ρ .* 1e3
-        elseif precip isa CO.PrecipitationP3
-            ρq_tot[:, i] = parent(u.ρq_tot) .* 1e3
-            ρq_liq[:, i] = parent(u.ρq_liq) .* 1e3
-            ρq_ice[:, i] = parent(u.ρq_ice) .* 1e3
-            ρq_liqonice[:, i] = parent(u.ρq_liqonice) .* 1e3
-            ρq_rim[:, i] = parent(u.ρq_rim) .* 1e3
-            ρq_rai[:, i] = parent(u.ρq_rai) .* 1e3
-            B_rim[:, i] = parent(u.B_rim) .* 1e3
-            N_rai[:, i] = parent(u.N_rai) ./ 1e6
-            N_liq[:, i] = parent(u.N_liq) ./ 1e6
-            N_ice[:, i] = parent(u.N_ice) ./ 1e6
-        end
 
-        if precip isa CO.Precipitation1M
-            q_rai[:, i] = parent(u.ρq_rai) ./ ρ .* 1e3
-            q_sno[:, i] = parent(u.ρq_sno) ./ ρ .* 1e3
-        elseif precip isa CO.Precipitation2M
-            q_rai[:, i] = parent(u.ρq_rai) ./ ρ .* 1e3
-            N_rai[:, i] = parent(u.N_rai) ./ 1e6
-            N_liq[:, i] = parent(u.N_liq) ./ 1e6
-        elseif precip isa CO.CloudyPrecip
-            q_rai[:, i] = parent(u.moments.:5) ./ ρ .* 1e3
-            N_liq[:, i] = parent(u.moments.:1) ./ 1e6
-            N_rai[:, i] = parent(u.moments.:4) ./ 1e6
-        end
+        ρq_tot[:, i] = parent(u.ρq_tot) .* 1e3
+        ρq_liq[:, i] = parent(u.ρq_liq) .* 1e3
+        ρq_ice[:, i] = parent(u.ρq_ice) .* 1e3
+        ρq_liqonice[:, i] = parent(u.ρq_liqonice) .* 1e3
+        ρq_rim[:, i] = parent(u.ρq_rim) .* 1e3
+        ρq_rai[:, i] = parent(u.ρq_rai) .* 1e3
+        B_rim[:, i] = parent(u.B_rim) .* 1e3
+        N_rai[:, i] = parent(u.N_rai) ./ 1e6
+        N_liq[:, i] = parent(u.N_liq) ./ 1e6
+        N_ice[:, i] = parent(u.N_ice) ./ 1e6
+
     end
 
     function plot_data(data, data_label, max_val, title = "")
         return Plots.plot(
             data,
-            z_plt,
+            z_centers,
             xlabel = data_label,
             ylabel = "z [m]",
             legend = false,
@@ -243,63 +221,38 @@ function plot_animation_p3(z_centers, solver, aux, moisture, precip, K1D, output
         )
     end
 
-    anim = Plots.@animate for i in 1:length(t_plt)
+    anim = Plots.@animate for i in 1:nt
 
         title = "time = " * string(floor(Int, solver.t[i])) * " [s]"
 
-        if precip isa CO.PrecipitationP3
-            p1 = plot_data(ρq_tot[:, i], "ρq_tot [g/m3]", maximum(ρq_tot))
-            p2 = plot_data(ρq_liq[:, i], "ρq_liq [g/m3]", maximum(ρq_liq))
-            p3 = plot_data(ρq_ice[:, i], "ρq_ice [g/m3]", maximum(ρq_ice), title)
-            p4 = plot_data(ρq_liqonice[:, i], "ρq_liqonice [g/m3]", maximum(ρq_liqonice))
-            p5 = plot_data(ρq_rim[:, i], "ρq_rim [g/m3]", maximum(ρq_rim))
-            p6 = plot_data(ρq_rai[:, i], "ρq_rai [g/m3]", maximum(ρq_rai))
-            p7 = plot_data(B_rim[:, i], "B_rim [-]", maximum(B_rim))
-            p8 = plot_data(N_liq[:, i], "N_liq [1/cm^3]", maximum(N_liq))
-            p9 = plot_data(N_ice[:, i], "N_ice [1/cm^3]", maximum(N_ice))
-            p10 = plot_data(N_rai[:, i], "N_rai [1/cm^3]", maximum(N_rai))
-            plot(
-                p1,
-                p2,
-                p3,
-                p4,
-                p5,
-                p6,
-                p7,
-                p8,
-                p9,
-                p10,
-                size = (1800.0, 1500.0),
-                bottom_margin = 30.0 * Plots.PlotMeasures.px,
-                left_margin = 30.0 * Plots.PlotMeasures.px,
-                top_margin = 30.0 * Plots.PlotMeasures.px,
-                right_margin = 30.0 * Plots.PlotMeasures.px,
-                layout = (5, 2),
-            )
-        else
-            p1 = plot_data(q_tot[:, i], "q_tot [g/kg]", maximum(q_tot))
-            p2 = plot_data(q_liq[:, i], "q_liq [g/kg]", maximum(q_liq), title)
-            p3 = plot_data(N_liq[:, i], "N_liq [1/cm^3]", maximum(N_liq))
-            p4 = plot_data(q_rai[:, i], "q_rai [g/kg]", maximum(q_rai))
-            p5 = plot_data(N_rai[:, i], "N_rai [1/cm^3]", maximum(N_rai))
-            p6 = plot_data(q_ice[:, i], "q_ice [g/kg]", maximum(q_ice))
-            p7 = plot_data(q_sno[:, i], "q_sno [g/kg]", maximum(q_sno))
-            plot(
-                p1,
-                p2,
-                p3,
-                p4,
-                p5,
-                p6,
-                p7,
-                size = (1800.0, 1500.0),
-                bottom_margin = 30.0 * Plots.PlotMeasures.px,
-                left_margin = 30.0 * Plots.PlotMeasures.px,
-                top_margin = 30.0 * Plots.PlotMeasures.px,
-                right_margin = 30.0 * Plots.PlotMeasures.px,
-                layout = (3, 3),
-            )
-        end
+        p1 = plot_data(ρq_tot[:, i], "ρq_tot [g/m3]", maximum(ρq_tot))
+        p2 = plot_data(ρq_liq[:, i], "ρq_liq [g/m3]", maximum(ρq_liq))
+        p3 = plot_data(ρq_ice[:, i], "ρq_ice [g/m3]", maximum(ρq_ice), title)
+        p4 = plot_data(ρq_liqonice[:, i], "ρq_liqonice [g/m3]", maximum(ρq_liqonice))
+        p5 = plot_data(ρq_rim[:, i], "ρq_rim [g/m3]", maximum(ρq_rim))
+        p6 = plot_data(ρq_rai[:, i], "ρq_rai [g/m3]", maximum(ρq_rai))
+        p7 = plot_data(B_rim[:, i], "B_rim [-]", maximum(B_rim))
+        p8 = plot_data(N_liq[:, i], "N_liq [1/cm^3]", maximum(N_liq))
+        p9 = plot_data(N_ice[:, i], "N_ice [1/cm^3]", maximum(N_ice))
+        p10 = plot_data(N_rai[:, i], "N_rai [1/cm^3]", maximum(N_rai))
+        plot(
+            p1,
+            p2,
+            p3,
+            p4,
+            p5,
+            p6,
+            p7,
+            p8,
+            p9,
+            p10,
+            size = (1800.0, 1500.0),
+            bottom_margin = 30.0 * Plots.PlotMeasures.px,
+            left_margin = 30.0 * Plots.PlotMeasures.px,
+            top_margin = 30.0 * Plots.PlotMeasures.px,
+            right_margin = 30.0 * Plots.PlotMeasures.px,
+            layout = (5, 2),
+        )
     end
 
     Plots.mp4(anim, joinpath(path, "animation.mp4"), fps = 10)
