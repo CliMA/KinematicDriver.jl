@@ -326,7 +326,7 @@ end
     end
 
     Y = CO.initialise_state(p3_moist, precip_p3, ip)
-    aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, equil_moist, ps)
+    aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, p3_moist, precip_p3)
     CO.precompute_aux_thermo!(p3_moist, Y, aux)
     CO.precompute_aux_precip!(precip_p3, Y, aux)
     for el in merge(aux.velocities, aux.microph_variables)
