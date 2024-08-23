@@ -309,6 +309,7 @@ function p3_initial_condition(
     ice_bump(χ, z) = χ * cos(z - (z_top - 0.5 * _z_band))
 
     # P3 state variables (minus B_rim -- computed below)
+    # (computed as kg/kg before converting to kg/m3)
     q_ice::FT = has_ice(z) ? ice_bump(_q_init, z) : FT(0)
     N_ice_kg::FT = has_ice(z) ? ice_bump(_N_init, z) : FT(0)
     q_liqonice::FT = _F_liq * q_ice
