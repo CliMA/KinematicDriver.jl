@@ -207,7 +207,7 @@ end
     Y = CO.initialise_state(ms, ps, init)
     dY = Y / 10
     ρw = 0.0
-    
+
     @. aux.prescribed_velocity.ρw = CC.Geometry.WVector.(ρw)
     aux.prescribed_velocity.ρw0 = ρw
     K1D.advection_tendency!(ms, dY, Y, aux, t)
