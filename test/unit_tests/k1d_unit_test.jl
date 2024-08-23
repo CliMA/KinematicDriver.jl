@@ -161,6 +161,53 @@ end
     Y = CO.initialise_state(ms, ps, init)
     dY = Y / 10
     ρw = 0.0
+
+    @. aux.prescribed_velocity.ρw = CC.Geometry.WVector.(ρw)
+    aux.prescribed_velocity.ρw0 = ρw
+    K1D.advection_tendency!(ms, dY, Y, aux, t)
+    K1D.advection_tendency!(ps, dY, Y, aux, t)
+    @test dY >= Y / 10
+
+    # same tests with ice_start = true
+    ice_start = true
+    _magnitude = Float64(0.5)
+    _q_flux = Float64(0.65e-4)
+    _N_flux = Float64(40000)
+    _F_rim = Float64(0.2)
+    _F_liq = Float64(0.2)
+    _ρ_r_init = Float64(900)
+    init = map(
+        coord -> CO.p3_initial_condition(
+            FT,
+            kid_params,
+            thermo_params,
+            coord.z;
+            _q_init = _q_flux,
+            _N_init = _N_flux,
+            _F_rim = _F_rim,
+            _F_liq = _F_liq,
+            _ρ_r = _ρ_r_init,
+            z_top = FT(3000),
+            ice_start = ice_start,
+        ),
+        coord,
+    )
+    t = 13.0
+
+    # eq
+    aux = K1D.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, p3_moist, precip_p3)
+    Y = CO.initialise_state(p3_moist, precip_p3, init)
+    dY = Y / 10
+    @test_throws Exception K1D.advection_tendency!(CO.AbstractMoistureStyle(), dY, Y, aux, t)
+    @test_throws Exception K1D.advection_tendency!(CO.AbstractPrecipitationStyle(), dY, Y, aux, t)
+
+    ms = p3_moist
+    ps = precip_p3
+    aux = K1D.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, ms, ps)
+    Y = CO.initialise_state(ms, ps, init)
+    dY = Y / 10
+    ρw = 0.0
+    
     @. aux.prescribed_velocity.ρw = CC.Geometry.WVector.(ρw)
     aux.prescribed_velocity.ρw0 = ρw
     K1D.advection_tendency!(ms, dY, Y, aux, t)
