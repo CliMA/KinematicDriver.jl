@@ -43,10 +43,18 @@ function run_KiD_multiple_cases(u::Array{FT, 1}, u_names::Array{String, 1}, conf
         config["model"]["w1"] = case.w1
         config["model"]["p0"] = case.p0
         config["model"]["Nd"] = case.Nd
-        if "t_cal" in collect(keys(case))
+        if :t_cal in collect(keys(case))
             config["model"]["filter"] = make_filter_props(
                 config["model"]["filter"]["nz_unfiltered"],
                 case.t_cal;
+                apply = config["model"]["filter"]["apply"],
+                nz_per_filtered_cell = config["model"]["filter"]["nz_per_filtered_cell"],
+                nt_per_filtered_cell = config["model"]["filter"]["nt_per_filtered_cell"],
+            )
+        else
+            config["model"]["filter"] = make_filter_props(
+                config["model"]["filter"]["nz_unfiltered"],
+                config["model"]["t_calib"];
                 apply = config["model"]["filter"]["apply"],
                 nz_per_filtered_cell = config["model"]["filter"]["nz_per_filtered_cell"],
                 nt_per_filtered_cell = config["model"]["filter"]["nt_per_filtered_cell"],
@@ -434,10 +442,9 @@ function test_model(u::Array{FT, 1}, u_names::Array{String, 1}, config::Dict, ca
     b = u[findall(name -> name == "b", u_names)]
 
     n_single_case = sum(n_heights) * n_times
-    x = range(0.0, 1.0, n_single_case)
-
     outputs = Float64[]
-    for case in config["observations"]["cases"][case_numbers]
+    for (i, case) in enumerate(config["observations"]["cases"][case_numbers])
+        x = range(0.0, 1.0, n_single_case[case_numbers[i]])
         p = case.power
         y = a .* x .^ p .+ b
         outputs = [outputs; y]
