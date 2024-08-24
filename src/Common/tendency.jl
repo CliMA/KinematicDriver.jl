@@ -191,13 +191,16 @@ end
     F_rim = aux.scratch.tmp2
     F_liq = aux.scratch.tmp3
     # prohibit ρ_r < 0
-    @. ρ_r = ifelse(B_rim < eps(FT), eps(FT), max(FT(0), ρq_rim / B_rim))
+    @. ρ_r = ifelse(B_rim < eps(FT), FT(100), max(FT(100), ρq_rim / B_rim))
     # keep F_r in range [0, 1)
     @. F_rim =
         ifelse((ρq_ice - ρq_liqonice) < eps(FT), FT(0), min(max(FT(0), ρq_rim / (ρq_ice - ρq_liqonice)), 1 - eps(FT)))
     # prohibit F_liq < 0
     @. F_liq = ifelse(Y.ρq_ice < eps(FT), FT(0), Y.ρq_liqonice / Y.ρq_ice)
-
+    for x in [F_rim, F_liq]
+        @. x = ifelse(isnan(x), FT(0), x)
+    end
+    @. ρ_r = ifelse(isnan(ρ_r), FT(100), ρ_r)
     p3 = ps.p3_params
     Chen2022 = ps.Chen2022
 
@@ -559,8 +562,99 @@ end
 end
 
 @inline function precompute_aux_precip_sources!(ps::PrecipitationP3, aux)
-    # TODO [P3]
-    return nothing
+    (; dt) = aux.TS
+    (; thermo_params, air_params, common_params) = aux
+    FT = eltype(thermo_params)
+    (; ts, ρ, T) = aux.thermo_variables
+    (; ρq_tot, ρq_liq, ρq_rai, ρq_ice, ρq_rim, ρq_liqonice, N_ice, N_rai, B_rim) = aux.microph_variables
+
+    dLdt = aux.scratch.tmp
+    dNdt = aux.scratch.tmp2
+    _F_rim = aux.scratch.tmp3
+    _ρ_rim = aux.scratch.tmp4
+    _F_liq = aux.scratch.tmp5
+
+    p3 = ps.p3_params
+    vel = ps.Chen2022
+
+    # helper type and wrapper to populate the tuple with sources
+    precip_sources_eltype = @NamedTuple{
+            ρq_tot::FT,
+            ρq_liq::FT,
+            ρq_rai::FT,
+            ρq_ice::FT,
+            ρq_rim::FT,
+            ρq_liqonice::FT,
+            N_aer::FT,
+            N_liq::FT,
+            N_rai::FT,
+            N_ice::FT,
+            B_rim::FT,
+        }
+    to_sources(args...) = @. precip_sources_eltype(tuple(args...))
+
+    # zero out the aux sources
+    @. aux.precip_sources = to_sources(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+
+    # calculate temporary variables
+    @. _F_rim = max(FT(0), min(ρq_rim / (ρq_ice - ρq_liqonice), 1 - eps(FT)))
+    @. _ρ_rim = max(FT(100), min(ρq_rim / B_rim, p3.ρ_l))
+    @. _F_liq = max(FT(0), min(ρq_liq / ρq_ice, FT(1)))
+    for x in [_F_rim, _F_liq]
+        @. x = ifelse(isnan(x), FT(0), x)
+    end
+    @. _ρ_rim = ifelse(isnan(_ρ_rim), FT(100), _ρ_rim)
+    if Bool(common_params.precip_sources)
+        # # Step 1: Broadcast the function call to obtain the results
+        # melt_results = CMP3.ice_melt.(p3, vel.snow_ice, air_params, thermo_params, ρq_ice, N_ice, T, ρ, _F_rim, _ρ_rim, dt)
+
+        # # Step 2: Broadcast over the extracted fields and apply the limit function
+        # dLdt = limit.(ρq_ice, dt, getfield.(melt_results, :dLdt))
+        # dNdt = limit.(N_ice, dt, getfield.(melt_results, :dNdt))
+
+
+        @. dLdt = limit(ρq_ice, dt, CMP3.ice_melt(p3, vel.snow_ice, air_params, thermo_params, ρq_ice, N_ice, T, ρ, _F_rim, _ρ_rim, dt).dLdt)
+        @. dNdt = limit(N_ice, dt, CMP3.ice_melt(p3, vel.snow_ice, air_params, thermo_params, ρq_ice, N_ice, T, ρ, _F_rim, _ρ_rim, dt).dNdt)
+        # TODO - add in CM.jl what portion of melted ice
+        # is a source for ρq_liqonice and what portion goes to ρq_rai.
+        # TODO - also, calculate somehow what portion of the melted ice
+        # comes as a sink from ρq_rim and what portion as a sink
+        # from nonrimed ice.
+        # for now for testing purposes we assume:
+        #   - source of ρq_liqonice = 0.7 * dLdt
+        #   - source of ρq_rai = 0.3 * dLdt
+        #   - sink of ρq_rim = _F_rim * dLdt
+        #   - sink of ρq_ice = (1 - _F_rim) * (1 - _F_liq) * dLdt
+        #       (this is because currently the notation in KiD
+        #           is such that ρq_ice = ρq_liqonice + ρq_rim
+        #           + other ice -- different than current P3
+        #           notation!!!)
+        #   - sink of B_rim = _F_rim * dLdt / _ρ_rim
+        #     which is good since it should be
+        #                   = [sink of L_rim] / _ρ_rim
+        #       if we assume d[ρ_rim]/dt = 0
+        # TODO - also, when we add the parameterization of melting
+        # as a source for ρq_liqonice, we need to keep in mind
+        # that the associated dNdt is zero (ice melts to liquid
+        # but the entire particle doesn't melt)...
+        # for now we assume dN_icedt = 0.3 * dNdt since that is how much
+        # we're assuming goes to rain at the moment
+        @. aux.precip_sources += to_sources(
+            0,
+            0,
+            0.3 * dLdt,
+            -1 * (1 - _F_rim) * (1 - _F_liq) * dLdt,
+            -1 * _F_rim * dLdt,
+            0.7 * dLdt,
+            0,
+            0,
+            0.3 * dNdt,
+            -0.3 * dNdt,
+            _F_rim * dLdt / _ρ_rim,
+        )
+    end
+
+
 end
 
 # helper function for precomputing aux sources for cloudy
@@ -713,6 +807,18 @@ end
     return dY
 end
 @inline function precip_sources_tendency!(ms::MoistureP3, ps::PrecipitationP3, dY, Y, aux, t)
+    precompute_aux_precip_sources!(ps, aux)
+
+    @. dY.ρq_tot += aux.precip_sources.ρq_tot
+    @. dY.ρq_liq += aux.precip_sources.ρq_liq
+    @. dY.ρq_rai += aux.precip_sources.ρq_rai
+    @. dY.ρq_ice += aux.precip_sources.ρq_ice
+    @. dY.ρq_rim += aux.precip_sources.ρq_rim
+    @. dY.ρq_liqonice += aux.precip_sources.ρq_liqonice
+    @. dY.B_rim += aux.precip_sources.B_rim
+    @. dY.N_ice += aux.precip_sources.N_ice
+    @. dY.N_rai += aux.precip_sources.N_rai
+
     return dY
 end
 @inline function precip_sources_tendency!(ms::CloudyMoisture, ps::CloudyPrecip, dY, Y, aux, t)
