@@ -17,6 +17,7 @@ const CM1 = CM.Microphysics1M
 const CM2 = CM.Microphysics2M
 const CMAM = CM.AerosolModel
 const CMAA = CM.AerosolActivation
+const CMP3 = CM.P3Scheme
 
 include("parameters.jl")
 include("equation_types.jl")

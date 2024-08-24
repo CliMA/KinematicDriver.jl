@@ -8,6 +8,7 @@ params = (common_params, thermo_params, air_params, activation_params)
     p0m = "Precipitation0M"
     p1m = "Precipitation1M"
     p2m = "Precipitation2M"
+    pp3 = "PrecipitationP3"
     rf_1 = "CliMA_1M"
     rf_2 = "KK2000"
     rf_3 = "B1994"
@@ -29,6 +30,7 @@ params = (common_params, thermo_params, air_params, activation_params)
     precip_1m_6 = CO.get_precipitation_type(p1m, toml_dict, rain_formation_choice = rf_6, sedimentation_choice = st_1)
     precip_1m_7 = CO.get_precipitation_type(p1m, toml_dict, rain_formation_choice = rf_6, sedimentation_choice = st_2)
     precip_2m = CO.get_precipitation_type(p2m, toml_dict, rain_formation_choice = rf_7)
+    precip_p3 = CO.get_precipitation_type(pp3, toml_dict)
 
     #test
     @test_throws Exception CO.get_precipitation_type("_", toml_dict, rain_formation_choice = rf_1)
@@ -44,6 +46,7 @@ params = (common_params, thermo_params, air_params, activation_params)
     @test precip_1m_6 isa CO.Precipitation1M
     @test precip_1m_7 isa CO.Precipitation1M
     @test precip_2m isa CO.Precipitation2M
+    @test precip_p3 isa CO.PrecipitationP3
 
 end
 
@@ -53,18 +56,22 @@ end
     toml_dict = CP.create_toml_dict(FT)
     eqm = "EquilibriumMoisture"
     neqm = "NonEquilibriumMoisture"
+    mp3 = "MoistureP3"
 
     #action
     moisture_eq = CO.get_moisture_type(eqm, toml_dict)
     moisture_neq = CO.get_moisture_type(neqm, toml_dict)
+    moisture_p3 = CO.get_moisture_type(mp3, toml_dict)
 
     #test
     @test CO.EquilibriumMoisture <: CO.AbstractMoistureStyle
     @test CO.NonEquilibriumMoisture <: CO.AbstractMoistureStyle
+    @test CO.MoistureP3 <: CO.AbstractMoistureStyle
 
     @test_throws Exception CO.get_moisture_type("_", toml_dict)
     @test moisture_eq isa CO.EquilibriumMoisture
     @test moisture_neq isa CO.NonEquilibriumMoisture
+    @test moisture_p3 isa CO.MoistureP3
 
 end
 
@@ -72,7 +79,23 @@ end
 
     @test_throws Exception CO.initialise_state(CO.AbstractMoistureStyle(), CO.AbstractPrecipitationStyle(), 0)
 
-    initial_profiles = (; ρq_tot = 0, ρq_liq = 0, ρq_ice = 0, ρq_rai = 0, ρq_sno = 0, N_liq = 0, N_rai = 0, N_aer = 0)
+    initial_profiles = (;
+        ρq_tot = 0,
+        ρq_liq = 0,
+        ρq_ice = 0,
+        ρq_rai = 0,
+        ρq_sno = 0,
+        N_liq = 0,
+        N_rai = 0,
+        N_aer = 0,
+        ρq_rim = 0,
+        ρq_liqonice = 0,
+        N_ice = 0,
+        B_rim = 0,
+        q_vap = 0,
+        ρq_vap = 0,
+        q_rai = 0,
+    )
 
     state = CO.initialise_state(equil_moist, no_precip, initial_profiles)
     @test state isa CC.Fields.FieldVector
@@ -125,6 +148,20 @@ end
     @test LA.norm(state.N_rai) == 0
     @test LA.norm(state.N_aer) == 0
 
+    state = CO.initialise_state(p3_moist, precip_p3, initial_profiles)
+    @test state isa CC.Fields.FieldVector
+    @test LA.norm(state.ρq_tot) == 0
+    @test LA.norm(state.ρq_liq) == 0
+    @test LA.norm(state.ρq_rai) == 0
+    @test LA.norm(state.ρq_ice) == 0
+    @test LA.norm(state.ρq_rim) == 0
+    @test LA.norm(state.ρq_liqonice) == 0
+    @test LA.norm(state.N_ice) == 0
+    @test LA.norm(state.B_rim) == 0
+    @test LA.norm(state.N_liq) == 0
+    @test LA.norm(state.N_rai) == 0
+    @test LA.norm(state.N_aer) == 0
+
 end
 
 
@@ -139,11 +176,17 @@ end
         q_ice = 2e-3 / 1.2,
         q_rai = 1e-3 / 1.2,
         q_sno = 2e-3 / 1.2,
+        q_rim = 0.5e-3 / 1.2,
+        q_liqonice = 0.5e-3 / 1.2,
+        q_vap = 1e-2 / 1.2,
         ρq_tot = 15e-3,
         ρq_liq = 1e-3,
         ρq_ice = 2e-3,
         ρq_rai = 1e-3,
         ρq_sno = 2e-3,
+        ρq_rim = 0.5e-3,
+        ρq_liqonice = 0.5e-3,
+        ρq_vap = 1e-2,
         p = 101300.0,
         T = 280.0,
         θ_dry = 360.0,
@@ -152,6 +195,7 @@ end
         N_rai = 1e4,
         N_sno = 1e4,
         N_aer = 1e10,
+        B_rim = 0.5e-3 / 900,
         zero = 0.0,
     )
     domain = CC.Domains.IntervalDomain(
@@ -203,6 +247,12 @@ end
     CO.zero_tendencies!(dY)
     @test LA.norm(dY) == 0
 
+    aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, p3_moist, precip_p3)
+    Y = CO.initialise_state(p3_moist, precip_p3, ip)
+    dY = similar(Y)
+    CO.zero_tendencies!(dY)
+    @test LA.norm(dY) == 0
+
     @test_throws Exception CO.cloud_sources_tendency!(CO.AbstractMoistureStyle(), dY, Y, aux, 1.0)
     @test_throws Exception CO.precip_sources_tendency!(CO.AbstractPrecipitationStyle(), dY, Y, aux, 1.0)
 
@@ -240,6 +290,29 @@ end
         #@test get_value(θ_liq_ice)[1] == TD.liquid_ice_pottemp(thermo_params, get_value(ts)[1])
     end
 
+    # test p3 precompute_aux_thermo
+    ms = p3_moist
+    Y = CO.initialise_state(ms, precip_p3, ip)
+    aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, ms, precip_p3)
+    CO.precompute_aux_thermo!(ms, Y, aux)
+    (; ρ_dry, p, T, θ_dry, θ_liq_ice, ts, ρ, ρ_dry) = aux.thermo_variables
+    (; q_tot, q_liq, q_ice) = aux.microph_variables
+    for el in aux.thermo_variables
+        if el != aux.thermo_variables.ts
+            @test all(isfinite, get_value(el))
+        end
+    end
+    @test get_value(q_tot)[1] >= 0.0
+    @test get_value(q_liq)[1] >= 0.0
+    @test get_value(q_ice)[1] >= 0.0
+
+    @test ρ_dry == ρ .- Y.ρq_tot
+    @test p == TD.air_pressure.(thermo_params, ts)
+    @test T == TD.air_temperature.(thermo_params, ts)
+    @test θ_dry == TD.dry_pottemp.(thermo_params, T, ρ_dry)
+    #TODO - check Thermodynamics?
+    #@test get_value(θ_liq_ice)[1] == TD.liquid_ice_pottemp(thermo_params, get_value(ts)[1])
+
     # test precompute_aux_precip
     for ps in (precip_1m, precip_2m)
         Y = CO.initialise_state(equil_moist, ps, ip)
@@ -250,6 +323,15 @@ end
             @test all(isfinite, get_value(el))
             @test all(get_value(el) .>= FT(0))
         end
+    end
+
+    Y = CO.initialise_state(p3_moist, precip_p3, ip)
+    aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, p3_moist, precip_p3)
+    CO.precompute_aux_thermo!(p3_moist, Y, aux)
+    CO.precompute_aux_precip!(precip_p3, Y, aux)
+    for el in merge(aux.velocities, aux.microph_variables)
+        @test all(isfinite, get_value(el))
+        @test all(get_value(el) .>= FT(0))
     end
 
     # test precompute_aux_moisture_sources

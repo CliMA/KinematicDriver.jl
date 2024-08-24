@@ -95,7 +95,7 @@ Aerosol activation tendencies
     error("activation_tendency not implemented for a given $sp")
 end
 @inline function precompute_aux_activation!(
-    ::Union{CO.NoPrecipitation, CO.Precipitation0M, CO.Precipitation1M},
+    ::Union{CO.NoPrecipitation, CO.Precipitation0M, CO.Precipitation1M, CO.PrecipitationP3},
     dY,
     Y,
     aux,
@@ -269,6 +269,25 @@ end
 
     return dY
 end
+@inline function advection_tendency!(::CO.MoistureP3, dY, Y, aux, t)
+    FT = eltype(Y.ρq_tot)
+
+    # advect aerosols
+
+    If = CC.Operators.InterpolateC2F()
+    ∂ = CC.Operators.DivergenceF2C(
+        bottom = CC.Operators.SetValue(CC.Geometry.WVector(aux.prescribed_velocity.ρw0 * aux.q_surf)),
+        top = CC.Operators.Extrapolate(),
+    )
+    @. dY.N_aer += -∂(aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ) * If(Y.N_aer))
+    @. dY.ρq_vap += -∂(aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ) * If(Y.ρq_vap))
+
+    fcc = CC.Operators.FluxCorrectionC2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
+    @. dY.N_aer += fcc(aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ), Y.N_aer)
+    @. dY.ρq_vap += fcc(aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ), Y.ρq_vap)
+
+    return dY
+end
 @inline function advection_tendency!(::Union{CO.NoPrecipitation, CO.Precipitation0M}, dY, Y, aux, t) end
 @inline function advection_tendency!(::CO.Precipitation1M, dY, Y, aux, t)
     FT = eltype(Y.ρq_tot)
@@ -390,6 +409,183 @@ end
             Y.moments.:($$i),
         )
     end
+
+    return dY
+end
+
+@inline function advection_tendency!(::CO.PrecipitationP3, dY, Y, aux, t)
+    FT = eltype(Y.ρq_tot)
+    # TODO - flux magnitude at top should agree
+    # with ρ * q instead of being only based on q
+
+    # P3 advection (introducing particles through boundary):
+    # TODO - change run_KiD_simulation so that temp. variables
+    # (_q_flux, _N_flux, etc) are not hard coded in the advection tendency
+
+    # update aux with state variables
+    (; ρ) = aux.thermo_variables
+    (; ρq_tot, ρq_liq, ρq_rai, ρq_ice, ρq_rim, ρq_liqonice, N_ice, N_rai, N_aer, N_liq, B_rim, ρq_vap, q_rai) =
+        aux.microph_variables
+    @. ρq_ice = Y.ρq_ice
+    @. ρq_rim = Y.ρq_rim
+    @. ρq_liqonice = Y.ρq_liqonice
+    @. N_ice = Y.N_ice
+    @. B_rim = Y.B_rim
+
+    # choose flux characteristics
+    (; ice_start, _magnitude, _q_flux, _N_flux, _F_rim, _F_liq, _ρ_r_init) = aux.p3_boundary_condition
+    # if we have initial ice signal then do not introduce boundary flux
+    if ice_start
+        _magnitude = FT(0)
+    end
+
+    If = CC.Operators.InterpolateC2F()
+
+    # define divergence operators with different boundary conditions
+    # for each state variable
+    ∂q_ice = CC.Operators.DivergenceF2C(
+        bottom = CC.Operators.Extrapolate(),
+        top = CC.Operators.SetValue(CC.Geometry.WVector(_magnitude * _q_flux)),
+    )
+    ∂q_rim = CC.Operators.DivergenceF2C(
+        bottom = CC.Operators.Extrapolate(),
+        top = CC.Operators.SetValue(CC.Geometry.WVector(_magnitude * _F_rim * (1 - _F_liq) * _q_flux)),
+    )
+    ∂q_liqonice = CC.Operators.DivergenceF2C(
+        bottom = CC.Operators.Extrapolate(),
+        top = CC.Operators.SetValue(CC.Geometry.WVector(_magnitude * _F_liq * _q_flux)),
+    )
+    ∂B_rim = CC.Operators.DivergenceF2C(
+        bottom = CC.Operators.Extrapolate(),
+        top = CC.Operators.SetValue(CC.Geometry.WVector(_magnitude * _F_rim * (1 - _F_liq) * _q_flux / _ρ_r_init)),
+    )
+    ∂N_ice = CC.Operators.DivergenceF2C(
+        bottom = CC.Operators.Extrapolate(),
+        top = CC.Operators.SetValue(CC.Geometry.WVector(_magnitude * _N_flux)),
+    )
+
+    # apply divergence
+    @. dY.ρq_ice += ∂q_ice(
+        FT(-1) * (aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) +
+        (CC.Geometry.WVector(If(aux.velocities.term_vel_ice))) * If(Y.ρq_ice),
+    )
+    @. dY.ρq_rim += ∂q_rim(
+        FT(-1) * (aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) +
+        (CC.Geometry.WVector(If(aux.velocities.term_vel_ice))) * If(Y.ρq_rim),
+    )
+    @. dY.B_rim += ∂B_rim(
+        FT(-1) * (aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) +
+        (CC.Geometry.WVector(If(aux.velocities.term_vel_ice))) * If(Y.B_rim),
+    )
+    @. dY.ρq_liqonice += ∂q_liqonice(
+        FT(-1) * (aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) +
+        (CC.Geometry.WVector(If(aux.velocities.term_vel_ice))) * If(Y.ρq_liqonice),
+    )
+    @. dY.N_ice += ∂N_ice(
+        FT(-1) * (aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) +
+        (CC.Geometry.WVector(If(aux.velocities.term_vel_N_ice))) * If(Y.N_ice),
+    )
+    fcc = CC.Operators.FluxCorrectionC2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
+
+    # apply flux correction
+    @. dY.ρq_ice += fcc(
+        (aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) +
+        (CC.Geometry.WVector(If(aux.velocities.term_vel_ice) * FT(-1))),
+        Y.ρq_ice,
+    )
+    @. dY.ρq_rim += fcc(
+        (aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) +
+        (CC.Geometry.WVector(If(aux.velocities.term_vel_ice) * FT(-1))),
+        Y.ρq_rim,
+    )
+    @. dY.ρq_liqonice += fcc(
+        (aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) +
+        (CC.Geometry.WVector(If(aux.velocities.term_vel_ice) * FT(-1))),
+        Y.ρq_liqonice,
+    )
+    @. dY.B_rim += fcc(
+        (aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) +
+        (CC.Geometry.WVector(If(aux.velocities.term_vel_ice) * FT(-1))),
+        Y.B_rim,
+    )
+    @. dY.N_ice += fcc(
+        (aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) +
+        (CC.Geometry.WVector(If(aux.velocities.term_vel_N_ice) * FT(-1))),
+        Y.N_ice,
+    )
+
+    # 2M rain advection (zero boundary flux):
+
+    @. ρq_rai = Y.ρq_rai
+    @. ρq_liq = Y.ρq_liq
+    @. N_rai = Y.N_rai
+    @. N_liq = Y.N_liq
+    @. N_aer = Y.N_aer
+
+    ∂ = CC.Operators.DivergenceF2C(
+        bottom = CC.Operators.Extrapolate(),
+        top = CC.Operators.SetValue(CC.Geometry.WVector(0.0)),
+    )
+    ∂ₐ = CC.Operators.DivergenceF2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
+
+    @. dY.N_aer += -∂ₐ((aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) * If(Y.N_aer))
+    @. dY.N_liq += -∂((aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) * If(Y.N_liq))
+
+    @. dY.N_rai +=
+        -∂(
+            (
+                aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ) +
+                CC.Geometry.WVector(If(aux.velocities.term_vel_N_rai) * FT(-1))
+            ) * If(Y.N_rai),
+        )
+    @. dY.q_rai +=
+        -∂(
+            (
+                aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ) +
+                CC.Geometry.WVector(If(aux.velocities.term_vel_rai) * FT(-1))
+            ) * If(Y.ρq_rai),
+        )
+
+    @. dY.N_aer += fcc((aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)), Y.N_aer)
+    @. dY.N_liq += fcc((aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)), Y.N_liq)
+
+    @. dY.N_rai += fcc(
+        (
+            aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ) +
+            CC.Geometry.WVector(If(aux.velocities.term_vel_N_rai) * FT(-1))
+        ),
+        Y.N_rai,
+    )
+    @. dY.ρq_rai += fcc(
+        (
+            aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ) +
+            CC.Geometry.WVector(If(aux.velocities.term_vel_rai) * FT(-1))
+        ),
+        Y.ρq_rai,
+    )
+
+    # advecting q_tot:
+
+    @. ρq_vap = Y.ρq_vap
+    @. ρq_tot = ρq_ice + ρq_rai + ρq_vap + ρq_liq
+
+    ∂q_tot = CC.Operators.DivergenceF2C(
+        bottom = CC.Operators.Extrapolate(),
+        top = CC.Operators.SetValue(CC.Geometry.WVector(_magnitude * _q_flux)),
+    )
+
+    @. dY.ρq_tot += ∂q_tot(
+        FT(-1) * (aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) +
+        (CC.Geometry.WVector(If(aux.velocities.term_vel_ice))) * If(Y.ρq_ice) +
+        CC.Geometry.WVector(If(aux.velocities.term_vel_rai)) * If(ρq_rai),
+    )
+
+    @. dY.ρq_tot += fcc(
+        (aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) +
+        (CC.Geometry.WVector(If(aux.velocities.term_vel_ice) * FT(-1))) +
+        CC.Geometry.WVector(If(aux.velocities.term_vel_rai) * FT(-1)),
+        Y.ρq_tot,
+    )
 
     return dY
 end

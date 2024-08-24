@@ -8,6 +8,8 @@ function get_moisture_type(moisture_choice::String, toml_dict)
         moisture = NonEquilibriumMoisture(CMP.CloudLiquid(toml_dict), CMP.CloudIce(toml_dict))
     elseif moisture_choice == "CloudyMoisture"
         moisture = CloudyMoisture()
+    elseif moisture_choice == "MoistureP3"
+        moisture = MoistureP3()
     else
         error("Invalid moisture choice: $moisture_choice")
     end
@@ -22,6 +24,7 @@ function get_precipitation_type(
     toml_dict;
     rain_formation_choice::Union{Nothing, String} = nothing,
     sedimentation_choice::Union{Nothing, String} = nothing,
+    boundary::Union{Nothing, NamedTuple} = nothing,
 )
     if precipitation_choice == "NoPrecipitation"
         precip = NoPrecipitation()
@@ -77,6 +80,12 @@ function get_precipitation_type(
         end
     elseif precipitation_choice == "CloudyPrecip"
         precip = CloudyPrecip()
+    elseif precipitation_choice == "PrecipitationP3"
+        FT = Float64
+        p3_params = CMP.ParametersP3(FT)
+        Chen2022 = CMP.Chen2022VelType(FT)
+        sb2006 = CMP.SB2006(toml_dict)
+        precip = PrecipitationP3(p3_params, Chen2022, sb2006, boundary)
     else
         error("Invalid precipitation choice: $precipitation_choice")
     end
