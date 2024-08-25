@@ -201,6 +201,7 @@ end
         @. x = ifelse(isnan(x), FT(0), x)
     end
     @. ρ_r = ifelse(isnan(ρ_r), FT(100), ρ_r)
+
     p3 = ps.p3_params
     Chen2022 = ps.Chen2022
 
@@ -688,8 +689,6 @@ end
             -1 * _F_rim * dLdt / _ρ_rim,
         )
     end
-
-
 end
 
 # helper function for precomputing aux sources for cloudy
