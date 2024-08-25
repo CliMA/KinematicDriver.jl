@@ -657,13 +657,13 @@ end
         #   - source of ρq_liqonice = 0.7 * dLdt
         #   - source of ρq_rai = 0.3 * dLdt
         #   - sink of ρq_rim = _F_rim * dLdt
-        #   - change of ρq_ice = F_liq * (0.7 * dLdt) - (1 - F_liq) dLdt
+        #   - change of ρq_ice = -0.3 * dLdt
         #       (this is because currently the notation in KiD
         #           is such that ρq_ice = ρq_liqonice + ρq_rim
         #           + other ice -- different than current P3
         #           notation!!! And so the change of ρq_ice should
-        #           should be the source of ρq_liqonice minus the
-        #           melted mass)
+        #           should be the mass that's lost to rain
+        #           (solid ice that's melted into liquid is kept))
         #           
         #   - sink of B_rim = _F_rim * dLdt / _ρ_rim
         #     which is good since it should be
@@ -679,7 +679,7 @@ end
             0,
             0,
             0.3 * dLdt,
-            _F_liq * (0.7 * dLdt) - (1 - _F_liq) * dLdt,
+            -1 * (0.7 - _F_rim + (_F_rim + (0.3 - 0.7))) * dLdt,
             -1 * _F_rim * dLdt,
             0.7 * dLdt,
             0,

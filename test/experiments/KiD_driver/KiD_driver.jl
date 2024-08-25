@@ -14,7 +14,7 @@ bound = (;
     _magnitude = Float64(0.5),
     _q_flux = Float64(0.65e-4),
     _N_flux = Float64(40000),
-    _F_rim = Float64(0.5),
+    _F_rim = Float64(0.1),
     _F_liq = Float64(0.0),
     _ρ_r_init = Float64(900),
 )
