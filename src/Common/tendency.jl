@@ -579,18 +579,18 @@ end
 
     # helper type and wrapper to populate the tuple with sources
     precip_sources_eltype = @NamedTuple{
-            ρq_tot::FT,
-            ρq_liq::FT,
-            ρq_rai::FT,
-            ρq_ice::FT,
-            ρq_rim::FT,
-            ρq_liqonice::FT,
-            N_aer::FT,
-            N_liq::FT,
-            N_rai::FT,
-            N_ice::FT,
-            B_rim::FT,
-        }
+        ρq_tot::FT,
+        ρq_liq::FT,
+        ρq_rai::FT,
+        ρq_ice::FT,
+        ρq_rim::FT,
+        ρq_liqonice::FT,
+        N_aer::FT,
+        N_liq::FT,
+        N_rai::FT,
+        N_ice::FT,
+        B_rim::FT,
+    }
     to_sources(args...) = @. precip_sources_eltype(tuple(args...))
 
     # zero out the aux sources
@@ -613,8 +613,40 @@ end
         # dNdt = limit.(N_ice, dt, getfield.(melt_results, :dNdt))
 
 
-        @. dLdt = limit(ρq_ice, dt, CMP3.ice_melt(p3, vel.snow_ice, air_params, thermo_params, ρq_ice, N_ice, T, ρ, _F_rim, _ρ_rim, dt).dLdt)
-        @. dNdt = limit(N_ice, dt, CMP3.ice_melt(p3, vel.snow_ice, air_params, thermo_params, ρq_ice, N_ice, T, ρ, _F_rim, _ρ_rim, dt).dNdt)
+        @. dLdt = limit(
+            ρq_ice,
+            dt,
+            CMP3.ice_melt(
+                p3,
+                vel.snow_ice,
+                air_params,
+                thermo_params,
+                (ρq_ice - ρq_liqonice),
+                N_ice,
+                T,
+                ρ,
+                _F_rim,
+                _ρ_rim,
+                dt,
+            ).dLdt,
+        )
+        @. dNdt = limit(
+            N_ice,
+            dt,
+            CMP3.ice_melt(
+                p3,
+                vel.snow_ice,
+                air_params,
+                thermo_params,
+                (ρq_ice - ρq_liqonice),
+                N_ice,
+                T,
+                ρ,
+                _F_rim,
+                _ρ_rim,
+                dt,
+            ).dNdt,
+        )
         # TODO - add in CM.jl what portion of melted ice
         # is a source for ρq_liqonice and what portion goes to ρq_rai.
         # TODO - also, calculate somehow what portion of the melted ice
@@ -624,11 +656,14 @@ end
         #   - source of ρq_liqonice = 0.7 * dLdt
         #   - source of ρq_rai = 0.3 * dLdt
         #   - sink of ρq_rim = _F_rim * dLdt
-        #   - sink of ρq_ice = (1 - _F_rim) * (1 - _F_liq) * dLdt
+        #   - change of ρq_ice = F_liq * (0.7 * dLdt) - (1 - F_liq) dLdt
         #       (this is because currently the notation in KiD
         #           is such that ρq_ice = ρq_liqonice + ρq_rim
         #           + other ice -- different than current P3
-        #           notation!!!)
+        #           notation!!! And so the change of ρq_ice should
+        #           should be the source of ρq_liqonice minus the
+        #           melted mass)
+        #           
         #   - sink of B_rim = _F_rim * dLdt / _ρ_rim
         #     which is good since it should be
         #                   = [sink of L_rim] / _ρ_rim
@@ -643,14 +678,14 @@ end
             0,
             0,
             0.3 * dLdt,
-            -1 * (1 - _F_rim) * (1 - _F_liq) * dLdt,
+            _F_liq * (0.7 * dLdt) - (1 - _F_liq) * dLdt,
             -1 * _F_rim * dLdt,
             0.7 * dLdt,
             0,
             0,
             0.3 * dNdt,
             -0.3 * dNdt,
-            _F_rim * dLdt / _ρ_rim,
+            -1 * _F_rim * dLdt / _ρ_rim,
         )
     end
 
