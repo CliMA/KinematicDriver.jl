@@ -329,6 +329,10 @@ function p3_initial_condition(
     # use approximate temperature values from
     # sounding: kin1d/soundings/Tsfc2.txt
     # (path in p3 fortran github repo)
+    # although I think it could also be grabbed from
+    # this website: https://weather.uwyo.edu/upperair/sounding.html
+    # temperature is a constant gradient with a melting layer at 500 m,
+    # but of course that could easily be changed
     T::FT = -0.004 * (z - 500) + 273.15 # temperature
     p::FT = 990 - (0.1 * z) # pressure
     _q = TD.PhasePartition(q_tot, q_liq, q_ice)

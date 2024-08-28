@@ -202,6 +202,18 @@ function initialise_aux(
             q_vap = ip.q_vap,
             ρq_vap = ip.ρq_vap,
         )
+        p3_predicted_eltype = @NamedTuple{
+            F_rim::FT,
+            ρ_rim::FT,
+            F_liq::FT,
+        }
+        p3_predicted = @. p3_predicted_eltype(
+            tuple(
+                copy(ip.ρq_rim / (ip.ρq_ice - ip.ρq_liqonice)),
+                copy(ip.ρq_rim / (ip.ρq_ice - ip.ρq_liqonice) / ip.B_rim),
+                copy(ip.ρq_liqonice / ip.ρq_ice),
+            ),
+        )
         velocities = (;
             term_vel_rai = copy(ip.zero),
             term_vel_ice = copy(ip.zero),
@@ -299,7 +311,7 @@ function initialise_aux(
     if precip isa CloudyPrecip
         aux = merge(aux, (; cloudy_params, cloudy_variables))
     elseif precip isa PrecipitationP3
-        aux = merge(aux, (; p3_boundary_condition))
+        aux = merge(aux, (; p3_boundary_condition, p3_predicted))
     end
 
     return aux
