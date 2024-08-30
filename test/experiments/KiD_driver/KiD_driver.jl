@@ -12,10 +12,10 @@ include("parse_commandline.jl")
 bound = (;
     ice_start = false,
     _magnitude = Float64(0.5),
-    _q_flux = Float64(0.65e-4),
+    _q_flux = Float64(0.65e-3),
     _N_flux = Float64(1e5),
-    _F_rim = Float64(0.1),
-    _F_liq = Float64(0.0),
+    _F_rim = Float64(0.8),
+    _F_liq = Float64(0.5),
     _ρ_r_init = Float64(900),
 )
 

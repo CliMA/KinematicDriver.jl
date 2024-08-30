@@ -563,11 +563,11 @@ end
     (; thermo_params, air_params, common_params) = aux
     FT = eltype(thermo_params)
     (; ts, ρ, T) = aux.thermo_variables
-    (; ρq_liq, ρq_ice, ρq_rim, ρq_liqonice, N_ice, B_rim) = aux.microph_variables
+    (; ρq_liq, ρq_ice, ρq_rim, ρq_liqonice, N_ice, B_rim, ρq_rai, N_rai) = aux.microph_variables
     (; F_rim, ρ_rim, F_liq) = aux.p3_predicted
 
     dLdt_p3 = aux.scratch.tmp
-    dNdt_ice = aux.scratch.tmp2
+    dNdt = aux.scratch.tmp2
     dLdt_rim = aux.scratch.tmp3
     dLdt_liq = aux.scratch.tmp4
     ddt_B_rim = aux.scratch.tmp5
@@ -575,6 +575,8 @@ end
     p3 = ps.p3_params
     type = typeof(p3)
     vel = ps.Chen2022
+    sb2006 = ps.sb2006
+    aps = CMP.AirProperties(FT)
 
     # helper type and wrapper to populate the tuple with sources
     precip_sources_eltype = @NamedTuple{
@@ -604,7 +606,10 @@ end
     @. ρ_rim = ρ_r(ρq_rim, B_rim)
     @. F_liq = F_l(ρq_ice, ρq_liqonice)
 
-    if Bool(common_params.precip_sources)
+    # melting: turned off for testing shedding
+    # if Bool(common_params.precip_sources)
+    melting = false
+    if melting # melting works with corresponding CM branch!
 
         @. dLdt_p3 = limit(
             ρq_ice,
@@ -660,7 +665,7 @@ end
                 dt,
             ).dLdt_liq,
         )
-        @. dNdt_ice = limit(
+        @. dNdt = limit(
             N_ice,
             dt,
             CMP3.ice_melt(
@@ -705,9 +710,114 @@ end
             dLdt_liq, # source of L_liq
             0,
             0,
-            dNdt_ice, # source of rain number
-            -dNdt_ice, # sink of ice number
+            dNdt, # source of rain number
+            -dNdt, # sink of ice number
             -ddt_B_rim, # sink of B_rim
+        )
+    end
+    shedding = false
+    if shedding # shedding works with corresponding CM branch!
+        @. dLdt_p3 = limit(
+            ρq_ice,
+            dt,
+            CMP3.ice_shed(
+                p3,
+                ρq_ice,
+                N_ice,
+                F_rim,
+                ρ_rim,
+                F_liq,
+                dt,
+            ).dLdt_p3_tot,
+        )
+        @. dNdt = limit(
+            N_ice,
+            dt,
+            CMP3.ice_shed(
+                p3,
+                ρq_ice,
+                N_ice,
+                F_rim,
+                ρ_rim,
+                F_liq,
+                dt,
+            ).dNdt_rai,
+        )
+        @. aux.precip_sources += to_sources(
+            0,
+            0,
+            dLdt_p3, # source of rain = sink of p3 ice
+            -dLdt_p3, # sink of p3 ice
+            0, # sink of rime
+            -dLdt_p3, # sink of L_liq
+            0,
+            0,
+            dNdt, # source of rain number
+            0, # sink of ice number
+            0, # sink of B_rim
+        )
+    end
+    collisions = true
+    if collisions # with rain - stable for corresponding CM branch (collision kernel)
+        # but haven't really been able to test much at all
+        # TODO - use ρ or ρ_dry?
+        @. dLdt_p3 = limit(
+            ρq_rai,
+            dt,
+            CMP3.ice_collisions(
+                sb2006.pdf_r,
+                p3,
+                vel,
+                aps,
+                thermo_params,
+                ts,
+                ρq_ice,
+                N_ice,
+                ρq_rai,
+                N_rai,
+                ρ,
+                F_rim,
+                ρ_rim,
+                F_liq,
+                T,
+                dt,
+            ).dLdt_p3_tot,
+        )
+        @. dNdt = limit(
+            N_rai,
+            dt,
+            CMP3.ice_collisions(
+                sb2006.pdf_r,
+                p3,
+                vel,
+                aps,
+                thermo_params,
+                ts,
+                ρq_ice,
+                N_ice,
+                ρq_rai,
+                N_rai,
+                ρ,
+                F_rim,
+                ρ_rim,
+                F_liq,
+                T,
+                dt,
+            ).dNdt_rai,
+        )
+        @. dLdt_p3 = ifelse(isnan(dLdt_p3), FT(0), dLdt_p3)
+        @. aux.precip_sources += to_sources(
+            0,
+            0,
+            -dLdt_p3, # sink of rain = source of p3 ice
+            dLdt_p3, # source of p3 ice
+            dLdt_p3, # source of rime
+            dLdt_p3, # source of L_liq
+            0,
+            0,
+            -dNdt, # sink of rain number
+            0, # sink of ice number
+            dLdt_p3 / FT(900), # source of B_rim
         )
     end
 end
@@ -873,6 +983,8 @@ end
     @. dY.B_rim += aux.precip_sources.B_rim
     @. dY.N_ice += aux.precip_sources.N_ice
     @. dY.N_rai += aux.precip_sources.N_rai
+    @. dY.N_aer += aux.precip_sources.N_aer
+    @. dY.N_liq += aux.precip_sources.N_liq
 
     return dY
 end
