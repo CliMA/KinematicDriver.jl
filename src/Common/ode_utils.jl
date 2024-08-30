@@ -141,6 +141,8 @@ function initialise_aux(
         tmp = similar(ip.q_tot),
         tmp2 = similar(ip.q_tot),
         tmp3 = similar(ip.q_tot),
+        tmp4 = similar(ip.q_tot),
+        tmp5 = similar(ip.q_tot),
         tmp_surface = similar(CC.Fields.level(ip.q_tot, 1), Tuple{FT, FT}),
     )
 
@@ -200,6 +202,18 @@ function initialise_aux(
             q_vap = ip.q_vap,
             ρq_vap = ip.ρq_vap,
         )
+        p3_predicted_eltype = @NamedTuple{
+            F_rim::FT,
+            ρ_rim::FT,
+            F_liq::FT,
+        }
+        p3_predicted = @. p3_predicted_eltype(
+            tuple(
+                copy(ip.ρq_rim / (ip.ρq_ice - ip.ρq_liqonice)),
+                copy(ip.ρq_rim / (ip.ρq_ice - ip.ρq_liqonice) / ip.B_rim),
+                copy(ip.ρq_liqonice / ip.ρq_ice),
+            ),
+        )
         velocities = (;
             term_vel_rai = copy(ip.zero),
             term_vel_ice = copy(ip.zero),
@@ -207,12 +221,12 @@ function initialise_aux(
             term_vel_N_ice = copy(ip.zero),
         )
         precip_sources_eltype = @NamedTuple{
-            q_tot::FT,
-            q_liq::FT,
-            q_rai::FT,
-            q_ice::FT,
-            q_rim::FT,
-            q_liqonice::FT,
+            ρq_tot::FT,
+            ρq_liq::FT,
+            ρq_rai::FT,
+            ρq_ice::FT,
+            ρq_rim::FT,
+            ρq_liqonice::FT,
             N_aer::FT,
             N_liq::FT,
             N_rai::FT,
@@ -297,7 +311,7 @@ function initialise_aux(
     if precip isa CloudyPrecip
         aux = merge(aux, (; cloudy_params, cloudy_variables))
     elseif precip isa PrecipitationP3
-        aux = merge(aux, (; p3_boundary_condition))
+        aux = merge(aux, (; p3_boundary_condition, p3_predicted))
     end
 
     return aux
