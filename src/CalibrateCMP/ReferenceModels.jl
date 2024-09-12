@@ -41,11 +41,12 @@ function get_obs_matrix(
     for (i, case) in enumerate(cases)
         _dir::String = case.dir
 
-        if "t_cal" in collect(keys(case))
-            times = case.t_cal
+        if :t_cal in collect(keys(case))
+            _times = collect(case.t_cal)
+        else
+            _times = times
         end
-        _data_matrix_single_case::Matrix{FT} =
-                get_obs_matrix(_dir, variables, heights, times; apply_filter = apply_filter) 
+        _data_matrix_single_case = get_obs_matrix(_dir, variables, heights, _times; apply_filter = apply_filter)
 
         if i == 1
             _data_matrix = _data_matrix_single_case

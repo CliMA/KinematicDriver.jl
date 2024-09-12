@@ -43,14 +43,14 @@ function override_toml_dict(
         "cloud_liquid_water_specific_humidity_autoconversion_threshold" => Dict("value" => 0.0001, "type" => "float"),
         "prescribed_flow_w1" => Dict("value" => 3.0, "type" => "float"),
         "prescribed_flow_t1" => Dict("value" => t1, "type" => "float"),
-        "surface_pressure" => Dict("value" => 100700.0, "type" => "float"),
+        "surface_pressure" => Dict("value" => 99000.0, "type" => "float"),
         "precipitation_sources_flag" => Dict("value" => precip_sources, "type" => "bool"),
         "precipitation_sinks_flag" => Dict("value" => precip_sinks, "type" => "bool"),
         "qtot_flux_correction_flag" => Dict("value" => qtot_flux_correction, "type" => "bool"),
-        "prescribed_Nd" => Dict("value" => 50 * 1e6, "type" => "float"),
+        "prescribed_Nd" => Dict("value" => 100 * 1e6, "type" => "float"),
         "open_system_activation" => Dict("value" => true, "type" => "bool"),
-        "r_dry" => Dict("value" => 0.06 * 1e-6, "type" => "float"),
-        "std_dry" => Dict("value" => 1.8, "type" => "float"),
+        "r_dry" => Dict("value" => 0.04 * 1e-6, "type" => "float"),
+        "std_dry" => Dict("value" => 1.1, "type" => "float"),
         "kappa" => Dict("value" => 0.9, "type" => "float"),
         "init_cond_z0" => Dict("value" => z_0, "type" => "float"),
         "init_cond_z1" => Dict("value" => z_1, "type" => "float"),
@@ -63,10 +63,10 @@ function override_toml_dict(
         "init_cond_theta2" => Dict("value" => tht_2, "type" => "float"),
         "SB2006_raindrops_min_mass" => Dict("value" => 6.54e-11, "type" => "float"),
         # NEW!!!!
-        "SB2006_collection_kernel_coeff_krr" => Dict("value" => 4.97, "type" => "float"),
-        "SB2006_collection_kernel_coeff_kcc" => Dict("value" => 4.82e9, "type" => "float"),
-        "SB2006_collection_kernel_coeff_kcr" => Dict("value" => 5.019, "type" => "float"),
-        "SB2006_raindrops_terminal_velocity_coeff_aR" => Dict("value" => 8.402, "type" => "float"),
+        "SB2006_collection_kernel_coeff_krr" => Dict("value" => 5.927, "type" => "float"),
+        "SB2006_collection_kernel_coeff_kcc" => Dict("value" => 4.769e9, "type" => "float"),
+        "SB2006_collection_kernel_coeff_kcr" => Dict("value" => 5.584, "type" => "float"),
+        "SB2006_raindrops_terminal_velocity_coeff_aR" => Dict("value" => 7.99, "type" => "float"),
         "alpha" => Dict("value" => 1.0, "type" => "float")
     )
     toml_dict = CP.create_toml_dict(FT; override_file)

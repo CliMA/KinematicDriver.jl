@@ -12,7 +12,7 @@ Base.@kwdef struct ReferenceStatistics{FT <: Real}
     centered::Bool
     case_numbers::Vector{Int}
     n_heights::Vector{Int}
-    n_times::Int
+    n_times::Vector{Int}
 
 
     function ReferenceStatistics(
@@ -28,7 +28,7 @@ Base.@kwdef struct ReferenceStatistics{FT <: Real}
         centered::Bool,
         case_numbers::Vector{Int},
         n_heights::Vector{Int},
-        n_times::Int,
+        n_times::Vector{Int},
     )
         return new{FT}(
             y,
@@ -59,7 +59,7 @@ Base.@kwdef struct ReferenceStatistics{FT <: Real}
         @assert sum(n_heights) * n_times == size(obs)[1]
         case_numbers = [case_number]
         _n_cases = 1
-        (var_mean_max, var_std_max) = find_mean_and_std_maximum(obs, _n_cases, n_heights, n_times)
+        (var_mean_max, var_std_max) = find_mean_and_std_maximum(obs, _n_cases, n_heights, [n_times])
         if stats_config["normalization"] == "mean_normalized"
             y_norm = var_mean_max
             centered = false
@@ -73,7 +73,7 @@ Base.@kwdef struct ReferenceStatistics{FT <: Real}
         weights =
             "weights" in keys(stats_config) ? reshape(stats_config["weights"], 1, _n_variables) : ones(1, _n_variables)
         y_norm = y_norm ./ weights
-        obs_normalized = normalize_obs(obs, y_norm, _n_cases, n_heights, n_times, centered = centered)
+        obs_normalized = normalize_obs(obs, y_norm, _n_cases, n_heights, [n_times], centered = centered)
         obs_mean = mean(obs, dims = 2)[:]
         y_full = mean(obs_normalized, dims = 2)[:]
         Γ_full = cov(obs_normalized, dims = 2)
@@ -109,25 +109,30 @@ Base.@kwdef struct ReferenceStatistics{FT <: Real}
             centered,
             case_numbers,
             n_heights,
-            n_times,
+            [n_times],
         )
     end
 
 end
 
-function find_mean_and_std_maximum(y::Matrix{FT}, n_cases::Int, n_heights::Vector{Int}, n_times::Int) where {FT <: Real}
+function find_mean_and_std_maximum(
+    y::Matrix{FT},
+    n_cases::Int,
+    n_heights::Vector{Int},
+    n_times::Vector{Int},
+) where {FT <: Real}
 
     _n_variables = length(n_heights)
     _n_single_case_sim = sum(n_heights) * n_times
-    @assert size(y)[1] == (n_cases * _n_single_case_sim)
+    @assert size(y)[1] == sum(_n_single_case_sim)
 
     var_mean_max = ones(n_cases, _n_variables)
     var_std_max = ones(n_cases, _n_variables)
     for i in 1:n_cases
-        _y_single_case = y[((i - 1) * _n_single_case_sim + 1):(i * _n_single_case_sim), :]
+        _y_single_case = y[(sum(_n_single_case_sim[1:(i - 1)]) + 1):sum(_n_single_case_sim[1:i]), :]
 
         _y_mean_vector_single_case = mean(_y_single_case, dims = 2)
-        _y_mean_matrix::Matrix{FT} = reshape(_y_mean_vector_single_case, sum(n_heights), n_times)
+        _y_mean_matrix::Matrix{FT} = reshape(_y_mean_vector_single_case, sum(n_heights), n_times[i])
         _var_mean_max = [
             maximum(abs.(_y_mean_matrix[(sum(n_heights[1:(j - 1)]) + 1):sum(n_heights[1:j]), :])) for
             j in 1:_n_variables
@@ -136,7 +141,7 @@ function find_mean_and_std_maximum(y::Matrix{FT}, n_cases::Int, n_heights::Vecto
         var_mean_max[i, :] = _var_mean_max
 
         _y_std_vector_single_case = std(_y_single_case, dims = 2)
-        _y_std_matrix::Matrix{FT} = reshape(_y_std_vector_single_case, sum(n_heights), n_times)
+        _y_std_matrix::Matrix{FT} = reshape(_y_std_vector_single_case, sum(n_heights), n_times[i])
         _var_std_max = [
             maximum(abs.(_y_std_matrix[(sum(n_heights[1:(j - 1)]) + 1):sum(n_heights[1:j]), :])) for j in 1:_n_variables
         ]
@@ -152,13 +157,13 @@ function normalize_obs(
     ynorm::Matrix{FT},
     n_cases::Int,
     n_heights::Vector{Int},
-    n_times::Int;
+    n_times::Vector{Int};
     centered::Bool = true,
 ) where {FT <: Real}
 
     _n_variables = length(n_heights)
     _n_single_case_sim = sum(n_heights) * n_times
-    @assert size(y)[1] == (n_cases * _n_single_case_sim)
+    @assert size(y)[1] == sum(_n_single_case_sim)
     @assert size(ynorm) == (n_cases, _n_variables)
 
     _y_normalized = centered ? y .- mean(y, dims = 2) : copy(y)
@@ -169,8 +174,8 @@ function normalize_obs(
         for j in 1:_n_variables
             _norm_vec_extended_single_time[(sum(n_heights[1:(j - 1)]) + 1):sum(n_heights[1:j])] .= _norm_vec[j]
         end
-        _norm_vec_extended = reshape(ones(sum(n_heights), n_times) .* _norm_vec_extended_single_time, :, 1)
-        _row_indeces = ((i - 1) * _n_single_case_sim + 1):(i * _n_single_case_sim)
+        _norm_vec_extended = reshape(ones(sum(n_heights), n_times[i]) .* _norm_vec_extended_single_time, :, 1)
+        _row_indeces = (sum(_n_single_case_sim[1:(i - 1)]) + 1):sum(_n_single_case_sim[1:i])
         _y_normalized[_row_indeces, :] = _y_normalized[_row_indeces, :] ./ _norm_vec_extended
     end
 
@@ -198,8 +203,8 @@ function normalize_sim(
         for j in 1:_n_variables
             _norm_vec_extended_single_time[(sum(_n_heights[1:(j - 1)]) + 1):sum(_n_heights[1:j])] .= _norm_vec[j]
         end
-        _norm_vec_extended = reshape(ones(sum(_n_heights), _n_times) .* _norm_vec_extended_single_time, :, 1)
-        _indeces = ((i - 1) * _n_single_case_sim + 1):(i * _n_single_case_sim)
+        _norm_vec_extended = reshape(ones(sum(_n_heights), _n_times[i]) .* _norm_vec_extended_single_time, :, 1)
+        _indeces = (sum(_n_single_case_sim[1:(i - 1)]) + 1):sum(_n_single_case_sim[1:i])
         _sim_vec_normalized[_indeces] = _sim_vec_normalized[_indeces] ./ _norm_vec_extended
     end
 
@@ -227,8 +232,8 @@ function unnormalize_sim(
         for j in 1:_n_variables
             _norm_vec_extended_single_time[(sum(_n_heights[1:(j - 1)]) + 1):sum(_n_heights[1:j])] .= _norm_vec[j]
         end
-        _norm_vec_extended = reshape(ones(sum(_n_heights), _n_times) .* _norm_vec_extended_single_time, :, 1)
-        _indeces = ((i - 1) * _n_single_case_sim + 1):(i * _n_single_case_sim)
+        _norm_vec_extended = reshape(ones(sum(_n_heights), _n_times[i]) .* _norm_vec_extended_single_time, :, 1)
+        _indeces = (sum(_n_single_case_sim[1:(i - 1)]) + 1):sum(_n_single_case_sim[1:i])
         _sim_vec_unnormalized[_indeces] = _sim_vec_unnormalized[_indeces] .* _norm_vec_extended
     end
     if ref_stats.centered
@@ -270,19 +275,19 @@ function make_ref_stats_list(
     stats_config::Dict,
     n_cases::Int,
     n_heights::Vector{Int},
-    n_times::Int,
+    n_times::Vector{Int},
 ) where {FT <: Real}
 
     _n_single_case_sim = sum(n_heights) * n_times
-    @assert n_cases * _n_single_case_sim == size(obs)[1]
+    @assert sum(_n_single_case_sim) == size(obs)[1]
     ref_stats_list = ReferenceStatistics[]
     for i in 1:n_cases
-        _single_case_row_indices = ((i - 1) * _n_single_case_sim + 1):(i * _n_single_case_sim)
+        _single_case_row_indices = (sum(_n_single_case_sim[1:(i - 1)]) + 1):sum(_n_single_case_sim[1:i])
         _obs_single_case = obs[_single_case_row_indices, :]
-
+        
         ref_stats_list = [
             ref_stats_list
-            ReferenceStatistics(_obs_single_case, stats_config, i, n_heights, n_times)
+            ReferenceStatistics(_obs_single_case, stats_config, i, n_heights, n_times[i])
         ]
     end
     return ref_stats_list
@@ -308,7 +313,7 @@ function combine_ref_stats(ref_stats_list::Vector{ReferenceStatistics})
     for ref_stats in ref_stats_list[2:end]
         @assert centered == ref_stats.centered
         @assert n_heights == ref_stats.n_heights
-        @assert n_times == ref_stats.n_times
+        n_times = [n_times; ref_stats.n_times]
         case_numbers = [case_numbers; ref_stats.case_numbers]
         y_norm = [y_norm; ref_stats.y_norm]
         var_mean_max = [var_mean_max; ref_stats.var_mean_max]
