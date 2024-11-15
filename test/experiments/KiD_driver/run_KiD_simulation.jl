@@ -36,6 +36,11 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     if opts["open_system_activation"]
         output_folder = output_folder * "_OSA"
     end
+    if precipitation_choice == "PrecipitationP3"
+        p3_boundary_condition = opts["p3_boundary_condition"]
+    else
+        p3_boundary_condition = nothing
+    end
     path = joinpath(@__DIR__, output_folder)
     mkpath(path)
 
@@ -79,6 +84,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
         toml_dict;
         rain_formation_choice = rain_formation_choice,
         sedimentation_choice = sedimentation_choice,
+        boundary = p3_boundary_condition,
     )
 
     @info "Initialising"
@@ -104,6 +110,25 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
             coord -> CO.cloudy_initial_condition(
                 cloudy_pdists,
                 CO.initial_condition_1d(FT, common_params, kid_params, thermo_params, ρ_profile, coord.z),
+            ),
+            coord,
+        )
+    elseif precipitation_choice == "PrecipitationP3"
+        cloudy_params = nothing
+        (; ice_start, _q_flux, _N_flux, _F_rim, _F_liq, _ρ_r_init) = precip.p3_boundary_condition
+        init = map(
+            coord -> CO.p3_initial_condition(
+                FT,
+                kid_params,
+                thermo_params,
+                coord.z;
+                _q_init = _q_flux,
+                _N_init = _N_flux,
+                _F_rim = _F_rim,
+                _F_liq = _F_liq,
+                _ρ_r = _ρ_r_init,
+                z_top = FT(opts["z_max"]),
+                ice_start = ice_start,
             ),
             coord,
         )
@@ -166,12 +191,21 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
 
         z_centers = parent(CC.Fields.coordinate_field(space))
         plot_final_aux_profiles(z_centers, aux, precip, output = plot_folder)
-        plot_animation(string("experiments/KiD_driver/", output_folder, "/Output.nc"), output = plot_folder)
-        plot_timeheight(
-            string("experiments/KiD_driver/", output_folder, "/Output.nc"),
-            output = plot_folder,
-            mixed_phase = false,
-        )
+        if precip isa CO.PrecipitationP3
+            plot_animation_p3(z_centers, solver, aux, moisture, precip, K1D, plot_folder)
+            plot_timeheight_p3(
+                string("experiments/KiD_driver/", output_folder, "/Output.nc"),
+                precip,
+                output = plot_folder,
+            )
+        else
+            plot_animation(string("experiments/KiD_driver/", output_folder, "/Output.nc"), output = plot_folder)
+            plot_timeheight(
+                string("experiments/KiD_driver/", output_folder, "/Output.nc"),
+                output = plot_folder,
+                mixed_phase = false,
+            )
+        end
     end
 
     return

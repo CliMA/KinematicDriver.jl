@@ -47,7 +47,40 @@ end
     @. θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
     @. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
 end
+@inline function precompute_aux_thermo!(::MoistureP3, Y, aux)
+
+    FT = eltype(Y.ρq_liq)
+
+    (; thermo_params) = aux
+    (; ts, ρ, ρ_dry, p, T, θ_dry, θ_liq_ice) = aux.thermo_variables
+    (; ρq_liq, ρq_ice, ρq_rim, ρq_liqonice, ρq_vap, ρq_rai, q_tot, q_liq, q_ice, q_rim, q_liqonice, q_vap, q_rai) =
+        aux.microph_variables
+
+    @. ρ = ρ_dry + Y.ρq_tot
+    @. ρq_rim = Y.ρq_rim
+    @. ρq_ice = Y.ρq_ice
+    @. ρq_liqonice = Y.ρq_liqonice
+    @. ρq_liq = Y.ρq_liq
+    @. ρq_rai = Y.ρq_rai
+    @. ρq_vap = Y.ρq_vap
+
+    @. q_liq = q_(Y.ρq_liq, ρ)
+    @. q_ice = q_(Y.ρq_ice, ρ)
+    @. q_rim = q_(Y.ρq_rim, ρ)
+    @. q_liqonice = q_(Y.ρq_liqonice, ρ)
+    @. q_vap = q_(Y.ρq_vap, ρ)
+    @. q_rai = q_(Y.ρq_rai, ρ)
+    @. q_tot = q_liq + q_ice + q_rai + q_vap
+
+    @. ts = TD.PhaseNonEquil_ρTq(thermo_params, ρ, T, PP(q_tot, q_liq, q_ice))
+    @. p = TD.air_pressure(thermo_params, ts)
+    @. θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
+    @. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
+
+end
 @inline function precompute_aux_thermo!(::NonEquilibriumMoisture, Y, aux)
+
+    FT = eltype(Y.ρq_liq)
 
     (; thermo_params) = aux
     (; ts, ρ, ρ_dry, p, T, θ_dry, θ_liq_ice) = aux.thermo_variables
@@ -143,19 +176,53 @@ end
 end
 @inline function precompute_aux_precip!(ps::PrecipitationP3, Y, aux)
 
+    # update state variables
     FT = eltype(Y.ρq_rai)
-    (; ρ) = aux.thermo_variables
-    (; q_rai, q_ice, q_rim, B_rim, N_rai, N_ice, N_liq) = aux.microph_variables
+    (; ρ, ρ_dry) = aux.thermo_variables
+    (; ρq_ice, ρq_rim, N_ice, ρq_liqonice, B_rim) = aux.microph_variables
+    @. ρq_ice = Y.ρq_ice
+    @. ρq_rim = Y.ρq_rim
+    @. ρq_liqonice = Y.ρq_liqonice
+    @. N_ice = max(FT(0), Y.N_ice)
+    @. B_rim = max(FT(0), Y.B_rim)
+
+    # compute predicted quantities
+    ρ_r = aux.scratch.tmp
+    F_rim = aux.scratch.tmp2
+    F_liq = aux.scratch.tmp3
+    # prohibit ρ_r < 0
+    @. ρ_r = ifelse(B_rim < eps(FT), eps(FT), max(FT(0), ρq_rim / B_rim))
+    # keep F_r in range [0, 1)
+    @. F_rim =
+        ifelse((ρq_ice - ρq_liqonice) < eps(FT), FT(0), min(max(FT(0), ρq_rim / (ρq_ice - ρq_liqonice)), 1 - eps(FT)))
+    # prohibit F_liq < 0
+    @. F_liq = ifelse(Y.ρq_ice < eps(FT), FT(0), Y.ρq_liqonice / Y.ρq_ice)
+
+    p3 = ps.p3_params
+    Chen2022 = ps.Chen2022
+
+    (; term_vel_ice, term_vel_N_ice, term_vel_rai, term_vel_N_rai) = aux.velocities
+    use_aspect_ratio = true
+    @. term_vel_N_ice =
+        getindex(CMP3.ice_terminal_velocity(p3, Chen2022, ρq_ice, N_ice, ρ_r, F_rim, F_liq, ρ_dry, use_aspect_ratio), 1)
+    @. term_vel_ice =
+        getindex(CMP3.ice_terminal_velocity(p3, Chen2022, ρq_ice, N_ice, ρ_r, F_rim, F_liq, ρ_dry, use_aspect_ratio), 2)
+
+    # adding 2M rain below:
+
+    sb2006 = ps.sb2006
+
+    (; q_rai, q_liq, N_rai, N_liq) = aux.microph_variables
+    (; term_vel_rai, term_vel_N_rai) = aux.velocities
 
     @. q_rai = q_(Y.ρq_rai, ρ)
-    @. q_ice = q_(Y.ρq_ice, ρ)
-    @. q_rim = q_(Y.ρq_rim, ρ)
-    @. B_rim = q_(Y.ρq_rim, ρ)
+    @. q_liq = q_(Y.ρq_liq, ρ)
     @. N_rai = max(FT(0), Y.N_rai)
     @. N_liq = max(FT(0), Y.N_liq)
-    @. N_ice = max(FT(0), Y.N_ice)
 
-    # TODO...
+    @. term_vel_N_rai = getindex(CM2.rain_terminal_velocity(sb2006, Chen2022.rain, q_rai, ρ, N_rai), 1)
+    @. term_vel_rai = getindex(CM2.rain_terminal_velocity(sb2006, Chen2022.rain, q_rai, ρ, N_rai), 2)
+
 end
 function get_dists_moments(moments, NProgMoms::NTuple{ND, Int}) where {ND}
     FT = eltype(moments)
@@ -492,6 +559,7 @@ end
 end
 
 @inline function precompute_aux_precip_sources!(ps::PrecipitationP3, aux)
+    # TODO [P3]
     return nothing
 end
 

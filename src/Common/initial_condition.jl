@@ -281,3 +281,117 @@ function cloudy_initial_condition(pdists, ip, k = 1)
 
     return merge(ip, (; moments = moments, pdists = pdists, cloudy_moments_zero))
 end
+
+function p3_initial_condition(
+    ::Type{FT},
+    kid_params,
+    thermo_params,
+    z;
+    _q_init = FT(0),
+    _N_init = FT(0),
+    _F_rim = FT(0),
+    _F_liq = FT(0),
+    _ρ_r = FT(0),
+    z_top,
+    ice_start,
+    dry = false,
+) where {FT}
+
+    # initialize water vapor profile
+    # using same setup as initial_condition_1d
+    q_vap::FT = init_profile(FT, kid_params, thermo_params, z, dry = dry).qv
+
+    # if ice_start, start with small ice bump
+    # otherwise, introduce particles solely through
+    # the boundary in advection_tendency!()
+    _z_band = z_top * FT(0.2)
+    has_ice(z) = ifelse(ice_start, z > (z_top - _z_band), false)
+    ice_bump(χ, z) = χ * cos(z - (z_top - 0.5 * _z_band))
+
+    # P3 state variables (minus B_rim -- computed below)
+    # (initialized as kg/kg before converting to kg/m3)
+    q_ice::FT = has_ice(z) ? ice_bump(_q_init, z) : FT(0)
+    N_ice_kg::FT = has_ice(z) ? ice_bump(_N_init, z) : FT(0)
+    q_liqonice::FT = _F_liq * q_ice
+    q_rim::FT = _F_rim * (q_ice - q_liqonice)
+
+    # 2M warm rain state variables
+    q_liq::FT = FT(0)
+    N_liq::FT = FT(0)
+    q_rai::FT = FT(0)
+    N_rai::FT = FT(0)
+
+    # q_tot - single p3 category + 2M categories + vapor
+    q_tot::FT = q_ice + q_liq + q_rai + q_vap
+
+    # thermodynamics:
+    # for Case 1 of Cholette et al 2019 paper
+    # use approximate temperature values from
+    # sounding: kin1d/soundings/Tsfc2.txt
+    # (path in p3 fortran github repo)
+    T::FT = -0.004 * (z - 500) + 273.15 # temperature
+    p::FT = 990 - (0.1 * z) # pressure
+    _q = TD.PhasePartition(q_tot, q_liq, q_ice)
+    ρ::FT = TD.air_density(thermo_params, T, p, _q) # total density
+    ρ_dry::FT = TD.air_density(thermo_params, T, p)
+    ts = TD.PhaseNonEquil_ρTq(thermo_params, ρ, T, _q) # thermodynamic state
+
+    # P3 scheme uses L (kg/m3) = ρ * q
+    # so we compute ρq and pass that to P3
+    # also we convert N to (1/m3)
+    # since paper init values are given
+    # in (kg/kg), (1/kg)
+    ρq_tot::FT = ρ * q_tot
+    N_ice::FT = ρ * N_ice_kg
+    ρq_ice::FT = ρ * q_ice
+    ρq_rim::FT = ρ * q_rim
+    ρq_liqonice::FT = ρ * q_liqonice
+    ρq_rai::FT = ρ * q_rai
+    ρq_liq::FT = ρ * q_liq
+    ρq_vap::FT = ρ * q_vap
+
+    # also compute B_rim from L_rim, ρ_r
+    B_rim::FT = ρq_rim / _ρ_r
+
+
+    # unused quantities:
+    q_sno::FT = FT(0)
+    ρq_sno::FT = FT(0)
+    θ_liq_ice::FT = TD.liquid_ice_pottemp(thermo_params, ts)
+    N_aer::FT = FT(0)
+    θ_dry::FT = TD.dry_pottemp(thermo_params, T, ρ)
+
+    # zero:
+    zero::FT = FT(0)
+
+    return (;
+        ρ,
+        ρ_dry,
+        T,
+        p,
+        θ_liq_ice,
+        θ_dry,
+        ρq_tot,
+        ρq_liq,
+        ρq_ice,
+        ρq_rai,
+        ρq_rim,
+        ρq_sno,
+        ρq_vap,
+        ρq_liqonice,
+        q_tot,
+        q_liq,
+        q_ice,
+        q_rai,
+        q_sno,
+        q_rim,
+        q_liqonice,
+        q_vap,
+        B_rim,
+        N_liq,
+        N_ice,
+        N_rai,
+        N_aer,
+        zero,
+    )
+end

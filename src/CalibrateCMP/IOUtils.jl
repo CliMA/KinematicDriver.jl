@@ -206,8 +206,8 @@ function compare_model_and_obs_contours(
     for case_num in 1:n_cases
         _v_model = get_case_i_vec(G, case_num, n_single_case)
         _v_obs = get_case_i_vec(obs, case_num, n_single_case)
-        _fields_model = get_single_case_fields(_v_model, n_heights, n_times)
-        _fields_obs = get_single_case_fields(_v_obs, n_heights, n_times)
+        _fields_model = get_single_case_fields(_v_model, n_heights, n_times[case_num])
+        _fields_obs = get_single_case_fields(_v_obs, n_heights, n_times[case_num])
 
         p = Array{Plots.Plot}(undef, n_variables * 2)
 
@@ -360,9 +360,9 @@ function plot_box_results(
         _v_model = get_case_i_vec(G, case_num, n_single_case)
         _v_obs_mean = get_case_i_vec(obs_mean, case_num, n_single_case)
         _v_obs_std = get_case_i_vec(obs_std, case_num, n_single_case)
-        _fields_model = get_single_case_fields(_v_model, n_heights, n_times)
-        _fields_obs_mean = get_single_case_fields(_v_obs_mean, n_heights, n_times)
-        _fields_obs_std = get_single_case_fields(_v_obs_std, n_heights, n_times)
+        _fields_model = get_single_case_fields(_v_model, n_heights, n_times[case_num])
+        _fields_obs_mean = get_single_case_fields(_v_obs_mean, n_heights, n_times[case_num])
+        _fields_obs_std = get_single_case_fields(_v_obs_std, n_heights, n_times[case_num])
 
         p = Array{Plots.Plot}(undef, n_variables)
 
