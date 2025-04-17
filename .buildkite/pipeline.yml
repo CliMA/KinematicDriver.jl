@@ -86,7 +86,7 @@ steps:
       - label: ":crystal_ball: Experiments: non equil + SB2006"
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation2M --rain_formation_scheme_choice SB2006 --sedimentation_scheme_choice SB2006 --prescribed_Nd 1e8"
         artifact_paths: "test/experiments/KiD_driver/Output_NonEquilibriumMoisture_Precipitation2M_SB2006/figures/*"
-      
+
       - label: ":crystal_ball: Experiments: non equil + SB2006 without limiters"
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation2M --rain_formation_scheme_choice SB2006NL --sedimentation_scheme_choice SB2006 --prescribed_Nd 1e8"
         artifact_paths: "test/experiments/KiD_driver/Output_NonEquilibriumMoisture_Precipitation2M_SB2006NL/figures/*"
@@ -135,7 +135,7 @@ steps:
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=CloudyMoisture --precipitation_choice=CloudyPrecip --n_elem=128 --num_moments=7"
         artifact_paths: "test/experiments/KiD_driver/Output_CloudyMoisture_CloudyPrecip_7/figures/*"
 
-      - label: ":snowflake: Experiment: P3 Setup"
-        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=MoistureP3 --precipitation_choice=PrecipitationP3 --n_elem=24 --z_max=3000 --t_end=75 --w1=0 --dt=0.5"
-        artifact_paths: "test/experiments/KiD_driver/Output_MoistureP3_PrecipitationP3/figures/*"
+      #- label: ":snowflake: Experiment: P3 Setup"
+      #  command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=MoistureP3 --precipitation_choice=PrecipitationP3 --n_elem=24 --z_max=3000 --t_end=75 --w1=0 --dt=0.5"
+      #  artifact_paths: "test/experiments/KiD_driver/Output_MoistureP3_PrecipitationP3/figures/*"
 

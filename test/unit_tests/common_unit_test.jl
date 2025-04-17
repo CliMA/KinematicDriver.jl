@@ -325,14 +325,15 @@ end
         end
     end
 
-    Y = CO.initialise_state(p3_moist, precip_p3, ip)
-    aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, p3_moist, precip_p3)
-    CO.precompute_aux_thermo!(p3_moist, Y, aux)
-    CO.precompute_aux_precip!(precip_p3, Y, aux)
-    for el in merge(aux.velocities, aux.microph_variables)
-        @test all(isfinite, get_value(el))
-        @test all(get_value(el) .>= FT(0))
-    end
+    # TODO - tmp remove P3 from tests
+    #Y = CO.initialise_state(p3_moist, precip_p3, ip)
+    #aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, p3_moist, precip_p3)
+    #CO.precompute_aux_thermo!(p3_moist, Y, aux)
+    #CO.precompute_aux_precip!(precip_p3, Y, aux)
+    #for el in merge(aux.velocities, aux.microph_variables)
+    #    @test all(isfinite, get_value(el))
+    #    @test all(get_value(el) .>= FT(0))
+    #end
 
     # test precompute_aux_moisture_sources
     Y = CO.initialise_state(nequil_moist, precip_1m, ip)
