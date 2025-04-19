@@ -177,7 +177,7 @@ function get_variable_data_from_ODE(u, aux, precip, var::String)
         ρ = vec(mean(ρ[_ind:z_top, :], dims = 1))
 
         if precip isa Precipitation1M
-            output = CM1.radar_reflectivity.(precip.rain, qr, ρ)
+            output = CMD.radar_reflectivity_1M.(precip.rain, qr, ρ)
             output = replace!(output, -Inf => -300.0, Inf => 300.0, NaN => 0.0) # TODO this should be captured in CM1
         else
             error("Computing radar reflectivity for the given precipitation style is invalid!!")
