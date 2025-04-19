@@ -1,13 +1,11 @@
-env:
-  SLURM_CPUS_PER_TASK: 1
-  OPENBLAS_NUM_THREADS: 1
-  CLIMATEMACHINE_SETTINGS_FIX_RNG_SEED: "true"
-  JULIA_DEPOT_PATH: "${BUILDKITE_BUILD_PATH}/${BUILDKITE_PIPELINE_SLUG}/depot/default"
-
 agents:
   queue: new-central
-  slurm_ntasks: 1
-  modules: climacommon/2024_05_27
+  slurm_mem: 8G
+  slurm_cpus_per_task: 8
+  modules: climacommon/2025_03_18
+
+env:
+  OPENBLAS_NUM_THREADS: 1
 
 steps:
   - label: "Init environment :computer:"
