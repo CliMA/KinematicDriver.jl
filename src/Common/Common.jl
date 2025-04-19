@@ -15,6 +15,7 @@ const CMNe = CM.MicrophysicsNonEq
 const CM0 = CM.Microphysics0M
 const CM1 = CM.Microphysics1M
 const CM2 = CM.Microphysics2M
+const CMD = CM.CloudDiagnostics
 const CMAM = CM.AerosolModel
 const CMAA = CM.AerosolActivation
 const CMP3 = CM.P3Scheme
