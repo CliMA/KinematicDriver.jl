@@ -97,7 +97,7 @@ function plot_final_aux_profiles(z_centers, aux, precip; output = "output")
 
     if precip isa CO.PrecipitationP3
         p6 = Plots.plot(N_ice_end .* 1e-6, z_centers, xlabel = "N_ice [1/cm3]", ylabel = "z [m]")
-        p11 = Plots.plot(N_ice_end .* 1e-6, z_centers, xlabel = "N_ice [1/cm3]", ylabel = "z [m]")
+        p11 = Plots.plot(N_rai_end .* 1e-6, z_centers, xlabel = "N_rai [1/cm3]", ylabel = "z [m]")
         p12 = Plots.plot(q_liqonice_end .* 1e3, z_centers, xlabel = "q_liqonice [g/kg]", ylabel = "z [m]")
         p13 = Plots.plot(q_rim_end .* 1e3, z_centers, xlabel = "q_rim [g/kg]", ylabel = "z [m]")
         p14 = Plots.plot(B_rim_end, z_centers, xlabel = "B_rim [-]", ylabel = "z [m]")
@@ -340,7 +340,7 @@ function plot_timeheight_p3(nc_data_file, precip; output = "output")
     B_rim_plt = Array(ds.group["profiles"]["B_rim"])
     #! format: off
     p1 = Plots.heatmap(t_plt, z_plt, q_tot_plt .* 1e3, title = "q_tot [g/kg]", xlabel = "time [s]", ylabel = "z [m]", color = :viridis)
-    p2 = Plots.heatmap(t_plt, z_plt, q_liq_plt .* 1e3, title = "q_liq [g/kg]", xlabel = "time [s]", ylabel = "z [m]", color = :viridis)
+    p2 = Plots.heatmap(t_plt, z_plt, (ρq_ice_plt .- ρq_liqonice_plt) .* 1e3, title = "ρq_ice (solid ice) [g/kg]", xlabel = "time [s]", ylabel = "z [m]", color = :viridis)
     p3 = Plots.heatmap(t_plt, z_plt, ρq_ice_plt .* 1e3, title = "ρq_ice [g/m3]", xlabel = "time [s]", ylabel = "z [m]", color = :viridis)
     p4 = Plots.heatmap(t_plt, z_plt, q_rai_plt .* 1e3, title = "q_rai [g/kg]", xlabel = "time [s]", ylabel = "z [m]", color = :viridis)
     p5 = Plots.heatmap(t_plt, z_plt, q_vap_plt .* 1e3, title = "q_vap [g/kg]", xlabel = "time [s]", ylabel = "z [m]", color = :viridis)
