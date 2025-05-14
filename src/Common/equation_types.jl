@@ -5,6 +5,10 @@ Types for dispatching on different equation sets for KiD
 export AbstractStyle
 export AbstractMoistureStyle
 export AbstractPrecipitationStyle
+export AbstractMomentumStyle
+
+export ConstantWithHeight
+export VaryingWithHeight
 
 # TODO - add support for a dry case
 #export NoMoisture
@@ -25,6 +29,10 @@ Base.broadcastable(x::AbstractStyle) = Ref(x)
 
 abstract type AbstractMoistureStyle <: AbstractStyle end
 abstract type AbstractPrecipitationStyle <: AbstractStyle end
+abstract type AbstractMomentumStyle <: AbstractStyle end
+
+struct ConstantWithHeight <: AbstractMomentumStyle end
+struct VaryingWithHeight <: AbstractMomentumStyle end
 
 #struct NoMoisture <: AbstractMoistureStyle end
 struct CloudyMoisture <: AbstractMoistureStyle end

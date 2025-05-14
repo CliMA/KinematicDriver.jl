@@ -5,6 +5,9 @@ import SpecialFunctions as SF
 import NCDatasets as NC
 using Statistics
 
+import CSV as CSV
+import Interpolations as IP
+
 import ClimaCore as CC
 import Thermodynamics as TD
 import CloudMicrophysics as CM

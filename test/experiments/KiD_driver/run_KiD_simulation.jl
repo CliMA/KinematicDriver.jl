@@ -17,7 +17,9 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     precipitation_choice = opts["precipitation_choice"]
     rain_formation_choice = opts["rain_formation_scheme_choice"]
     sedimentation_choice = opts["sedimentation_scheme_choice"]
-    @info moisture_choice, precipitation_choice, rain_formation_choice, sedimentation_choice
+    # Chose between Shipway_ad_Hill 2012 and Chosson 2014 initial conditions
+    initial_condition_choice = opts["initial_condition_choice"]
+    @info moisture_choice, precipitation_choice, rain_formation_choice, sedimentation_choice, initial_condition_choice
 
     # Decide the output folder name based on options
 
@@ -86,6 +88,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
         sedimentation_choice = sedimentation_choice,
         boundary = p3_boundary_condition,
     )
+    momentum = CO.get_momentum_type(toml_dict, initial_condition_choice)
 
     @info "Initialising"
     # Initialize the timestepping struct
@@ -100,44 +103,54 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     fname = joinpath(path, "Output.nc")
     Stats = CO.NetCDFIO_Stats(fname, 1.0, parent(face_coord), parent(coord))
 
-    # Solve the initial value problem for density profile
-    ρ_profile = CO.ρ_ivp(FT, kid_params, thermo_params)
-    # Create the initial condition profiles
-    if precipitation_choice == "CloudyPrecip"
-        pdist_types = determine_cloudy_disttypes(opts["num_moments"])
-        cloudy_params, cloudy_pdists = create_cloudy_parameters(FT, pdist_types)
-        init = map(
-            coord -> CO.cloudy_initial_condition(
-                cloudy_pdists,
-                CO.initial_condition_1d(FT, common_params, kid_params, thermo_params, ρ_profile, coord.z),
-            ),
-            coord,
-        )
-    elseif precipitation_choice == "PrecipitationP3"
+    if initial_condition_choice == "Shipway_Hill_2012"
+        # Solve the initial value problem for density profile
+        ρ_profile = CO.ρ_ivp(FT, kid_params, thermo_params)
+        # Create the initial condition profiles
+        if precipitation_choice == "CloudyPrecip"
+            pdist_types = determine_cloudy_disttypes(opts["num_moments"])
+            cloudy_params, cloudy_pdists = create_cloudy_parameters(FT, pdist_types)
+            init = map(
+                coord -> CO.cloudy_initial_condition(
+                    cloudy_pdists,
+                    CO.initial_condition_1d(FT, common_params, kid_params, thermo_params, ρ_profile, coord.z),
+                ),
+                coord,
+            )
+        elseif precipitation_choice == "PrecipitationP3"
+            cloudy_params = nothing
+            (; ice_start, _q_flux, _N_flux, _F_rim, _F_liq, _ρ_r_init) = precip.p3_boundary_condition
+            init = map(
+                coord -> CO.p3_initial_condition(
+                    FT,
+                    kid_params,
+                    thermo_params,
+                    coord.z;
+                    _q_init = _q_flux,
+                    _N_init = _N_flux,
+                    _F_rim = _F_rim,
+                    _F_liq = _F_liq,
+                    _ρ_r = _ρ_r_init,
+                    z_top = FT(opts["z_max"]),
+                    ice_start = ice_start,
+                ),
+                coord,
+            )
+        else
+            cloudy_params = nothing
+            init = map(
+                coord -> CO.initial_condition_1d(FT, common_params, kid_params, thermo_params, ρ_profile, coord.z),
+                coord,
+            )
+        end
+    elseif initial_condition_choice == "Chosson_et_al_2014"
         cloudy_params = nothing
-        (; ice_start, _q_flux, _N_flux, _F_rim, _F_liq, _ρ_r_init) = precip.p3_boundary_condition
         init = map(
-            coord -> CO.p3_initial_condition(
-                FT,
-                kid_params,
-                thermo_params,
-                coord.z;
-                _q_init = _q_flux,
-                _N_init = _N_flux,
-                _F_rim = _F_rim,
-                _F_liq = _F_liq,
-                _ρ_r = _ρ_r_init,
-                z_top = FT(opts["z_max"]),
-                ice_start = ice_start,
-            ),
+            coord -> CO.initial_condition_1d_Chosson_2014(FT, common_params, kid_params, thermo_params, coord.z),
             coord,
         )
     else
-        cloudy_params = nothing
-        init = map(
-            coord -> CO.initial_condition_1d(FT, common_params, kid_params, thermo_params, ρ_profile, coord.z),
-            coord,
-        )
+        error("Invalid initial condition choice")
     end
 
     # Create aux vector and apply initial condition
@@ -169,7 +182,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
 
     # Collect all the tendencies into rhs function for ODE solver
     # based on model choices for the solved equations
-    ode_rhs! = K1D.make_rhs_function(moisture, precip)
+    ode_rhs! = K1D.make_rhs_function(moisture, precip, momentum)
 
     # Solve the ODE operator
     problem = ODE.ODEProblem(ode_rhs!, Y, (FT(opts["t_ini"]), FT(opts["t_end"])), aux)

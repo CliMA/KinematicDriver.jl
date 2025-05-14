@@ -4,6 +4,7 @@ authors = ["Climate Modeling Alliance"]
 version = "0.10.2"
 
 [deps]
+CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 ClimaCore = "d414da3d-4745-48bb-8d80-42e94e092884"
 ClimaParams = "5c42b081-d73a-476f-9059-fd94b934656c"
 CloudMicrophysics = "6a9e3e04-43cd-43ba-94b9-e8782df3c71b"
@@ -28,6 +29,7 @@ TerminalLoggers = "5d786b92-1e48-4d6f-9151-6b4477ca9bed"
 Thermodynamics = "b60c26fb-14c3-4610-9d3e-2d17fe7ff00c"
 
 [compat]
+CSV = "0.10.15"
 ClimaCore = "0.14"
 ClimaParams = "0.10.27"
 CloudMicrophysics = "0.22.10"

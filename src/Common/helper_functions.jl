@@ -1,4 +1,18 @@
 """
+    Returns prescribed momentum type (constant vs varying with height)
+"""
+function get_momentum_type(initial_condition_choice::String)
+    if initial_condition_choice == "Shipway_and_Hill_2012"
+        momentum == ConstantWithHeight()
+    elseif initial_condition_choice == "Chosson_et_al_2014"
+        momentum == VaryingWithHeight()
+    else
+        error("Invalid initial condition choice: $initial_condition_choice")
+    end
+    return momentum
+end
+
+"""
     Returns moisture type
 """
 function get_moisture_type(moisture_choice::String, toml_dict)

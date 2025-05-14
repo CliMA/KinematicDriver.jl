@@ -109,6 +109,10 @@ function parse_commandline()
         help = "hygroscopicity of aerosols for aerosol activation calucaulations in 2M schemes"
         arg_type = Float64
         default = Float64(0.9)
+        "--initial_condition_choice"
+        help = "Initial condition choice: Shipway_Hill_2012, Chosson_2014"
+        arg_type = String
+        default = "Shipway_Hill_2012"
         "--z_0"
         help = "Initial condition z0 [m]"
         arg_type = Float64

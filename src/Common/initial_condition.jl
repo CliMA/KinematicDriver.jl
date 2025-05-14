@@ -179,6 +179,90 @@ function initial_condition_1d(
 end
 
 """
+    Populate the remaining profiles based on the Chosson 2014 initial profiles
+"""
+function initial_condition_1d_Chosson_2014(
+    ::Type{FT},
+    common_params,
+    kid_params,
+    thermo_params,
+    z;
+) where {FT}
+
+    # TODO - move to velocity. Prescribe based on Chosson 2014
+    data = CSV.File("src/Common/velocity_profile.csv"; header=["w", "h"])
+    w_func = IP.linear_interpolation(data.h, data.w)
+
+    # TODO - to be replaced by profiles from the sounding
+    p = FT(1e5)
+    RH = FT(0.8)
+    T = FT(280)
+    w = FT(0)
+
+    q_vap::FT = TD.q_vap_from_RH_liquid(thermo_params, p, T, RH)
+
+    ts = TD.PhaseEquil_pTq(thermo_params, p, T, q_vap)
+
+    ρ::FT = TD.air_density(thermo_params, ts)
+    ρq_tot::FT = ρ * q_vap
+
+    ρ_dry::FT = SDM_ρ_dry_of_ρ(ρ, q_vap)
+
+    θ_liq_ice::FT = TD.liquid_ice_pottemp(thermo_params, ts)
+    θ_dry::FT = SDM_θ_dry(thermo_params, θ_liq_ice, q_vap)
+
+    q_tot::FT = q_vap
+    q_liq::FT = FT(0)
+    q_ice::FT = FT(0)
+    q_rai::FT = FT(0)
+    q_sno::FT = FT(0)
+
+    q_rim::FT = FT(0)
+    B_rim::FT = FT(0)
+
+    ρq_liq::FT = q_liq * ρ
+    ρq_ice::FT = q_ice * ρ
+    ρq_rai::FT = q_rai * ρ
+    ρq_sno::FT = q_sno * ρ
+    ρq_rim::FT = q_rim * ρ
+    ρq_vap::FT = q_vap * ρ
+
+    N_aer::FT = common_params.prescribed_Nd
+    N_liq::FT = FT(0)
+    N_ice::FT = FT(0)
+    N_rai::FT = FT(0)
+
+    zero::FT = FT(0)
+
+    return (;
+        ρ,
+        ρ_dry,
+        T,
+        p,
+        θ_liq_ice,
+        θ_dry,
+        ρq_tot,
+        ρq_liq,
+        ρq_ice,
+        ρq_rai,
+        ρq_sno,
+        ρq_vap,
+        q_tot,
+        q_liq,
+        q_ice,
+        q_rai,
+        q_sno,
+        q_rim,
+        B_rim,
+        N_liq,
+        N_ice,
+        N_rai,
+        N_aer,
+        zero,
+    )
+end
+
+"""
     Populate the remaining profiles based on given initial conditions including total specific water
     content (liquid + rain) and total number concentration
 """

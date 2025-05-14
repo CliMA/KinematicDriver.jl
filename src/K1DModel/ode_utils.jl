@@ -26,12 +26,12 @@ end
    collision, sedimentation and evaporation processes. The rhs is
    assembled via dispatch based on the moisture and precipitation types.
 """
-function make_rhs_function(ms::CO.AbstractMoistureStyle, ps::CO.AbstractPrecipitationStyle)
+function make_rhs_function(ms::CO.AbstractMoistureStyle, ps::CO.AbstractPrecipitationStyle, moms::CO.AbstractMomentumStyle)
     function rhs!(dY, Y, aux, t)
 
         CO.zero_tendencies!(dY)
 
-        precompute_aux_prescribed_velocity!(aux, t)
+        precompute_aux_prescribed_velocity!(moms, aux, t)
         CO.precompute_aux_thermo!(ms, Y, aux)
         CO.precompute_aux_precip!(ps, Y, aux)
 
