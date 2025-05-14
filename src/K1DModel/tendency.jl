@@ -186,7 +186,7 @@ end
 @inline function ρw_helper(t, w1, t1)
     return t < t1 ? w1 * sin(pi * t / t1) : 0.0
 end
-@inline function precompute_aux_prescribed_velocity!(::ConstantWithHeight, aux, t)
+@inline function precompute_aux_prescribed_velocity!(::CO.ConstantWithHeight, aux, t)
 
     FT = eltype(aux.microph_variables.q_tot)
     ρw = FT(ρw_helper(t, aux.kid_params.w1, aux.kid_params.t1))
@@ -200,7 +200,7 @@ end
     #TODO - add Chosson 2014 option
     return t < t1 ? w1 * sin(pi * t / t1) : 0.0
 end
-@inline function precompute_aux_prescribed_velocity!(::VaryingWithHeight, aux, t)
+@inline function precompute_aux_prescribed_velocity!(::CO.VaryingWithHeight, aux, t)
 
     FT = eltype(aux.microph_variables.q_tot)
     z = CC.Fields.coordinate_field(aux.prescribed_velocity.ρw).z # height

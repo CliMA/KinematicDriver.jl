@@ -88,7 +88,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
         sedimentation_choice = sedimentation_choice,
         boundary = p3_boundary_condition,
     )
-    momentum = CO.get_momentum_type(toml_dict, initial_condition_choice)
+    momentum = CO.get_momentum_type(initial_condition_choice)
 
     @info "Initialising"
     # Initialize the timestepping struct
