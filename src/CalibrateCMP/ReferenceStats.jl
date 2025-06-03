@@ -143,7 +143,8 @@ function find_mean_and_std_maximum(
         _y_std_vector_single_case = std(_y_single_case, dims = 2)
         _y_std_matrix::Matrix{FT} = reshape(_y_std_vector_single_case, sum(n_heights), n_times[i])
         _var_std_max = [
-            maximum(abs.(_y_std_matrix[(sum(n_heights[1:(j - 1)]) + 1):sum(n_heights[1:j]), :])) for j in 1:_n_variables
+            maximum(abs.(_y_std_matrix[(sum(n_heights[1:(j - 1)]) + 1):sum(n_heights[1:j]), :])) for
+            j in 1:_n_variables
         ]
         _var_std_max = ifelse.(_var_std_max .> eps(FT), _var_std_max, 1.0)
         var_std_max[i, :] = _var_std_max

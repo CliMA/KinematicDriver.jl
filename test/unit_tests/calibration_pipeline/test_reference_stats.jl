@@ -113,7 +113,7 @@ end
     obs = rand(sum(sum(n_heights) * n_times), n_samples) .* 10.0
     obs_m = mean(obs, dims = 2)
     norm_vecs = [
-        maximum([obs_m[1:2]; obs_m[5:6]]) maximum([obs_m[3:4]; obs_m[7:8]])
+        maximum([obs_m[1:2]; obs_m[5:6]]) maximum([obs_m[3:4]; obs_m[7:8]]);
         maximum([obs_m[9:10]; obs_m[13:14]]) maximum([obs_m[11:12]; obs_m[15:16]])
     ]
     norm_vecs_extended = reshape(repeat(norm_vecs, inner = [2 2])', :, 1)
