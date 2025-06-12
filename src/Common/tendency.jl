@@ -187,26 +187,26 @@ end
     @. B_rim = max(FT(0), Y.B_rim)
 
     # compute predicted quantities
-    ρ_r = aux.scratch.tmp
-    F_rim = aux.scratch.tmp2
-    F_liq = aux.scratch.tmp3
-    # prohibit ρ_r < 0
-    @. ρ_r = ifelse(B_rim < eps(FT), eps(FT), max(FT(0), ρq_rim / B_rim))
-    # keep F_r in range [0, 1)
-    @. F_rim =
-        ifelse((ρq_ice - ρq_liqonice) < eps(FT), FT(0), min(max(FT(0), ρq_rim / (ρq_ice - ρq_liqonice)), 1 - eps(FT)))
-    # prohibit F_liq < 0
-    @. F_liq = ifelse(Y.ρq_ice < eps(FT), FT(0), Y.ρq_liqonice / Y.ρq_ice)
+
+    p3 = ps.p3_params
+    (; F_rim, ρ_rim, F_liq) = aux.p3_predicted
+    F_r(ρq_ice, ρq_rim, ρq_liqonice) = ifelse(ρq_ice > eps(FT), max(FT(0), min(ρq_rim / (ρq_ice - ρq_liqonice), 1 - eps(FT))), FT(0))
+    ρ_r(ρq_rim, B_rim) = ifelse(B_rim > eps(FT), max(FT(0), min(ρq_rim / B_rim, p3.ρ_l)), FT(0))
+    F_l(ρq_ice, ρq_liqonice) = ifelse(ρq_ice > eps(FT), max(FT(0), min(ρq_liqonice / ρq_ice, FT(1 - eps(FT)))), FT(0))
+    @. F_rim = F_r(ρq_ice, ρq_rim, ρq_liqonice)
+    @. ρ_rim = ρ_r(ρq_rim, B_rim)
+    @. F_liq = F_l(ρq_ice, ρq_liqonice)
 
     p3 = ps.p3_params
     Chen2022 = ps.Chen2022
 
     (; term_vel_ice, term_vel_N_ice, term_vel_rai, term_vel_N_rai) = aux.velocities
     use_aspect_ratio = true
+    # TODO - should we be using ρ or ρ_dry in the velocity calculation?
     @. term_vel_N_ice =
-        getindex(CMP3.ice_terminal_velocity(p3, Chen2022, ρq_ice, N_ice, ρ_r, F_rim, F_liq, ρ_dry, use_aspect_ratio), 1)
+        getindex(CMP3.ice_terminal_velocity(p3, Chen2022, ρq_ice, N_ice, ρ_rim, F_rim, F_liq, ρ, use_aspect_ratio), 1)
     @. term_vel_ice =
-        getindex(CMP3.ice_terminal_velocity(p3, Chen2022, ρq_ice, N_ice, ρ_r, F_rim, F_liq, ρ_dry, use_aspect_ratio), 2)
+        getindex(CMP3.ice_terminal_velocity(p3, Chen2022, ρq_ice, N_ice, ρ_rim, F_rim, F_liq, ρ, use_aspect_ratio), 2)
 
     # adding 2M rain below:
 
@@ -559,8 +559,267 @@ end
 end
 
 @inline function precompute_aux_precip_sources!(ps::PrecipitationP3, aux)
-    # TODO [P3]
-    return nothing
+    (; dt) = aux.TS
+    (; thermo_params, air_params, common_params) = aux
+    FT = eltype(thermo_params)
+    (; ts, ρ, T) = aux.thermo_variables
+    (; ρq_liq, ρq_ice, ρq_rim, ρq_liqonice, N_ice, B_rim, ρq_rai, N_rai) = aux.microph_variables
+    (; F_rim, ρ_rim, F_liq) = aux.p3_predicted
+
+    dLdt_p3 = aux.scratch.tmp
+    dNdt = aux.scratch.tmp2
+    dLdt_rim = aux.scratch.tmp3
+    dLdt_liq = aux.scratch.tmp4
+    ddt_B_rim = aux.scratch.tmp5
+
+    p3 = ps.p3_params
+    type = typeof(p3)
+    vel = ps.Chen2022
+    sb2006 = ps.sb2006
+    aps = CMP.AirProperties(FT)
+
+    # helper type and wrapper to populate the tuple with sources
+    precip_sources_eltype = @NamedTuple{
+        ρq_tot::FT,
+        ρq_liq::FT,
+        ρq_rai::FT,
+        ρq_ice::FT,
+        ρq_rim::FT,
+        ρq_liqonice::FT,
+        N_aer::FT,
+        N_liq::FT,
+        N_rai::FT,
+        N_ice::FT,
+        B_rim::FT,
+    }
+    to_sources(args...) = @. precip_sources_eltype(tuple(args...))
+
+    # zero out the aux sources
+    @. aux.precip_sources = to_sources(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+
+    # calculate temporary variables
+
+    F_r(ρq_ice, ρq_rim, ρq_liqonice) = ifelse(ρq_ice > eps(FT), max(FT(0), min(ρq_rim / (ρq_ice - ρq_liqonice), 1 - eps(FT))), FT(0))
+    ρ_r(ρq_rim, B_rim) = ifelse(B_rim > 0, max(FT(0), min(ρq_rim / B_rim, p3.ρ_l)), FT(0))
+    F_l(ρq_ice, ρq_liqonice) = ifelse(ρq_ice > eps(FT), max(FT(0), min(ρq_liqonice / ρq_ice, FT(1 - eps(FT)))), FT(0))
+    @. F_rim = F_r(ρq_ice, ρq_rim, ρq_liqonice)
+    @. ρ_rim = ρ_r(ρq_rim, B_rim)
+    @. F_liq = F_l(ρq_ice, ρq_liqonice)
+
+    # melting: turned off for testing shedding
+    # if Bool(common_params.precip_sources)
+    melting = false
+    if melting # melting works with corresponding CM branch!
+
+        @. dLdt_p3 = limit(
+            ρq_ice,
+            dt,
+            CMP3.ice_melt(
+                p3,
+                vel,
+                air_params,
+                thermo_params,
+                ρq_ice,
+                N_ice,
+                T,
+                ρ,
+                F_rim,
+                ρ_rim,
+                F_liq,
+                dt,
+            ).dLdt_p3_tot,
+        )
+        @. dLdt_rim = limit(
+            ρq_ice,
+            dt,
+            CMP3.ice_melt(
+                p3,
+                vel,
+                air_params,
+                thermo_params,
+                ρq_ice,
+                N_ice,
+                T,
+                ρ,
+                F_rim,
+                ρ_rim,
+                F_liq,
+                dt,
+            ).dLdt_rim,
+        )
+        @. dLdt_liq = limit(
+            ρq_ice,
+            dt,
+            CMP3.ice_melt(
+                p3,
+                vel,
+                air_params,
+                thermo_params,
+                ρq_ice,
+                N_ice,
+                T,
+                ρ,
+                F_rim,
+                ρ_rim,
+                F_liq,
+                dt,
+            ).dLdt_liq,
+        )
+        @. dNdt = limit(
+            N_ice,
+            dt,
+            CMP3.ice_melt(
+                p3,
+                vel,
+                air_params,
+                thermo_params,
+                ρq_ice,
+                N_ice,
+                T,
+                ρ,
+                F_rim,
+                ρ_rim,
+                F_liq,
+                dt,
+            ).dNdt_ice,
+        )
+        @. ddt_B_rim= limit(
+            N_ice,
+            dt,
+            CMP3.ice_melt(
+                p3,
+                vel,
+                air_params,
+                thermo_params,
+                ρq_ice,
+                N_ice,
+                T,
+                ρ,
+                F_rim,
+                ρ_rim,
+                F_liq,
+                dt,
+            ).ddtB_rim,
+        )
+        @. aux.precip_sources += to_sources(
+            0,
+            0,
+            dLdt_p3, # source of rain = sink of p3 ice
+            -dLdt_p3, # sink of p3 ice
+            -dLdt_rim, # sink of rime
+            dLdt_liq, # source of L_liq
+            0,
+            0,
+            dNdt, # source of rain number
+            -dNdt, # sink of ice number
+            -ddt_B_rim, # sink of B_rim
+        )
+    end
+    shedding = false
+    if shedding # shedding works with corresponding CM branch!
+        @. dLdt_p3 = limit(
+            ρq_ice,
+            dt,
+            CMP3.ice_shed(
+                p3,
+                ρq_ice,
+                N_ice,
+                F_rim,
+                ρ_rim,
+                F_liq,
+                dt,
+            ).dLdt_p3_tot,
+        )
+        @. dNdt = limit(
+            N_ice,
+            dt,
+            CMP3.ice_shed(
+                p3,
+                ρq_ice,
+                N_ice,
+                F_rim,
+                ρ_rim,
+                F_liq,
+                dt,
+            ).dNdt_rai,
+        )
+        @. aux.precip_sources += to_sources(
+            0,
+            0,
+            dLdt_p3, # source of rain = sink of p3 ice
+            -dLdt_p3, # sink of p3 ice
+            0, # sink of rime
+            -dLdt_p3, # sink of L_liq
+            0,
+            0,
+            dNdt, # source of rain number
+            0, # sink of ice number
+            0, # sink of B_rim
+        )
+    end
+    collisions = true
+    if collisions # with rain - stable for corresponding CM branch (collision kernel)
+        # but haven't really been able to test much at all
+        # TODO - use ρ or ρ_dry?
+        @. dLdt_p3 = limit(
+            ρq_rai,
+            dt,
+            CMP3.ice_collisions(
+                sb2006.pdf_r,
+                p3,
+                vel,
+                aps,
+                thermo_params,
+                ts,
+                ρq_ice,
+                N_ice,
+                ρq_rai,
+                N_rai,
+                ρ,
+                F_rim,
+                ρ_rim,
+                F_liq,
+                T,
+                dt,
+            ).dLdt_p3_tot,
+        )
+        @. dNdt = limit(
+            N_rai,
+            dt,
+            CMP3.ice_collisions(
+                sb2006.pdf_r,
+                p3,
+                vel,
+                aps,
+                thermo_params,
+                ts,
+                ρq_ice,
+                N_ice,
+                ρq_rai,
+                N_rai,
+                ρ,
+                F_rim,
+                ρ_rim,
+                F_liq,
+                T,
+                dt,
+            ).dNdt_rai,
+        )
+        @. dLdt_p3 = ifelse(isnan(dLdt_p3), FT(0), dLdt_p3)
+        @. aux.precip_sources += to_sources(
+            0,
+            0,
+            -dLdt_p3, # sink of rain = source of p3 ice
+            dLdt_p3, # source of p3 ice
+            dLdt_p3, # source of rime
+            dLdt_p3, # source of L_liq
+            0,
+            0,
+            -dNdt, # sink of rain number
+            0, # sink of ice number
+            dLdt_p3 / FT(900), # source of B_rim
+        )
+    end
 end
 
 # helper function for precomputing aux sources for cloudy
@@ -713,6 +972,20 @@ end
     return dY
 end
 @inline function precip_sources_tendency!(ms::MoistureP3, ps::PrecipitationP3, dY, Y, aux, t)
+    precompute_aux_precip_sources!(ps, aux)
+
+    @. dY.ρq_tot += aux.precip_sources.ρq_tot
+    @. dY.ρq_liq += aux.precip_sources.ρq_liq
+    @. dY.ρq_rai += aux.precip_sources.ρq_rai
+    @. dY.ρq_ice += aux.precip_sources.ρq_ice
+    @. dY.ρq_rim += aux.precip_sources.ρq_rim
+    @. dY.ρq_liqonice += aux.precip_sources.ρq_liqonice
+    @. dY.B_rim += aux.precip_sources.B_rim
+    @. dY.N_ice += aux.precip_sources.N_ice
+    @. dY.N_rai += aux.precip_sources.N_rai
+    @. dY.N_aer += aux.precip_sources.N_aer
+    @. dY.N_liq += aux.precip_sources.N_liq
+
     return dY
 end
 @inline function precip_sources_tendency!(ms::CloudyMoisture, ps::CloudyPrecip, dY, Y, aux, t)
