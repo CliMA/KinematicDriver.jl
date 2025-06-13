@@ -189,3 +189,36 @@ function get_variable_data_from_ODE(u, aux, precip, var::String)
     return output
 
 end
+
+"""
+    triangle_inequality_limiter(force, limit)
+
+Limits a `force` (or source term) based on a maximum allowable `limit` using a
+formula derived from the triangle inequality, as proposed by Horn (2012).
+
+The formula used is: `L = F + M - sqrt(F² + M²)`, where `F` is the `force` and
+`M` is the `limit`.
+
+This limiter is designed to smoothly reduce the `force` as it approaches or
+exceeds the `limit`, ensuring the result `L` satisfies `0 ≤ L ≤ M` if `F ≥ 0`
+and `M > 0`. It also preserves `L ≤ F`. It's particularly useful for ensuring
+that source terms (e.g., emissions, chemical production rates) do not become
+unphysically large or lead to numerical instability, while being continuously
+differentiable.
+
+Arguments:
+- `force`: The original force or source term value.
+- `limit`: The maximum permissible positive value for the limited force.
+
+Returns:
+- The limited force value.
+
+Reference:
+- Horn, M. (2012). "ASAMgpu V1.0 – a moist fully compressible atmospheric model using 
+    graphics processing units (GPUs)". Geoscientific Model Development,
+    5, 345–353. https://doi.org/10.5194/gmd-5-345-2012
+"""
+
+function triangle_inequality_limiter(force, limit)
+    return force + limit - sqrt(force^2 + limit^2)
+end
