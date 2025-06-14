@@ -7,9 +7,11 @@ const PP = TD.PhasePartition
 const Lf = TD.latent_heat_fusion
 const q_vap = TD.vapor_specific_humidity
 
-# helper function to limit the tendency
-function limit(q::FT, dt::FT, S::FT, n = 1) where {FT}
-    return min(q / dt / n, S)
+# Helper function to compute the limit of the tendency in the traingle limiter.
+# The limit is defined as the available amount / n times model time step.
+function limit(q, dt, n::Int = 1)
+    FT = eltype(q)
+    return max(FT(0), q) / float(dt) / n
 end
 
 # helper function to safely get q from state ρq
@@ -289,13 +291,13 @@ end
 
     @. S_q_liq = CMNe.conv_q_vap_to_q_liq_ice(
         ne.liquid,
-        PP(thermo_params, TD.PhaseEquil_ρTq(thermo_params, ρ, T, q_tot)),
-        PP(q_tot, q_liq, q_ice),
+        PP(thermo_params, TD.PhaseEquil_ρTq(thermo_params, ρ, T, q_tot)).liq,
+        q_liq,
     )
     @. S_q_ice = CMNe.conv_q_vap_to_q_liq_ice(
         ne.ice,
-        PP(thermo_params, TD.PhaseEquil_ρTq(thermo_params, ρ, T, q_tot)),
-        PP(q_tot, q_liq, q_ice),
+        PP(thermo_params, TD.PhaseEquil_ρTq(thermo_params, ρ, T, q_tot)).ice,
+        q_ice,
     )
 
     @. aux.cloud_sources = to_sources(S_q_liq, S_q_ice)
@@ -319,10 +321,9 @@ end
     @. λ = TD.liquid_fraction(thermo_params, ts)
 
     @. S_qt =
-        -limit(
-            q_liq + q_ice,
-            dt,
+        -triangle_inequality_limiter(
             -CM0.remove_precipitation(ps.params, PP(q_tot, q_liq, q_ice), TD.q_vap_saturation(thermo_params, ts)),
+            limit(q_liq + q_ice, dt),
         )
 
     S_eltype = eltype(aux.precip_sources)
@@ -355,11 +356,19 @@ end
         rf = ps.rain_formation
         # autoconversion of liquid to rain
         if rf isa CMP.Acnv1M{FT}
-            @. S = -limit(q_liq, dt, CM1.conv_q_liq_to_q_rai(rf, q_liq, true))
+            @. S = -triangle_inequality_limiter(CM1.conv_q_liq_to_q_rai(rf, q_liq, true), limit(q_liq, dt))
         elseif typeof(rf) in [CMP.LD2004{FT}, CMP.VarTimescaleAcnv{FT}]
-            @. S = -limit(q_liq, dt, CM2.conv_q_liq_to_q_rai(rf, q_liq, ρ, common_params.prescribed_Nd))
+            @. S =
+                -triangle_inequality_limiter(
+                    CM2.conv_q_liq_to_q_rai(rf, q_liq, ρ, common_params.prescribed_Nd),
+                    limit(q_liq, dt),
+                )
         elseif typeof(rf.acnv) in [CMP.AcnvKK2000{FT}, CMP.AcnvB1994{FT}, CMP.AcnvTC1980{FT}]
-            @. S = -limit(q_liq, dt, CM2.conv_q_liq_to_q_rai(rf, q_liq, ρ, common_params.prescribed_Nd))
+            @. S =
+                -triangle_inequality_limiter(
+                    CM2.conv_q_liq_to_q_rai(rf, q_liq, ρ, common_params.prescribed_Nd),
+                    limit(q_liq, dt),
+                )
         else
             error("Unrecognized rain formation scheme")
         end
@@ -367,45 +376,63 @@ end
 
         # autoconversion of ice to snow
         @. S =
-            -limit(q_ice, dt, CM1.conv_q_ice_to_q_sno(ps.ice, air_params, thermo_params, PP(q_tot, q_liq, q_ice), ρ, T))
+            -triangle_inequality_limiter(
+                CM1.conv_q_ice_to_q_sno(ps.ice, air_params, thermo_params, q_tot, q_liq, q_ice, q_rai, q_sno, ρ, T),
+                limit(q_ice, dt),
+            )
         @. aux.precip_sources += to_sources(S, 0, S, 0, -S)
 
         # accretion cloud water + rain
         if typeof(rf) in [CMP.Acnv1M{FT}, CMP.LD2004{FT}, CMP.VarTimescaleAcnv{FT}]
-            @. S = limit(q_liq, dt, CM1.accretion(ps.liquid, ps.rain, ps.sedimentation.rain, ps.ce, q_liq, q_rai, ρ))
+            @. S = triangle_inequality_limiter(
+                CM1.accretion(ps.liquid, ps.rain, ps.sedimentation.rain, ps.ce, q_liq, q_rai, ρ),
+                limit(q_liq, dt),
+            )
         elseif typeof(rf.accr) in [CMP.AccrKK2000{FT}, CMP.AccrB1994{FT}]
-            @. S = limit(q_liq, dt, CM2.accretion(rf, q_liq, q_rai, ρ))
+            @. S = triangle_inequality_limiter(CM2.accretion(rf, q_liq, q_rai, ρ), limit(q_liq, dt))
         elseif rf.accr isa CMP.AccrTC1980{FT}
-            @. S = limit(q_liq, dt, CM2.accretion(rf, q_liq, q_rai))
+            @. S = triangle_inequality_limiter(CM2.accretion(rf, q_liq, q_rai), limit(q_liq, dt))
         else
             error("Unrecognized rain formation scheme")
         end
         @. aux.precip_sources += to_sources(-S, -S, 0, S, 0)
 
         # accretion cloud ice + snow
-        @. S = limit(q_ice, dt, CM1.accretion(ps.ice, ps.snow, ps.sedimentation.snow, ps.ce, q_ice, q_sno, ρ))
+        @. S = triangle_inequality_limiter(
+            CM1.accretion(ps.ice, ps.snow, ps.sedimentation.snow, ps.ce, q_ice, q_sno, ρ),
+            limit(q_ice, dt),
+        )
         @. aux.precip_sources += to_sources(-S, 0, -S, 0, S)
 
         # sink of cloud water via accretion cloud water + snow
-        @. S = -limit(q_liq, dt, CM1.accretion(ps.liquid, ps.snow, ps.sedimentation.snow, ps.ce, q_liq, q_sno, ρ))
+        @. S =
+            -triangle_inequality_limiter(
+                CM1.accretion(ps.liquid, ps.snow, ps.sedimentation.snow, ps.ce, q_liq, q_sno, ρ),
+                limit(q_liq, dt),
+            )
         @. α = c_vl / Lf(thermo_params, ts) * (T - T_fr)
         @. aux.precip_sources += ifelse(T < T_fr, to_sources(S, S, 0, 0, -S), to_sources(S, S, 0, -S * (1 + α), S * α))
 
         # sink of cloud ice via accretion cloud ice - rain
-        @. S = -limit(q_ice, dt, CM1.accretion(ps.ice, ps.rain, ps.sedimentation.rain, ps.ce, q_ice, q_rai, ρ))
+        @. S =
+            -triangle_inequality_limiter(
+                CM1.accretion(ps.ice, ps.rain, ps.sedimentation.rain, ps.ce, q_ice, q_rai, ρ),
+                limit(q_ice, dt),
+            )
         @. aux.precip_sources += to_sources(S, 0, S, 0, -S)
 
         # sink of rain via accretion cloud ice - rain
         @. S =
-            -limit(q_rai, dt, CM1.accretion_rain_sink(ps.rain, ps.ice, ps.sedimentation.rain, ps.ce, q_ice, q_rai, ρ))
+            -triangle_inequality_limiter(
+                CM1.accretion_rain_sink(ps.rain, ps.ice, ps.sedimentation.rain, ps.ce, q_ice, q_rai, ρ),
+                limit(q_rai, dt),
+            )
         @. aux.precip_sources += to_sources(0, 0, 0, S, -S)
 
         # accretion rain - snow
         @. S = ifelse(
             T < T_fr,
-            limit(
-                q_rai,
-                dt,
+            triangle_inequality_limiter(
                 CM1.accretion_snow_rain(
                     ps.snow,
                     ps.rain,
@@ -416,10 +443,9 @@ end
                     q_rai,
                     ρ,
                 ),
+                limit(q_rai, dt),
             ),
-            -limit(
-                q_sno,
-                dt,
+            -triangle_inequality_limiter(
                 CM1.accretion_snow_rain(
                     ps.rain,
                     ps.snow,
@@ -430,6 +456,7 @@ end
                     q_sno,
                     ρ,
                 ),
+                limit(q_sno, dt),
             ),
         )
         @. aux.precip_sources += to_sources(0, 0, 0, -S, S)
@@ -438,24 +465,27 @@ end
     if Bool(common_params.precip_sinks)
         # evaporation
         @. S =
-            -limit(
-                q_rai,
-                dt,
+            -triangle_inequality_limiter(
                 -CM1.evaporation_sublimation(
                     ps.rain,
                     ps.sedimentation.rain,
                     air_params,
                     thermo_params,
-                    PP(q_tot, q_liq, q_ice),
-                    q_rai,
+                    q_tot, q_liq, q_ice,
+                    q_rai, q_sno,
                     ρ,
                     T,
                 ),
+                limit(q_rai, dt),
             )
         @. aux.precip_sources += to_sources(-S, 0, 0, S, 0)
 
         # melting
-        @. S = -limit(q_sno, dt, CM1.snow_melt(ps.snow, ps.sedimentation.snow, air_params, thermo_params, q_sno, ρ, T))
+        @. S =
+            -triangle_inequality_limiter(
+                CM1.snow_melt(ps.snow, ps.sedimentation.snow, air_params, thermo_params, q_sno, ρ, T),
+                limit(q_sno, dt),
+            )
         @. aux.precip_sources += to_sources(0, 0, 0, -S, S)
 
         # deposition, sublimation
@@ -464,12 +494,16 @@ end
             ps.sedimentation.snow,
             air_params,
             thermo_params,
-            PP(q_tot, q_liq, q_ice),
-            q_sno,
+            q_tot, q_liq, q_ice,
+            q_rai, q_sno,
             ρ,
             T,
         )
-        @. S = ifelse(S > 0, limit(q_vap(thermo_params, ts), dt, S), -limit(q_sno, dt, -S))
+        @. S = ifelse(
+            S > 0,
+            triangle_inequality_limiter(S, limit(q_vap(thermo_params, ts), dt)),
+            -triangle_inequality_limiter(-S, limit(q_sno, dt)),
+        )
         @. aux.precip_sources += to_sources(-S, 0, 0, 0, S)
     end
 end
@@ -480,7 +514,7 @@ end
     (; thermo_params, common_params, air_params) = aux
     FT = eltype(thermo_params)
     (; ρ, T) = aux.thermo_variables
-    (; q_tot, q_liq, q_ice, q_rai, N_liq, N_rai) = aux.microph_variables
+    (; q_tot, q_liq, q_ice, q_rai, N_liq, N_rai, N_aer) = aux.microph_variables
     S₁ = aux.scratch.tmp
     S₂ = aux.scratch.tmp2
 
@@ -493,19 +527,29 @@ end
     #tot, liq, rai, Na, Nl, Nr
     if Bool(common_params.precip_sources)
         # autoconversion liquid to rain (mass)
-        @. S₁ = limit(q_liq, dt, CM2.autoconversion(sb2006.acnv, sb2006.pdf_c, q_liq, q_rai, ρ, N_liq).dq_rai_dt)
+        @. S₁ = triangle_inequality_limiter(
+            CM2.autoconversion(sb2006.acnv, sb2006.pdf_c, q_liq, q_rai, ρ, N_liq).dq_rai_dt,
+            limit(q_liq, dt),
+        )
         @. aux.precip_sources += to_sources(-S₁, -S₁, S₁, 0, 0, 0)
 
         # autoconversion liquid to rain (number)
-        @. S₂ = limit(N_liq, dt, CM2.autoconversion(sb2006.acnv, sb2006.pdf_c, q_liq, q_rai, ρ, N_liq).dN_rai_dt, 2)
+        @. S₂ = triangle_inequality_limiter(
+            CM2.autoconversion(sb2006.acnv, sb2006.pdf_c, q_liq, q_rai, ρ, N_liq).dN_rai_dt,
+            limit(N_liq, dt, 2),
+        )
         @. aux.precip_sources += to_sources(0, 0, 0, 0, -2 * S₂, S₂)
         # liquid self_collection
-        @. S₁ = -limit(N_liq, dt, -CM2.liquid_self_collection(sb2006.acnv, sb2006.pdf_c, q_liq, ρ, -2 * S₂))
+        @. S₁ =
+            -triangle_inequality_limiter(
+                -CM2.liquid_self_collection(sb2006.acnv, sb2006.pdf_c, q_liq, ρ, -2 * S₂),
+                limit(N_liq, dt),
+            )
         @. aux.precip_sources += to_sources(0, 0, 0, 0, S₁, 0)
 
         # rain self_collection
         @. S₁ = CM2.rain_self_collection(sb2006.pdf_r, sb2006.self, q_rai, ρ, N_rai)
-        @. aux.precip_sources += to_sources(0, 0, 0, 0, 0, -limit(N_rai, dt, -S₁))
+        @. aux.precip_sources += to_sources(0, 0, 0, 0, 0, -triangle_inequality_limiter(-S₁, limit(N_rai, dt)))
         # rain breakup
         @. aux.precip_sources += to_sources(
             0,
@@ -513,21 +557,45 @@ end
             0,
             0,
             0,
-            limit(N_rai, dt, CM2.rain_breakup(sb2006.pdf_r, sb2006.brek, q_rai, ρ, N_rai, S₁)),
+            triangle_inequality_limiter(
+                CM2.rain_breakup(sb2006.pdf_r, sb2006.brek, q_rai, ρ, N_rai, S₁),
+                limit(N_rai, dt),
+            ),
         )
 
         # accretion cloud water + rain
-        @. S₁ = limit(q_liq, dt, CM2.accretion(sb2006, q_liq, q_rai, ρ, N_liq).dq_rai_dt)
-        @. S₂ = -limit(N_liq, dt, -CM2.accretion(sb2006, q_liq, q_rai, ρ, N_liq).dN_liq_dt)
+        @. S₁ = triangle_inequality_limiter(CM2.accretion(sb2006, q_liq, q_rai, ρ, N_liq).dq_rai_dt, limit(q_liq, dt))
+        @. S₂ = -triangle_inequality_limiter(-CM2.accretion(sb2006, q_liq, q_rai, ρ, N_liq).dN_liq_dt, limit(N_liq, dt))
         @. aux.precip_sources += to_sources(-S₁, -S₁, S₁, 0, S₂, 0)
+
+        # cloud liquid number adjustment for mass limits
+        @. S₁ = triangle_inequality_limiter(
+            CM2.number_increase_for_mass_limit(sb2006.numadj, sb2006.pdf_c.xc_max, q_liq, ρ, N_liq),
+            limit(N_aer, dt),
+        )
+        @. S₂ =
+            -triangle_inequality_limiter(
+                -CM2.number_decrease_for_mass_limit(sb2006.numadj, sb2006.pdf_c.xc_min, q_liq, ρ, N_liq),
+                limit(N_liq, dt),
+            )
+        @. aux.precip_sources += to_sources(0, 0, 0, -S₁ - S₂, S₁ + S₂, 0)
+        # rain number adjustment for mass limits
+        @. S₁ = triangle_inequality_limiter(
+            CM2.number_increase_for_mass_limit(sb2006.numadj, sb2006.pdf_r.xr_max, q_rai, ρ, N_rai),
+            limit(N_aer, dt),
+        )
+        @. S₂ =
+            -triangle_inequality_limiter(
+                -CM2.number_decrease_for_mass_limit(sb2006.numadj, sb2006.pdf_r.xr_min, q_rai, ρ, N_rai),
+                limit(N_rai, dt),
+            )
+        @. aux.precip_sources += to_sources(0, 0, 0, -S₁ - S₂, 0, S₁ + S₂)
     end
 
     if Bool(common_params.precip_sinks)
         # evaporation
         @. S₁ =
-            -limit(
-                N_rai,
-                dt,
+            -triangle_inequality_limiter(
                 -CM2.rain_evaporation(
                     sb2006,
                     air_params,
@@ -538,11 +606,10 @@ end
                     N_rai,
                     T,
                 ).evap_rate_0,
+                limit(N_rai, dt),
             )
         @. S₂ =
-            -limit(
-                q_rai,
-                dt,
+            -triangle_inequality_limiter(
                 -CM2.rain_evaporation(
                     sb2006,
                     air_params,
@@ -553,6 +620,7 @@ end
                     N_rai,
                     T,
                 ).evap_rate_1,
+                limit(q_rai, dt),
             )
         @. aux.precip_sources += to_sources(-S₂, 0, S₂, 0, 0, S₁)
     end
@@ -700,6 +768,7 @@ end
 
     @. dY.ρq_tot += aux.thermo_variables.ρ * aux.precip_sources.q_tot
     @. dY.ρq_rai += aux.thermo_variables.ρ * aux.precip_sources.q_rai
+    @. dY.N_aer += aux.precip_sources.N_aer
     @. dY.N_liq += aux.precip_sources.N_liq
     @. dY.N_rai += aux.precip_sources.N_rai
 
