@@ -166,10 +166,11 @@ end
     sb2006 = ps.rain_formation
     vel_scheme = ps.sedimentation
     (; ρ) = aux.thermo_variables
-    (; q_rai, N_rai, N_liq) = aux.microph_variables
+    (; q_rai, q_sno, N_rai, N_liq) = aux.microph_variables
     (; term_vel_rai, term_vel_N_rai) = aux.velocities
 
     @. q_rai = q_(Y.ρq_rai, ρ)
+    @. q_sno = q_(Y.ρq_sno, ρ)
     @. N_rai = max(FT(0), Y.N_rai)
     @. N_liq = max(FT(0), Y.N_liq)
 
@@ -514,7 +515,7 @@ end
     (; thermo_params, common_params, air_params) = aux
     FT = eltype(thermo_params)
     (; ρ, T) = aux.thermo_variables
-    (; q_tot, q_liq, q_ice, q_rai, N_liq, N_rai, N_aer) = aux.microph_variables
+    (; q_tot, q_liq, q_ice, q_rai, q_sno, N_liq, N_rai, N_aer) = aux.microph_variables
     S₁ = aux.scratch.tmp
     S₂ = aux.scratch.tmp2
 
@@ -600,8 +601,8 @@ end
                     sb2006,
                     air_params,
                     thermo_params,
-                    PP(q_tot, q_liq, q_ice),
-                    q_rai,
+                    q_tot, q_liq, q_ice,
+                    q_rai, q_sno,
                     ρ,
                     N_rai,
                     T,
@@ -614,8 +615,8 @@ end
                     sb2006,
                     air_params,
                     thermo_params,
-                    PP(q_tot, q_liq, q_ice),
-                    q_rai,
+                    q_tot, q_liq, q_ice,
+                    q_rai, q_sno,
                     ρ,
                     N_rai,
                     T,
@@ -660,7 +661,7 @@ end
     FT = eltype(pdists[1])
     q = TD.PhasePartition(q_tot, q_liq, FT(0))
 
-    ξ = CM.Common.G_func(air_params, thermo_params, T, TD.Liquid())
+    ξ = CM.Common.G_func_liquid(air_params, thermo_params, T)
     ξ_normed = ξ / cloudy_params.norms[2]^(2 / 3)
     s = TD.supersaturation(thermo_params, q, ρ, T, TD.Liquid())
     dY_ce_tmp = CL.Condensation.get_cond_evap(pdists, s, ξ_normed) .* cloudy_params.mom_norms

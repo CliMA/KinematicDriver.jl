@@ -53,6 +53,7 @@ function initialise_state(::EquilibriumMoisture, ::Precipitation2M, initial_prof
     return CC.Fields.FieldVector(;
         ρq_tot = initial_profiles.ρq_tot,
         ρq_rai = initial_profiles.ρq_rai,
+        ρq_sno = initial_profiles.ρq_sno,
         N_liq = initial_profiles.N_liq,
         N_rai = initial_profiles.N_rai,
         N_aer = initial_profiles.N_aer,
@@ -64,6 +65,7 @@ function initialise_state(::NonEquilibriumMoisture, ::Precipitation2M, initial_p
         ρq_liq = initial_profiles.ρq_liq,
         ρq_ice = initial_profiles.ρq_ice,
         ρq_rai = initial_profiles.ρq_rai,
+        ρq_sno = initial_profiles.ρq_sno,
         N_liq = initial_profiles.N_liq,
         N_rai = initial_profiles.N_rai,
         N_aer = initial_profiles.N_aer,
@@ -167,6 +169,7 @@ function initialise_aux(
             q_liq = ip.q_liq,
             q_ice = ip.q_ice,
             q_rai = ip.q_rai,
+            q_sno = ip.q_sno,
             N_liq = ip.N_liq,
             N_rai = ip.N_rai,
             N_aer = ip.N_aer,

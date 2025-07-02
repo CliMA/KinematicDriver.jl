@@ -42,8 +42,9 @@ end
         return S_Nl
     end
 
-    q = TD.PhasePartition(q_tot, q_liq, q_ice)
-    S::FT = TD.supersaturation(thermo_params, q, ρ, T, TD.Liquid())
+    S::FT = CM.ThermodynamicsInterface.supersaturation_over_liquid(
+        thermo_params, q_tot, q_liq, q_ice, ρ, T,
+    )
 
     (; r_dry, std_dry, κ) = kid_params
     w = ρw / ρ
@@ -58,7 +59,18 @@ end
 
     aerosol_distribution =
         CMAM.AerosolDistribution((CMAM.Mode_κ(r_dry, std_dry, _aerosol_budget, (FT(1),), (FT(1),), (FT(0),), (κ,)),))
-    N_act = CMAA.total_N_activated(activation_params, aerosol_distribution, air_params, thermo_params, T, p, w, q)
+    N_act = CMAA.total_N_activated(
+        activation_params,
+        aerosol_distribution,
+        air_params,
+        thermo_params,
+        T,
+        p,
+        w,
+        q_tot,
+        q_liq,
+        q_ice,
+    )
 
     # Convert the total activated number to tendency
     S_Nl = ifelse(S < 0 || isnan(N_act), FT(0), max(FT(0), N_act - _already_activated_particles) / dt)
