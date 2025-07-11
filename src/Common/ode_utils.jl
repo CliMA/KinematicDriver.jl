@@ -21,7 +21,7 @@ end
     on different moisture and precipitation types
 """
 function initialise_state(sm::AbstractMoistureStyle, sp::AbstractPrecipitationStyle, initial_profiles)
-    error("initailisation not implemented for a given $sm and $sp")
+    error("initailisation not implemented for a given $(typeof(sm).name.name) and $(typeof(sp).name.name)")
 end
 function initialise_state(::EquilibriumMoisture, ::Union{NoPrecipitation, Precipitation0M}, initial_profiles)
     return CC.Fields.FieldVector(; ρq_tot = initial_profiles.ρq_tot)
