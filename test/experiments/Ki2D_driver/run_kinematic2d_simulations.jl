@@ -34,8 +34,7 @@ function run_K2D_simulation(::Type{FT}, opts) where {FT}
     # Overwrite the defaults parameters based on options
     default_toml_dict = CP.create_toml_dict(FT)
     toml_dict = override_toml_dict(
-        path,
-        default_toml_dict,
+        default_toml_dict;
         w1 = FT(opts["w1"]),
         t1 = FT(opts["t1"]),
         p0 = FT(opts["p0"]),
