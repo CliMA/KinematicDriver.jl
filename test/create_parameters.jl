@@ -5,9 +5,7 @@ import CloudMicrophysics as CM
 import Thermodynamics as TD
 import Cloudy as CL
 
-#! format: off
 function override_toml_dict(
-    out_dir::String,
     toml_dict::CP.AbstractTOMLDict;
     w1 = 2.0,
     t1 = 600.0,
@@ -39,7 +37,8 @@ function override_toml_dict(
         "isobaric_specific_heat_vapor" => Dict("value" => 1850.0, "type" => "float"),
         "molar_mass_dry_air" => Dict("value" => 0.02896998, "type" => "float"),
         "molar_mass_water" => Dict("value" => 0.018015, "type" => "float"),
-        "cloud_liquid_water_specific_humidity_autoconversion_threshold" => Dict("value" => 0.0001, "type" => "float"),
+        "cloud_liquid_water_specific_humidity_autoconversion_threshold" =>
+            Dict("value" => 0.0001, "type" => "float"),
         "prescribed_flow_w1" => Dict("value" => w1, "type" => "float"),
         "prescribed_flow_t1" => Dict("value" => t1, "type" => "float"),
         "surface_pressure" => Dict("value" => p0, "type" => "float"),
@@ -87,7 +86,7 @@ function create_kid_parameters(toml_dict)
     return kid_params
 end
 
-function determine_cloudy_disttypes(NM::Int, default_gamma=true, initial_gamma=false)
+function determine_cloudy_disttypes(NM::Int, default_gamma = true, initial_gamma = false)
     if NM < 2
         error("At least two moments are required")
     end
@@ -121,7 +120,7 @@ function determine_cloudy_disttypes(NM::Int, default_gamma=true, initial_gamma=f
             ND = Int(NM / 2)
             dist_names = ntuple(_ -> "exponential", ND)
         else
-            ND = Int((NM - 3)/2 + 1)
+            ND = Int((NM - 3) / 2 + 1)
             gmode = initial_gamma ? 1 : ND
             dist_names = ntuple(ND) do k
                 if k == gmode
@@ -163,7 +162,7 @@ function create_cloudy_parameters(FT, dist_names::NTuple{ND, String} = ("gamma",
     # Compute normalizing factors of prognostic moments
     NM = sum(NProgMoms)
     mom_norms::NTuple{NM, FT} = CL.get_moments_normalizing_factors(Int.(NProgMoms), norms)
-    
+
     # Define collision kernel function
     kernel_func = CL.KernelFunctions.LinearKernelFunction(5e0) # 5 m^3 / kg / s
     # kernel_func = CL.KernelFunctions.LongKernelFunction(5.236e-10, 9.44e9, 5.78)
@@ -184,7 +183,7 @@ function create_cloudy_parameters(FT, dist_names::NTuple{ND, String} = ("gamma",
     size_threshold = FT(5e-10)
     mass_thresholds = ntuple(ND) do k
         if k < ND
-            size_threshold * 10^(k - ND/2)
+            size_threshold * 10^(k - ND / 2)
         else
             Inf
         end
@@ -192,15 +191,13 @@ function create_cloudy_parameters(FT, dist_names::NTuple{ND, String} = ("gamma",
     @show mass_thresholds
 
     # Define coalescence data required by Cloudy
-    coal_data::CL.Coalescence.CoalescenceData{ND, r+1, FT, (r+1)^2} = CL.Coalescence.CoalescenceData(matrix_of_kernels, NProgMoms, mass_thresholds, norms)
-    
+    coal_data::CL.Coalescence.CoalescenceData{ND, r + 1, FT, (r + 1)^2} =
+        CL.Coalescence.CoalescenceData(matrix_of_kernels, NProgMoms, mass_thresholds, norms)
+
     # Define terminal velocity coefficients, assuming vt = sum_i v_i[1] * x^(v_i[2]) 
     # v1 is normalized by mass norm; v1 = v1 * norm[2] ^ v2
     vel = ((FT(30), FT(1.0 / 6)),) # 30 kg ^ (-1/6) * m / s
-    
-    
 
     cloudy_params = CO.Parameters.CloudyParameters(NProgMoms, norms, mom_norms, coal_data, vel, size_threshold)
     return cloudy_params, pdists
 end
-#! format: on
