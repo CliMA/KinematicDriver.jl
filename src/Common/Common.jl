@@ -3,7 +3,7 @@ module Common
 import OrdinaryDiffEq as ODE
 import SpecialFunctions as SF
 import NCDatasets as NC
-using Statistics
+import Statistics
 
 import ClimaCore as CC
 import Thermodynamics as TD
