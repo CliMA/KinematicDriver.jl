@@ -2,7 +2,7 @@
     Some elementary unit tests
 """
 
-using Test
+import Test as TT
 import LinearAlgebra as LA
 
 import ClimaParams as CP
