@@ -355,7 +355,7 @@ TT.@testset "Tendency helper functions" begin
             TT.@test all(isfinite, get_value(aux.precip_sources.q_liq))
             TT.@test all(isfinite, get_value(aux.precip_sources.q_ice))
             TT.@test get_value(aux.precip_sources.q_tot) ==
-                  get_value(aux.precip_sources.q_liq) + get_value(aux.precip_sources.q_ice)
+                     get_value(aux.precip_sources.q_liq) + get_value(aux.precip_sources.q_ice)
         elseif ps isa CO.Precipitation1M
             TT.@test all(isfinite, get_value(aux.precip_sources.q_tot))
             TT.@test all(isfinite, get_value(aux.precip_sources.q_liq))

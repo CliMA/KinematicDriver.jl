@@ -1,7 +1,7 @@
 TT.@testset "Make space" begin
 
     TT.@test K2D.make_function_space(FT, xlim = (0, 100.0), zlim = (0, 200.0), helem = 16, velem = 32) isa
-          Tuple{CC.Spaces.ExtrudedFiniteDifferenceSpace, CC.Spaces.FaceExtrudedFiniteDifferenceSpace}
+             Tuple{CC.Spaces.ExtrudedFiniteDifferenceSpace, CC.Spaces.FaceExtrudedFiniteDifferenceSpace}
 end
 
 TT.@testset "Make rhs function" begin
@@ -22,7 +22,15 @@ TT.@testset "Initialise aux" begin
 
     TT.@test_throws Exception K2D.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, no_precip)
     TT.@test_throws Exception K2D.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, K1D.EquilibriumMoisture())
-    TT.@test_throws Exception K2D.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, K1D.NonEquilibriumMoisture())
+    TT.@test_throws Exception K2D.initialise_aux(
+        FT,
+        init,
+        params...,
+        0.0,
+        0.0,
+        face_space,
+        K1D.NonEquilibriumMoisture(),
+    )
 
 
     aux = K2D.initialise_aux(FT, init, params..., 100.0, 200.0, 0.0, 0.0, space, face_space, equil_moist, precip_1m)

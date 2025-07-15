@@ -12,7 +12,7 @@ end
 TT.@testset "Make space" begin
 
     TT.@test K1D.make_function_space(FT, 0, 100, 10) isa
-          Tuple{CC.Spaces.CenterFiniteDifferenceSpace, CC.Spaces.FaceFiniteDifferenceSpace}
+             Tuple{CC.Spaces.CenterFiniteDifferenceSpace, CC.Spaces.FaceFiniteDifferenceSpace}
 end
 
 TT.@testset "Make rhs function" begin
