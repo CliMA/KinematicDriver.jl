@@ -1,16 +1,16 @@
-@testset "Make space" begin
+TT.@testset "Make space" begin
 
-    @test K2D.make_function_space(FT, xlim = (0, 100.0), zlim = (0, 200.0), helem = 16, velem = 32) isa
-          Tuple{CC.Spaces.ExtrudedFiniteDifferenceSpace, CC.Spaces.FaceExtrudedFiniteDifferenceSpace}
+    TT.@test K2D.make_function_space(FT, xlim = (0, 100.0), zlim = (0, 200.0), helem = 16, velem = 32) isa
+             Tuple{CC.Spaces.ExtrudedFiniteDifferenceSpace, CC.Spaces.FaceExtrudedFiniteDifferenceSpace}
 end
 
-@testset "Make rhs function" begin
+TT.@testset "Make rhs function" begin
 
     rhs = K2D.make_rhs_function(equil_moist, precip_1m)
-    @test typeof(rhs) <: Function
+    TT.@test typeof(rhs) <: Function
 end
 
-@testset "Initialise aux" begin
+TT.@testset "Initialise aux" begin
 
     space, face_space = K2D.make_function_space(FT)
     coords = CC.Fields.coordinate_field(space)
@@ -20,19 +20,27 @@ end
         map(coord -> CO.initial_condition_1d(FT, common_params, kid_params, thermo_params, ρ_profile, coord.z), coords)
     t = 1.1 * kid_params.t1
 
-    @test_throws Exception K2D.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, no_precip)
-    @test_throws Exception K2D.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, K1D.EquilibriumMoisture())
-    @test_throws Exception K2D.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, K1D.NonEquilibriumMoisture())
+    TT.@test_throws Exception K2D.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, no_precip)
+    TT.@test_throws Exception K2D.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, K1D.EquilibriumMoisture())
+    TT.@test_throws Exception K2D.initialise_aux(
+        FT,
+        init,
+        params...,
+        0.0,
+        0.0,
+        face_space,
+        K1D.NonEquilibriumMoisture(),
+    )
 
 
     aux = K2D.initialise_aux(FT, init, params..., 100.0, 200.0, 0.0, 0.0, space, face_space, equil_moist, precip_1m)
 
-    @test aux isa NamedTuple
-    @test aux.cloud_sources == nothing
-    @test LA.norm(aux.precip_sources) == 0
+    TT.@test aux isa NamedTuple
+    TT.@test aux.cloud_sources == nothing
+    TT.@test LA.norm(aux.precip_sources) == 0
 end
 
-@testset "advection tendency" begin
+TT.@testset "advection tendency" begin
 
     space, face_space = K2D.make_function_space(FT)
     coords = CC.Fields.coordinate_field(space)
@@ -42,8 +50,8 @@ end
         map(coord -> CO.initial_condition_1d(FT, common_params, kid_params, thermo_params, ρ_profile, coord.z), coords)
     t = 1.1 * kid_params.t1
 
-    @test_throws Exception K2D.advection_tendency!(K1D.AbstractMoistureStyle(), dY, Y, aux, t)
-    @test_throws Exception K2D.advection_tendency!(K1D.AbstractPrecipitationStyle(), dY, Y, aux, t)
+    TT.@test_throws Exception K2D.advection_tendency!(K1D.AbstractMoistureStyle(), dY, Y, aux, t)
+    TT.@test_throws Exception K2D.advection_tendency!(K1D.AbstractPrecipitationStyle(), dY, Y, aux, t)
 
     ms_styles = [equil_moist, nequil_moist]
     ps_styles = [no_precip, precip_2m]
@@ -54,6 +62,6 @@ end
         dY = Y / 10
         K2D.advection_tendency!(ms, dY, Y, aux, t)
         K2D.advection_tendency!(ps, dY, Y, aux, t)
-        @test dY ≈ Y / 10 atol = eps(FT) * 10
+        TT.@test dY ≈ Y / 10 atol = eps(FT) * 10
     end
 end

@@ -173,8 +173,8 @@ function get_variable_data_from_ODE(u, aux, precip, var::String)
         steps = Int(round(depth / dz))
         _ind = max(z_top - steps + 1, 1)
 
-        qr = vec(mean(_qrai[_ind:z_top, :], dims = 1))
-        ρ = vec(mean(ρ[_ind:z_top, :], dims = 1))
+        qr = vec(Statistics.mean(_qrai[_ind:z_top, :], dims = 1))
+        ρ = vec(Statistics.mean(ρ[_ind:z_top, :], dims = 1))
 
         if precip isa Precipitation1M
             output = CMD.radar_reflectivity_1M.(precip.rain, qr, ρ)

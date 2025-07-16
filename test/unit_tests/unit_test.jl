@@ -2,7 +2,7 @@
     Some elementary unit tests
 """
 
-using Test
+import Test as TT
 import LinearAlgebra as LA
 
 import ClimaParams as CP
@@ -69,6 +69,3 @@ include("./k1d_unit_test.jl")
 
 # KinematricDriver 2D unit tests
 include("./k2d_unit_test.jl")
-
-# calibration pipeline unit tests
-include("./calibration_pipeline/run_calibration_pipeline_unit_tests.jl")
