@@ -8,7 +8,7 @@ import CloudMicrophysics.PrecipitationSusceptibility as CMPS
 ENV["GKSwstype"] = "nul"
 import ClimaCorePlots, Plots
 Plots.GRBackend()
-using CairoMakie
+using CairoMakie, Printf
 
 function plot_initial_profiles_comparison(KM; sdm_case = "dry")
     sdm_data = load_sdm_data(sdm_case)
@@ -252,65 +252,53 @@ function plot_animation(nc_data_file; output = "output")
     mkpath(path)
 
     ds = NC.NCDataset(joinpath(@__DIR__, nc_data_file))
+    profs = ds.group["profiles"]
 
-    t_plt = Array(ds.group["profiles"]["t"])
-    z_plt = Array(ds.group["profiles"]["zc"])
-    q_tot = Array(ds.group["profiles"]["q_tot"])
-    q_liq = Array(ds.group["profiles"]["q_liq"])
-    q_ice = Array(ds.group["profiles"]["q_ice"])
-    q_rai = Array(ds.group["profiles"]["q_rai"])
-    q_sno = Array(ds.group["profiles"]["q_sno"])
-    N_aer = Array(ds.group["profiles"]["N_aer"])
-    N_liq = Array(ds.group["profiles"]["N_liq"])
-    N_rai = Array(ds.group["profiles"]["N_rai"])
-    SN_liq_act = Array(ds.group["profiles"]["SN_liq_act"])
+    z_plt = Array(profs["zc"])
+    t_plt = Array(profs["t"])
+    nt = length(t_plt)
+    ti = Observable(1)  # time index
 
-    function plot_data(data, data_label, max_val, scale, title = "")
-        return Plots.plot(
-            data * scale,
-            z_plt,
-            xlabel = data_label,
-            ylabel = "z [m]",
-            legend = false,
-            title = title,
-            titlefontsize = 30,
-            xlim = [0, 1.1 * max_val * scale],
-        )
+    kg_to_g = 1e3
+    m⁻³_to_cm⁻³ = 1e-6
+    q_tot = Array(profs["q_tot"]) .* kg_to_g
+    q_liq = Array(profs["q_liq"]) .* kg_to_g
+    q_ice = Array(profs["q_ice"]) .* kg_to_g
+    q_rai = Array(profs["q_rai"]) .* kg_to_g
+    q_sno = Array(profs["q_sno"]) .* kg_to_g
+    N_aer = Array(profs["N_aer"]) .* m⁻³_to_cm⁻³
+    N_liq = Array(profs["N_liq"]) .* m⁻³_to_cm⁻³
+    N_rai = Array(profs["N_rai"]) .* m⁻³_to_cm⁻³
+    SN_liq_act = Array(profs["SN_liq_act"]) .* m⁻³_to_cm⁻³
+
+    close(ds)
+
+    lims(x) = iszero(x) ? (nothing, nothing) : ((0, 1.1 * maximum(x)), nothing)
+
+    fig = Figure(size = (1800, 1500))
+    ax_q_tot = Axis(fig[1, 1]; xlabel = "q_tot [g/kg]", limits = lims(q_tot), ylabel = "z [m]")
+    lines!(ax_q_tot, @lift(q_tot[:, $ti]), z_plt)
+    ax_q_liq = Axis(fig[1, 2]; xlabel = "q_liq [g/kg]", limits = lims(q_liq))
+    lines!(ax_q_liq, @lift(q_liq[:, $ti]), z_plt)
+    ax_N_liq = Axis(fig[1, 3]; xlabel = "N_liq [1/cm^3]", limits = lims(N_liq))
+    lines!(ax_N_liq, @lift(N_liq[:, $ti]), z_plt)
+    ax_q_rai = Axis(fig[2, 1]; xlabel = "q_rai [g/kg]", limits = lims(q_rai), ylabel = "z [m]")
+    lines!(ax_q_rai, @lift(q_rai[:, $ti]), z_plt)
+    ax_N_rai = Axis(fig[2, 2]; xlabel = "N_rai [1/cm^3]", limits = lims(N_rai))
+    lines!(ax_N_rai, @lift(N_rai[:, $ti]), z_plt)
+    ax_q_ice = Axis(fig[2, 3]; xlabel = "q_ice [g/kg]", limits = lims(q_ice))
+    lines!(ax_q_ice, @lift(q_ice[:, $ti]), z_plt)
+    ax_q_sno = Axis(fig[3, 1]; xlabel = "q_sno [g/kg]", limits = lims(q_sno), ylabel = "z [m]")
+    lines!(ax_q_sno, @lift(q_sno[:, $ti]), z_plt)
+    ax_SN_liq_act = Axis(fig[3, 2]; xlabel = "SN_liq_act [1/cm^3]", limits = lims(SN_liq_act))
+    lines!(ax_SN_liq_act, @lift(SN_liq_act[:, $ti]), z_plt)
+    axs = contents(fig[:, :])
+    Label(fig[0, :], @lift(@sprintf("time = %d [s]", t_plt[$ti])), fontsize = 30)
+    linkyaxes!(axs...)
+
+    record(fig, joinpath(path, "animation.mp4"), 1:nt) do i
+        ti[] = i
     end
-
-    anim = Plots.@animate for i in 1:length(t_plt)
-
-        title = "time = " * string(floor(Int, t_plt[i])) * " [s]"
-        mass_scale = 1e3
-        num_scale = 1e-6
-        p1 = plot_data(q_tot[:, i], "q_tot [g/kg]", maximum(q_tot), mass_scale)
-        p2 = plot_data(q_liq[:, i], "q_liq [g/kg]", maximum(q_liq), mass_scale, title)
-        p3 = plot_data(N_liq[:, i], "N_liq [1/cm^3]", maximum(N_liq), num_scale)
-        p4 = plot_data(q_rai[:, i], "q_rai [g/kg]", maximum(q_rai), mass_scale)
-        p5 = plot_data(N_rai[:, i], "N_rai [1/cm^3]", maximum(N_rai), num_scale)
-        p6 = plot_data(q_ice[:, i], "q_ice [g/kg]", maximum(q_ice), mass_scale)
-        p7 = plot_data(q_sno[:, i], "q_sno [g/kg]", maximum(q_sno), mass_scale)
-        p8 = plot_data(SN_liq_act[:, i], "Activation [1/cm^3/s]", maximum(SN_liq_act), num_scale)
-
-        Plots.plot(
-            p1,
-            p2,
-            p3,
-            p4,
-            p5,
-            p8,
-            p6,
-            p7,
-            size = (1800.0, 1500.0),
-            bottom_margin = 30.0 * Plots.PlotMeasures.px,
-            left_margin = 30.0 * Plots.PlotMeasures.px,
-            top_margin = 30.0 * Plots.PlotMeasures.px,
-            right_margin = 30.0 * Plots.PlotMeasures.px,
-            layout = (3, 3),
-        )
-    end
-
-    Plots.mp4(anim, joinpath(path, "animation.mp4"), fps = 10)
 end
 
 function plot_profiles_in_time(nc_data_file; output = "output", n = 10)
