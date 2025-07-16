@@ -100,7 +100,7 @@ steps:
         artifact_paths: "test/experiments/KiD_driver/Output_NonEquilibriumMoisture_Precipitation2M_SB2006_Chen2022/figures/*"
 
       - label: ":snowman: Experiments: non equil + 1M with ice and snow"
-        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation1M --rv_0 0.0008 --rv_1 0.0008 --rv_2 0.0001 --tht_0 260 --tht_1 260 --tht_2 270 --w1 2 --z_max 4000 --n_elem 200"
+        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation1M --rv_0 0.0008 --rv_1 0.0008 --rv_2 0.0001 --tht_0 260 --tht_1 260 --tht_2 270 --w1 2 --z_max 4000 --z_2 4000 --n_elem 200"
         artifact_paths: "test/experiments/KiD_driver/Output_NonEquilibriumMoisture_Precipitation1M_CliMA_1M/figures/*"
 
       - label: ":crystal_ball: Experiments: Box model"
