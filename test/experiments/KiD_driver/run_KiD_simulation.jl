@@ -185,14 +185,15 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     )
 
     # Some basic plots
-    if opts["plotting_flag"] == true
+    opts["plotting_flag"] == true && with_theme(theme_minimal()) do
         @info "Plotting"
         plot_folder = string("experiments/KiD_driver/", output_folder, "/figures/")
 
-        z_centers = parent(CC.Fields.coordinate_field(space))
+        z_centers2 = parent(CC.Fields.coordinate_field(space))  # TODO: remove this
+        z_centers = vec(CC.Fields.coordinate_field(space))
         plot_final_aux_profiles(z_centers, aux, precip, output = plot_folder)
         if precip isa CO.PrecipitationP3
-            plot_animation_p3(z_centers, solver, aux, moisture, precip, K1D, plot_folder)
+            plot_animation_p3(z_centers2, solver, aux, moisture, precip, K1D, plot_folder)
             plot_timeheight_p3(
                 string("experiments/KiD_driver/", output_folder, "/Output.nc"),
                 precip,
