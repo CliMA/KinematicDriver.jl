@@ -15,38 +15,38 @@ function plot_initial_profiles_comparison(KM; sdm_case = "dry")
     path = joinpath(@__DIR__, "initial_condition_tests/output_init_profiles")
     mkpath(path)
 
-    fig_name = string(sdm_case, "_init_profile.png")
+    fig = Figure(; size = (1200, 750))
+    z = vec(KM.z_centers)
 
-    p1 = Plots.plot(KM.q_vap, KM.z_centers, label = "KM", xlabel = "q_vap [g/kg]", ylabel = "z [m]")
-    Plots.plot!(p1, sdm_data.qv_sdm, sdm_data.z_sdm, label = "SDM")
+    ax = Axis(fig[1, 1]; xlabel = "q_vap [g/kg]", ylabel = "z [m]")
+    lines!(vec(KM.q_vap), z, label = "KM")
+    lines!(vec(sdm_data.qv_sdm), sdm_data.z_sdm, label = "SDM")
 
-    p2 = Plots.plot(KM.ρ, KM.z_centers, label = "KM ρ_tot", xlabel = "ρ [kg/m3]", ylabel = "z [m]")
-    Plots.plot!(p2, sdm_data.rho_sdm, sdm_data.z_sdm, label = "SDM ρ")
+    ax = Axis(fig[1, 2]; xlabel = "ρ [kg/m3]")
+    lines!(vec(KM.ρ), z, label = "KM")
+    lines!(vec(sdm_data.rho_sdm), sdm_data.z_sdm, label = "SDM")
 
-    p3 = Plots.plot(KM.θ_dry, KM.z_centers, label = "KM", xlabel = "θ_dry [K]", ylabel = "z [m]")
-    Plots.plot!(p3, sdm_data.thetad_sdm, sdm_data.z_sdm, label = "SDM")
+    ax = Axis(fig[1, 3]; xlabel = "θ_dry [K]")
+    lines!(vec(KM.θ_dry), z, label = "KM")
+    lines!(vec(sdm_data.thetad_sdm), sdm_data.z_sdm, label = "SDM")
 
-    p4 = Plots.plot(KM.T, KM.z_centers, label = "KM", xlabel = "T [K]", ylabel = "z [m]")
-    Plots.plot!(p4, sdm_data.T_sdm, sdm_data.z_sdm, label = "SDM")
+    ax = Axis(fig[2, 1]; xlabel = "T [K]", ylabel = "z [m]")
+    lines!(vec(KM.T), z, label = "KM")
+    lines!(vec(sdm_data.T_sdm), sdm_data.z_sdm, label = "SDM")
 
-    p5 = Plots.plot(KM.p ./ 100, KM.z_centers, label = "KM", xlabel = "p [hPa]", ylabel = "z [m]")
-    Plots.plot!(p5, sdm_data.P_sdm ./ 100, sdm_data.z_sdm, label = "SDM")
+    ax = Axis(fig[2, 2]; xlabel = "p [hPa]")
+    lines!(vec(KM.p ./ 100), z, label = "KM")
+    lines!(vec(sdm_data.P_sdm ./ 100), sdm_data.z_sdm, label = "SDM")
 
-    p6 = Plots.plot(KM.q_liq, KM.z_centers, label = "KM", xlabel = "q_liq [g/kg]", ylabel = "z [m]")
-    Plots.plot!(p6, sdm_data.ql_sdm, sdm_data.z_sdm, label = "SDM")
+    ax = Axis(fig[2, 3]; xlabel = "q_liq [g/kg]")
+    lines!(vec(KM.q_liq), z, label = "KM")
+    lines!(vec(sdm_data.ql_sdm), sdm_data.z_sdm, label = "SDM")
 
-    p = Plots.plot(
-        p1,
-        p2,
-        p3,
-        p4,
-        p5,
-        p6,
-        size = (1200.0, 750.0),
-        bottom_margin = 40.0 * Plots.PlotMeasures.px,
-        left_margin = 80.0 * Plots.PlotMeasures.px,
-    )
-    Plots.png(p, joinpath(path, fig_name))
+    axs = contents(fig[:, :])
+    axislegend.(axs)
+    linkyaxes!(axs...)
+
+    save(joinpath(path, "$(sdm_case)_init_profile.png"), fig)
 end
 
 function plot_final_aux_profiles(z_centers, aux, precip; output = "output")
