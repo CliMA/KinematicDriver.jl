@@ -6,8 +6,9 @@ import NCDatasets as NC
 import CloudMicrophysics.PrecipitationSusceptibility as CMPS
 
 ENV["GKSwstype"] = "nul"
-using ClimaCorePlots, Plots
+import ClimaCorePlots, Plots
 Plots.GRBackend()
+using CairoMakie
 
 function plot_initial_profiles_comparison(KM; sdm_case = "dry")
     sdm_data = load_sdm_data(sdm_case)
@@ -235,7 +236,7 @@ function plot_animation_p3(z_centers, solver, aux, moisture, precip, K1D, output
         p8 = plot_data(N_liq[:, i], "N_liq [1/cm^3]", maximum(N_liq))
         p9 = plot_data(N_ice[:, i], "N_ice [1/cm^3]", maximum(N_ice))
         p10 = plot_data(N_rai[:, i], "N_rai [1/cm^3]", maximum(N_rai))
-        plot(
+        Plots.plot(
             p1,
             p2,
             p3,
@@ -300,7 +301,7 @@ function plot_animation(nc_data_file; output = "output")
         p6 = plot_data(q_ice[:, i] .* 1e3, "q_ice [g/kg]", maximum(q_ice))
         p7 = plot_data(q_sno[:, i] .* 1e3, "q_sno [g/kg]", maximum(q_sno))
 
-        plot(
+        Plots.plot(
             p1,
             p2,
             p3,
