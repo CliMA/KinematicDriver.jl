@@ -51,122 +51,109 @@ end
 
 function plot_final_aux_profiles(z_centers, aux, precip; output = "output")
 
+    vars = aux.microph_variables
+    thermo_vars = aux.thermo_variables
+
     path = joinpath(@__DIR__, output)
     mkpath(path)
 
-    T_end = parent(aux.thermo_variables.T)
-    q_tot_end = parent(aux.microph_variables.q_tot)
-    ρ_end = parent(aux.thermo_variables.ρ)
+    T_end = vec(thermo_vars.T)
+    q_tot_end = vec(vars.q_tot)
+    ρ_end = vec(thermo_vars.ρ)
 
-    q_liq_end = parent(aux.microph_variables.q_liq)
-    q_ice_end = parent(aux.microph_variables.q_ice)
+    q_liq_end = vec(vars.q_liq)
+    q_ice_end = vec(vars.q_ice)
+
+    # Allocate variables
+    q_rai_end = zero(q_tot_end)
+    q_sno_end = zero(q_tot_end)
+    N_aer_end = zero(q_tot_end)
+    N_liq_end = zero(q_tot_end)
+    N_rai_end = zero(q_tot_end)
 
     if precip isa CO.Precipitation1M
-        q_rai_end = parent(aux.microph_variables.q_rai)
-        q_sno_end = parent(aux.microph_variables.q_sno)
+        q_rai_end .= vec(vars.q_rai)
+        q_sno_end .= vec(vars.q_sno)
     elseif precip isa CO.Precipitation2M
-        q_rai_end = parent(aux.microph_variables.q_rai)
-        q_sno_end = q_tot_end .* 0.0
+        q_rai_end .= vec(vars.q_rai)
+        N_aer_end .= vec(vars.N_aer)
+        N_liq_end .= vec(vars.N_liq)
+        N_rai_end .= vec(vars.N_rai)
+        args = (precip.rain_formation, q_liq_end, q_rai_end, ρ_end, N_liq_end)
+        precip_sus_aut = CMPS.precipitation_susceptibility_autoconversion.(args...)
+        precip_sus_acc = CMPS.precipitation_susceptibility_accretion.(args...)
+        d_ln_pp_d_ln_q_liq_aut = getfield.(precip_sus_aut, :d_ln_pp_d_ln_q_liq)
+        d_ln_pp_d_ln_q_rai_aut = getfield.(precip_sus_aut, :d_ln_pp_d_ln_q_rai)
+        d_ln_pp_d_ln_q_liq_acc = getfield.(precip_sus_acc, :d_ln_pp_d_ln_q_liq)
+        d_ln_pp_d_ln_q_rai_acc = getfield.(precip_sus_acc, :d_ln_pp_d_ln_q_rai)
     elseif precip isa CO.PrecipitationP3
-        q_rai_end = parent(aux.microph_variables.q_rai)
-        q_liqonice_end = parent(aux.microph_variables.q_liqonice)
-        q_rim_end = parent(aux.microph_variables.q_rim)
-        B_rim_end = parent(aux.microph_variables.B_rim)
-        N_ice_end = parent(aux.microph_variables.N_ice)
-        N_liq_end = parent(aux.microph_variables.N_liq)
-        N_rai_end = parent(aux.microph_variables.N_rai)
-    else
-        q_rai_end = q_tot_end .* 0.0
-        q_sno_end = q_tot_end .* 0.0
+        q_rai_end .= vec(vars.q_rai)
+        N_ice_end .= vec(vars.N_ice)
+        N_liq_end .= vec(vars.N_liq)
+        N_rai_end .= vec(vars.N_rai)
+        # additional variables for P3
+        q_liqonice_end = vec(vars.q_liqonice)
+        q_rim_end = vec(vars.q_rim)
+        B_rim_end = vec(vars.B_rim)
     end
 
-    if precip isa CO.Precipitation2M
-        N_aer_end = parent(aux.microph_variables.N_aer)
-        N_liq_end = parent(aux.microph_variables.N_liq)
-        N_rai_end = parent(aux.microph_variables.N_rai)
-    else
-        N_aer_end = q_tot_end .* 0.0
-        N_liq_end = q_tot_end .* 0.0
-        N_rai_end = q_tot_end .* 0.0
-    end
+    kg_to_g = 1e3
+    m⁻³_to_cm⁻³ = 1e-6
 
-    p1 = Plots.plot(q_tot_end .* 1e3, z_centers, xlabel = "q_tot [g/kg]", ylabel = "z [m]")
-    p2 = Plots.plot(q_liq_end .* 1e3, z_centers, xlabel = "q_liq [g/kg]", ylabel = "z [m]")
-    p3 = Plots.plot(q_ice_end .* 1e3, z_centers, xlabel = "q_ice [g/kg]", ylabel = "z [m]")
-    p4 = Plots.plot(T_end, z_centers, xlabel = "T [K]", ylabel = "z [m]")
-    p5 = Plots.plot(q_rai_end .* 1e3, z_centers, xlabel = "q_rai [g/kg]", ylabel = "z [m]")
+    fig = Figure(size = (1800, 1200))
+    ax = Axis(fig[1, 1]; xlabel = "q_tot [g/kg]", ylabel = "z [m]")
+    lines!(q_tot_end .* kg_to_g, z_centers)
+
+    ax = Axis(fig[1, 2]; xlabel = "q_liq [g/kg]")
+    lines!(q_liq_end .* kg_to_g, z_centers)
+
+    ax = Axis(fig[1, 3]; xlabel = "q_ice [g/kg]")
+    lines!(q_ice_end .* kg_to_g, z_centers)
+
+    ax = Axis(fig[1, 4]; xlabel = "T [K]")
+    lines!(T_end, z_centers)
+
+    ax = Axis(fig[2, 1]; xlabel = "q_rai [g/kg]", ylabel = "z [m]")
+    lines!(q_rai_end .* kg_to_g, z_centers)
 
     if precip isa CO.PrecipitationP3
-        p6 = Plots.plot(N_ice_end .* 1e-6, z_centers, xlabel = "N_ice [1/cm3]", ylabel = "z [m]")
-        p11 = Plots.plot(N_ice_end .* 1e-6, z_centers, xlabel = "N_ice [1/cm3]", ylabel = "z [m]")
-        p12 = Plots.plot(q_liqonice_end .* 1e3, z_centers, xlabel = "q_liqonice [g/kg]", ylabel = "z [m]")
-        p13 = Plots.plot(q_rim_end .* 1e3, z_centers, xlabel = "q_rim [g/kg]", ylabel = "z [m]")
-        p14 = Plots.plot(B_rim_end, z_centers, xlabel = "B_rim [-]", ylabel = "z [m]")
-        p = Plots.plot(
-            p1,
-            p2,
-            p3,
-            p4,
-            p5,
-            p6,
-            p11,
-            p12,
-            p13,
-            p14,
-            size = (1800.0, 1200.0),
-            bottom_margin = 40.0 * Plots.PlotMeasures.px,
-            left_margin = 80.0 * Plots.PlotMeasures.px,
-            layout = (2, 5),
-        )
-        Plots.png(p, joinpath(path, "final_aux_profiles.png"))
-    else
-        p6 = Plots.plot(q_sno_end .* 1e3, z_centers, xlabel = "q_sno [g/kg]", ylabel = "z [m]")
-        p8 = Plots.plot(N_aer_end .* 1e-6, z_centers, xlabel = "N_aer [1/cm3]", ylabel = "z [m]")
-        p9 = Plots.plot(N_liq_end .* 1e-6, z_centers, xlabel = "N_liq [1/cm3]", ylabel = "z [m]")
-        p10 = Plots.plot(N_rai_end .* 1e-6, z_centers, xlabel = "N_rai [1/cm3]", ylabel = "z [m]")
+        ax = Axis(fig[2, 2]; xlabel = "N_ice [1/cm³]")
+        lines!(N_ice_end .* m⁻³_to_cm⁻³, z_centers)
 
-        p7 = Plots.plot(xlabel = "precipitation susceptibility", ylabel = "z [m]")
+        ax = Axis(fig[2, 3]; xlabel = "q_liqonice [g/kg]")
+        lines!(q_liqonice_end .* kg_to_g, z_centers)
+
+        ax = Axis(fig[2, 4]; xlabel = "q_rim [g/kg]")
+        lines!(q_rim_end .* kg_to_g, z_centers)
+
+        ax = Axis(fig[3, 1]; xlabel = "B_rim [-]", ylabel = "z [m]")
+        lines!(B_rim_end, z_centers)
+    else
+        ax = Axis(fig[2, 2]; xlabel = "q_sno [g/kg]")
+        lines!(q_sno_end .* kg_to_g, z_centers)
+
+        ax = Axis(fig[2, 3]; xlabel = "N_aer [1/cm³]")
+        lines!(N_aer_end .* m⁻³_to_cm⁻³, z_centers)
+
+        ax = Axis(fig[2, 4]; xlabel = "N_liq [1/cm³]")
+        lines!(N_liq_end .* m⁻³_to_cm⁻³, z_centers)
+
+        ax = Axis(fig[3, 1]; xlabel = "N_rai [1/cm³]", ylabel = "z [m]")
+        lines!(N_rai_end .* m⁻³_to_cm⁻³, z_centers)
+
+        ax = Axis(fig[3, 2]; xlabel = "precipitation susceptibility", ylabel = "z [m]")
         if precip isa CO.Precipitation2M
-            N_liq_end = parent(aux.microph_variables.N_liq)
-            precip_sus_aut =
-                CMPS.precipitation_susceptibility_autoconversion.(
-                    Ref(precip.rain_formation),
-                    q_liq_end,
-                    q_rai_end,
-                    ρ_end,
-                    N_liq_end,
-                )
-            precip_sus_acc =
-                CMPS.precipitation_susceptibility_accretion.(
-                    Ref(precip.rain_formation),
-                    q_liq_end,
-                    q_rai_end,
-                    ρ_end,
-                    N_liq_end,
-                )
-            Plots.plot!([r.d_ln_pp_d_ln_q_liq for r in precip_sus_aut], z_centers, label = "aut, q_liq", color = :red)
-            Plots.plot!([r.d_ln_pp_d_ln_q_rai for r in precip_sus_aut], z_centers, label = "aut, q_rai", color = :brown)
-            Plots.plot!([r.d_ln_pp_d_ln_q_liq for r in precip_sus_acc], z_centers, label = "acc, q_liq", color = :blue)
-            Plots.plot!([r.d_ln_pp_d_ln_q_rai for r in precip_sus_acc], z_centers, label = "acc, q_rai", color = :green)
-            Plots.plot!(legend = :outerright)
+            lines!(ax, d_ln_pp_d_ln_q_liq_aut, z_centers, label = "aut, q_liq", color = :red)
+            lines!(ax, d_ln_pp_d_ln_q_rai_aut, z_centers, label = "aut, q_rai", color = :brown)
+            lines!(ax, d_ln_pp_d_ln_q_liq_acc, z_centers, label = "acc, q_liq", color = :blue)
+            lines!(ax, d_ln_pp_d_ln_q_rai_acc, z_centers, label = "acc, q_rai", color = :green)
+            axislegend(ax, position = :lb)
         end
-        p = Plots.plot(
-            p1,
-            p2,
-            p3,
-            p4,
-            p5,
-            p6,
-            p7,
-            p8,
-            p9,
-            p10,
-            size = (1800.0, 1200.0),
-            bottom_margin = 40.0 * Plots.PlotMeasures.px,
-            left_margin = 80.0 * Plots.PlotMeasures.px,
-        )
-        Plots.png(p, joinpath(path, "final_aux_profiles.png"))
     end
+    axs = contents(fig[:, :])
+    linkyaxes!(axs...)
+    save(joinpath(path, "final_aux_profiles.png"), fig)
+    nothing
 end
 
 function plot_animation_p3(z_centers, solver, aux, moisture, precip, K1D, output = plot_folder)
