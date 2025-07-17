@@ -1,5 +1,5 @@
 import OrdinaryDiffEq as ODE
-using Plots
+using CairoMakie
 
 import ClimaCore as CC
 import ClimaParams as CP
@@ -86,39 +86,52 @@ function run_box_simulation(::Type{FT}, opts) where {FT}
 
     # plot results
     time = solver.t
-    q_liq = []
-    q_rai = []
-    for u in solver.u
-        q_liq = [q_liq; parent(u.ρq_liq) / (opts["rhod"] .+ parent(u.ρq_tot))]
-        q_rai = [q_rai; parent(u.ρq_rai) / (opts["rhod"] .+ parent(u.ρq_tot))]
+    q_liq = map(solver.u) do u
+        only(parent(u.ρq_liq)) / (opts["rhod"] .+ only(parent(u.ρq_tot)))
+    end
+    q_rai = map(solver.u) do u
+        only(parent(u.ρq_rai)) / (opts["rhod"] .+ only(parent(u.ρq_tot)))
     end
 
-    plot(time ./ 60, q_liq .* 1000, label = "qc", lw = 2)
-    plot!(time ./ 60, q_rai .* 1000, label = "qr", lw = 2)
-    p1 = plot!(
-        xlabel = "time [m]",
-        ylabel = "specific water content [g/kg]",
-        legend = :right,
-        left_margin = 3Plots.mm,
-        bottom_margin = 3Plots.mm,
-    )
+    s_to_min = 1 / 60
+    m⁻³_to_cm⁻³ = 1e-6
 
-    if opts["precipitation_choice"] == "Precipitation1M"
-        plot(p1, size = (400, 300))
-    elseif opts["precipitation_choice"] == "Precipitation2M"
-        N_liq = []
-        N_rai = []
-        for u in solver.u
-            N_liq = [N_liq; parent(u.N_liq)]
-            N_rai = [N_rai; parent(u.N_rai)]
+    function plot_qc_qr!(gp)
+        ax = Axis(gp; xlabel = "time [m]", ylabel = "specific water content [g/kg]")
+        lines!(ax, time * s_to_min, q_liq .* 1000, label = "qc", linewidth = 2)
+        lines!(ax, time * s_to_min, q_rai .* 1000, label = "qr", linewidth = 2)
+        axislegend(ax; position = :rc)
+        nothing
+    end
+
+    with_theme(theme_minimal()) do
+        if opts["precipitation_choice"] == "Precipitation1M"
+            fig = Figure(size = (400, 300))
+            plot_qc_qr!(fig[1, 1])
+        elseif opts["precipitation_choice"] == "Precipitation2M"
+            N_liq = map(solver.u) do u
+                only(parent(u.N_liq))
+            end
+            N_rai = map(solver.u) do u
+                only(parent(u.N_rai))
+            end
+            fig = Figure(size = (400, 300))
+            plot_qc_qr!(fig[1, 1])
+            ax = Axis(fig[1, 2]; xlabel = "time [m]", ylabel = "Nc [1/cm³]")
+            lines!(ax, time * s_to_min, N_liq * m⁻³_to_cm⁻³, linewidth = 2)
+            axr = Axis(
+                fig[1, 2];
+                xlabel = "time [m]", ylabel = "Nr [1/cm³]",
+                yaxisposition = :right, rightspinevisible = true,
+            )
+            hidespines!(axr, :l, :b, :t)  # don't hide right spine
+            hidexdecorations!(axr)
+            lines!(axr, time * s_to_min, N_rai * m⁻³_to_cm⁻³, linewidth = 2, color = Cycled(2))
         end
-        plot(time ./ 60, N_liq ./ 10^6, xlabel = "time [m]", ylabel = "Nc [1/cm^3]", label = "N_c", lw = 2)
-        plot!(twinx(), time ./ 60, N_rai ./ 10^6, ylabel = "Nr [1/cm^3]", label = "N_r", c = 2, lw = 2)
-        p2 = plot!(legend = false, right_margin = 3Plots.mm)
-        plot(p1, p2, size = (800, 300))
+        fig
     end
 
-    savefig(path * "/result.pdf")
+    save(joinpath(path, "result.pdf"), fig)
 
     return solver
 end
