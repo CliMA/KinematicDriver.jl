@@ -56,8 +56,8 @@ function run_box_simulation(::Type{FT}, opts) where {FT}
     coord = CC.Fields.coordinate_field(space)
 
     # Create the initial condition profiles
-    init =
-        map(coord -> CO.initial_condition_0d(FT, thermo_params, opts["qt"], opts["Nd"], opts["k"], opts["rhod"]), coord)
+    ic_0d = CO.initial_condition_0d(FT, thermo_params, opts["qt"], opts["Nd"], opts["k"], opts["rhod"])
+    init = map(Returns(ic_0d), coord)
 
     # Create state vector and apply initial condition
     Y = CO.initialise_state(moisture, precip, init)
