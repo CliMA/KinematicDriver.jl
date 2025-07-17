@@ -23,28 +23,16 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     @info moisture_choice, precipitation_choice, rain_formation_choice, sedimentation_choice
 
     # Decide the output folder name based on options
-
-    output_folder = string("Output_", moisture_choice, "_", precipitation_choice)
+    folder = "Output_$(moisture_choice)_$(precipitation_choice)"
     if precipitation_choice in ["Precipitation1M", "Precipitation2M"]
-        output_folder = output_folder * "_" * rain_formation_choice
-        if sedimentation_choice == "Chen2022"
-            output_folder = output_folder * "_Chen2022"
-        end
+        folder *= "_$(rain_formation_choice)"
+        sedimentation_choice == "Chen2022" && (folder *= "_Chen2022")
     elseif precipitation_choice == "CloudyPrecip"
-        output_folder = output_folder * "_" * string(opts["num_moments"])
+        folder *= "_$(opts["num_moments"])"
     end
-    if opts["qtot_flux_correction"]
-        output_folder = output_folder * "_wFC"
-    end
-    if opts["open_system_activation"]
-        output_folder = output_folder * "_OSA"
-    end
-    if precipitation_choice == "PrecipitationP3"
-        p3_boundary_condition = opts["p3_boundary_condition"]
-    else
-        p3_boundary_condition = nothing
-    end
-    path = joinpath(@__DIR__, output_folder)
+    opts["qtot_flux_correction"] && (folder *= "_wFC")
+    opts["open_system_activation"] && (folder *= "_OSA")
+    path = joinpath(@__DIR__, folder)
     mkpath(path)
 
     # Overwrite the defaults parameters based on options
@@ -82,11 +70,9 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
 
     moisture = CO.get_moisture_type(moisture_choice, toml_dict)
     precip = CO.get_precipitation_type(
-        precipitation_choice,
-        toml_dict;
-        rain_formation_choice = rain_formation_choice,
-        sedimentation_choice = sedimentation_choice,
-        boundary = p3_boundary_condition,
+        precipitation_choice, toml_dict;
+        rain_formation_choice, sedimentation_choice,
+        boundary = opts["p3_boundary_condition"],
     )
 
     @info "Initialising"
@@ -99,8 +85,8 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     face_coord = CC.Fields.coordinate_field(face_space)
 
     # Initialize the netcdf output Stats struct
-    fname = joinpath(path, "Output.nc")
-    Stats = CO.NetCDFIO_Stats(fname, 1.0, parent(face_coord), parent(coord))
+    output_nc = joinpath(path, "Output.nc")
+    Stats = CO.NetCDFIO_Stats(output_nc, 1.0, parent(face_coord), parent(coord))
 
     # Solve the initial value problem for density profile
     ρ_profile = CO.ρ_ivp(FT, kid_params, thermo_params)
@@ -125,19 +111,8 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
 
     # Create aux vector and apply initial condition
     aux = K1D.initialise_aux(
-        FT,
-        init,
-        common_params,
-        kid_params,
-        thermo_params,
-        air_params,
-        activation_params,
-        TS,
-        Stats,
-        face_space,
-        moisture,
-        precip,
-        cloudy_params,
+        FT, init, common_params, kid_params, thermo_params, air_params, activation_params,
+        TS, Stats, face_space, moisture, precip, cloudy_params,
     )
 
     # Create state vector and apply initial condition
@@ -148,7 +123,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
 
     # Define callbacks for output
     callback_io = ODE.DiscreteCallback(CO.condition_io, CO.affect_io!; save_positions = (false, false))
-    callbacks = ODE.CallbackSet(callback_io)
+    callback = ODE.CallbackSet(callback_io)
 
     # Collect all the tendencies into rhs function for ODE solver
     # based on model choices for the solved equations
@@ -158,38 +133,26 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     problem = ODE.ODEProblem(ode_rhs!, Y, (FT(opts["t_ini"]), FT(opts["t_end"])), aux)
     @info "Solving"
     solver = ODE.solve(
-        problem,
-        ODE.SSPRK33(),
-        dt = TS.dt,
-        saveat = TS.dt_io,
-        callback = callbacks,
-        progress = true,
-        progress_message = (dt, u, p, t) -> t,
+        problem, ODE.SSPRK33();
+        TS.dt, saveat = TS.dt_io, callback,
+        progress = true, progress_message = (dt, u, p, t) -> t,
     )
 
     # Some basic plots
     if opts["plotting_flag"] == true
         @info "Plotting"
-        plot_folder = string("experiments/KiD_driver/", output_folder, "/figures/")
+        output = joinpath(path, "figures")
 
         z_centers = parent(CC.Fields.coordinate_field(space))
-        plot_final_aux_profiles(z_centers, aux, precip, output = plot_folder)
+        plot_final_aux_profiles(z_centers, aux, precip; output)
         if precip isa CO.PrecipitationP3
-            plot_animation_p3(z_centers, solver, aux, moisture, precip, K1D, plot_folder)
-            plot_timeheight_p3(
-                string("experiments/KiD_driver/", output_folder, "/Output.nc"),
-                precip,
-                output = plot_folder,
-            )
+            plot_animation_p3(z_centers, solver, aux, moisture, precip, K1D, output)
+            plot_timeheight_p3(output_nc, precip; output)
         else
-            plot_animation(string("experiments/KiD_driver/", output_folder, "/Output.nc"), output = plot_folder)
-            plot_timeheight(
-                string("experiments/KiD_driver/", output_folder, "/Output.nc"),
-                output = plot_folder,
-                mixed_phase = false,
-            )
+            plot_animation(output_nc; output)
+            plot_timeheight(output_nc; output, mixed_phase = false)
         end
     end
 
-    return
+    nothing
 end
