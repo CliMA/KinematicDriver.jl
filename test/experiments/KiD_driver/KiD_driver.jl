@@ -5,24 +5,21 @@
     to see the list of command line arguments.
 """
 
+import KinematicDriver
 
 # Get the parameter values for the simulation
-include("parse_commandline.jl")
+kid_driver_path = joinpath(pkgdir(KinematicDriver), "test", "experiments", "KiD_driver")
+include(joinpath(kid_driver_path, "parse_commandline.jl"))
 
 if !(@isdefined config)
     config = parse_commandline()
 end
 
 ft_choice = config["FLOAT_TYPE"]
+@assert ft_choice ∈ ("Float64", "Float32") "Invalid float type: $ft_choice"
 
-if ft_choice == "Float64"
-    const FT = Float64
-elseif ft_choice == "Float32"
-    const FT = Float32
-else
-    error("Invalid float type: $ft_choice")
-end
+FT = ft_choice == "Float64" ? Float64 : Float32
 
-include("run_KiD_simulation.jl")
+include(joinpath(kid_driver_path, "run_KiD_simulation.jl"))
 
 run_KiD_simulation(FT, config)
