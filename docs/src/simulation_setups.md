@@ -20,16 +20,23 @@ In the second part of the simulation the vertical momentum flux is switched off,
 Below figure shows an example prescribed vertical momentum as a function of time.
 
 ```@example example_figure
-using Plots
+using CairoMakie
 import KinematicDriver.K1DModel as K1D
 
-t_range = range(0, 15 * 60, length=100)
+min = 60
+t_range = range(0, 15min, length=100)
 w1 = 2.0
-t1 = 600.0
-plot(t_range / 60.0, [K1D.ρw_helper(t, w1, t1) for t in t_range], linewidth=3, xlabel="t [min]", ylabel="updraft momentum flux [m/s kg/m3]")
-savefig("prescribed_momentum_flux.svg") #hide
+t1 = 10min
+with_theme(theme_minimal()) do
+    fig = Figure()
+    ax = Axis(fig[1, 1]; 
+      xlabel="t [min]", ylabel="updraft momentum flux [m/s kg/m³]",
+      limits = ((0, nothing), nothing)
+    )
+    lines!(ax, t_range / min, K1D.ρw_helper.(t_range, w1, t1); linewidth = 3)
+    fig
+end
 ```
-![](prescribed_momentum_flux.svg)
 
 An example of running a one-dimensional KiD simulation is provided in the following file:
 `test/experiments/KiD_driver/KiD_driver.jl`.
