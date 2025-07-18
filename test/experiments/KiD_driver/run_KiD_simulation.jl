@@ -11,6 +11,9 @@ include(joinpath(pkgdir(KinematicDriver), "test", "create_parameters.jl"))
 include(joinpath(pkgdir(KinematicDriver), "test", "plotting_utils.jl"))
 
 function run_KiD_simulation(::Type{FT}, opts) where {FT}
+    if opts["z_2"] < opts["z_max"]
+        throw(ArgumentError("z_max cannot be higher than z_2"))
+    end
 
     # Equations to solve for mositure and precipitation variables
     moisture_choice = opts["moisture_choice"]
