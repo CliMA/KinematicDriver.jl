@@ -732,7 +732,9 @@ end
 
 
 @inline function precip_sources_tendency!(ms::AbstractMoistureStyle, ps::AbstractPrecipitationStyle, dY, Y, aux, t)
-    error("sources_tendency not implemented for a given $sp")
+    error(
+        "precip_sources_tendency! not implemented for the given pair $(typeof(ms).name.name) and $(typeof(ps).name.name)",
+    )
 end
 @inline function precip_sources_tendency!(ms::AbstractMoistureStyle, ::NoPrecipitation, dY, Y, aux, t) end
 
