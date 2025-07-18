@@ -115,6 +115,9 @@ function initialise_aux(
     precip,
     cloudy_params = nothing,
 )
+    # helper function to copy zero field to all fields of a `@NamedTuple{NT}`-valued Field
+    zero_nt(zero, ::Type{NT}) where {NT} = NT(ntuple(_ -> copy(zero), fieldcount(NT)))
+    zero_nt(::Type{NT}) where {NT} = @. zero_nt(ip.zero, NT)
 
     # Create a thermo state for aux
     # Allocate the cloud_sources which is a field of containers (tuples)
@@ -126,8 +129,7 @@ function initialise_aux(
         q = @. TD.PhasePartition(ip.q_tot, ip.q_liq, ip.q_ice)
         ts = @. TD.PhaseNonEquil_ρθq(thermo_params, ip.ρ, ip.θ_liq_ice, q)
 
-        cloud_sources_eltype = @NamedTuple{q_liq::FT, q_ice::FT}
-        cloud_sources = @. cloud_sources_eltype(tuple(copy(ip.zero), copy(ip.zero)))
+        cloud_sources = zero_nt(NamedTuple{(:q_liq, :q_ice)})
     elseif moisture isa CloudyMoisture
         q = @. TD.PhasePartition(ip.q_tot, ip.q_liq, ip.q_ice)
         ts = @. TD.PhaseNonEquil_ρTq(thermo_params, ip.ρ, ip.T, q)
@@ -140,111 +142,44 @@ function initialise_aux(
 
     # Allocate scratch which is a tuple of fields for storing intermediate outputs
     scratch = (;
-        tmp = similar(ip.q_tot),
-        tmp2 = similar(ip.q_tot),
-        tmp3 = similar(ip.q_tot),
+        tmp = similar(ip.q_tot), tmp2 = similar(ip.q_tot), tmp3 = similar(ip.q_tot),
         tmp_surface = similar(CC.Fields.level(ip.q_tot, 1), Tuple{FT, FT}),
     )
 
     # Allocate a tuple of fields for storing precomputed thermodynamic variables
-    thermo_variables =
-        (; ts = ts, ρ = ip.ρ, ρ_dry = ip.ρ_dry, p = ip.p, T = ip.T, θ_liq_ice = ip.θ_liq_ice, θ_dry = ip.θ_dry)
+    thermo_variables = (; ts, ip.ρ, ip.ρ_dry, ip.p, ip.T, ip.θ_liq_ice, ip.θ_dry)
 
+    microph_variables = (; ip.q_tot, ip.q_liq, ip.q_ice)
     if precip isa Union{NoPrecipitation, Precipitation0M}
-        microph_variables = (; q_tot = ip.q_tot, q_liq = ip.q_liq, q_ice = ip.q_ice)
+        # no additional `microph_variables`
         velocities = nothing
-        precip_sources_eltype = @NamedTuple{q_tot::FT, q_liq::FT, q_ice::FT}
-        precip_sources = @. precip_sources_eltype(tuple(copy(ip.zero), copy(ip.zero), copy(ip.zero)))
+        precip_sources = zero_nt(NamedTuple{(:q_tot, :q_liq, :q_ice)})
         activation_sources = nothing
     elseif precip isa Precipitation1M
-        microph_variables = (; q_tot = ip.q_tot, q_liq = ip.q_liq, q_ice = ip.q_ice, q_rai = ip.q_rai, q_sno = ip.q_sno)
-        velocities = (; term_vel_rai = copy(ip.zero), term_vel_sno = copy(ip.zero))
-        precip_sources_eltype = @NamedTuple{q_tot::FT, q_liq::FT, q_ice::FT, q_rai::FT, q_sno::FT}
-        precip_sources =
-            @. precip_sources_eltype(tuple(copy(ip.zero), copy(ip.zero), copy(ip.zero), copy(ip.zero), copy(ip.zero)))
+        microph_variables = merge(microph_variables, (; ip.q_rai, ip.q_sno))
+        velocities = zero_nt(NamedTuple{(:term_vel_rai, :term_vel_sno)})
+        precip_sources = zero_nt(NamedTuple{(:q_tot, :q_liq, :q_ice, :q_rai, :q_sno)})
         activation_sources = nothing
     elseif precip isa Precipitation2M
-        microph_variables = (;
-            q_tot = ip.q_tot,
-            q_liq = ip.q_liq,
-            q_ice = ip.q_ice,
-            q_rai = ip.q_rai,
-            q_sno = ip.q_sno,
-            N_liq = ip.N_liq,
-            N_rai = ip.N_rai,
-            N_aer = ip.N_aer,
-        )
-        velocities = (; term_vel_N_rai = copy(ip.zero), term_vel_rai = copy(ip.zero))
-        precip_sources_eltype = @NamedTuple{q_tot::FT, q_liq::FT, q_rai::FT, N_aer::FT, N_liq::FT, N_rai::FT}
-        precip_sources = @. precip_sources_eltype(
-            tuple(copy(ip.zero), copy(ip.zero), copy(ip.zero), copy(ip.zero), copy(ip.zero), copy(ip.zero)),
-        )
-        activation_sources_eltype = @NamedTuple{N_aer::FT, N_liq::FT}
-        activation_sources = @. activation_sources_eltype(tuple(copy(ip.zero), copy(ip.zero)))
+        microph_variables = merge(microph_variables, (; ip.q_rai, ip.q_sno, ip.N_liq, ip.N_rai, ip.N_aer))
+        velocities = zero_nt(NamedTuple{(:term_vel_N_rai, :term_vel_rai)})
+        precip_sources = zero_nt(NamedTuple{(:q_tot, :q_liq, :q_rai, :N_aer, :N_liq, :N_rai)})
+        activation_sources = zero_nt(NamedTuple{(:N_aer, :N_liq)})
     elseif precip isa PrecipitationP3
-        microph_variables = (;
-            q_tot = ip.q_tot,
-            q_liq = ip.q_liq,
-            q_rai = ip.q_rai,
-            q_ice = ip.q_ice,
-            q_rim = ip.q_rim,
-            q_liqonice = ip.q_liqonice,
-            B_rim = ip.B_rim,
-            N_liq = ip.N_liq,
-            N_rai = ip.N_rai,
-            N_ice = ip.N_ice,
-            N_aer = ip.N_aer,
-            ρq_tot = ip.ρq_tot,
-            ρq_liq = ip.ρq_liq,
-            ρq_rai = ip.ρq_rai,
-            ρq_ice = ip.ρq_ice,
-            ρq_rim = ip.ρq_rim,
-            ρq_liqonice = ip.ρq_liqonice,
-            q_vap = ip.q_vap,
-            ρq_vap = ip.ρq_vap,
+        microph_variables = (; 
+            ip.q_tot, ip.q_liq, ip.q_rai, ip.q_ice, ip.q_rim, ip.q_liqonice, 
+            ip.ρq_tot, ip.ρq_liq, ip.ρq_rai, ip.ρq_ice, ip.ρq_rim, ip.ρq_liqonice, 
+            ip.B_rim, ip.N_liq, ip.N_rai, ip.N_ice, ip.N_aer, 
+            ip.q_vap, ip.ρq_vap,
         )
-        velocities = (;
-            term_vel_rai = copy(ip.zero),
-            term_vel_ice = copy(ip.zero),
-            term_vel_N_rai = copy(ip.zero),
-            term_vel_N_ice = copy(ip.zero),
-        )
-        precip_sources_eltype = @NamedTuple{
-            q_tot::FT,
-            q_liq::FT,
-            q_rai::FT,
-            q_ice::FT,
-            q_rim::FT,
-            q_liqonice::FT,
-            N_aer::FT,
-            N_liq::FT,
-            N_rai::FT,
-            N_ice::FT,
-            B_rim::FT,
-        }
-        precip_sources = @. precip_sources_eltype(
-            tuple(
-                copy(ip.zero),
-                copy(ip.zero),
-                copy(ip.zero),
-                copy(ip.zero),
-                copy(ip.zero),
-                copy(ip.zero),
-                copy(ip.zero),
-                copy(ip.zero),
-                copy(ip.zero),
-                copy(ip.zero),
-                copy(ip.zero),
-            ),
+        velocities = zero_nt(NamedTuple{(:term_vel_rai, :term_vel_ice, :term_vel_N_rai, :term_vel_N_ice)})
+        precip_sources = zero_nt(
+            NamedTuple{(
+                :q_tot, :q_liq, :q_rai, :q_ice, :q_rim, :q_liqonice, :N_aer, :N_liq, :N_rai, :N_ice, :B_rim,
+            )},
         )
         p3_boundary_condition_eltype = @NamedTuple{
-            ice_start::Bool,
-            _magnitude::FT,
-            _q_flux::FT,
-            _N_flux::FT,
-            _F_rim::FT,
-            _F_liq::FT,
-            _ρ_r_init::FT,
+            ice_start::Bool, _magnitude::FT, _q_flux::FT, _N_flux::FT, _F_rim::FT, _F_liq::FT, _ρ_r_init::FT,
         }
         p3_boundary_condition = @. p3_boundary_condition_eltype(
             tuple(
@@ -260,16 +195,8 @@ function initialise_aux(
 
         activation_sources = nothing
     elseif precip isa CloudyPrecip
-        microph_variables = (;
-            q_tot = ip.q_tot,
-            q_liq = ip.q_liq,
-            q_ice = ip.q_ice,
-            q_rai = ip.q_rai,
-            N_liq = ip.N_liq,
-            N_rai = ip.N_rai,
-            N_aer = ip.N_aer,
-            pdists = ip.pdists,
-            moments = ip.moments,
+        microph_variables = (; 
+            ip.q_tot, ip.q_liq, ip.q_ice, ip.q_rai, ip.N_liq, ip.N_rai, ip.N_aer, ip.pdists, ip.moments,
         )
         velocities = (; weighted_vt = copy(ip.cloudy_moments_zero))
         precip_sources = (; moments = copy(ip.cloudy_moments_zero), ρq_vap = copy(ip.zero))
