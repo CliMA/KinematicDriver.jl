@@ -15,12 +15,12 @@ function run_box_simulation(::Type{FT}, opts) where {FT}
     precipitation_choice = opts["precipitation_choice"]
     rain_formation_choice = opts["rain_formation_choice"]
 
-    # Decide the output flder name based on options
-    output_folder = string("Output_", precipitation_choice)
+    # Decide the output folder name based on options
+    folder = "Output_$(precipitation_choice)"
     if precipitation_choice in ["Precipitation1M", "Precipitation2M"]
-        output_folder = output_folder * "_" * rain_formation_choice
+        folder *= "_$(rain_formation_choice)"
     end
-    path = joinpath(@__DIR__, output_folder)
+    path = joinpath(@__DIR__, folder)
     mkpath(path)
 
     # Overwrite the defaults parameters based on options
@@ -40,7 +40,7 @@ function run_box_simulation(::Type{FT}, opts) where {FT}
     activation_params = CMP.AerosolActivationParameters(toml_dict)
 
     moisture = CO.get_moisture_type("NonEquilibriumMoisture", toml_dict)
-    precip = CO.get_precipitation_type(precipitation_choice, toml_dict; rain_formation_choice = rain_formation_choice)
+    precip = CO.get_precipitation_type(precipitation_choice, toml_dict; rain_formation_choice)
 
     # Initialize the timestepping struct
     TS = CO.TimeStepping(FT(opts["dt"]), FT(opts["dt_output"]), FT(opts["t_end"]))
