@@ -355,75 +355,82 @@ function plot_timeheight_p3(nc_data_file, precip; output = "output")
     Plots.png(p, joinpath(path, "timeheight.png"))
 end
 
+function make_tz_hm(i, j, t, z, var; imax = 3, title = "", kw...)
+    fig = current_figure()
+    ax = Axis(fig[i, j]; 
+        xlabel = i == imax ? "time [s]" : "",
+        ylabel = j == 1 ? "z [m]" : "",
+        yticklabelsvisible = j == 1,
+        xticklabelsvisible = i == 3,
+        title,
+    )
+    hm = CairoMakie.heatmap!(ax, t, z, var; colormap = :BuPu, kw...)
+    Makie.Colorbar(fig[i, j], hm;
+        halign = 1, valign = 0,
+        height = Makie.Relative(0.3), width = 10, tellwidth = false, 
+        ticks = WilkinsonTicks(3; k_min = 3, k_max = 6),
+    )
+end
+
 function plot_timeheight(nc_data_file; output = "output", mixed_phase = true, pysdm = false)
     path = joinpath(@__DIR__, output)
     mkpath(path)
 
     ds = NC.NCDataset(joinpath(@__DIR__, nc_data_file))
     if pysdm
-        t_plt = Array(ds["time"])
-        z_plt = Array(ds["height"])
-        q_liq_plt = transpose(Array(ds["cloud water mixing ratio"]))
-        q_rai_plt = transpose(Array(ds["rain water mixing ratio"]))
-        q_ice_plt = transpose(Array(ds["rain water mixing ratio"])) * FT(0)
-        q_sno_plt = transpose(Array(ds["rain water mixing ratio"])) * FT(0)
-        q_vap = transpose(Array(ds["water_vapour_mixing_ratio"])) * 1e3
-        q_tot_plt = q_vap + q_liq_plt
-        N_aer_plt = transpose(Array(ds["na"]))
-        N_liq_plt = transpose(Array(ds["nc"]))
-        N_rai_plt = transpose(Array(ds["nr"]))
+        t = Array(ds["time"])
+        z = Array(ds["height"])
+        q_liq = Array(ds["cloud water mixing ratio"])
+        q_rai = Array(ds["rain water mixing ratio"])
+        q_ice = Array(ds["rain water mixing ratio"]) * FT(0)
+        q_sno = Array(ds["rain water mixing ratio"]) * FT(0)
+        q_vap = Array(ds["water_vapour_mixing_ratio"]) * 1e3
+        q_tot = q_vap + q_liq
+        N_aer = Array(ds["na"])
+        N_liq = Array(ds["nc"])
+        N_rai = Array(ds["nr"])
     else
-        t_plt = Array(ds.group["profiles"]["t"])
-        z_plt = Array(ds.group["profiles"]["zc"])
-        q_tot_plt = Array(ds.group["profiles"]["q_tot"])
-        q_liq_plt = Array(ds.group["profiles"]["q_liq"])
-        q_ice_plt = Array(ds.group["profiles"]["q_ice"])
-        q_rai_plt = Array(ds.group["profiles"]["q_rai"])
-        q_sno_plt = Array(ds.group["profiles"]["q_sno"])
-        N_aer_plt = Array(ds.group["profiles"]["N_aer"])
-        N_liq_plt = Array(ds.group["profiles"]["N_liq"])
-        N_rai_plt = Array(ds.group["profiles"]["N_rai"])
+        t = Array(ds.group["profiles"]["t"])
+        z = Array(ds.group["profiles"]["zc"])
+        q_tot = permutedims(Array(ds.group["profiles"]["q_tot"]))
+        q_liq = permutedims(Array(ds.group["profiles"]["q_liq"]))
+        q_ice = permutedims(Array(ds.group["profiles"]["q_ice"]))
+        q_rai = permutedims(Array(ds.group["profiles"]["q_rai"]))
+        q_sno = permutedims(Array(ds.group["profiles"]["q_sno"]))
+        N_aer = permutedims(Array(ds.group["profiles"]["N_aer"]))
+        N_liq = permutedims(Array(ds.group["profiles"]["N_liq"]))
+        N_rai = permutedims(Array(ds.group["profiles"]["N_rai"]))
     end
-    #! format: off
-    p1 = Plots.heatmap(t_plt, z_plt, q_tot_plt .* 1e3, title = "q_tot [g/kg]", xlabel = "time [s]", ylabel = "z [m]", color = :BuPu, clims=(8, 15))
-    p2 = Plots.heatmap(t_plt, z_plt, q_liq_plt .* 1e3, title = "q_liq [g/kg]", xlabel = "time [s]", ylabel = "z [m]", color = :BuPu, clims=(0, 1))
-    p3 = Plots.heatmap(t_plt, z_plt, q_ice_plt .* 1e3, title = "q_ice [g/kg]", xlabel = "time [s]", ylabel = "z [m]", color = :BuPu, clims=(0, 0.25))
-    p4 = Plots.heatmap(t_plt, z_plt, q_rai_plt .* 1e3, title = "q_rai [g/kg]", xlabel = "time [s]", ylabel = "z [m]", color = :BuPu, clims=(0, 0.25))
-    p5 = Plots.heatmap(t_plt, z_plt, q_sno_plt .* 1e3, title = "q_sno [g/kg]", xlabel = "time [s]", ylabel = "z [m]", color = :BuPu)
-    p6 = Plots.heatmap(t_plt, z_plt, N_aer_plt .* 1e-6, title = "N_aer [1/cm^3]", xlabel = "time [s]", ylabel = "z [m]", color = :BuPu, clims=(0, 100))
-    p7 = Plots.heatmap(t_plt, z_plt, N_liq_plt .* 1e-6, title = "N_liq [1/cm^3]", xlabel = "time [s]", ylabel = "z [m]", color = :BuPu, clims=(0, 50))
-    p8 = Plots.heatmap(t_plt, z_plt, N_rai_plt .* 1e-6, title = "N_rai [1/cm^3]", xlabel = "time [s]", ylabel = "z [m]", color = :BuPu, clims=(0, 1))
-    #! format: on
+
+    kg_to_g = 1e3
+    m⁻³_to_cm⁻³ = 1e-6
+
     if mixed_phase
-        p = Plots.plot(
-            p1,
-            p2,
-            p3,
-            p4,
-            p5,
-            p6,
-            p7,
-            p8,
-            size = (1200.0, 1200.0),
-            bottom_margin = 30.0 * Plots.PlotMeasures.px,
-            left_margin = 30.0 * Plots.PlotMeasures.px,
-            layout = (3, 3),
-        )
+        fig = Figure(size = (1200, 1200))
+        make_tz_hm(1, 1, t, z, q_tot .* kg_to_g; colorrange = (8, 15), title = "q_tot [g/kg]")
+        make_tz_hm(1, 2, t, z, q_liq .* kg_to_g; colorrange = (0, 1), title = "q_liq [g/kg]")
+        make_tz_hm(1, 3, t, z, q_ice .* kg_to_g; colorrange = (0, 0.25), title = "q_ice [g/kg]")
+        make_tz_hm(2, 1, t, z, q_rai .* kg_to_g; colorrange = (0, 0.25), title = "q_rai [g/kg]")
+        make_tz_hm(2, 2, t, z, q_sno .* kg_to_g; title = "q_sno [g/kg]")
+        make_tz_hm(2, 3, t, z, N_aer .* m⁻³_to_cm⁻³; colorrange = (0, 100), title = "N_aer [1/cm³]")
+        make_tz_hm(3, 1, t, z, N_liq .* m⁻³_to_cm⁻³; colorrange = (0, 50), title = "N_liq [1/cm³]")
+        make_tz_hm(3, 2, t, z, N_rai .* m⁻³_to_cm⁻³; colorrange = (0, 1), title = "N_rai [1/cm³]")
+
     else
-        p = Plots.plot(
-            p1,
-            p2,
-            p4,
-            p6,
-            p7,
-            p8,
-            size = (1200.0, 600.0),
-            bottom_margin = 30.0 * Plots.PlotMeasures.px,
-            left_margin = 30.0 * Plots.PlotMeasures.px,
-            layout = (2, 3),
-        )
+        fig = Figure(size = (1200, 600))
+        make_tz_hm(1, 1, t, z, q_tot .* kg_to_g; colorrange = (8, 15), title = "q_tot [g/kg]")
+        make_tz_hm(1, 2, t, z, q_liq .* kg_to_g; colorrange = (0, 1), title = "q_liq [g/kg]")
+        make_tz_hm(1, 3, t, z, q_rai .* kg_to_g; colorrange = (0, 0.25), title = "q_rai [g/kg]")
+        make_tz_hm(2, 1, t, z, N_aer .* m⁻³_to_cm⁻³; colorrange = (0, 100), title = "N_aer [1/cm³]")
+        make_tz_hm(2, 2, t, z, N_liq .* m⁻³_to_cm⁻³; colorrange = (0, 50), title = "N_liq [1/cm³]")
+        make_tz_hm(2, 3, t, z, N_rai .* m⁻³_to_cm⁻³; colorrange = (0, 1), title = "N_rai [1/cm³]")
     end
-    Plots.png(p, joinpath(path, "timeheight.png"))
+    fig
+
+    axs = filter(x -> x isa Axis, contents(fig[:, :]))
+    linkaxes!(axs...)
+    save(joinpath(path, "timeheight.png"), fig)
+    nothing
 end
 
 function plot_timeheight_no_ice_snow(nc_data_file; output = "output", pysdm = false)
@@ -432,58 +439,27 @@ function plot_timeheight_no_ice_snow(nc_data_file; output = "output", pysdm = fa
 
     ds = NC.NCDataset(joinpath(@__DIR__, nc_data_file))
     if pysdm
-        t_plt = Array(ds["time"])
-        z_plt = Array(ds["height"])
-        q_liq_plt = transpose(Array(ds["cloud water mixing ratio"])) / 1e3
-        q_rai_plt = transpose(Array(ds["rain water mixing ratio"])) / 1e3
-        q_vap = transpose(Array(ds["water_vapour_mixing_ratio"]))
-        q_tot_plt = q_vap + q_liq_plt
+        t = Array(ds["time"])
+        z = Array(ds["height"])
+        q_liq = Array(ds["cloud water mixing ratio"]) / 1e3
+        q_rai = Array(ds["rain water mixing ratio"]) / 1e3
+        q_vap = Array(ds["water_vapour_mixing_ratio"])
+        q_tot = q_vap + q_liq
     else
-        t_plt = Array(ds.group["profiles"]["t"])
-        z_plt = Array(ds.group["profiles"]["zc"])
-        q_tot_plt = Array(ds.group["profiles"]["q_tot"])
-        q_liq_plt = Array(ds.group["profiles"]["q_liq"])
-        q_rai_plt = Array(ds.group["profiles"]["q_rai"])
+        t = Array(ds.group["profiles"]["t"])
+        z = Array(ds.group["profiles"]["zc"])
+        q_tot = permutedims(Array(ds.group["profiles"]["q_tot"]))
+        q_liq = permutedims(Array(ds.group["profiles"]["q_liq"]))
+        q_rai = permutedims(Array(ds.group["profiles"]["q_rai"]))
     end
 
-    p1 = Plots.heatmap(
-        t_plt,
-        z_plt,
-        q_tot_plt .* 1e3,
-        title = "q_tot [g/kg]",
-        xlabel = "time [s]",
-        ylabel = "z [m]",
-        color = :BuPu,
-        clims = (0, 1),
-    )
-    p2 = Plots.heatmap(
-        t_plt,
-        z_plt,
-        q_liq_plt .* 1e3,
-        title = "q_liq [g/kg]",
-        xlabel = "time [s]",
-        ylabel = "z [m]",
-        color = :BuPu,
-        clims = (0, 1),
-    )
-    p3 = Plots.heatmap(
-        t_plt,
-        z_plt,
-        q_rai_plt .* 1e3,
-        title = "q_rai [g/kg]",
-        xlabel = "time [s]",
-        ylabel = "z [m]",
-        color = :BuPu,
-        clims = (0, 0.25),
-    )
-    p = Plots.plot(
-        p1,
-        p2,
-        p3,
-        size = (1200.0, 300.0),
-        bottom_margin = 30.0 * Plots.PlotMeasures.px,
-        left_margin = 30.0 * Plots.PlotMeasures.px,
-        layout = (1, 3),
-    )
-    Plots.png(p, joinpath(path, "timeheight.png"))
+    kg_to_g = 1e3
+    fig = Figure(size = (1200, 300))
+    make_tz_hm(1, 1, t, z, q_tot .* kg_to_g; title = "q_tot [g/kg]", imax = 1, colorrange = (0, 1))
+    make_tz_hm(1, 2, t, z, q_liq .* kg_to_g; title = "q_liq [g/kg]", imax = 1, colorrange = (0, 1))
+    make_tz_hm(1, 3, t, z, q_rai .* kg_to_g; title = "q_rai [g/kg]", imax = 1, colorrange = (0, 0.25))
+    axs = filter(x -> x isa Axis, contents(fig[:, :]))
+    linkaxes!(axs...)
+    save(joinpath(path, "timeheight.png"), fig)
+    nothing
 end
