@@ -378,15 +378,15 @@ end
     @. dY.N_aer += -∂ₐ(ρw / If(ρ) * If(Y.N_aer))
     @. dY.N_liq += -∂(ρw / If(ρ) * If(Y.N_liq))
 
-    @. dY.N_rai += -∂((ρw / If(ρ) + wvec(-If(term_vel_N_rai))) * If(Y.N_rai))
-    @. dY.ρq_rai += -∂((ρw / If(ρ) + wvec(-If(term_vel_rai))) * If(Y.ρq_rai))
+    @. dY.N_rai += -∂((ρw / If(ρ) - wvec(If(term_vel_N_rai))) * If(Y.N_rai))
+    @. dY.ρq_rai += -∂((ρw / If(ρ) - wvec(If(term_vel_rai))) * If(Y.ρq_rai))
 
     fcc = CC.Operators.FluxCorrectionC2C(bottom = extrapolate, top = extrapolate)
     @. dY.N_aer += fcc(ρw / If(ρ), Y.N_aer)
     @. dY.N_liq += fcc(ρw / If(ρ), Y.N_liq)
 
-    @. dY.N_rai += fcc(ρw / If(ρ) + wvec(-If(term_vel_N_rai)), Y.N_rai)
-    @. dY.ρq_rai += fcc(ρw / If(ρ) + wvec(-If(term_vel_rai)), Y.ρq_rai)
+    @. dY.N_rai += fcc(ρw / If(ρ) - wvec(If(term_vel_N_rai)), Y.N_rai)
+    @. dY.ρq_rai += fcc(ρw / If(ρ) - wvec(If(term_vel_rai)), Y.ρq_rai)
 
     return dY
 end
