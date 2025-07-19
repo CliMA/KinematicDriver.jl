@@ -1,7 +1,8 @@
 agents:
   queue: new-central
-  slurm_mem: 8G
-  slurm_cpus_per_task: 8
+  slurm_mem: 2G
+  slurm_cpus_per_task: 1
+  slurm_time: '00:10:00'
   modules: climacommon/2025_03_18
 
 env:
@@ -18,6 +19,11 @@ steps:
       - "julia --project=test -e 'using Pkg; Pkg.instantiate(;verbose=true)'"
       - "julia --project=test -e 'using Pkg; Pkg.precompile()'"
       - "julia --project=test -e 'using Pkg; Pkg.status()'"
+    agents:
+      slurm_cpus_per_task: 8
+      slurm_mem: 6G
+    env:
+      JULIA_NUM_PRECOMPILE_TASKS: 8
 
   - wait
 
@@ -90,10 +96,14 @@ steps:
       - label: ":crystal_ball: Experiments: non equil + SB2006 without limiters"
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation2M --rain_formation_scheme_choice SB2006NL --sedimentation_scheme_choice SB2006 --prescribed_Nd 1e8"
         artifact_paths: "test/experiments/KiD_driver/Output_NonEquilibriumMoisture_Precipitation2M_SB2006NL/figures/*"
+        agents:
+          slurm_time: '00:16:00'
 
       - label: ":crystal_ball: Experiments: non equil + SB2006 + open system activation"
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation2M --rain_formation_scheme_choice SB2006 --sedimentation_scheme_choice SB2006 --prescribed_Nd 1e8 --open_system_activation=true"
         artifact_paths: "test/experiments/KiD_driver/Output_NonEquilibriumMoisture_Precipitation2M_SB2006_OSA/figures/*"
+        agents:
+          slurm_time: '00:16:00'
 
       - label: ":crystal_ball: Experiments: non equil + SB2006 + Chen2022"
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation2M --rain_formation_scheme_choice SB2006 --sedimentation_scheme_choice Chen2022 --prescribed_Nd 1e8"
@@ -106,26 +116,38 @@ steps:
       - label: ":crystal_ball: Experiments: Box model"
         command: "julia --color=yes --project=test test/experiments/box_driver/run_box_simulation.jl"
         artifact_paths: "test/experiments/box_driver/Output_Precipitation2M_SB2006/*"
+        agents:
+          slurm_time: '00:02:00'
 
       - label: ":partly_sunny: Experiments: 1D with collision and sedimentation + Cloudy (5 moments)"
         command: "julia --color=yes --project=test test/experiments/KiD_col_sed_driver/run_KiD_col_sed_simulation.jl"
         artifact_paths: "test/experiments/KiD_col_sed_driver/Output_CloudyPrecip_5/figures/*"
+        agents:
+          slurm_time: '00:05:00'
 
       - label: ":crystal_ball: Experiments: 2D setup"
         command: "julia --color=yes --project=test test/experiments/Ki2D_driver/run_kinematic2d_simulations.jl"
         artifact_paths: "test/experiments/Ki2D_driver/Output_NonEquilibriumMoisture_Precipitation1M_CliMA_1M/*"
+        agents:
+          slurm_time: '00:15:00'
 
       - label: ":partly_sunny: Experiment: 1D with Cloudy, 6 moments (default)"
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=CloudyMoisture --precipitation_choice=CloudyPrecip --n_elem=128"
         artifact_paths: "test/experiments/KiD_driver/Output_CloudyMoisture_CloudyPrecip_6/figures/*"
+        agents:
+          slurm_time: '00:15:00'
 
       - label: ":partly_sunny: Experiment: 1D with Cloudy, 4 moments"
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=CloudyMoisture --precipitation_choice=CloudyPrecip --n_elem=128 --num_moments=4"
         artifact_paths: "test/experiments/KiD_driver/Output_CloudyMoisture_CloudyPrecip_4/figures/*"
+        agents:
+          slurm_time: '00:15:00'
 
       - label: ":partly_sunny: Experiment: 1D with Cloudy, 7 moments"
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=CloudyMoisture --precipitation_choice=CloudyPrecip --n_elem=128 --num_moments=7"
         artifact_paths: "test/experiments/KiD_driver/Output_CloudyMoisture_CloudyPrecip_7/figures/*"
+        agents:
+          slurm_time: '00:15:00'
 
       #- label: ":snowflake: Experiment: P3 Setup"
       #  command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=MoistureP3 --precipitation_choice=PrecipitationP3 --n_elem=24 --z_max=3000 --t_end=75 --w1=0 --dt=0.5"
