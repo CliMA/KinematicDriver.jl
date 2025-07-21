@@ -18,6 +18,8 @@ export Precipitation0M
 export Precipitation1M
 export Precipitation2M
 export PrecipitationP3
+export IcePrecipitationP3
+export Precipitation2M_P3
 export CloudyPrecip
 
 abstract type AbstractStyle end
@@ -59,3 +61,12 @@ struct PrecipitationP3{P3, CH, PT, B} <: AbstractPrecipitationStyle
     p3_boundary_condition::B
 end
 struct CloudyPrecip <: AbstractPrecipitationStyle end
+# New P3 structs
+struct IcePrecipitationP3{P3, ST} <: AbstractPrecipitationStyle
+    params::P3
+    sedimentation::ST
+end
+struct Precipitation2M_P3{LP, IP} <: AbstractPrecipitationStyle
+    liq_precip::LP # The rain scheme. For now: Precipitation2M
+    ice_precip::IP # The ice scheme.  For now: IcePrecipitationP3
+end
