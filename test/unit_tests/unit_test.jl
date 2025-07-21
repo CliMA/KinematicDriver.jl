@@ -22,7 +22,7 @@ include(joinpath(kid_dir, "test", "create_parameters.jl"))
 
 # override the defaults
 default_toml_dict = CP.create_toml_dict(FT)
-toml_dict = override_toml_dict(@__DIR__, default_toml_dict)
+toml_dict = override_toml_dict(default_toml_dict)
 
 # create all the parameters structs ...
 common_params = create_common_parameters(toml_dict)

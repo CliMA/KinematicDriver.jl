@@ -23,7 +23,7 @@ const FT = Float64
 
 # Create parameters overwrite the defaults to match PySDM
 default_toml_dict = CP.create_toml_dict(FT)
-toml_dict = override_toml_dict(@__DIR__, default_toml_dict)
+toml_dict = override_toml_dict(default_toml_dict)
 thermo_params = create_thermodynamics_parameters(toml_dict)
 common_params = create_common_parameters(toml_dict)
 kid_params = create_kid_parameters(toml_dict)

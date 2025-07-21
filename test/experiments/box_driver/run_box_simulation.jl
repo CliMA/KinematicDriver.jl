@@ -26,8 +26,7 @@ function run_box_simulation(::Type{FT}, opts) where {FT}
     # Overwrite the defaults parameters based on options
     default_toml_dict = CP.create_toml_dict(FT)
     toml_dict = override_toml_dict(
-        path,
-        default_toml_dict,
+        default_toml_dict;
         precip_sources = 1,
         precip_sinks = 0,
         prescribed_Nd = FT(opts["Nd"]),
