@@ -115,7 +115,9 @@ function compare_profiles(; is_dry_flag::Bool)
         @test all(isapprox(KM_θ_dry(z_test), SD_θ_dry(z_test), rtol = 1e-6))
     end
 
-    plot_initial_profiles_comparison(KM_data, sdm_case = sdm_case)
+    with_theme(theme_minimal()) do
+        plot_initial_profiles_comparison(KM_data, sdm_case = sdm_case)
+    end
 end
 
 compare_profiles(is_dry_flag = true)
