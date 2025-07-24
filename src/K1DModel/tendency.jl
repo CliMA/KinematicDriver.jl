@@ -163,7 +163,7 @@ end
     if !common_params.local_activation
         # Use the S_Nl tendnecy at cloud base
         z = CC.Fields.coordinate_field(S_Nl).z # height
-        find_cloud_base(S_Nl, z, cloud_base_S_Nl_and_z)
+        find_cloud_base!(S_Nl, z, cloud_base_S_Nl_and_z)
         @. S_Nl = ifelse(z == last(cloud_base_S_Nl_and_z), S_Nl, FT(0))
     end
 
@@ -203,7 +203,7 @@ end
     )
     # Use the S_Nl tendnecy at cloud base
     z = CC.Fields.coordinate_field(S_Nl).z # height
-    find_cloud_base(S_Nl, z, cloud_base_S_Nl_and_z)
+    find_cloud_base!(S_Nl, z, cloud_base_S_Nl_and_z)
     @. S_Nl = ifelse(z == last(cloud_base_S_Nl_and_z), S_Nl, FT(0))
 
     @. aux.activation_sources.N_aer = -1 * !common_params.open_system_activation * S_Nl
