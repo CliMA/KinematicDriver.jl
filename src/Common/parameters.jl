@@ -24,6 +24,8 @@ Base.@kwdef struct CommonParameters{FT} <: ACP
     prescribed_Nd::FT
     "Switch to define aerosol activation approach; open system vs. closed system"
     open_system_activation::Bool
+    "Switch to define aerosol activation approach; local vs. cloud-base"
+    local_activation::Bool
 end
 
 function CommonParameters(td::CP.AbstractTOMLDict)
@@ -32,6 +34,7 @@ function CommonParameters(td::CP.AbstractTOMLDict)
         :precipitation_sinks_flag => :precip_sinks,
         :prescribed_Nd => :prescribed_Nd,
         :open_system_activation => :open_system_activation,
+        :local_activation => :local_activation,
     )
     parameters = CP.get_parameter_values(td, name_map, "Common")
     FT = CP.float_type(td)
