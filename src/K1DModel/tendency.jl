@@ -68,7 +68,7 @@ end
 
     aerosol_distribution =
         CMAM.AerosolDistribution((CMAM.Mode_κ(r_dry, std_dry, N_aer, (FT(1),), (FT(1),), (FT(0),), (κ,)),))
-    
+
     args = (
         activation_params,
         aerosol_distribution,
@@ -82,12 +82,16 @@ end
         q_ice,
         _preexisting_liquid_particles,
         FT(0),
-        ) # Assuming no ice particles
+    ) # Assuming no ice particles
     S_max = CMAA.max_supersaturation(args...)
     N_act = CMAA.total_N_activated(args...)
 
     # Convert the total activated number to tendency
-    S_Nl = ifelse(isnan(N_act) || (common_params.local_activation && (S_max < S || N_act < N_liq)), FT(0), (N_act - _already_activated_particles) / dt)
+    S_Nl = ifelse(
+        isnan(N_act) || (common_params.local_activation && (S_max < S || N_act < N_liq)),
+        FT(0),
+        (N_act - _already_activated_particles) / dt,
+    )
     return S_Nl
 end
 

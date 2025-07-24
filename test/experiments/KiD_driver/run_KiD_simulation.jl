@@ -116,11 +116,12 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     elseif precipitation_choice == "PrecipitationP3"
         cloudy_params = nothing
         (; ice_start, _q_flux, _N_flux, _F_rim, _F_liq, _ρ_r_init) = precip.p3_boundary_condition
-        init = CO.p3_initial_condition.(
-            FT, kid_params, thermo_params, coord.z;
-            _q_init = _q_flux, _N_init = _N_flux, _F_rim = _F_rim, _F_liq = _F_liq,
-            _ρ_r = _ρ_r_init, z_top = FT(opts["z_max"]), ice_start = ice_start,
-        )
+        init =
+            CO.p3_initial_condition.(
+                FT, kid_params, thermo_params, coord.z;
+                _q_init = _q_flux, _N_init = _N_flux, _F_rim = _F_rim, _F_liq = _F_liq,
+                _ρ_r = _ρ_r_init, z_top = FT(opts["z_max"]), ice_start = ice_start,
+            )
     else
         cloudy_params = nothing
         init = CO.initial_condition_1d.(FT, common_params, kid_params, thermo_params, (ρ_profile,), coord.z)

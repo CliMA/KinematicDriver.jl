@@ -390,7 +390,14 @@ function apply_param_dependency!(model_settings::Dict)
     end
 end
 
-function create_common_parameters(FT; precip_sources = 1, precip_sinks = 1, Nd = 1e8, open_system_activation = false, local_activation = false)
+function create_common_parameters(
+    FT;
+    precip_sources = 1,
+    precip_sinks = 1,
+    Nd = 1e8,
+    open_system_activation = false,
+    local_activation = false,
+)
     common_params = CO.Parameters.CommonParameters{FT}(;
         precip_sources = precip_sources,
         precip_sinks = precip_sinks,
