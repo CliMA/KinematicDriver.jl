@@ -559,13 +559,13 @@ end
         # cloud liquid number adjustment for mass limits
         @. S₁ = triangle(CM2.number_increase_for_mass_limit(numadj, pdf_c.xc_max, q_liq, ρ, N_liq), N_aer)
         @. S₂ = -triangle(-CM2.number_decrease_for_mass_limit(numadj, pdf_c.xc_min, q_liq, ρ, N_liq), N_liq)
-        @. aux.precip_sources.N_aer += -S₁ - S₂
+        @. aux.precip_sources.N_aer += -1 * !common_params.open_system_activation * (S₁ + S₂)
         @. aux.precip_sources.N_liq += S₁ + S₂
 
         # rain number adjustment for mass limits
         @. S₁ = triangle(CM2.number_increase_for_mass_limit(numadj, pdf_r.xr_max, q_rai, ρ, N_rai), N_aer)
         @. S₂ = -triangle(-CM2.number_decrease_for_mass_limit(numadj, pdf_r.xr_min, q_rai, ρ, N_rai), N_rai)
-        @. aux.precip_sources.N_aer += -S₁ - S₂
+        @. aux.precip_sources.N_aer += -1 * !common_params.open_system_activation * (S₁ + S₂)
         @. aux.precip_sources.N_liq += S₁ + S₂
     end
 
