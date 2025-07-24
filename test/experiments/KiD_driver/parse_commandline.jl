@@ -40,6 +40,10 @@ function parse_commandline()
         help = "Set to true if you want to assume an open system for aerosol activation with an aerosol concentration budget equal to prescribed_Nd"
         arg_type = Bool
         default = false
+        "--local_activation"
+        help = "Set to true if you want to apply ARG aerosol activation locally otherwise activation occurs at the cloud base"
+        arg_type = Bool
+        default = false
         "--plotting_flag"
         help = "Set to true if you want to generate some basic plots at the end of the simulation"
         arg_type = Bool

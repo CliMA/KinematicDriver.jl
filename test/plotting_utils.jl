@@ -263,30 +263,34 @@ function plot_animation(nc_data_file; output = "output")
     N_aer = Array(ds.group["profiles"]["N_aer"])
     N_liq = Array(ds.group["profiles"]["N_liq"])
     N_rai = Array(ds.group["profiles"]["N_rai"])
+    SN_liq_act = Array(ds.group["profiles"]["SN_liq_act"])
 
-    function plot_data(data, data_label, max_val, title = "")
+    function plot_data(data, data_label, max_val, scale, title = "")
         return Plots.plot(
-            data,
+            data * scale,
             z_plt,
             xlabel = data_label,
             ylabel = "z [m]",
             legend = false,
             title = title,
             titlefontsize = 30,
-            xlim = [0, 1.1 * max_val],
+            xlim = [0, 1.1 * max_val * scale],
         )
     end
 
     anim = Plots.@animate for i in 1:length(t_plt)
 
         title = "time = " * string(floor(Int, t_plt[i])) * " [s]"
-        p1 = plot_data(q_tot[:, i] .* 1e3, "q_tot [g/kg]", maximum(q_tot))
-        p2 = plot_data(q_liq[:, i] .* 1e3, "q_liq [g/kg]", maximum(q_liq), title)
-        p3 = plot_data(N_liq[:, i] .* 1e6, "N_liq [1/cm^3]", maximum(N_liq))
-        p4 = plot_data(q_rai[:, i] .* 1e3, "q_rai [g/kg]", maximum(q_rai))
-        p5 = plot_data(N_rai[:, i] .* 1e6, "N_rai [1/cm^3]", maximum(N_rai))
-        p6 = plot_data(q_ice[:, i] .* 1e3, "q_ice [g/kg]", maximum(q_ice))
-        p7 = plot_data(q_sno[:, i] .* 1e3, "q_sno [g/kg]", maximum(q_sno))
+        mass_scale = 1e3
+        num_scale = 1e-6
+        p1 = plot_data(q_tot[:, i], "q_tot [g/kg]", maximum(q_tot), mass_scale)
+        p2 = plot_data(q_liq[:, i], "q_liq [g/kg]", maximum(q_liq), mass_scale, title)
+        p3 = plot_data(N_liq[:, i], "N_liq [1/cm^3]", maximum(N_liq), num_scale)
+        p4 = plot_data(q_rai[:, i], "q_rai [g/kg]", maximum(q_rai), mass_scale)
+        p5 = plot_data(N_rai[:, i], "N_rai [1/cm^3]", maximum(N_rai), num_scale)
+        p6 = plot_data(q_ice[:, i], "q_ice [g/kg]", maximum(q_ice), mass_scale)
+        p7 = plot_data(q_sno[:, i], "q_sno [g/kg]", maximum(q_sno), mass_scale)
+        p8 = plot_data(SN_liq_act[:, i], "Activation [1/cm^3/s]", maximum(SN_liq_act), num_scale)
 
         Plots.plot(
             p1,
@@ -294,6 +298,7 @@ function plot_animation(nc_data_file; output = "output")
             p3,
             p4,
             p5,
+            p8,
             p6,
             p7,
             size = (1800.0, 1500.0),
@@ -379,6 +384,7 @@ function plot_timeheight(nc_data_file; output = "output", mixed_phase = true, py
         N_aer_plt = transpose(Array(ds["na"]))
         N_liq_plt = transpose(Array(ds["nc"]))
         N_rai_plt = transpose(Array(ds["nr"]))
+        SN_liq_act_plt = transpose(Array(ds["activating"]))
     else
         t_plt = Array(ds.group["profiles"]["t"])
         z_plt = Array(ds.group["profiles"]["zc"])
@@ -390,16 +396,18 @@ function plot_timeheight(nc_data_file; output = "output", mixed_phase = true, py
         N_aer_plt = Array(ds.group["profiles"]["N_aer"])
         N_liq_plt = Array(ds.group["profiles"]["N_liq"])
         N_rai_plt = Array(ds.group["profiles"]["N_rai"])
+        SN_liq_act_plt = Array(ds.group["profiles"]["SN_liq_act"])
     end
     #! format: off
-    p1 = Plots.heatmap(t_plt, z_plt, q_tot_plt .* 1e3, title = "q_tot [g/kg]", xlabel = "time [s]", ylabel = "z [m]", color = :BuPu, clims=(8, 15))
-    p2 = Plots.heatmap(t_plt, z_plt, q_liq_plt .* 1e3, title = "q_liq [g/kg]", xlabel = "time [s]", ylabel = "z [m]", color = :BuPu, clims=(0, 1))
-    p3 = Plots.heatmap(t_plt, z_plt, q_ice_plt .* 1e3, title = "q_ice [g/kg]", xlabel = "time [s]", ylabel = "z [m]", color = :BuPu, clims=(0, 0.25))
-    p4 = Plots.heatmap(t_plt, z_plt, q_rai_plt .* 1e3, title = "q_rai [g/kg]", xlabel = "time [s]", ylabel = "z [m]", color = :BuPu, clims=(0, 0.25))
+    p1 = Plots.heatmap(t_plt, z_plt, q_tot_plt .* 1e3, title = "q_tot [g/kg]", xlabel = "time [s]", ylabel = "z [m]", color = :BuPu)
+    p2 = Plots.heatmap(t_plt, z_plt, q_liq_plt .* 1e3, title = "q_liq [g/kg]", xlabel = "time [s]", ylabel = "z [m]", color = :BuPu)
+    p3 = Plots.heatmap(t_plt, z_plt, q_ice_plt .* 1e3, title = "q_ice [g/kg]", xlabel = "time [s]", ylabel = "z [m]", color = :BuPu)
+    p4 = Plots.heatmap(t_plt, z_plt, q_rai_plt .* 1e3, title = "q_rai [g/kg]", xlabel = "time [s]", ylabel = "z [m]", color = :BuPu)
     p5 = Plots.heatmap(t_plt, z_plt, q_sno_plt .* 1e3, title = "q_sno [g/kg]", xlabel = "time [s]", ylabel = "z [m]", color = :BuPu)
-    p6 = Plots.heatmap(t_plt, z_plt, N_aer_plt .* 1e-6, title = "N_aer [1/cm^3]", xlabel = "time [s]", ylabel = "z [m]", color = :BuPu, clims=(0, 100))
-    p7 = Plots.heatmap(t_plt, z_plt, N_liq_plt .* 1e-6, title = "N_liq [1/cm^3]", xlabel = "time [s]", ylabel = "z [m]", color = :BuPu, clims=(0, 50))
-    p8 = Plots.heatmap(t_plt, z_plt, N_rai_plt .* 1e-6, title = "N_rai [1/cm^3]", xlabel = "time [s]", ylabel = "z [m]", color = :BuPu, clims=(0, 1))
+    p6 = Plots.heatmap(t_plt, z_plt, N_aer_plt .* 1e-6, title = "N_aer [1/cm^3]", xlabel = "time [s]", ylabel = "z [m]", color = :BuPu)
+    p7 = Plots.heatmap(t_plt, z_plt, N_liq_plt .* 1e-6, title = "N_liq [1/cm^3]", xlabel = "time [s]", ylabel = "z [m]", color = :BuPu)
+    p8 = Plots.heatmap(t_plt, z_plt, N_rai_plt .* 1e-6, title = "N_rai [1/cm^3]", xlabel = "time [s]", ylabel = "z [m]", color = :BuPu)
+    p9 = Plots.heatmap(t_plt, z_plt, SN_liq_act_plt .* 1e-6, title = "Activation [1/cm^3/s]", xlabel = "time [s]", ylabel = "z [m]", color = :BuPu)
     #! format: on
     if mixed_phase
         p = Plots.plot(
@@ -411,6 +419,7 @@ function plot_timeheight(nc_data_file; output = "output", mixed_phase = true, py
             p6,
             p7,
             p8,
+            p9,
             size = (1200.0, 1200.0),
             bottom_margin = 30.0 * Plots.PlotMeasures.px,
             left_margin = 30.0 * Plots.PlotMeasures.px,
@@ -424,10 +433,11 @@ function plot_timeheight(nc_data_file; output = "output", mixed_phase = true, py
             p6,
             p7,
             p8,
-            size = (1200.0, 600.0),
+            p9,
+            size = (1200.0, 900.0),
             bottom_margin = 30.0 * Plots.PlotMeasures.px,
             left_margin = 30.0 * Plots.PlotMeasures.px,
-            layout = (2, 3),
+            layout = (3, 3),
         )
     end
     Plots.png(p, joinpath(path, "timeheight.png"))
