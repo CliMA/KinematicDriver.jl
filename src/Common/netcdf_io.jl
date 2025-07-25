@@ -6,6 +6,8 @@ struct NetCDFIO_Stats
     output_interval::Float64
     nc_filename::String
     output_profiles::Dict{Symbol, String}
+    output_precip_sources::Dict{Symbol, String}
+    output_activation_sources::Dict{Symbol, String}
 end
 
 function NetCDFIO_Stats(
@@ -101,7 +103,13 @@ function NetCDFIO_Stats(
         NC.defVar(timeseries_grp, "t", FT, ("t",))
         NC.defVar(timeseries_grp, "ql_max", FT, ("t",))
     end
-    return NetCDFIO_Stats(output_interval, nc_filename, output_profiles)
+    return NetCDFIO_Stats(
+        output_interval,
+        nc_filename,
+        output_profiles,
+        output_precip_sources,
+        output_activation_sources,
+    )
 end
 
 """
