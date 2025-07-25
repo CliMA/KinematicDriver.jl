@@ -87,6 +87,7 @@ function get_model_config()
     config["Nd"] = 50 * 1e6
     config["qtot_flux_correction"] = false
     config["open_system_activation"] = false
+    config["local_activation"] = false
     config["r_dry"] = 0.04 * 1e-6
     config["std_dry"] = 1.4
     config["κ"] = 0.9

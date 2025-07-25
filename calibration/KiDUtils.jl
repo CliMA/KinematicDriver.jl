@@ -89,6 +89,7 @@ function run_KiD(u::Array{FT, 1}, u_names::Array{String, 1}, model_settings::Dic
         precip_sinks = model_settings["precip_sinks"],
         Nd = model_settings["Nd"],
         open_system_activation = model_settings["open_system_activation"],
+        local_activation = model_settings["local_activation"],
     )
     kid_params = create_kid_parameters(
         FT,
@@ -389,12 +390,20 @@ function apply_param_dependency!(model_settings::Dict)
     end
 end
 
-function create_common_parameters(FT; precip_sources = 1, precip_sinks = 1, Nd = 1e8, open_system_activation = false)
+function create_common_parameters(
+    FT;
+    precip_sources = 1,
+    precip_sinks = 1,
+    Nd = 1e8,
+    open_system_activation = false,
+    local_activation = false,
+)
     common_params = CO.Parameters.CommonParameters{FT}(;
         precip_sources = precip_sources,
         precip_sinks = precip_sinks,
         prescribed_Nd = Nd,
         open_system_activation = open_system_activation,
+        local_activation = local_activation,
     )
     return common_params
 end

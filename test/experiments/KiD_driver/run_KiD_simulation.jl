@@ -33,12 +33,9 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     elseif precipitation_choice == "CloudyPrecip"
         output_folder = output_folder * "_" * string(opts["num_moments"])
     end
-    if opts["qtot_flux_correction"]
-        output_folder = output_folder * "_wFC"
-    end
-    if opts["open_system_activation"]
-        output_folder = output_folder * "_OSA"
-    end
+    output_folder *= opts["qtot_flux_correction"] ? "_wFC" : ""
+    output_folder *= opts["open_system_activation"] ? "_OSA" : ""
+    output_folder *= opts["local_activation"] ? "_LA" : ""
     if precipitation_choice == "PrecipitationP3"
         p3_boundary_condition = opts["p3_boundary_condition"]
     else
@@ -68,10 +65,16 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
         qtot_flux_correction = Int(opts["qtot_flux_correction"]),
         prescribed_Nd = FT(opts["prescribed_Nd"]),
         open_system_activation = Int(opts["open_system_activation"]),
+        local_activation = Int(opts["local_activation"]),
         r_dry = FT(opts["r_dry"]),
         std_dry = FT(opts["std_dry"]),
         κ = FT(opts["kappa"]),
     )
+    if opts["rain_formation_scheme_choice"] == "SB2006NL"
+        toml_dict["SB2006_raindrops_terminal_velocity_coeff_aR"]["value"] = FT(6.0)
+        toml_dict["SB2006_raindrops_terminal_velocity_coeff_bR"]["value"] = FT(9.76)
+        toml_dict["SB2006_raindrops_terminal_velocity_coeff_cR"]["value"] = FT(1490.0)
+    end
     # Create Thermodynamics.jl and KinematicDriver model parameters
     # (some of the CloudMicrophysics.jl parameters structs are created later based on model choices)
     common_params = create_common_parameters(toml_dict)
@@ -113,11 +116,12 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     elseif precipitation_choice == "PrecipitationP3"
         cloudy_params = nothing
         (; ice_start, _q_flux, _N_flux, _F_rim, _F_liq, _ρ_r_init) = precip.p3_boundary_condition
-        init = CO.p3_initial_condition.(
-            FT, kid_params, thermo_params, coord.z;
-            _q_init = _q_flux, _N_init = _N_flux, _F_rim = _F_rim, _F_liq = _F_liq,
-            _ρ_r = _ρ_r_init, z_top = FT(opts["z_max"]), ice_start = ice_start,
-        )
+        init =
+            CO.p3_initial_condition.(
+                FT, kid_params, thermo_params, coord.z;
+                _q_init = _q_flux, _N_init = _N_flux, _F_rim = _F_rim, _F_liq = _F_liq,
+                _ρ_r = _ρ_r_init, z_top = FT(opts["z_max"]), ice_start = ice_start,
+            )
     else
         cloudy_params = nothing
         init = CO.initial_condition_1d.(FT, common_params, kid_params, thermo_params, (ρ_profile,), coord.z)
