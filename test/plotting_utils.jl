@@ -152,7 +152,7 @@ function plot_final_aux_profiles(z_centers, aux, precip; output = "output")
             Plots.plot!([r.d_ln_pp_d_ln_q_rai for r in precip_sus_acc], z_centers, label = "acc, q_rai", color = :green)
             Plots.plot!(legend = :outerright)
         end
-        p11 = Plots.plot(SN_liq_act_end .* 1e-6, z_centers, xlabel = "SN_liq_act [1/cm3/s]", ylabel = "z [m]")
+        p11 = Plots.plot(SN_liq_act_end .* 1e-6, z_centers, xlabel = "Activation [1/cm3/s]", ylabel = "z [m]")
         p = Plots.plot(
             p1,
             p2,
@@ -300,14 +300,14 @@ function plot_animation(nc_data_file; output = "output")
         title = "time = " * string(floor(Int, t_plt[i])) * " [s]"
         mass_scale = 1e3
         num_scale = 1e-6
-        p1 = plot_data(q_tot[:, i] .* 1e3, "q_tot [g/kg]", maximum(q_tot), mass_scale)
-        p2 = plot_data(q_liq[:, i] .* 1e3, "q_liq [g/kg]", maximum(q_liq), mass_scale, title)
-        p3 = plot_data(N_liq[:, i] .* 1e6, "N_liq [1/cm^3]", maximum(N_liq), num_scale)
-        p4 = plot_data(q_rai[:, i] .* 1e3, "q_rai [g/kg]", maximum(q_rai), mass_scale)
-        p5 = plot_data(N_rai[:, i] .* 1e6, "N_rai [1/cm^3]", maximum(N_rai), num_scale)
-        p6 = plot_data(q_ice[:, i] .* 1e3, "q_ice [g/kg]", maximum(q_ice), mass_scale)
-        p7 = plot_data(q_sno[:, i] .* 1e3, "q_sno [g/kg]", maximum(q_sno), mass_scale)
-        p8 = plot_data(SN_liq_act[:, i] .* 1e6, "N_liq [1/cm^3/s]", maximum(SN_liq_act), num_scale)
+        p1 = plot_data(q_tot[:, i], "q_tot [g/kg]", maximum(q_tot), mass_scale)
+        p2 = plot_data(q_liq[:, i], "q_liq [g/kg]", maximum(q_liq), mass_scale, title)
+        p3 = plot_data(N_liq[:, i], "N_liq [1/cm^3]", maximum(N_liq), num_scale)
+        p4 = plot_data(q_rai[:, i], "q_rai [g/kg]", maximum(q_rai), mass_scale)
+        p5 = plot_data(N_rai[:, i], "N_rai [1/cm^3]", maximum(N_rai), num_scale)
+        p6 = plot_data(q_ice[:, i], "q_ice [g/kg]", maximum(q_ice), mass_scale)
+        p7 = plot_data(q_sno[:, i], "q_sno [g/kg]", maximum(q_sno), mass_scale)
+        p8 = plot_data(SN_liq_act[:, i], "Activation [1/cm^3/s]", maximum(SN_liq_act), num_scale)
 
         Plots.plot(
             p1,
@@ -424,7 +424,7 @@ function plot_timeheight(nc_data_file; output = "output", mixed_phase = true, py
     p6 = Plots.heatmap(t_plt, z_plt, N_aer_plt .* 1e-6, title = "N_aer [1/cm^3]", xlabel = "time [s]", ylabel = "z [m]", color = :BuPu)
     p7 = Plots.heatmap(t_plt, z_plt, N_liq_plt .* 1e-6, title = "N_liq [1/cm^3]", xlabel = "time [s]", ylabel = "z [m]", color = :BuPu)
     p8 = Plots.heatmap(t_plt, z_plt, N_rai_plt .* 1e-6, title = "N_rai [1/cm^3]", xlabel = "time [s]", ylabel = "z [m]", color = :BuPu)
-    p9 = Plots.heatmap(t_plt, z_plt, SN_liq_act_plt .* 1e-6, title = "SN_liq_act [1/cm^3/s]", xlabel = "time [s]", ylabel = "z [m]", color = :BuPu)
+    p9 = Plots.heatmap(t_plt, z_plt, SN_liq_act_plt .* 1e-6, title = "Activation [1/cm^3/s]", xlabel = "time [s]", ylabel = "z [m]", color = :BuPu)
     #! format: on
     if mixed_phase
         p = Plots.plot(
