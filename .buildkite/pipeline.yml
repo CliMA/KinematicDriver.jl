@@ -103,24 +103,6 @@ steps:
         agents:
           slurm_time: '00:16:00'
 
-      - label: ":crystal_ball: Experiments: non equil + SB2006NL + open system activation"
-        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation2M --rain_formation_scheme_choice SB2006NL --sedimentation_scheme_choice SB2006 --prescribed_Nd 1e8 --open_system_activation=true"
-        artifact_paths: "test/experiments/KiD_driver/Output_NonEquilibriumMoisture_Precipitation2M_SB2006NL_OSA/figures/*"
-        agents:
-          slurm_time: '00:16:00'
-
-      - label: ":crystal_ball: Experiments: non equil + SB2006NL + local activation"
-        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation2M --rain_formation_scheme_choice SB2006NL --sedimentation_scheme_choice SB2006 --prescribed_Nd 1e8 --local_activation=true"
-        artifact_paths: "test/experiments/KiD_driver/Output_NonEquilibriumMoisture_Precipitation2M_SB2006NL_LA/figures/*"
-        agents:
-          slurm_time: '00:16:00'
-
-      - label: ":crystal_ball: Experiments: non equil + SB2006NL + open system and local activation"
-        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation2M --rain_formation_scheme_choice SB2006NL --sedimentation_scheme_choice SB2006 --prescribed_Nd 1e8 --open_system_activation=true --local_activation=true"
-        artifact_paths: "test/experiments/KiD_driver/Output_NonEquilibriumMoisture_Precipitation2M_SB2006NL_OSA_LA/figures/*"
-        agents:
-          slurm_time: '00:16:00'
-
       - label: ":snowman: Experiments: non equil + 1M with ice and snow"
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation1M --rv_0 0.0008 --rv_1 0.0008 --rv_2 0.0001 --tht_0 260 --tht_1 260 --tht_2 270 --w1 2 --z_max 4000 --z_2 4000 --n_elem 200"
         artifact_paths: "test/experiments/KiD_driver/Output_NonEquilibriumMoisture_Precipitation1M_CliMA_1M/figures/*"
@@ -165,3 +147,30 @@ steps:
       #  command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=MoistureP3 --precipitation_choice=PrecipitationP3 --n_elem=24 --z_max=3000 --t_end=75 --w1=0 --dt=0.5"
       #  artifact_paths: "test/experiments/KiD_driver/Output_MoistureP3_PrecipitationP3/figures/*"
 
+
+  - group: "Experiments: ARG Aerosol Activation :umbrella:"
+    steps:
+
+      - label: ":crystal_ball: NonEquil + Closed System and Cloud Base Activation"
+        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation2M --rain_formation_scheme_choice SB2006NL --sedimentation_scheme_choice SB2006 --prescribed_Nd 1e8 --t_end=300"
+        artifact_paths: "test/experiments/KiD_driver/Output_NonEquilibriumMoisture_Precipitation2M_SB2006NL/figures/*"
+
+      - label: ":crystal_ball: NonEquil + Open System and Cloud Base Activation"
+        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation2M --rain_formation_scheme_choice SB2006NL --sedimentation_scheme_choice SB2006 --prescribed_Nd 1e8 --t_end=300 --open_system_activation=true"
+        artifact_paths: "test/experiments/KiD_driver/Output_NonEquilibriumMoisture_Precipitation2M_SB2006NL_OSA/figures/*"
+
+      - label: ":crystal_ball: NonEquil + Closed System and Local Activation"
+        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation2M --rain_formation_scheme_choice SB2006NL --sedimentation_scheme_choice SB2006 --prescribed_Nd 1e8 --t_end=300 --local_activation=true"
+        artifact_paths: "test/experiments/KiD_driver/Output_NonEquilibriumMoisture_Precipitation2M_SB2006NL_LA/figures/*"
+
+      - label: ":crystal_ball: NonEquil + Open System and Local Activation"
+        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation2M --rain_formation_scheme_choice SB2006NL --sedimentation_scheme_choice SB2006 --prescribed_Nd 1e8 --t_end=300 --open_system_activation=true --local_activation=true"
+        artifact_paths: "test/experiments/KiD_driver/Output_NonEquilibriumMoisture_Precipitation2M_SB2006NL_OSA_LA/figures/*"
+
+      - label: ":crystal_ball: Equil + Closed System and Local Activation"
+        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=EquilibriumMoisture --precipitation_choice=Precipitation2M --rain_formation_scheme_choice SB2006NL --sedimentation_scheme_choice SB2006 --prescribed_Nd 1e8 --t_end=300 --local_activation=true"
+        artifact_paths: "test/experiments/KiD_driver/Output_EquilibriumMoisture_Precipitation2M_SB2006NL_LA/figures/*"
+
+      - label: ":crystal_ball: Equil + Open System and Local Activation"
+        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=EquilibriumMoisture --precipitation_choice=Precipitation2M --rain_formation_scheme_choice SB2006NL --sedimentation_scheme_choice SB2006 --prescribed_Nd 1e8 --t_end=300 --open_system_activation=true --local_activation=true"
+        artifact_paths: "test/experiments/KiD_driver/Output_EquilibriumMoisture_Precipitation2M_SB2006NL_OSA_LA/figures/*"

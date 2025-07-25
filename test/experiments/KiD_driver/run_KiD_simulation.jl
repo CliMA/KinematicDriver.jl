@@ -70,7 +70,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
         std_dry = FT(opts["std_dry"]),
         κ = FT(opts["kappa"]),
     )
-    if opts["rain_formation_choice"] == "SB2006NL"
+    if opts["rain_formation_scheme_choice"] == "SB2006NL"
         toml_dict["SB2006_raindrops_terminal_velocity_coeff_aR"]["value"] = FT(6.0)
         toml_dict["SB2006_raindrops_terminal_velocity_coeff_bR"]["value"] = FT(9.76)
         toml_dict["SB2006_raindrops_terminal_velocity_coeff_cR"]["value"] = FT(1490.0)
