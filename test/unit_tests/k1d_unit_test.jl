@@ -93,14 +93,13 @@ TT.@testset "advection_tendency" begin
     space, face_space = K1D.make_function_space(FT, 0, 100, 5)
     coord = CC.Fields.coordinate_field(space)
     ρ_profile = CO.ρ_ivp(FT, kid_params, thermo_params)
-    init =
-        map(coord -> CO.initial_condition_1d(FT, common_params, kid_params, thermo_params, ρ_profile, coord.z), coord)
+    init = CO.initial_condition_1d.(FT, common_params, kid_params, thermo_params, (ρ_profile,), coord.z)
     t = 13.0
 
     # eq
     aux = K1D.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, equil_moist, no_precip)
     Y = CO.initialise_state(equil_moist, no_precip, init)
-    dY = Y / 10
+    dY = Y ./ 10
     TT.@test_throws Exception K1D.advection_tendency!(CO.AbstractMoistureStyle(), dY, Y, aux, t)
     TT.@test_throws Exception K1D.advection_tendency!(CO.AbstractPrecipitationStyle(), dY, Y, aux, t)
 
@@ -109,13 +108,13 @@ TT.@testset "advection_tendency" begin
     for (ms, ps) in zip(ms_styles, ps_styles)
         aux = K1D.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, ms, ps)
         Y = CO.initialise_state(ms, ps, init)
-        dY = Y / 10
+        dY = Y ./ 10
         ρw = 0.0
         @. aux.prescribed_velocity.ρw = CC.Geometry.WVector.(ρw)
         aux.prescribed_velocity.ρw0 = ρw
         K1D.advection_tendency!(ms, dY, Y, aux, t)
         K1D.advection_tendency!(ps, dY, Y, aux, t)
-        TT.@test dY ≈ Y / 10 atol = eps(FT) * 10
+        TT.@test dY ≈ Y ./ 10 atol = eps(FT) * 10
     end
 end
 
@@ -130,28 +129,17 @@ TT.@testset "advection_tendency p3" begin
     _F_rim = Float64(0.2)
     _F_liq = Float64(0.2)
     _ρ_r_init = Float64(900)
-    init = map(
-        coord -> CO.p3_initial_condition(
-            FT,
-            kid_params,
-            thermo_params,
-            coord.z;
-            _q_init = _q_flux,
-            _N_init = _N_flux,
-            _F_rim = _F_rim,
-            _F_liq = _F_liq,
-            _ρ_r = _ρ_r_init,
-            z_top = FT(3000),
-            ice_start = ice_start,
-        ),
-        coord,
-    )
+    init =
+        CO.p3_initial_condition.(
+            FT, kid_params, thermo_params, coord.z;
+            _q_init = _q_flux, _N_init = _N_flux, _F_rim, _F_liq, _ρ_r = _ρ_r_init, z_top = FT(3000), ice_start,
+        )
     t = 13.0
 
     # eq
     aux = K1D.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, p3_moist, precip_p3)
     Y = CO.initialise_state(p3_moist, precip_p3, init)
-    dY = Y / 10
+    dY = Y ./ 10
     TT.@test_throws Exception K1D.advection_tendency!(CO.AbstractMoistureStyle(), dY, Y, aux, t)
     TT.@test_throws Exception K1D.advection_tendency!(CO.AbstractPrecipitationStyle(), dY, Y, aux, t)
 
@@ -159,14 +147,14 @@ TT.@testset "advection_tendency p3" begin
     ps = precip_p3
     aux = K1D.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, ms, ps)
     Y = CO.initialise_state(ms, ps, init)
-    dY = Y / 10
+    dY = Y ./ 10
     ρw = 0.0
 
     @. aux.prescribed_velocity.ρw = CC.Geometry.WVector.(ρw)
     aux.prescribed_velocity.ρw0 = ρw
     K1D.advection_tendency!(ms, dY, Y, aux, t)
     K1D.advection_tendency!(ps, dY, Y, aux, t)
-    TT.@test dY >= Y / 10
+    TT.@test all(parent(dY) .≥ parent(Y) ./ 10)
 
     # same tests with ice_start = true
     ice_start = true
@@ -176,28 +164,17 @@ TT.@testset "advection_tendency p3" begin
     _F_rim = Float64(0.2)
     _F_liq = Float64(0.2)
     _ρ_r_init = Float64(900)
-    init = map(
-        coord -> CO.p3_initial_condition(
-            FT,
-            kid_params,
-            thermo_params,
-            coord.z;
-            _q_init = _q_flux,
-            _N_init = _N_flux,
-            _F_rim = _F_rim,
-            _F_liq = _F_liq,
-            _ρ_r = _ρ_r_init,
-            z_top = FT(3000),
-            ice_start = ice_start,
-        ),
-        coord,
-    )
+    init =
+        CO.p3_initial_condition.(
+            FT, kid_params, thermo_params, coord.z;
+            _q_init = _q_flux, _N_init = _N_flux, _F_rim, _F_liq, _ρ_r = _ρ_r_init, z_top = FT(3000), ice_start,
+        )
     t = 13.0
 
     # eq
     aux = K1D.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, p3_moist, precip_p3)
     Y = CO.initialise_state(p3_moist, precip_p3, init)
-    dY = Y / 10
+    dY = Y ./ 10
     TT.@test_throws Exception K1D.advection_tendency!(CO.AbstractMoistureStyle(), dY, Y, aux, t)
     TT.@test_throws Exception K1D.advection_tendency!(CO.AbstractPrecipitationStyle(), dY, Y, aux, t)
 
@@ -205,14 +182,14 @@ TT.@testset "advection_tendency p3" begin
     ps = precip_p3
     aux = K1D.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, ms, ps)
     Y = CO.initialise_state(ms, ps, init)
-    dY = Y / 10
+    dY = Y ./ 10
     ρw = 0.0
 
     @. aux.prescribed_velocity.ρw = CC.Geometry.WVector.(ρw)
     aux.prescribed_velocity.ρw0 = ρw
     K1D.advection_tendency!(ms, dY, Y, aux, t)
     K1D.advection_tendency!(ps, dY, Y, aux, t)
-    TT.@test dY >= Y / 10
+    TT.@test all(parent(dY) .≥ parent(Y) ./ 10)
 end
 
 TT.@testset "aerosol activation for 2M schemes" begin

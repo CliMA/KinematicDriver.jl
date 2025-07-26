@@ -23,7 +23,7 @@ end
     Zero out previous timestep tendencies
 """
 @inline function zero_tendencies!(dY)
-    @. dY = 0
+    @. dY = zero(dY)
 end
 
 """

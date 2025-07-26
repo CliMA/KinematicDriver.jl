@@ -15,9 +15,9 @@ import KinematicDriver.K1DModel as K1D
 import KinematicDriver.K2DModel as K2D
 import CloudMicrophysics.Parameters as CMP
 
-const FT = Float64
+FT = Float64
 
-const kid_dir = pkgdir(KinematicDriver)
+kid_dir = pkgdir(KinematicDriver)
 include(joinpath(kid_dir, "test", "create_parameters.jl"))
 
 # override the defaults
@@ -61,11 +61,14 @@ precip_1m = CO.Precipitation1M(
 precip_2m = CO.Precipitation2M(CMP.SB2006(toml_dict), CMP.SB2006VelType(toml_dict))
 precip_p3 = CO.PrecipitationP3(p3, Chen2022, CMP.SB2006(toml_dict), p3_boundary_condition)
 
-# common unit tests
-include("./common_unit_test.jl")
+TT.@testset "unit tests" begin
+    # common unit tests
+    include("./common_unit_test.jl")
 
-# KinematricDriver 1D unit tests
-include("./k1d_unit_test.jl")
+    # KinematricDriver 1D unit tests
+    include("./k1d_unit_test.jl")
 
-# KinematricDriver 2D unit tests
-include("./k2d_unit_test.jl")
+    # KinematricDriver 2D unit tests
+    include("./k2d_unit_test.jl")
+end
+nothing
