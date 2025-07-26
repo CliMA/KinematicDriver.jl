@@ -251,33 +251,29 @@ end
     return dY
 end
 @inline function advection_tendency!(::CO.NonEquilibriumMoisture, dY, Y, aux, t)
-    FT = eltype(Y.ρq_tot)
+    (; q_surf) = aux
+    (; ρw, ρw0) = aux.prescribed_velocity
+    (; ρ) = aux.thermo_variables
+    (; qtot_flux_correction) = aux.kid_params
 
     If = CC.Operators.InterpolateC2F()
+    extrapolate = CC.Operators.Extrapolate()
+    bottom_bc(q) = CC.Operators.SetValue(CC.Geometry.WVector(ρw0 * q))
 
-    ∂_qt = CC.Operators.DivergenceF2C(
-        bottom = CC.Operators.SetValue(CC.Geometry.WVector(aux.prescribed_velocity.ρw0 * aux.q_surf)),
-        top = CC.Operators.Extrapolate(),
-    )
-    ∂_ql = CC.Operators.DivergenceF2C(
-        bottom = CC.Operators.SetValue(CC.Geometry.WVector(aux.prescribed_velocity.ρw0 * FT(0.0))),
-        top = CC.Operators.Extrapolate(),
-    )
-    ∂_qi = CC.Operators.DivergenceF2C(
-        bottom = CC.Operators.SetValue(CC.Geometry.WVector(aux.prescribed_velocity.ρw0 * FT(0.0))),
-        top = CC.Operators.Extrapolate(),
-    )
+    ∂_qt = CC.Operators.DivergenceF2C(bottom = bottom_bc(q_surf), top = extrapolate)
+    ∂_ql = CC.Operators.DivergenceF2C(bottom = bottom_bc(0), top = extrapolate)
+    ∂_qi = CC.Operators.DivergenceF2C(bottom = bottom_bc(0), top = extrapolate)
 
-    @. dY.ρq_tot += -∂_qt(aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ) * If(Y.ρq_tot))
-    @. dY.ρq_liq += -∂_ql(aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ) * If(Y.ρq_liq))
-    @. dY.ρq_ice += -∂_qi(aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ) * If(Y.ρq_ice))
+    @. dY.ρq_tot += -∂_qt(ρw / If(ρ) * If(Y.ρq_tot))
+    @. dY.ρq_liq += -∂_ql(ρw / If(ρ) * If(Y.ρq_liq))
+    @. dY.ρq_ice += -∂_qi(ρw / If(ρ) * If(Y.ρq_ice))
 
-    fcc = CC.Operators.FluxCorrectionC2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
-    if Bool(aux.kid_params.qtot_flux_correction)
-        @. dY.ρq_tot += fcc(aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ), Y.ρq_tot)
+    fcc = CC.Operators.FluxCorrectionC2C(bottom = extrapolate, top = extrapolate)
+    if Bool(qtot_flux_correction)
+        @. dY.ρq_tot += fcc(ρw / If(ρ), Y.ρq_tot)
     end
-    @. dY.ρq_liq += fcc(aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ), Y.ρq_liq)
-    @. dY.ρq_ice += fcc(aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ), Y.ρq_ice)
+    @. dY.ρq_liq += fcc(ρw / If(ρ), Y.ρq_liq)
+    @. dY.ρq_ice += fcc(ρw / If(ρ), Y.ρq_ice)
 
     return dY
 end
@@ -346,50 +342,28 @@ end
 end
 @inline function advection_tendency!(::CO.Precipitation2M, dY, Y, aux, t)
     FT = eltype(Y.ρq_tot)
+    (; ρw) = aux.prescribed_velocity
+    (; ρ) = aux.thermo_variables
+    (; term_vel_N_rai, term_vel_rai) = aux.velocities
 
     If = CC.Operators.InterpolateC2F()
-    ∂ = CC.Operators.DivergenceF2C(
-        bottom = CC.Operators.Extrapolate(),
-        top = CC.Operators.SetValue(CC.Geometry.WVector(0.0)),
-    )
-    ∂ₐ = CC.Operators.DivergenceF2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
+    wvec = CC.Geometry.WVector
+    extrapolate = CC.Operators.Extrapolate()
+    ∂ = CC.Operators.DivergenceF2C(bottom = extrapolate, top = CC.Operators.SetValue(wvec(FT(0))))
+    ∂ₐ = CC.Operators.DivergenceF2C(bottom = extrapolate, top = extrapolate)
 
-    @. dY.N_aer += -∂ₐ((aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) * If(Y.N_aer))
-    @. dY.N_liq += -∂((aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) * If(Y.N_liq))
+    @. dY.N_aer += -∂ₐ(ρw / If(ρ) * If(Y.N_aer))
+    @. dY.N_liq += -∂(ρw / If(ρ) * If(Y.N_liq))
 
-    @. dY.N_rai +=
-        -∂(
-            (
-                aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ) +
-                CC.Geometry.WVector(If(aux.velocities.term_vel_N_rai) * FT(-1))
-            ) * If(Y.N_rai),
-        )
-    @. dY.ρq_rai +=
-        -∂(
-            (
-                aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ) +
-                CC.Geometry.WVector(If(aux.velocities.term_vel_rai) * FT(-1))
-            ) * If(Y.ρq_rai),
-        )
+    @. dY.N_rai += -∂((ρw / If(ρ) - wvec(If(term_vel_N_rai))) * If(Y.N_rai))
+    @. dY.ρq_rai += -∂((ρw / If(ρ) - wvec(If(term_vel_rai))) * If(Y.ρq_rai))
 
-    fcc = CC.Operators.FluxCorrectionC2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
-    @. dY.N_aer += fcc((aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)), Y.N_aer)
-    @. dY.N_liq += fcc((aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)), Y.N_liq)
+    fcc = CC.Operators.FluxCorrectionC2C(bottom = extrapolate, top = extrapolate)
+    @. dY.N_aer += fcc(ρw / If(ρ), Y.N_aer)
+    @. dY.N_liq += fcc(ρw / If(ρ), Y.N_liq)
 
-    @. dY.N_rai += fcc(
-        (
-            aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ) +
-            CC.Geometry.WVector(If(aux.velocities.term_vel_N_rai) * FT(-1))
-        ),
-        Y.N_rai,
-    )
-    @. dY.ρq_rai += fcc(
-        (
-            aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ) +
-            CC.Geometry.WVector(If(aux.velocities.term_vel_rai) * FT(-1))
-        ),
-        Y.ρq_rai,
-    )
+    @. dY.N_rai += fcc(ρw / If(ρ) - wvec(If(term_vel_N_rai)), Y.N_rai)
+    @. dY.ρq_rai += fcc(ρw / If(ρ) - wvec(If(term_vel_rai)), Y.ρq_rai)
 
     return dY
 end
