@@ -16,27 +16,20 @@ TT.@testset "Initialise aux" begin
     coords = CC.Fields.coordinate_field(space)
     face_coords = CC.Fields.coordinate_field(face_space)
     ρ_profile = CO.ρ_ivp(FT, kid_params, thermo_params)
-    init =
-        map(coord -> CO.initial_condition_1d(FT, common_params, kid_params, thermo_params, ρ_profile, coord.z), coords)
+    init = CO.initial_condition_1d.(FT, common_params, kid_params, thermo_params, (ρ_profile,), coords.z)
     t = 1.1 * kid_params.t1
 
     TT.@test_throws Exception K2D.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, no_precip)
     TT.@test_throws Exception K2D.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, K1D.EquilibriumMoisture())
     TT.@test_throws Exception K2D.initialise_aux(
-        FT,
-        init,
-        params...,
-        0.0,
-        0.0,
-        face_space,
-        K1D.NonEquilibriumMoisture(),
+        FT, init, params..., 0.0, 0.0, face_space, K1D.NonEquilibriumMoisture(),
     )
 
 
     aux = K2D.initialise_aux(FT, init, params..., 100.0, 200.0, 0.0, 0.0, space, face_space, equil_moist, precip_1m)
 
     TT.@test aux isa NamedTuple
-    TT.@test aux.cloud_sources == nothing
+    TT.@test isnothing(aux.cloud_sources)
     TT.@test LA.norm(aux.precip_sources) == 0
 end
 
@@ -46,8 +39,7 @@ TT.@testset "advection tendency" begin
     coords = CC.Fields.coordinate_field(space)
     face_coords = CC.Fields.coordinate_field(face_space)
     ρ_profile = CO.ρ_ivp(FT, kid_params, thermo_params)
-    init =
-        map(coord -> CO.initial_condition_1d(FT, common_params, kid_params, thermo_params, ρ_profile, coord.z), coords)
+    init = CO.initial_condition_1d.(FT, common_params, kid_params, thermo_params, (ρ_profile,), coords.z)
     t = 1.1 * kid_params.t1
 
     TT.@test_throws Exception K2D.advection_tendency!(K1D.AbstractMoistureStyle(), dY, Y, aux, t)
@@ -59,9 +51,9 @@ TT.@testset "advection tendency" begin
         aux = K2D.initialise_aux(FT, init, params..., 3000.0, 3000.0, 0.0, 0.0, space, face_space, ms, ps)
         K2D.precompute_aux_prescribed_velocity!(aux, t)
         Y = CO.initialise_state(ms, ps, init)
-        dY = Y / 10
+        dY = Y ./ 10
         K2D.advection_tendency!(ms, dY, Y, aux, t)
         K2D.advection_tendency!(ps, dY, Y, aux, t)
-        TT.@test dY ≈ Y / 10 atol = eps(FT) * 10
+        TT.@test dY ≈ Y ./ 10 atol = eps(FT) * 10
     end
 end

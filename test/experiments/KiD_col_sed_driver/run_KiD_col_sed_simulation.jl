@@ -83,30 +83,15 @@ function run_KiD_col_sed_simulation(::Type{FT}, opts) where {FT}
     )
 
     # Create the initial condition profiles
+    ic_0d = CO.initial_condition_0d(FT, thermo_params, opts["qt"], opts["prescribed_Nd"], opts["k"], opts["rhod"])
     if precipitation_choice == "CloudyPrecip"
         cloudy_disttypes = determine_cloudy_disttypes(opts["num_moments"])
         cloudy_params, cloudy_pdists = create_cloudy_parameters(FT, cloudy_disttypes)
-        init = map(
-            coord -> CO.cloudy_initial_condition(
-                cloudy_pdists,
-                CO.initial_condition_0d(FT, thermo_params, opts["qt"], opts["prescribed_Nd"], opts["k"], opts["rhod"]),
-                opts["k"],
-            ),
-            coord,
-        )
+        ic_cloudy = CO.cloudy_initial_condition(cloudy_pdists, ic_0d, opts["k"])
+        init = map(Returns(ic_cloudy), coord)
     else
         cloudy_params = nothing
-        init = map(
-            coord -> CO.initial_condition_0d(
-                FT,
-                thermo_params,
-                opts["qt"],
-                opts["prescribed_Nd"],
-                opts["k"],
-                opts["rhod"],
-            ),
-            coord,
-        )
+        init = map(Returns(ic_0d), coord)
     end
 
     # Create aux vector and apply initial condition
