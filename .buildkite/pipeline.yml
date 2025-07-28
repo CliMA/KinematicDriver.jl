@@ -11,7 +11,7 @@ env:
   JULIA_DEPOT_PATH: "${BUILDKITE_BUILD_PATH}/${BUILDKITE_PIPELINE_SLUG}/depot/default"
 
 steps:
-  - label: "Init environment :computer:"
+  - label: ":computer: Init environment"
     key: "init_cpu_env"
     command:
       - "julia --project=test -e 'using Pkg; Pkg.Registry.update()'"
@@ -28,140 +28,166 @@ steps:
 
   - wait
 
-  - group: "Tests :umbrella:"
+  - group: ":sunny: Tests"
     steps:
 
-      - label: ":partly_sunny: Unit tests"
+      - label: ":sunny: Unit tests"
         command: "julia --color=yes --project=test test/unit_tests/unit_test.jl"
 
-      - label: ":partly_sunny: Initial condition tests"
+      - label: ":sunny: Initial condition tests"
         command: "julia --color=yes --project=test test/initial_condition_tests/initial_profile_test.jl"
         artifact_paths: "test/initial_condition_tests/output_init_profiles/*"
 
-      - label: ":crystal_ball: Experiments: equil + no precp"
+  - group: ":partly_sunny: 1D + no precipitation"
+    steps:
+
+      - label: ":partly_sunny: Equil + no precp"
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=EquilibriumMoisture --precipitation_choice=NoPrecipitation"
         artifact_paths: "test/experiments/KiD_driver/Output_EquilibriumMoisture_NoPrecipitation/figures/*"
 
-      - label: ":crystal_ball: Experiments: equil + 0M"
-        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=EquilibriumMoisture --precipitation_choice=Precipitation0M"
-        artifact_paths: "test/experiments/KiD_driver/Output_EquilibriumMoisture_Precipitation0M/figures/*"
-
-      - label: ":crystal_ball: Experiments: equil + 1M"
-        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=EquilibriumMoisture --precipitation_choice=Precipitation1M"
-        artifact_paths: "test/experiments/KiD_driver/Output_EquilibriumMoisture_Precipitation1M_CliMA_1M/figures/*"
-
-      - label: ":crystal_ball: Experiments: equil + 1M with qtot FluxCorrection"
-        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=EquilibriumMoisture --precipitation_choice=Precipitation1M --qtot_flux_correction=true"
-        artifact_paths: "test/experiments/KiD_driver/Output_EquilibriumMoisture_Precipitation1M_CliMA_1M_wFC/figures/*"
-
-      - label: ":crystal_ball: Experiments: non equil + no precip"
+      - label: ":partly_sunny: Non equil + no precip"
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=NoPrecipitation"
         artifact_paths: "test/experiments/KiD_driver/Output_NonEquilibriumMoisture_NoPrecipitation/figures/*"
 
-      - label: ":crystal_ball: Experiments: non equil + 0M"
+  - group: ":umbrella: 1D + 0M microphysics"
+    steps:
+
+      - label: ":umbrella: Equil + 0M"
+        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=EquilibriumMoisture --precipitation_choice=Precipitation0M"
+        artifact_paths: "test/experiments/KiD_driver/Output_EquilibriumMoisture_Precipitation0M/figures/*"
+
+
+      - label: ":umbrella: Non equil + 0M"
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation0M"
         artifact_paths: "test/experiments/KiD_driver/Output_NonEquilibriumMoisture_Precipitation0M/figures/*"
 
-      - label: ":crystal_ball: Experiments: non equil + 1M with qtot FluxCorrection"
+
+  - group: ":umbrella_with_rain_drops: 1D + 1M microphysics"
+    steps:
+
+      - label: ":umbrella_with_rain_drops: Equil + 1M"
+        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=EquilibriumMoisture --precipitation_choice=Precipitation1M"
+        artifact_paths: "test/experiments/KiD_driver/Output_EquilibriumMoisture_Precipitation1M_CliMA_1M/figures/*"
+
+      - label: ":umbrella_with_rain_drops: Equil + 1M with qtot FluxCorrection"
+        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=EquilibriumMoisture --precipitation_choice=Precipitation1M --qtot_flux_correction=true"
+        artifact_paths: "test/experiments/KiD_driver/Output_EquilibriumMoisture_Precipitation1M_CliMA_1M_wFC/figures/*"
+
+      - label: ":umbrella_with_rain_drops: Non equil + 1M with qtot FluxCorrection"
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation1M --qtot_flux_correction=true"
         artifact_paths: "test/experiments/KiD_driver/Output_NonEquilibriumMoisture_Precipitation1M_CliMA_1M_wFC/figures/*"
 
-      - label: ":crystal_ball: Experiments: equil + KK2000 + Float32"
+      - label: ":umbrella_with_rain_drops: Equil + KK2000 + Float32"
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --FLOAT_TYPE=Float32 --moisture_choice=EquilibriumMoisture --precipitation_choice=Precipitation1M --rain_formation_scheme_choice KK2000 --prescribed_Nd 1e8"
         artifact_paths: "test/experiments/KiD_driver/Output_EquilibriumMoisture_Precipitation1M_KK2000/figures/*"
 
-      - label: ":crystal_ball: Experiments: equil + B1994"
+      - label: ":umbrella_with_rain_drops: Equil + B1994"
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=EquilibriumMoisture --precipitation_choice=Precipitation1M --rain_formation_scheme_choice B1994 --prescribed_Nd 1e8"
         artifact_paths: "test/experiments/KiD_driver/Output_EquilibriumMoisture_Precipitation1M_B1994/figures/*"
 
-      - label: ":crystal_ball: Experiments: equil + TC1980"
+      - label: ":umbrella_with_rain_drops: Equil + TC1980"
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=EquilibriumMoisture --precipitation_choice=Precipitation1M --rain_formation_scheme_choice TC1980 --prescribed_Nd 1e8"
         artifact_paths: "test/experiments/KiD_driver/Output_EquilibriumMoisture_Precipitation1M_TC1980/figures/*"
 
-      - label: ":crystal_ball: Experiments: equil + LD2004"
+      - label: ":umbrella_with_rain_drops: Equil + LD2004"
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=EquilibriumMoisture --precipitation_choice=Precipitation1M --rain_formation_scheme_choice LD2004 --prescribed_Nd 1e8"
         artifact_paths: "test/experiments/KiD_driver/Output_EquilibriumMoisture_Precipitation1M_LD2004/figures/*"
 
-      - label: ":crystal_ball: Experiments: non equil + VarTimeScaleAcnv"
+      - label: ":umbrella_with_rain_drops: Non equil + VarTimeScaleAcnv"
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation1M --rain_formation_scheme_choice VarTimeScaleAcnv --prescribed_Nd 1e8"
         artifact_paths: "test/experiments/KiD_driver/Output_NonEquilibriumMoisture_Precipitation1M_VarTimeScaleAcnv/figures/*"
 
-      - label: ":crystal_ball: Experiments: equil + SB2006"
-        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=EquilibriumMoisture --precipitation_choice=Precipitation2M --rain_formation_scheme_choice SB2006 --sedimentation_scheme_choice SB2006 --prescribed_Nd 1e8"
-        artifact_paths: "test/experiments/KiD_driver/Output_EquilibriumMoisture_Precipitation2M_SB2006/figures/*"
+  - group: ":snowman: 1D + 1M with ice and snow"
+    steps:
 
-      - label: ":crystal_ball: Experiments: non equil + SB2006"
-        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation2M --rain_formation_scheme_choice SB2006 --sedimentation_scheme_choice SB2006 --prescribed_Nd 1e8"
-        artifact_paths: "test/experiments/KiD_driver/Output_NonEquilibriumMoisture_Precipitation2M_SB2006/figures/*"
-
-      - label: ":crystal_ball: Experiments: non equil + SB2006 + Chen2022"
-        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation2M --rain_formation_scheme_choice SB2006 --sedimentation_scheme_choice Chen2022 --prescribed_Nd 1e8"
-        artifact_paths: "test/experiments/KiD_driver/Output_NonEquilibriumMoisture_Precipitation2M_SB2006_Chen2022/figures/*"
-
-      - label: ":crystal_ball: Experiments: non equil + SB2006NL (without limiters)"
-        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation2M --rain_formation_scheme_choice SB2006NL --sedimentation_scheme_choice SB2006 --prescribed_Nd 1e8"
-        artifact_paths: "test/experiments/KiD_driver/Output_NonEquilibriumMoisture_Precipitation2M_SB2006NL/figures/*"
-
-      - label: ":snowman: Experiments: non equil + 1M with ice and snow"
+      - label: ":snowman: Non equil + 1M with ice and snow"
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation1M --rv_0 0.0008 --rv_1 0.0008 --rv_2 0.0001 --tht_0 260 --tht_1 260 --tht_2 270 --w1 2 --z_max 4000 --z_2 4000 --n_elem 200"
         artifact_paths: "test/experiments/KiD_driver/Output_NonEquilibriumMoisture_Precipitation1M_CliMA_1M/figures/*"
 
-      - label: ":crystal_ball: Experiments: Box model"
+  - group: ":umbrella_with_rain_drops::umbrella_with_rain_drops: 1D + 2M microphysics"
+    steps:
+
+      - label: ":umbrella_with_rain_drops::umbrella_with_rain_drops: Equil + SB2006"
+        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=EquilibriumMoisture --precipitation_choice=Precipitation2M --rain_formation_scheme_choice SB2006 --sedimentation_scheme_choice SB2006 --prescribed_Nd 1e8"
+        artifact_paths: "test/experiments/KiD_driver/Output_EquilibriumMoisture_Precipitation2M_SB2006/figures/*"
+
+      - label: ":umbrella_with_rain_drops::umbrella_with_rain_drops: Non equil + SB2006"
+        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation2M --rain_formation_scheme_choice SB2006 --sedimentation_scheme_choice SB2006 --prescribed_Nd 1e8"
+        artifact_paths: "test/experiments/KiD_driver/Output_NonEquilibriumMoisture_Precipitation2M_SB2006/figures/*"
+
+      - label: ":umbrella_with_rain_drops::umbrella_with_rain_drops: Non equil + SB2006 + Chen2022"
+        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation2M --rain_formation_scheme_choice SB2006 --sedimentation_scheme_choice Chen2022 --prescribed_Nd 1e8"
+        artifact_paths: "test/experiments/KiD_driver/Output_NonEquilibriumMoisture_Precipitation2M_SB2006_Chen2022/figures/*"
+
+      - label: ":umbrella_with_rain_drops::umbrella_with_rain_drops: Non equil + SB2006NL (without limiters)"
+        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation2M --rain_formation_scheme_choice SB2006NL --sedimentation_scheme_choice SB2006 --prescribed_Nd 1e8"
+        artifact_paths: "test/experiments/KiD_driver/Output_NonEquilibriumMoisture_Precipitation2M_SB2006NL/figures/*"
+
+  - group: ":boxing_glove: Box model"
+    steps:
+
+      - label: ":boxing_glove: 2M microphysics"
         command: "julia --color=yes --project=test test/experiments/box_driver/run_box_simulation.jl"
         artifact_paths: "test/experiments/box_driver/Output_Precipitation2M_SB2006/*"
         agents:
           slurm_time: '00:02:00'
 
-      - label: ":partly_sunny: Experiments: 1D with collision and sedimentation + Cloudy (5 moments)"
+  - group: ":cloud: 1D + Cloudy"
+    steps:
+
+      - label: ":cloud: Collision and sedimentation + Cloudy (5 moments)"
         command: "julia --color=yes --project=test test/experiments/KiD_col_sed_driver/run_KiD_col_sed_simulation.jl"
         artifact_paths: "test/experiments/KiD_col_sed_driver/Output_CloudyPrecip_5/figures/*"
 
-      - label: ":crystal_ball: Experiments: 2D setup"
+      - label: ":cloud: Cloudy with 6 moments (default)"
+        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=CloudyMoisture --precipitation_choice=CloudyPrecip --n_elem=128"
+        artifact_paths: "test/experiments/KiD_driver/Output_CloudyMoisture_CloudyPrecip_6/figures/*"
+
+      - label: ":cloud: Cloudy with 4 moments"
+        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=CloudyMoisture --precipitation_choice=CloudyPrecip --n_elem=128 --num_moments=4"
+        artifact_paths: "test/experiments/KiD_driver/Output_CloudyMoisture_CloudyPrecip_4/figures/*"
+
+      - label: ":cloud: Cloudy with 7 moments"
+        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=CloudyMoisture --precipitation_choice=CloudyPrecip --n_elem=128 --num_moments=7"
+        artifact_paths: "test/experiments/KiD_driver/Output_CloudyMoisture_CloudyPrecip_7/figures/*"
+
+  - group: ":genie: 2D setup"
+    steps:
+
+      - label: ":genie: 1M microphysics"
         command: "julia --color=yes --project=test test/experiments/Ki2D_driver/run_kinematic2d_simulations.jl"
         artifact_paths: "test/experiments/Ki2D_driver/Output_NonEquilibriumMoisture_Precipitation1M_CliMA_1M/*"
         agents:
           slurm_time: '30:00:00'
-
-      - label: ":partly_sunny: Experiment: 1D with Cloudy, 6 moments (default)"
-        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=CloudyMoisture --precipitation_choice=CloudyPrecip --n_elem=128"
-        artifact_paths: "test/experiments/KiD_driver/Output_CloudyMoisture_CloudyPrecip_6/figures/*"
-
-      - label: ":partly_sunny: Experiment: 1D with Cloudy, 4 moments"
-        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=CloudyMoisture --precipitation_choice=CloudyPrecip --n_elem=128 --num_moments=4"
-        artifact_paths: "test/experiments/KiD_driver/Output_CloudyMoisture_CloudyPrecip_4/figures/*"
-
-      - label: ":partly_sunny: Experiment: 1D with Cloudy, 7 moments"
-        command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=CloudyMoisture --precipitation_choice=CloudyPrecip --n_elem=128 --num_moments=7"
-        artifact_paths: "test/experiments/KiD_driver/Output_CloudyMoisture_CloudyPrecip_7/figures/*"
 
       #- label: ":snowflake: Experiment: P3 Setup"
       #  command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=MoistureP3 --precipitation_choice=PrecipitationP3 --n_elem=24 --z_max=3000 --t_end=75 --w1=0 --dt=0.5"
       #  artifact_paths: "test/experiments/KiD_driver/Output_MoistureP3_PrecipitationP3/figures/*"
 
 
-  - group: "Experiments: ARG aerosol activation :umbrella:"
+  - group: ":droplet: ARG aerosol activation :umbrella:"
     steps:
 
-      - label: ":crystal_ball: ARG experiment: equil + closed system and cloud base activation"
+      - label: ":droplet: Equil + closed system and cloud base activation"
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=EquilibriumMoisture --precipitation_choice=Precipitation2M --rain_formation_scheme_choice SB2006NL --sedimentation_scheme_choice SB2006 --prescribed_Nd 1e8 --t_end=300"
         artifact_paths: "test/experiments/KiD_driver/Output_EquilibriumMoisture_Precipitation2M_SB2006NL/figures/*"
 
-      - label: ":crystal_ball: ARG experiment: equil + open system and cloud base activation"
+      - label: ":droplet: Equil + open system and cloud base activation"
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=EquilibriumMoisture --precipitation_choice=Precipitation2M --rain_formation_scheme_choice SB2006NL --sedimentation_scheme_choice SB2006 --prescribed_Nd 1e8 --t_end=300 --open_system_activation=true"
         artifact_paths: "test/experiments/KiD_driver/Output_EquilibriumMoisture_Precipitation2M_SB2006NL_OSA/figures/*"
 
-      - label: ":crystal_ball: ARG experiment: equil + closed system and local activation"
+      - label: ":droplet: Equil + closed system and local activation"
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=EquilibriumMoisture --precipitation_choice=Precipitation2M --rain_formation_scheme_choice SB2006NL --sedimentation_scheme_choice SB2006 --prescribed_Nd 1e8 --t_end=300 --local_activation=true"
         artifact_paths: "test/experiments/KiD_driver/Output_EquilibriumMoisture_Precipitation2M_SB2006NL_LA/figures/*"
 
-      - label: ":crystal_ball: ARG experiment: equil + Open system and local activation"
+      - label: ":droplet: Equil + Open system and local activation"
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=EquilibriumMoisture --precipitation_choice=Precipitation2M --rain_formation_scheme_choice SB2006NL --sedimentation_scheme_choice SB2006 --prescribed_Nd 1e8 --t_end=300 --open_system_activation=true --local_activation=true"
         artifact_paths: "test/experiments/KiD_driver/Output_EquilibriumMoisture_Precipitation2M_SB2006NL_OSA_LA/figures/*"
 
-      - label: ":crystal_ball: ARG experiment: nonEquil + closed system and local activation"
+      - label: ":droplet: Non equil + closed system and local activation"
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation2M --rain_formation_scheme_choice SB2006NL --sedimentation_scheme_choice SB2006 --prescribed_Nd 1e8 --t_end=300 --local_activation=true"
         artifact_paths: "test/experiments/KiD_driver/Output_NonEquilibriumMoisture_Precipitation2M_SB2006NL_LA/figures/*"
 
-      - label: ":crystal_ball: ARG experiment: nonEquil + open system and local activation"
+      - label: ":droplet: Non equil + open system and local activation"
         command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=NonEquilibriumMoisture --precipitation_choice=Precipitation2M --rain_formation_scheme_choice SB2006NL --sedimentation_scheme_choice SB2006 --prescribed_Nd 1e8 --t_end=300 --open_system_activation=true --local_activation=true"
         artifact_paths: "test/experiments/KiD_driver/Output_NonEquilibriumMoisture_Precipitation2M_SB2006NL_OSA_LA/figures/*"
