@@ -165,18 +165,18 @@ TT.@testset "Tendency helper functions" begin
         ρ_dry = 1.185,
         θ_liq_ice = 350.0,
         q_tot = 15e-3 / 1.2,
-        q_liq = 1e-3 / 1.2,
+        q_liq = 2e-3 / 1.2,
         q_ice = 2e-3 / 1.2,
         q_rai = 1e-3 / 1.2,
-        q_sno = 2e-3 / 1.2,
+        q_sno = 0.0,
         q_rim = 0.5e-3 / 1.2,
         q_liqonice = 0.5e-3 / 1.2,
         q_vap = 1e-2 / 1.2,
         ρq_tot = 15e-3,
-        ρq_liq = 1e-3,
+        ρq_liq = 2e-3,
         ρq_ice = 2e-3,
         ρq_rai = 1e-3,
-        ρq_sno = 2e-3,
+        ρq_sno = 0.0,
         ρq_rim = 0.5e-3,
         ρq_liqonice = 0.5e-3,
         ρq_vap = 1e-2,
@@ -249,14 +249,19 @@ TT.@testset "Tendency helper functions" begin
     # test if throws error
     aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, equil_moist, no_precip)
     Y = CO.initialise_state(equil_moist, no_precip, ip)
-    TT.@test_throws Exception CO.precompute_aux_thermo!(CO.AbstractMoistureStyle(), Y, aux)
+    TT.@test_throws Exception CO.precompute_aux_thermo!(
+        CO.AbstractMoistureStyle(),
+        CO.AbstractPrecipitationStyle(),
+        Y,
+        aux,
+    )
     TT.@test_throws Exception CO.precompute_aux_precip!(CO.AbstractPrecipitationStyle(), Y, aux)
 
     # test precompute_aux_thermo
     for ms in (equil_moist, nequil_moist)
         Y = CO.initialise_state(ms, no_precip, ip)
         aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, ms, no_precip)
-        CO.precompute_aux_thermo!(ms, Y, aux)
+        CO.precompute_aux_thermo!(ms, no_precip, Y, aux)
         (; ρ_dry, p, T, θ_dry, θ_liq_ice, ts, ρ, ρ_dry) = aux.thermo_variables
         (; q_tot, q_liq, q_ice) = aux.microph_variables
         for (el,) in CC.Fields.field_iterator(aux.thermo_variables)
@@ -280,7 +285,7 @@ TT.@testset "Tendency helper functions" begin
     ms = p3_moist
     Y = CO.initialise_state(ms, precip_p3, ip)
     aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, ms, precip_p3)
-    CO.precompute_aux_thermo!(ms, Y, aux)
+    CO.precompute_aux_thermo!(ms, precip_p3, Y, aux)
     (; ρ_dry, p, T, θ_dry, θ_liq_ice, ts, ρ, ρ_dry) = aux.thermo_variables
     (; q_tot, q_liq, q_ice) = aux.microph_variables
     for (el,) in CC.Fields.field_iterator(aux.thermo_variables)
@@ -303,7 +308,7 @@ TT.@testset "Tendency helper functions" begin
     for ps in (precip_1m, precip_2m)
         Y = CO.initialise_state(equil_moist, ps, ip)
         aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, equil_moist, ps)
-        CO.precompute_aux_thermo!(equil_moist, Y, aux)
+        CO.precompute_aux_thermo!(equil_moist, ps, Y, aux)
         CO.precompute_aux_precip!(ps, Y, aux)
         for (el,) in CC.Fields.field_iterator(merge.(aux.velocities, aux.microph_variables))
             TT.@test all(isfinite, parent(el))
@@ -314,7 +319,7 @@ TT.@testset "Tendency helper functions" begin
     # TODO - tmp remove P3 from tests
     #Y = CO.initialise_state(p3_moist, precip_p3, ip)
     #aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, p3_moist, precip_p3)
-    #CO.precompute_aux_thermo!(p3_moist, Y, aux)
+    #CO.precompute_aux_thermo!(p3_moist, precip_p3, Y, aux)
     #CO.precompute_aux_precip!(precip_p3, Y, aux)
     #for el in merge(aux.velocities, aux.microph_variables)
     #    TT.@test all(isfinite, get_value(el))
@@ -324,7 +329,7 @@ TT.@testset "Tendency helper functions" begin
     # test precompute_aux_moisture_sources
     Y = CO.initialise_state(nequil_moist, precip_1m, ip)
     aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, nequil_moist, precip_1m)
-    CO.precompute_aux_thermo!(nequil_moist, Y, aux)
+    CO.precompute_aux_thermo!(nequil_moist, precip_1m, Y, aux)
     CO.precompute_aux_moisture_sources!(nequil_moist, aux)
     TT.@test all(isfinite, parent(aux.cloud_sources.q_ice))
     TT.@test all(isfinite, parent(aux.cloud_sources.q_liq))
@@ -334,7 +339,7 @@ TT.@testset "Tendency helper functions" begin
         Y = CO.initialise_state(equil_moist, precip_1m, ip)
         TS = CO.TimeStepping(FT(10), FT(10), FT(20))
         aux = CO.initialise_aux(FT, ip, params..., TS, 0.0, equil_moist, ps)
-        CO.precompute_aux_thermo!(equil_moist, Y, aux)
+        CO.precompute_aux_thermo!(equil_moist, ps, Y, aux)
         CO.precompute_aux_precip_sources!(ps, aux)
         if ps isa CO.Precipitation0M
             (; q_tot, q_liq, q_ice) = aux.precip_sources
@@ -349,7 +354,7 @@ TT.@testset "Tendency helper functions" begin
             TT.@test all(isfinite, parent(q_ice))
             TT.@test all(isfinite, parent(q_rai))
             TT.@test all(isfinite, parent(q_sno))
-            TT.@test all(isapprox(parent(q_tot), -parent(q_rai .+ q_sno); rtol = sqrt(eps(FT))))
+            TT.@test all(isapprox(parent(q_tot), FT(0); rtol = sqrt(eps(FT))))
         else
             (; q_tot, q_liq, q_rai, N_aer, N_liq, N_rai) = aux.precip_sources
             TT.@test all(isfinite, parent(q_tot))
@@ -358,7 +363,7 @@ TT.@testset "Tendency helper functions" begin
             TT.@test all(isfinite, parent(N_aer))
             TT.@test all(isfinite, parent(N_liq))
             TT.@test all(isfinite, parent(N_rai))
-            TT.@test parent(q_tot) == -parent(q_rai)
+            TT.@test all(isapprox(parent(q_tot), FT(0); rtol = sqrt(eps(FT))))
         end
     end
 end

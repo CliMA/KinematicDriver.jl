@@ -29,10 +29,10 @@ end
 """
      Precompute the auxiliary values
 """
-@inline function precompute_aux_thermo!(sm::AbstractMoistureStyle, Y, aux)
-    error("precompute_aux not implemented for a given $sm")
+@inline function precompute_aux_thermo!(ms::AbstractMoistureStyle, ps::AbstractPrecipitationStyle, Y, aux)
+    error("precompute_aux not implemented for the given $ms and $ps")
 end
-@inline function precompute_aux_thermo!(::EquilibriumMoisture, Y, aux)
+@inline function precompute_aux_thermo!(::EquilibriumMoisture, ::Union{NoPrecipitation, Precipitation0M}, Y, aux)
 
     (; thermo_params) = aux
     (; ts, ρ, ρ_dry, p, T, θ_dry, θ_liq_ice) = aux.thermo_variables
@@ -49,7 +49,24 @@ end
     @. θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
     @. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
 end
-@inline function precompute_aux_thermo!(::MoistureP3, Y, aux)
+@inline function precompute_aux_thermo!(::EquilibriumMoisture, ::Union{Precipitation1M, Precipitation2M}, Y, aux)
+
+    (; thermo_params) = aux
+    (; ts, ρ, ρ_dry, p, T, θ_dry, θ_liq_ice) = aux.thermo_variables
+    (; q_tot, q_liq, q_ice) = aux.microph_variables
+
+    @. ρ = ρ_dry + Y.ρq_tot
+    @. ts = TD.PhaseEquil_ρTq(thermo_params, ρ, T, Y.ρq_tot / ρ)
+    @. p = TD.air_pressure(thermo_params, ts)
+
+    @. q_tot = TD.total_specific_humidity(thermo_params, ts)
+    @. q_liq = TD.liquid_specific_humidity(thermo_params, ts) - q_(Y.ρq_rai, ρ)
+    @. q_ice = TD.ice_specific_humidity(thermo_params, ts) - q_(Y.ρq_sno, ρ)
+
+    @. θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
+    @. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
+end
+@inline function precompute_aux_thermo!(::MoistureP3, ::PrecipitationP3, Y, aux)
 
     FT = eltype(Y.ρq_liq)
 
@@ -74,15 +91,13 @@ end
     @. q_rai = q_(Y.ρq_rai, ρ)
     @. q_tot = q_liq + q_ice + q_rai + q_vap
 
-    @. ts = TD.PhaseNonEquil_ρTq(thermo_params, ρ, T, PP(q_tot, q_liq, q_ice))
+    @. ts = TD.PhaseNonEquil_ρTq(thermo_params, ρ, T, PP(q_tot, q_liq + q_rai, q_ice))
     @. p = TD.air_pressure(thermo_params, ts)
     @. θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
     @. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
 
 end
-@inline function precompute_aux_thermo!(::NonEquilibriumMoisture, Y, aux)
-
-    FT = eltype(Y.ρq_liq)
+@inline function precompute_aux_thermo!(::NonEquilibriumMoisture, ::Union{NoPrecipitation, Precipitation0M}, Y, aux)
 
     (; thermo_params) = aux
     (; ts, ρ, ρ_dry, p, T, θ_dry, θ_liq_ice) = aux.thermo_variables
@@ -95,6 +110,23 @@ end
     @. q_ice = q_(Y.ρq_ice, ρ)
 
     @. ts = TD.PhaseNonEquil_ρTq(thermo_params, ρ, T, PP(q_tot, q_liq, q_ice))
+    @. p = TD.air_pressure(thermo_params, ts)
+    @. θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
+    @. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
+end
+@inline function precompute_aux_thermo!(::NonEquilibriumMoisture, ::Union{Precipitation1M, Precipitation2M}, Y, aux)
+
+    (; thermo_params) = aux
+    (; ts, ρ, ρ_dry, p, T, θ_dry, θ_liq_ice) = aux.thermo_variables
+    (; q_tot, q_liq, q_ice) = aux.microph_variables
+
+    @. ρ = ρ_dry + Y.ρq_tot
+
+    @. q_tot = q_(Y.ρq_tot, ρ)
+    @. q_liq = q_(Y.ρq_liq, ρ)
+    @. q_ice = q_(Y.ρq_ice, ρ)
+
+    @. ts = TD.PhaseNonEquil_ρTq(thermo_params, ρ, T, PP(q_tot, q_liq + q_(Y.ρq_rai, ρ), q_ice + q_(Y.ρq_sno, ρ)))
     @. p = TD.air_pressure(thermo_params, ts)
     @. θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
     @. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
@@ -116,30 +148,28 @@ function separate_liq_rai(FT, moments, pdists, cloudy_params, ρd)
     end
     return moments_like
 end
-@inline function precompute_aux_thermo!(::CloudyMoisture, Y, aux)
+@inline function precompute_aux_thermo!(::CloudyMoisture, ::CloudyPrecip, Y, aux)
+
+    FT = eltype(Y.ρq_vap)
 
     (; thermo_params, cloudy_params) = aux
     (; ts, ρ, ρ_dry, p, T, θ_dry, θ_liq_ice) = aux.thermo_variables
     (; moments, pdists, q_rai, N_rai, N_liq, q_tot, q_liq, q_ice) = aux.microph_variables
     (; tmp_cloudy) = aux.scratch
 
-    FT = eltype(Y.ρq_vap)
-
     @. moments = Y.moments
     @. pdists = get_updated_pdists(moments, pdists, cloudy_params)
 
     @. tmp_cloudy = separate_liq_rai(FT, Y.moments, pdists, cloudy_params, ρ_dry)
+    @. ρ = ρ_dry * (1 + tmp_cloudy.:3 + tmp_cloudy.:4) + Y.ρq_vap
     @. N_liq = tmp_cloudy.:1
     @. N_rai = tmp_cloudy.:2
-    @. q_liq = tmp_cloudy.:3
-    @. q_rai = tmp_cloudy.:4
-
-    FT = eltype(Y.ρq_vap)
-    @. q_tot = q_(Y.ρq_vap, ρ) + q_liq
+    @. q_liq = tmp_cloudy.:3 * ρ_dry / ρ
+    @. q_rai = tmp_cloudy.:4 * ρ_dry / ρ
     @. q_ice = FT(0)
+    @. q_tot = q_(Y.ρq_vap, ρ) + q_liq + q_rai + q_ice
 
-    @. ρ = ρ_dry + tmp_cloudy.:3 * ρ_dry + Y.ρq_vap
-    @. ts = TD.PhaseNonEquil_ρTq(thermo_params, ρ, T, PP(q_tot, q_liq, q_ice))
+    @. ts = TD.PhaseNonEquil_ρTq(thermo_params, ρ, T, PP(q_tot, q_liq + q_rai, q_ice))
     @. p = TD.air_pressure(thermo_params, ts)
     @. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
     @. θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
@@ -373,7 +403,7 @@ end
         else
             error("Unrecognized rain formation scheme")
         end
-        @. aux.precip_sources += to_sources(S, S, 0, -S, 0)
+        @. aux.precip_sources += to_sources(0, S, 0, -S, 0)
 
         # autoconversion of ice to snow
         @. S =
@@ -381,7 +411,7 @@ end
                 CM1.conv_q_ice_to_q_sno(ps.ice, air_params, thermo_params, q_tot, q_liq, q_ice, q_rai, q_sno, ρ, T),
                 limit(q_ice, dt),
             )
-        @. aux.precip_sources += to_sources(S, 0, S, 0, -S)
+        @. aux.precip_sources += to_sources(0, 0, S, 0, -S)
 
         # accretion cloud water + rain
         if typeof(rf) in [CMP.Acnv1M{FT}, CMP.LD2004{FT}, CMP.VarTimescaleAcnv{FT}]
@@ -396,14 +426,14 @@ end
         else
             error("Unrecognized rain formation scheme")
         end
-        @. aux.precip_sources += to_sources(-S, -S, 0, S, 0)
+        @. aux.precip_sources += to_sources(0, -S, 0, S, 0)
 
         # accretion cloud ice + snow
         @. S = triangle_inequality_limiter(
             CM1.accretion(ps.ice, ps.snow, ps.sedimentation.snow, ps.ce, q_ice, q_sno, ρ),
             limit(q_ice, dt),
         )
-        @. aux.precip_sources += to_sources(-S, 0, -S, 0, S)
+        @. aux.precip_sources += to_sources(0, 0, -S, 0, S)
 
         # sink of cloud water via accretion cloud water + snow
         @. S =
@@ -412,7 +442,7 @@ end
                 limit(q_liq, dt),
             )
         @. α = c_vl / Lf(thermo_params, ts) * (T - T_fr)
-        @. aux.precip_sources += ifelse(T < T_fr, to_sources(S, S, 0, 0, -S), to_sources(S, S, 0, -S * (1 + α), S * α))
+        @. aux.precip_sources += ifelse(T < T_fr, to_sources(0, S, 0, 0, -S), to_sources(0, S, 0, -S * (1 + α), S * α))
 
         # sink of cloud ice via accretion cloud ice - rain
         @. S =
@@ -420,7 +450,7 @@ end
                 CM1.accretion(ps.ice, ps.rain, ps.sedimentation.rain, ps.ce, q_ice, q_rai, ρ),
                 limit(q_ice, dt),
             )
-        @. aux.precip_sources += to_sources(S, 0, S, 0, -S)
+        @. aux.precip_sources += to_sources(0, 0, S, 0, -S)
 
         # sink of rain via accretion cloud ice - rain
         @. S =
@@ -479,7 +509,7 @@ end
                 ),
                 limit(q_rai, dt),
             )
-        @. aux.precip_sources += to_sources(-S, 0, 0, S, 0)
+        @. aux.precip_sources += to_sources(0, 0, 0, S, 0)
 
         # melting
         @. S =
@@ -505,7 +535,7 @@ end
             triangle_inequality_limiter(S, limit(q_vap(thermo_params, ts), dt)),
             -triangle_inequality_limiter(-S, limit(q_sno, dt)),
         )
-        @. aux.precip_sources += to_sources(-S, 0, 0, 0, S)
+        @. aux.precip_sources += to_sources(0, 0, 0, 0, S)
     end
 end
 @inline function precompute_aux_precip_sources!(ps::Precipitation2M, aux)
@@ -528,7 +558,6 @@ end
     if Bool(common_params.precip_sources)
         # autoconversion liquid to rain (mass)
         @. S₁ = triangle(CM2.autoconversion(acnv, pdf_c, q_liq, q_rai, ρ, N_liq).dq_rai_dt, q_liq)
-        @. aux.precip_sources.q_tot += -S₁
         @. aux.precip_sources.q_liq += -S₁
         @. aux.precip_sources.q_rai += S₁
 
@@ -551,7 +580,6 @@ end
         # accretion cloud water + rain
         @. S₁ = triangle(CM2.accretion(sb2006, q_liq, q_rai, ρ, N_liq).dq_rai_dt, q_liq)
         @. S₂ = -triangle(-CM2.accretion(sb2006, q_liq, q_rai, ρ, N_liq).dN_liq_dt, N_liq)
-        @. aux.precip_sources.q_tot += -S₁
         @. aux.precip_sources.q_liq += -S₁
         @. aux.precip_sources.q_rai += S₁
         @. aux.precip_sources.N_liq += S₂
@@ -574,7 +602,6 @@ end
         args = (sb2006, air_params, thermo_params, q_tot, q_liq, q_ice, q_rai, q_sno, ρ, N_rai, T)
         @. S₁ = -triangle(-CM2.rain_evaporation(args...).evap_rate_0, N_rai)
         @. S₂ = -triangle(-CM2.rain_evaporation(args...).evap_rate_1, q_rai)
-        @. aux.precip_sources.q_tot += -S₂
         @. aux.precip_sources.q_rai += S₂
         @. aux.precip_sources.N_rai += S₁
     end
