@@ -47,6 +47,12 @@ function initialise_state(::MoistureP3, ::PrecipitationP3, initial_profiles)
         :N_liq, :N_rai, :N_ice, :N_aer, :q_vap, :ρq_vap, :q_rai,
     )}.(initial_profiles)
 end
+function initialise_state(::NonEquilibriumMoisture, ::Precipitation2M_P3, initial_profiles)
+    warm_state = NamedTuple{(:ρq_tot, :ρq_liq, :ρq_rai, :N_liq, :N_rai, :N_aer)}.(initial_profiles)
+    cold_state = NamedTuple{(:ρq_ice, :N_ice, :ρq_rim, :B_rim)}.(initial_profiles)
+    tmp = NamedTuple{(:ρq_sno,)}.(initial_profiles)  # only needed to use existing `Precipitation2M` code, should always be zero.
+    return merge.(warm_state, cold_state, tmp)
+end
 function initialise_state(::CloudyMoisture, ::CloudyPrecip, initial_profiles)
     return NamedTuple{(:ρq_vap, :N_aer, :moments)}.(initial_profiles)
 end
@@ -115,11 +121,21 @@ function initialise_aux(
         velocities = zero_nt(NamedTuple{(:term_vel_rai, :term_vel_sno)})
         precip_sources = zero_nt(NamedTuple{(:q_tot, :q_liq, :q_ice, :q_rai, :q_sno)})
         activation_sources = nothing
-    elseif precip isa Precipitation2M
+    elseif precip isa Precipitation2M || precip isa Precipitation2M_P3
         microph_variables = merge.(microph_variables, NamedTuple{(:q_rai, :q_sno, :N_liq, :N_rai, :N_aer)}.(ip))
         velocities = zero_nt(NamedTuple{(:term_vel_N_rai, :term_vel_rai)})
         precip_sources = zero_nt(NamedTuple{(:q_tot, :q_liq, :q_rai, :N_aer, :N_liq, :N_rai)})
         activation_sources = zero_nt(NamedTuple{(:N_aer, :N_liq)})
+        if precip isa Precipitation2M_P3
+            # NOTE: `q_sno` from above is not used in the P3 code, but is needed to use existing `Precipitation2M` code.
+            ice_microph_variables = NamedTuple{(:F_rim, :ρ_rim, :logλ)}.(ip)  # variables needed to be precomputed 
+            ice_output_variables = NamedTuple{(:N_ice, :ρq_rim, :B_rim)}.(ip)  # variables for netCDF output
+            microph_variables = merge.(microph_variables, ice_microph_variables, ice_output_variables)
+            ice_velocities = zero_nt(NamedTuple{(:term_vel_N_ice, :term_vel_q_ice)})
+            velocities = merge.(velocities, ice_velocities)  # precompute ice terminal velocities
+            ice_precip_sources = zero_nt(NamedTuple{(:q_ice, :q_rim, :N_ice, :B_rim)})
+            precip_sources = merge.(precip_sources, ice_precip_sources)
+        end
     elseif precip isa PrecipitationP3
         microph_variables =
             NamedTuple{(

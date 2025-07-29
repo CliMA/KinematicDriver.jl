@@ -171,6 +171,10 @@ end
     @. aux.activation_sources.N_liq = S_Nl
 end
 
+@inline function precompute_aux_activation!(ps::CO.Precipitation2M_P3, dY, Y, aux, t)
+    precompute_aux_activation!(ps.liq_precip, dY, Y, aux, t)
+end
+
 @inline function precompute_aux_activation!(::CO.CloudyPrecip, dY, Y, aux, t)
 
     (; common_params, kid_params, thermo_params, air_params, activation_params, cloudy_params) = aux
@@ -419,6 +423,38 @@ end
         )
     end
 
+    return dY
+end
+@inline function advection_tendency!(::CO.IcePrecipitationP3, dY, Y, aux, t)
+    FT = eltype(Y.ρq_tot)
+    # Apply advection tendency to N_ice, B_rim, ρq_rim
+    (; ρw) = aux.prescribed_velocity
+    (; ρ) = aux.thermo_variables
+    (; term_vel_N_ice, term_vel_q_ice) = aux.velocities
+
+    If = CC.Operators.InterpolateC2F()
+    wvec = CC.Geometry.WVector
+    extrapolate = CC.Operators.Extrapolate()
+    zero_bc = CC.Operators.SetValue(wvec(FT(0)))
+
+    ∇_N = CC.Operators.DivergenceF2C(bottom = extrapolate, top = zero_bc)
+    ∇_q = CC.Operators.DivergenceF2C(bottom = zero_bc, top = extrapolate)
+    
+    @. dY.N_ice += -∇_N((ρw / If(ρ) - wvec(If(term_vel_N_ice))) * If(Y.N_ice))
+    @. dY.B_rim += -∇_q((ρw / If(ρ) - wvec(If(term_vel_q_ice))) * If(Y.B_rim))
+    @. dY.ρq_rim += -∇_q((ρw / If(ρ) - wvec(If(term_vel_q_ice))) * If(Y.ρq_rim))
+
+    fcc = CC.Operators.FluxCorrectionC2C(bottom = extrapolate, top = extrapolate)
+    @. dY.N_ice += fcc(ρw / If(ρ) - wvec(If(term_vel_N_ice)), Y.N_ice)
+    @. dY.B_rim += fcc(ρw / If(ρ) - wvec(If(term_vel_q_ice)), Y.B_rim)
+    @. dY.ρq_rim += fcc(ρw / If(ρ) - wvec(If(term_vel_q_ice)), Y.ρq_rim)
+
+    return dY
+end
+
+@inline function advection_tendency!(ps::CO.Precipitation2M_P3, dY, Y, aux, t)
+    advection_tendency!(ps.liq_precip, dY, Y, aux, t)
+    advection_tendency!(ps.ice_precip, dY, Y, aux, t)
     return dY
 end
 
