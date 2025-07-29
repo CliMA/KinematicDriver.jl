@@ -2,13 +2,27 @@
 Aerosol activation helper functions
 """
 
-# Find cloud base for aerosol activation
-@inline function find_cloud_base(S_Nl, z, cloud_base_S_Nl_and_z)
+"""
+    find_cloud_base!(S_Nl, z, cloud_base_S_Nl_and_z)
+        S_Nl,
+        z,
+        cloud_base_S_Nl_and_z,
+    )
+
+Performs a vertical column-wise reduction to identify the first level (from bottom to top) where `S_Nl > 0`, 
+indicating the onset of cloud droplet activation (i.e., cloud base). The result is stored in `cloud_base_S_Nl_and_z`
+as a tuple `(S_Nl, z)` for each column.
+
+ # Arguments
+ - `S_Nl`: Field of cloud droplet number concentration tendencies [m⁻³/s], from an activation parameterization.
+ - `z`: Field of geometric height [m] corresponding to each grid point.
+ - `cloud_base_S_Nl_and_z`: Output field to store the `(S_Nl, z)` values at cloud base for each column.
+"""
+@inline function find_cloud_base!(S_Nl, z, cloud_base_S_Nl_and_z)
     # Find S_Nl and z at cloud base:
-    z_min = minimum(parent(z)) # height at first level (only works without topography)
     CC.Operators.column_reduce!(
         ((target_S_Nl_value, target_z_value), (S_Nl_value, z_value)) -> ifelse(
-            target_z_value == z_min && S_Nl_value >= 1e7,
+            target_S_Nl_value == 0 && S_Nl_value > 0,
             (S_Nl_value, z_value),
             (target_S_Nl_value, target_z_value),
         ), # reduction function
@@ -38,28 +52,24 @@ end
     FT = eltype(q_tot)
     S_Nl::FT = FT(0)
 
-    if N_aer < eps(FT)
-        return S_Nl
-    end
-
     S::FT = CM.ThermodynamicsInterface.supersaturation_over_liquid(
         thermo_params, q_tot, q_liq, q_ice, ρ, T,
     )
 
+    if S < 0 || N_aer < eps(FT)
+        return S_Nl
+    end
+
     (; r_dry, std_dry, κ) = kid_params
     w = ρw / ρ
 
-    if common_params.open_system_activation
-        _aerosol_budget = common_params.prescribed_Nd
-        _already_activated_particles = N_liq
-    else
-        _aerosol_budget = N_aer
-        _already_activated_particles = FT(0)
-    end
+    _aerosol_budget = N_aer + (common_params.open_system_activation ? FT(0) : N_liq)
+    _preexisting_liquid_particles = common_params.local_activation ? N_liq : FT(0)
 
     aerosol_distribution =
         CMAM.AerosolDistribution((CMAM.Mode_κ(r_dry, std_dry, _aerosol_budget, (FT(1),), (FT(1),), (FT(0),), (κ,)),))
-    N_act = CMAA.total_N_activated(
+
+    args = (
         activation_params,
         aerosol_distribution,
         air_params,
@@ -70,11 +80,18 @@ end
         q_tot,
         q_liq,
         q_ice,
-    )
+        _preexisting_liquid_particles,
+        FT(0),
+    ) # Assuming no ice particles
+    S_max = CMAA.max_supersaturation(args...)
+    N_act = CMAA.total_N_activated(args...)
 
     # Convert the total activated number to tendency
-    S_Nl = ifelse(S < 0 || isnan(N_act), FT(0), max(FT(0), N_act - _already_activated_particles) / dt)
-
+    S_Nl = ifelse(
+        isnan(N_act) || (common_params.local_activation && (S_max < S || N_act < N_liq)),
+        FT(0),
+        (N_act - N_liq) / dt,
+    )
     return S_Nl
 end
 
@@ -143,10 +160,12 @@ end
         f_interp.(ρw.components.data.:1),
         dt,
     )
-    # Use the S_Nl tendnecy at cloud base
-    z = CC.Fields.coordinate_field(S_Nl).z # height
-    find_cloud_base(S_Nl, z, cloud_base_S_Nl_and_z)
-    @. S_Nl = ifelse(z == last(cloud_base_S_Nl_and_z), S_Nl, FT(0))
+    if !common_params.local_activation
+        # Use the S_Nl tendnecy at cloud base
+        z = CC.Fields.coordinate_field(S_Nl).z # height
+        find_cloud_base!(S_Nl, z, cloud_base_S_Nl_and_z)
+        @. S_Nl = ifelse(z == last(cloud_base_S_Nl_and_z), S_Nl, FT(0))
+    end
 
     @. aux.activation_sources.N_aer = -1 * !common_params.open_system_activation * S_Nl
     @. aux.activation_sources.N_liq = S_Nl
@@ -184,7 +203,7 @@ end
     )
     # Use the S_Nl tendnecy at cloud base
     z = CC.Fields.coordinate_field(S_Nl).z # height
-    find_cloud_base(S_Nl, z, cloud_base_S_Nl_and_z)
+    find_cloud_base!(S_Nl, z, cloud_base_S_Nl_and_z)
     @. S_Nl = ifelse(z == last(cloud_base_S_Nl_and_z), S_Nl, FT(0))
 
     @. aux.activation_sources.N_aer = -1 * !common_params.open_system_activation * S_Nl
@@ -352,7 +371,12 @@ end
         bottom = CC.Operators.Extrapolate(),
         top = CC.Operators.SetValue(CC.Geometry.WVector(0.0)),
     )
-    ∂ₐ = CC.Operators.DivergenceF2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
+    # Aerosol flux at the bottom is ρw0 * N_d * (1-q_surf) / ρ_SDP 
+    surf_aero_flux::FT = aux.prescribed_velocity.ρw0 * aux.common_params.prescribed_Nd * (1 - aux.q_surf) / FT(1.225)
+    ∂ₐ = CC.Operators.DivergenceF2C(
+        bottom = CC.Operators.SetValue(CC.Geometry.WVector(surf_aero_flux)),
+        top = CC.Operators.Extrapolate(),
+    )
 
     @. dY.N_aer += -∂ₐ((aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) * If(Y.N_aer))
     @. dY.N_liq += -∂((aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) * If(Y.N_liq))

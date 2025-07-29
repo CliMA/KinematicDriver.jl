@@ -6,6 +6,8 @@ struct NetCDFIO_Stats
     output_interval::Float64
     nc_filename::String
     output_profiles::Dict{Symbol, String}
+    output_precip_sources::Dict{Symbol, String}
+    output_activation_sources::Dict{Symbol, String}
 end
 
 function NetCDFIO_Stats(
@@ -39,6 +41,17 @@ function NetCDFIO_Stats(
         :ρq_vap => "ρq_vap",
         :ρq_rai => "ρq_rai",
     ),
+    output_precip_sources = Dict(
+        :q_liq => "Sq_liq_prc",
+        :q_rai => "Sq_rai_prc",
+        :N_aer => "SN_aer_prc",
+        :N_liq => "SN_liq_prc",
+        :N_rai => "SN_rai_prc",
+    ),
+    output_activation_sources = Dict(
+        :N_aer => "SN_aer_act",
+        :N_liq => "SN_liq_act",
+    ),
 )
     FT = Float64
 
@@ -62,13 +75,15 @@ function NetCDFIO_Stats(
             NC.defVar(profiles_grp, "x", x, ("x",))
         end
 
-        for var in keys(output_profiles)
-            if dim == 1
-                NC.defVar(profiles_grp, output_profiles[var], FT, ("zc", "t"))
-            elseif dim == 2
-                NC.defVar(profiles_grp, output_profiles[var], FT, ("x", "zc", "t"))
-            else
-                error("Invalid system dimension!!!")
+        for field in (output_profiles, output_precip_sources, output_activation_sources)
+            for var in keys(field)
+                if dim == 1
+                    NC.defVar(profiles_grp, field[var], FT, ("zc", "t"))
+                elseif dim == 2
+                    NC.defVar(profiles_grp, field[var], FT, ("x", "zc", "t"))
+                else
+                    error("Invalid system dimension!!!")
+                end
             end
         end
 
@@ -88,7 +103,42 @@ function NetCDFIO_Stats(
         NC.defVar(timeseries_grp, "t", FT, ("t",))
         NC.defVar(timeseries_grp, "ql_max", FT, ("t",))
     end
-    return NetCDFIO_Stats(output_interval, nc_filename, output_profiles)
+    return NetCDFIO_Stats(
+        output_interval,
+        nc_filename,
+        output_profiles,
+        output_precip_sources,
+        output_activation_sources,
+    )
+end
+
+"""
+    write_fields(field, mapping, group, dim)
+
+Writes selected variables from a given `field` to a NetCDF group using `NCDatasets.jl`. Only variables
+listed in `mapping` and present in `field` are written.
+
+# Arguments
+- `field`: A `NamedTuple` tupple containing simulation variables (e.g., `aux.thermo_variables`).
+- `mapping`: A `Dict` mapping variable names (symbols) to NetCDF variable names (strings), e.g., `Stats.output_profiles`.
+- `group`: The NetCDF group to which variables are written, e.g., `ds.group["profiles"]`.
+- `dim`: The dimensionality of the simulation (1 or 2), used to select the correct data slicing.
+"""
+function write_fields(field, mapping, group, dim)
+    for var in keys(mapping)
+        if var in propertynames(field)
+            prop = getproperty(field, var)
+            # Avoid issue https://github.com/Alexander-Barth/NCDatasets.jl/issues/135
+            ncdf_var = NC.cfvariable(group, mapping[var], _parentname = nothing)
+            if dim == 1
+                @inbounds ncdf_var[:, end] = vec(prop)
+            elseif dim == 2
+                @inbounds ncdf_var[:, :, end] = parent(prop)[:, 1, 1, :]
+            else
+                error("Invalid system dimension!")
+            end
+        end
+    end
 end
 
 function simulation_output(aux, t::FT) where {FT <: Real}
@@ -105,22 +155,12 @@ function simulation_output(aux, t::FT) where {FT <: Real}
         @inbounds ts_t[end + 1] = t::FT
 
         # write profiles
-        for field in (aux.thermo_variables, aux.microph_variables)
-            for var in keys(Stats.output_profiles)
-                if var in propertynames(field)
-                    prop = getproperty(field, var)
-                    # _parentname = nothing to avoid https://github.com/Alexander-Barth/NCDatasets.jl/issues/135
-                    ncdf_var = NC.cfvariable(ds.group["profiles"], Stats.output_profiles[var], _parentname = nothing)
-                    if dim == 1
-                        @inbounds ncdf_var[:, end] = vec(prop)
-                    elseif dim == 2
-                        @inbounds ncdf_var[:, :, end] = parent(prop)[:, 1, 1, :]
-                    else
-                        error("Invalid system dimension!!!")
-                    end
-                end
-            end
-        end
+        grp = ds.group["profiles"]
+        write_fields(aux.thermo_variables, Stats.output_profiles, grp, dim)
+        write_fields(aux.microph_variables, Stats.output_profiles, grp, dim)
+        write_fields(aux.precip_sources, Stats.output_precip_sources, grp, dim)
+        write_fields(aux.activation_sources, Stats.output_activation_sources, grp, dim)
+
         # write timeseries
         ncdf_var = NC.cfvariable(ds.group["timeseries"], "ql_max", _parentname = nothing)
         @inbounds ncdf_var[end] = maximum(aux.microph_variables.q_liq)

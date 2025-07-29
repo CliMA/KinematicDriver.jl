@@ -32,6 +32,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     end
     opts["qtot_flux_correction"] && (folder *= "_wFC")
     opts["open_system_activation"] && (folder *= "_OSA")
+    opts["local_activation"] && (folder *= "_LA")
     path = joinpath(@__DIR__, folder)
     mkpath(path)
 
@@ -56,10 +57,16 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
         qtot_flux_correction = Int(opts["qtot_flux_correction"]),
         prescribed_Nd = FT(opts["prescribed_Nd"]),
         open_system_activation = Int(opts["open_system_activation"]),
+        local_activation = Int(opts["local_activation"]),
         r_dry = FT(opts["r_dry"]),
         std_dry = FT(opts["std_dry"]),
         κ = FT(opts["kappa"]),
     )
+    if opts["rain_formation_scheme_choice"] == "SB2006NL"
+        toml_dict["SB2006_raindrops_terminal_velocity_coeff_aR"]["value"] = FT(6.0)
+        toml_dict["SB2006_raindrops_terminal_velocity_coeff_bR"]["value"] = FT(9.76)
+        toml_dict["SB2006_raindrops_terminal_velocity_coeff_cR"]["value"] = FT(1490.0)
+    end
     # Create Thermodynamics.jl and KinematicDriver model parameters
     # (some of the CloudMicrophysics.jl parameters structs are created later based on model choices)
     common_params = create_common_parameters(toml_dict)
