@@ -298,6 +298,83 @@ function plot_animation(nc_data_file; output = "output")
     end
 end
 
+function plot_profiles_in_time(nc_data_file; output = "output", n = 10)
+
+    path = joinpath(@__DIR__, output)
+    mkpath(path)
+
+    ds = NC.NCDataset(joinpath(@__DIR__, nc_data_file))
+    profs = ds.group["profiles"]
+
+    z_plt = Array(profs["zc"])
+    t_plt = Array(profs["t"])
+    nt = length(t_plt)
+
+    # Select n evenly distributed time indices
+    Δi = round(Int, (nt - 2) / n)
+    time_indices = [1; Δi:Δi:(nt - Δi); nt]  # explicitly include first and last indices
+    selected_times = t_plt[time_indices]
+
+    kg_to_g = 1e3
+    m⁻³_to_cm⁻³ = 1e-6
+    q_tot = profs["q_tot"][:, time_indices] .* kg_to_g
+    q_liq = profs["q_liq"][:, time_indices] .* kg_to_g
+    q_ice = profs["q_ice"][:, time_indices] .* kg_to_g
+    q_rai = profs["q_rai"][:, time_indices] .* kg_to_g
+    q_sno = profs["q_sno"][:, time_indices] .* kg_to_g
+    N_aer = profs["N_aer"][:, time_indices] .* m⁻³_to_cm⁻³
+    N_liq = profs["N_liq"][:, time_indices] .* m⁻³_to_cm⁻³
+    N_rai = profs["N_rai"][:, time_indices] .* m⁻³_to_cm⁻³
+
+    close(ds)
+
+    # Create colormap for time progression
+    # colormap = :viridis
+    colormap = cgrad(:viridis, n + 1, categorical = true)
+    # colors = get(colorschemes[colormap], range(0, 1, length = n))
+    ymax = z_plt[end] + (z_plt[end] - z_plt[end - 1])  # extend y-axis a bit beyond the last point
+    lims(x) = iszero(x) ? (nothing, (0, ymax)) : ((0, 1.1 * maximum(x)), (0, ymax))
+
+    fig = Figure(size = (2000, 1500))
+
+    # Create axes
+    ax_q_tot = Axis(fig[1, 1]; xlabel = "q_tot [g/kg]", limits = lims(q_tot), ylabel = "z [m]")
+    ax_q_liq = Axis(fig[1, 2]; xlabel = "q_liq [g/kg]", limits = lims(q_liq))
+    ax_N_liq = Axis(fig[1, 3]; xlabel = "N_liq [1/cm^3]", limits = lims(N_liq))
+    ax_q_rai = Axis(fig[2, 1]; xlabel = "q_rai [g/kg]", limits = lims(q_rai), ylabel = "z [m]")
+    ax_N_rai = Axis(fig[2, 2]; xlabel = "N_rai [1/cm^3]", limits = lims(N_rai))
+    ax_q_ice = Axis(fig[2, 3]; xlabel = "q_ice [g/kg]", limits = lims(q_ice))
+    ax_q_sno = Axis(fig[3, 1]; xlabel = "q_sno [g/kg]", limits = lims(q_sno), ylabel = "z [m]")
+
+    # Link y-axes
+    axs = [ax_q_tot, ax_q_liq, ax_N_liq, ax_q_rai, ax_N_rai, ax_q_ice, ax_q_sno]
+    linkyaxes!(axs...)
+
+    # Plot lines for each selected time
+    colorrange = extrema(selected_times)
+    linewidth = 2
+    for (i, t) in enumerate(selected_times)
+        lines!(ax_q_tot, q_tot[:, i], z_plt; colormap, color = t, colorrange, linewidth)
+        lines!(ax_q_liq, q_liq[:, i], z_plt; colormap, color = t, colorrange, linewidth)
+        lines!(ax_N_liq, N_liq[:, i], z_plt; colormap, color = t, colorrange, linewidth)
+        lines!(ax_q_rai, q_rai[:, i], z_plt; colormap, color = t, colorrange, linewidth)
+        lines!(ax_N_rai, N_rai[:, i], z_plt; colormap, color = t, colorrange, linewidth)
+        lines!(ax_q_ice, q_ice[:, i], z_plt; colormap, color = t, colorrange, linewidth)
+        lines!(ax_q_sno, q_sno[:, i], z_plt; colormap, color = t, colorrange, linewidth)
+    end
+
+    # Add colorbar
+    Colorbar(fig[:, 4]; colormap, limits = colorrange, label = "Time [s]", width = 20)
+
+    # Add title
+    Label(fig[0, :], "Vertical Profiles at Multiple Time Steps", fontsize = 24)
+
+    # Save figure
+    save(joinpath(path, "profiles_multitime.png"), fig)
+
+    return fig
+end
+
 function plot_timeheight_p3(nc_data_file, precip; output = "output")
     path = joinpath(@__DIR__, output)
     mkpath(path)
