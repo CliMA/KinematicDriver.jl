@@ -354,7 +354,7 @@ TT.@testset "Tendency helper functions" begin
             TT.@test all(isfinite, parent(q_ice))
             TT.@test all(isfinite, parent(q_rai))
             TT.@test all(isfinite, parent(q_sno))
-            TT.@test all(isapprox(parent(q_tot), FT(0); rtol = sqrt(eps(FT))))
+            TT.@test all(iszero, parent(q_tot))
         else
             (; q_tot, q_liq, q_rai, N_aer, N_liq, N_rai) = aux.precip_sources
             TT.@test all(isfinite, parent(q_tot))
@@ -363,7 +363,7 @@ TT.@testset "Tendency helper functions" begin
             TT.@test all(isfinite, parent(N_aer))
             TT.@test all(isfinite, parent(N_liq))
             TT.@test all(isfinite, parent(N_rai))
-            TT.@test all(isapprox(parent(q_tot), FT(0); rtol = sqrt(eps(FT))))
+            TT.@test all(iszero, parent(q_tot))
         end
     end
 end
