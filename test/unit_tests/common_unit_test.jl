@@ -79,40 +79,33 @@ TT.@testset "Initialise state" begin
 
     TT.@test_throws Exception CO.initialise_state(CO.AbstractMoistureStyle(), CO.AbstractPrecipitationStyle(), 0)
 
-    initial_profiles = (;
-        ρq_tot = 0,
-        ρq_liq = 0,
-        ρq_ice = 0,
-        ρq_rai = 0,
-        ρq_sno = 0,
-        N_liq = 0,
-        N_rai = 0,
-        N_aer = 0,
-        ρq_rim = 0,
-        ρq_liqonice = 0,
-        N_ice = 0,
-        B_rim = 0,
-        q_vap = 0,
-        ρq_vap = 0,
-        q_rai = 0,
+    mesh = CC.CommonGrids.DefaultZMesh(FT; z_min = 0, z_max = 1, z_elem = 1)
+    space = CC.Spaces.CenterFiniteDifferenceSpace(mesh)
+    coord = CC.Fields.coordinate_field(space)
+    ic_0d = (;
+        ρq_tot = FT(0), ρq_liq = FT(0), ρq_ice = FT(0), ρq_rai = FT(0), ρq_sno = FT(0),
+        N_liq = FT(0), N_rai = FT(0), N_aer = FT(0), N_ice = FT(0),
+        ρq_rim = FT(0), ρq_liqonice = FT(0), B_rim = FT(0),
+        q_vap = FT(0), ρq_vap = FT(0), q_rai = FT(0),
     )
+    initial_profiles = map(Returns(ic_0d), coord)
 
     state = CO.initialise_state(equil_moist, no_precip, initial_profiles)
-    TT.@test state isa CC.Fields.FieldVector
+    TT.@test state isa CC.Fields.Field
     TT.@test LA.norm(state.ρq_tot) == 0
 
     state = CO.initialise_state(equil_moist, precip_0m, initial_profiles)
-    TT.@test state isa CC.Fields.FieldVector
+    TT.@test state isa CC.Fields.Field
     TT.@test LA.norm(state.ρq_tot) == 0
 
     state = CO.initialise_state(equil_moist, precip_1m, initial_profiles)
-    TT.@test state isa CC.Fields.FieldVector
+    TT.@test state isa CC.Fields.Field
     TT.@test LA.norm(state.ρq_tot) == 0
     TT.@test LA.norm(state.ρq_rai) == 0
     TT.@test LA.norm(state.ρq_sno) == 0
 
     state = CO.initialise_state(equil_moist, precip_2m, initial_profiles)
-    TT.@test state isa CC.Fields.FieldVector
+    TT.@test state isa CC.Fields.Field
     TT.@test LA.norm(state.ρq_tot) == 0
     TT.@test LA.norm(state.ρq_rai) == 0
     TT.@test LA.norm(state.N_liq) == 0
@@ -120,19 +113,19 @@ TT.@testset "Initialise state" begin
     TT.@test LA.norm(state.N_aer) == 0
 
     state = CO.initialise_state(nequil_moist, no_precip, initial_profiles)
-    TT.@test state isa CC.Fields.FieldVector
+    TT.@test state isa CC.Fields.Field
     TT.@test LA.norm(state.ρq_tot) == 0
     TT.@test LA.norm(state.ρq_liq) == 0
     TT.@test LA.norm(state.ρq_ice) == 0
 
     state = CO.initialise_state(nequil_moist, precip_0m, initial_profiles)
-    TT.@test state isa CC.Fields.FieldVector
+    TT.@test state isa CC.Fields.Field
     TT.@test LA.norm(state.ρq_tot) == 0
     TT.@test LA.norm(state.ρq_liq) == 0
     TT.@test LA.norm(state.ρq_ice) == 0
 
     state = CO.initialise_state(nequil_moist, precip_1m, initial_profiles)
-    TT.@test state isa CC.Fields.FieldVector
+    TT.@test state isa CC.Fields.Field
     TT.@test LA.norm(state.ρq_tot) == 0
     TT.@test LA.norm(state.ρq_liq) == 0
     TT.@test LA.norm(state.ρq_ice) == 0
@@ -140,7 +133,7 @@ TT.@testset "Initialise state" begin
     TT.@test LA.norm(state.ρq_sno) == 0
 
     state = CO.initialise_state(nequil_moist, precip_2m, initial_profiles)
-    TT.@test state isa CC.Fields.FieldVector
+    TT.@test state isa CC.Fields.Field
     TT.@test LA.norm(state.ρq_tot) == 0
     TT.@test LA.norm(state.ρq_liq) == 0
     TT.@test LA.norm(state.ρq_rai) == 0
@@ -149,7 +142,7 @@ TT.@testset "Initialise state" begin
     TT.@test LA.norm(state.N_aer) == 0
 
     state = CO.initialise_state(p3_moist, precip_p3, initial_profiles)
-    TT.@test state isa CC.Fields.FieldVector
+    TT.@test state isa CC.Fields.Field
     TT.@test LA.norm(state.ρq_tot) == 0
     TT.@test LA.norm(state.ρq_liq) == 0
     TT.@test LA.norm(state.ρq_rai) == 0
@@ -198,17 +191,10 @@ TT.@testset "Tendency helper functions" begin
         B_rim = 0.5e-3 / 900,
         zero = 0.0,
     )
-    domain = CC.Domains.IntervalDomain(
-        CC.Geometry.ZPoint{FT}(0),
-        CC.Geometry.ZPoint{FT}(1),
-        boundary_names = (:bottom, :top),
-    )
-    mesh = CC.Meshes.IntervalMesh(domain, nelems = 1)
+    mesh = CC.CommonGrids.DefaultZMesh(FT; z_min = 0, z_max = 1, z_elem = 1)
     space = CC.Spaces.CenterFiniteDifferenceSpace(mesh)
     coord = CC.Fields.coordinate_field(space)
-    ip = map(coord -> _ip, coord)
-
-    get_value(x) = parent(CC.Fields.field_values(CC.Fields.level(x, 1)))
+    ip = map(Returns(_ip), coord)
 
     #
     # test initialize aux
@@ -219,15 +205,15 @@ TT.@testset "Tendency helper functions" begin
 
     aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, equil_moist, precip_0m)
     TT.@test aux isa NamedTuple
-    TT.@test aux.thermo_variables isa NamedTuple
-    TT.@test aux.microph_variables isa NamedTuple
+    TT.@test aux.thermo_variables isa CC.Fields.Field
+    TT.@test aux.microph_variables isa CC.Fields.Field
     TT.@test aux.cloud_sources isa Nothing
     TT.@test LA.norm(aux.precip_sources) == 0
 
     aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, nequil_moist, precip_2m)
     TT.@test aux isa NamedTuple
-    TT.@test aux.thermo_variables isa NamedTuple
-    TT.@test aux.microph_variables isa NamedTuple
+    TT.@test aux.thermo_variables isa CC.Fields.Field
+    TT.@test aux.microph_variables isa CC.Fields.Field
     TT.@test LA.norm(aux.cloud_sources) == 0
     TT.@test LA.norm(aux.precip_sources) == 0
 
@@ -273,14 +259,14 @@ TT.@testset "Tendency helper functions" begin
         CO.precompute_aux_thermo!(ms, Y, aux)
         (; ρ_dry, p, T, θ_dry, θ_liq_ice, ts, ρ, ρ_dry) = aux.thermo_variables
         (; q_tot, q_liq, q_ice) = aux.microph_variables
-        for el in aux.thermo_variables
+        for (el,) in CC.Fields.field_iterator(aux.thermo_variables)
             if el != aux.thermo_variables.ts
-                TT.@test all(isfinite, get_value(el))
+                TT.@test all(isfinite, parent(el))
             end
         end
-        TT.@test get_value(q_tot)[1] >= 0.0
-        TT.@test get_value(q_liq)[1] >= 0.0
-        TT.@test get_value(q_ice)[1] >= 0.0
+        TT.@test all(≥(0), parent(q_tot))
+        TT.@test all(≥(0), parent(q_liq))
+        TT.@test all(≥(0), parent(q_ice))
 
         TT.@test ρ_dry == ρ .- Y.ρq_tot
         TT.@test p == TD.air_pressure.(thermo_params, ts)
@@ -297,14 +283,14 @@ TT.@testset "Tendency helper functions" begin
     CO.precompute_aux_thermo!(ms, Y, aux)
     (; ρ_dry, p, T, θ_dry, θ_liq_ice, ts, ρ, ρ_dry) = aux.thermo_variables
     (; q_tot, q_liq, q_ice) = aux.microph_variables
-    for el in aux.thermo_variables
+    for (el,) in CC.Fields.field_iterator(aux.thermo_variables)
         if el != aux.thermo_variables.ts
-            TT.@test all(isfinite, get_value(el))
+            TT.@test all(isfinite, parent(el))
         end
     end
-    TT.@test get_value(q_tot)[1] >= 0.0
-    TT.@test get_value(q_liq)[1] >= 0.0
-    TT.@test get_value(q_ice)[1] >= 0.0
+    TT.@test all(≥(0), parent(q_tot))
+    TT.@test all(≥(0), parent(q_liq))
+    TT.@test all(≥(0), parent(q_ice))
 
     TT.@test ρ_dry == ρ .- Y.ρq_tot
     TT.@test p == TD.air_pressure.(thermo_params, ts)
@@ -319,9 +305,9 @@ TT.@testset "Tendency helper functions" begin
         aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, equil_moist, ps)
         CO.precompute_aux_thermo!(equil_moist, Y, aux)
         CO.precompute_aux_precip!(ps, Y, aux)
-        for el in merge(aux.velocities, aux.microph_variables)
-            TT.@test all(isfinite, get_value(el))
-            TT.@test all(get_value(el) .>= FT(0))
+        for (el,) in CC.Fields.field_iterator(merge.(aux.velocities, aux.microph_variables))
+            TT.@test all(isfinite, parent(el))
+            TT.@test all(≥(0), parent(el))
         end
     end
 
@@ -340,8 +326,8 @@ TT.@testset "Tendency helper functions" begin
     aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, nequil_moist, precip_1m)
     CO.precompute_aux_thermo!(nequil_moist, Y, aux)
     CO.precompute_aux_moisture_sources!(nequil_moist, aux)
-    TT.@test all(isfinite, get_value(aux.cloud_sources.q_ice))
-    TT.@test all(isfinite, get_value(aux.cloud_sources.q_liq))
+    TT.@test all(isfinite, parent(aux.cloud_sources.q_ice))
+    TT.@test all(isfinite, parent(aux.cloud_sources.q_liq))
 
     # test precompute_aux_precip_sources
     for ps in (precip_0m, precip_1m, precip_2m)
@@ -351,33 +337,28 @@ TT.@testset "Tendency helper functions" begin
         CO.precompute_aux_thermo!(equil_moist, Y, aux)
         CO.precompute_aux_precip_sources!(ps, aux)
         if ps isa CO.Precipitation0M
-            TT.@test all(isfinite, get_value(aux.precip_sources.q_tot))
-            TT.@test all(isfinite, get_value(aux.precip_sources.q_liq))
-            TT.@test all(isfinite, get_value(aux.precip_sources.q_ice))
-            TT.@test get_value(aux.precip_sources.q_tot) ==
-                     get_value(aux.precip_sources.q_liq) + get_value(aux.precip_sources.q_ice)
+            (; q_tot, q_liq, q_ice) = aux.precip_sources
+            TT.@test all(isfinite, parent(q_tot))
+            TT.@test all(isfinite, parent(q_liq))
+            TT.@test all(isfinite, parent(q_ice))
+            TT.@test parent(q_tot) == parent(q_liq .+ q_ice)
         elseif ps isa CO.Precipitation1M
-            TT.@test all(isfinite, get_value(aux.precip_sources.q_tot))
-            TT.@test all(isfinite, get_value(aux.precip_sources.q_liq))
-            TT.@test all(isfinite, get_value(aux.precip_sources.q_ice))
-            TT.@test all(isfinite, get_value(aux.precip_sources.q_rai))
-            TT.@test all(isfinite, get_value(aux.precip_sources.q_sno))
-            TT.@test all(
-                isapprox.(
-                    get_value(aux.precip_sources.q_tot),
-                    -get_value(aux.precip_sources.q_rai) - get_value(aux.precip_sources.q_sno),
-                    rtol = sqrt(eps(FT)),
-                ),
-            )
-
+            (; q_tot, q_liq, q_ice, q_rai, q_sno) = aux.precip_sources
+            TT.@test all(isfinite, parent(q_tot))
+            TT.@test all(isfinite, parent(q_liq))
+            TT.@test all(isfinite, parent(q_ice))
+            TT.@test all(isfinite, parent(q_rai))
+            TT.@test all(isfinite, parent(q_sno))
+            TT.@test all(isapprox(parent(q_tot), -parent(q_rai .+ q_sno); rtol = sqrt(eps(FT))))
         else
-            TT.@test all(isfinite, get_value(aux.precip_sources.q_tot))
-            TT.@test all(isfinite, get_value(aux.precip_sources.q_liq))
-            TT.@test all(isfinite, get_value(aux.precip_sources.q_rai))
-            TT.@test all(isfinite, get_value(aux.precip_sources.N_aer))
-            TT.@test all(isfinite, get_value(aux.precip_sources.N_liq))
-            TT.@test all(isfinite, get_value(aux.precip_sources.N_rai))
-            TT.@test get_value(aux.precip_sources.q_tot) == -get_value(aux.precip_sources.q_rai)
+            (; q_tot, q_liq, q_rai, N_aer, N_liq, N_rai) = aux.precip_sources
+            TT.@test all(isfinite, parent(q_tot))
+            TT.@test all(isfinite, parent(q_liq))
+            TT.@test all(isfinite, parent(q_rai))
+            TT.@test all(isfinite, parent(N_aer))
+            TT.@test all(isfinite, parent(N_liq))
+            TT.@test all(isfinite, parent(N_rai))
+            TT.@test parent(q_tot) == -parent(q_rai)
         end
     end
 end
