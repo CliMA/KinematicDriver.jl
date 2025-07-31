@@ -303,11 +303,14 @@ end
     @. weighted_vt = get_weighted_vt(moments, pdists, cloudy_params)
 end
 
-@inline function precompute_aux_moisture_sources!(sm::AbstractMoistureStyle, aux)
-    error("precompute_aux not implemented for a given $sm")
+@inline function precompute_aux_moisture_sources!(ms::AbstractMoistureStyle, ps::AbstractPrecipitationStyle, aux)
+    error("precompute_aux not implemented for the given $ms and $ps")
 end
-@inline function precompute_aux_moisture_sources!(::EquilibriumMoisture, aux) end
-@inline function precompute_aux_moisture_sources!(ne::NonEquilibriumMoisture, aux)
+@inline function precompute_aux_moisture_sources!(
+    ne::NonEquilibriumMoisture,
+    ::Union{NoPrecipitation, Precipitation0M},
+    aux,
+)
 
     (; thermo_params) = aux
     (; ρ, T) = aux.thermo_variables
@@ -333,10 +336,39 @@ end
 
     @. aux.cloud_sources = to_sources(S_q_liq, S_q_ice)
 end
-@inline function precompute_aux_moisture_sources!(::CloudyMoisture, aux) end
+@inline function precompute_aux_moisture_sources!(
+    ne::NonEquilibriumMoisture,
+    ::Union{Precipitation1M, Precipitation2M},
+    aux,
+)
 
-@inline function precompute_aux_precip_sources!(sp::AbstractPrecipitationStyle, aux)
-    error("precompute_aux not implemented for a given $sp")
+    (; thermo_params) = aux
+    (; ρ, T) = aux.thermo_variables
+    (; q_tot, q_liq, q_ice, q_rai, q_sno) = aux.microph_variables
+
+    S_q_liq = aux.scratch.tmp
+    S_q_ice = aux.scratch.tmp2
+
+    # helper type and wrapper to populate the tuple with sources
+    S_eltype = eltype(aux.cloud_sources)
+    to_sources(args...) = S_eltype(tuple(args...))
+
+    @. S_q_liq = CMNe.conv_q_vap_to_q_liq_ice(
+        ne.liquid,
+        PP(thermo_params, TD.PhaseEquil_ρTq(thermo_params, ρ, T, q_tot)).liq - q_rai,
+        q_liq,
+    )
+    @. S_q_ice = CMNe.conv_q_vap_to_q_liq_ice(
+        ne.ice,
+        PP(thermo_params, TD.PhaseEquil_ρTq(thermo_params, ρ, T, q_tot)).ice - q_sno,
+        q_ice,
+    )
+
+    @. aux.cloud_sources = to_sources(S_q_liq, S_q_ice)
+end
+
+@inline function precompute_aux_precip_sources!(ps::AbstractPrecipitationStyle, aux)
+    error("precompute_aux not implemented for a given $ps")
 end
 @inline function precompute_aux_precip_sources!(::NoPrecipitation, aux) end
 @inline function precompute_aux_precip_sources!(ps::Precipitation0M, aux)
@@ -570,8 +602,8 @@ end
         @. S₁ = -triangle(-CM2.liquid_self_collection(acnv, pdf_c, q_liq, ρ, -2S₂), N_liq)
         @. aux.precip_sources.N_liq += S₁
         # rain self_collection
-        @. S₁ = triangle(CM2.rain_self_collection(pdf_r, self, q_rai, ρ, N_rai), N_rai)
-        @. aux.precip_sources.N_rai += -S₁
+        @. S₁ = -triangle(-CM2.rain_self_collection(pdf_r, self, q_rai, ρ, N_rai), N_rai)
+        @. aux.precip_sources.N_rai += S₁
 
         # rain breakup
         @. S₁ = triangle(CM2.rain_breakup(pdf_r, brek, q_rai, ρ, N_rai, S₁), N_rai)
@@ -691,20 +723,20 @@ end
 """
    Additional source terms
 """
-@inline function cloud_sources_tendency!(ms::AbstractMoistureStyle, dY, Y, aux, t)
-    error("sources_tendency not implemented for a given $ms")
+@inline function cloud_sources_tendency!(ms::AbstractMoistureStyle, ps::AbstractPrecipitationStyle, dY, Y, aux, t)
+    error("sources_tendency not implemented for the given $ms and $ps")
 end
-@inline function cloud_sources_tendency!(::EquilibriumMoisture, dY, Y, aux, t) end
-@inline function cloud_sources_tendency!(ms::NonEquilibriumMoisture, dY, Y, aux, t)
+@inline function cloud_sources_tendency!(::EquilibriumMoisture, ::AbstractPrecipitationStyle, dY, Y, aux, t) end
+@inline function cloud_sources_tendency!(ms::NonEquilibriumMoisture, ps::AbstractPrecipitationStyle, dY, Y, aux, t)
 
-    precompute_aux_moisture_sources!(ms, aux)
+    precompute_aux_moisture_sources!(ms, ps, aux)
 
     @. dY.ρq_liq += aux.thermo_variables.ρ * aux.cloud_sources.q_liq
     @. dY.ρq_ice += aux.thermo_variables.ρ * aux.cloud_sources.q_ice
     return dY
 end
-@inline function cloud_sources_tendency!(::MoistureP3, dY, Y, aux, t) end
-@inline function cloud_sources_tendency!(::CloudyMoisture, dY, Y, aux, t)
+@inline function cloud_sources_tendency!(::MoistureP3, ::PrecipitationP3, dY, Y, aux, t) end
+@inline function cloud_sources_tendency!(::CloudyMoisture, ::CloudyPrecip, dY, Y, aux, t)
     @. dY.ρq_vap += aux.precip_sources.ρq_vap
     @. dY.ρq_vap += aux.activation_sources.ρq_vap
     return dY
