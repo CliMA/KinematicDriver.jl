@@ -115,7 +115,7 @@ end
 
     CO.precompute_aux_moisture_sources!(moisture, aux)
     @test_opt CO.precompute_aux_moisture_sources!(moisture, aux)
-    @test 0 == @allocated CO.precompute_aux_moisture_sources!(moisture, aux)
+    @test 0 == @allocated CO.precompute_aux_moisture_sources!(moisture, precip, aux)
 
     CO.precompute_aux_precip_sources!(precip, aux)
     @test_opt CO.precompute_aux_precip_sources!(precip, aux)

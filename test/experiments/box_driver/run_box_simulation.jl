@@ -118,7 +118,7 @@ function run_box_simulation(::Type{FT}, opts) where {FT}
         Plots.plot(p1, p2, size = (800, 300))
     end
 
-    savefig(path * "/result.pdf")
+    Plots.savefig(path * "/result.pdf")
 
     return solver
 end
