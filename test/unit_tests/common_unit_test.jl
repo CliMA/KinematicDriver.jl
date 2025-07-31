@@ -239,7 +239,14 @@ TT.@testset "Tendency helper functions" begin
     CO.zero_tendencies!(dY)
     TT.@test LA.norm(dY) == 0
 
-    TT.@test_throws Exception CO.cloud_sources_tendency!(CO.AbstractMoistureStyle(), dY, Y, aux, 1.0)
+    TT.@test_throws Exception CO.cloud_sources_tendency!(
+        CO.AbstractMoistureStyle(),
+        CO.AbstractPrecipitationStyle(),
+        dY,
+        Y,
+        aux,
+        1.0,
+    )
     TT.@test_throws Exception CO.precip_sources_tendency!(CO.AbstractPrecipitationStyle(), dY, Y, aux, 1.0)
 
     #
@@ -330,7 +337,7 @@ TT.@testset "Tendency helper functions" begin
     Y = CO.initialise_state(nequil_moist, precip_1m, ip)
     aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, nequil_moist, precip_1m)
     CO.precompute_aux_thermo!(nequil_moist, precip_1m, Y, aux)
-    CO.precompute_aux_moisture_sources!(nequil_moist, aux)
+    CO.precompute_aux_moisture_sources!(nequil_moist, precip_1m, aux)
     TT.@test all(isfinite, parent(aux.cloud_sources.q_ice))
     TT.@test all(isfinite, parent(aux.cloud_sources.q_liq))
 

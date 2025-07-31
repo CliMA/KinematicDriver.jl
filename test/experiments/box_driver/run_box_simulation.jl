@@ -113,7 +113,7 @@ function run_box_simulation(::Type{FT}, opts) where {FT}
             N_rai = [N_rai; parent(u.N_rai)]
         end
         Plots.plot(time ./ 60, N_liq ./ 10^6, xlabel = "time [m]", ylabel = "Nc [1/cm^3]", label = "N_c", lw = 2)
-        Plots.plot!(twinx(), time ./ 60, N_rai ./ 10^6, ylabel = "Nr [1/cm^3]", label = "N_r", c = 2, lw = 2)
+        Plots.plot!(Plots.twinx(), time ./ 60, N_rai ./ 10^6, ylabel = "Nr [1/cm^3]", label = "N_r", c = 2, lw = 2)
         p2 = Plots.plot!(legend = false, right_margin = 3Plots.mm)
         Plots.plot(p1, p2, size = (800, 300))
     end
