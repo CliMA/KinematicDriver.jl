@@ -113,18 +113,20 @@ end
 @inline function advection_tendency!(::Union{CO.NoPrecipitation, CO.Precipitation0M}, dY, Y, aux, t) end
 @inline function advection_tendency!(::CO.Precipitation1M, dY, Y, aux, t)
     FT = eltype(Y.ρq_tot)
+    S₁ = aux.scratch.tmp
+    S₂ = aux.scratch.tmp2
 
     If = CC.Operators.InterpolateC2F()
     ∂ = CC.Operators.DivergenceF2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
 
-    @. dY.ρq_rai +=
+    @. S₁ =
         -∂(
             (
                 aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ) +
                 CC.Geometry.WVector(If(aux.velocities.term_vel_rai) * FT(-1))
             ) * If(Y.ρq_rai),
         )
-    @. dY.ρq_sno +=
+    @. S₂ =
         -∂(
             (
                 aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ) +
@@ -133,14 +135,14 @@ end
         )
 
     fcc = CC.Operators.FluxCorrectionC2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
-    @. dY.ρq_rai += fcc(
+    @. S₁ += fcc(
         (
             aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ) +
             CC.Geometry.WVector(If(aux.velocities.term_vel_rai) * FT(-1))
         ),
         Y.ρq_rai,
     )
-    @. dY.ρq_sno += fcc(
+    @. S₂ += fcc(
         (
             aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ) +
             CC.Geometry.WVector(If(aux.velocities.term_vel_sno) * FT(-1))
@@ -149,15 +151,20 @@ end
     )
 
     hdiv = CC.Operators.WeakDivergence()
-    @. dY.ρq_rai += -hdiv(aux.prescribed_velocity.ρu / aux.thermo_variables.ρ * Y.ρq_rai)
-    @. dY.ρq_sno += -hdiv(aux.prescribed_velocity.ρu / aux.thermo_variables.ρ * Y.ρq_sno)
-    CC.Spaces.weighted_dss!(dY.ρq_rai)
-    CC.Spaces.weighted_dss!(dY.ρq_sno)
+    @. S₁ += -hdiv(aux.prescribed_velocity.ρu / aux.thermo_variables.ρ * Y.ρq_rai)
+    @. S₂ += -hdiv(aux.prescribed_velocity.ρu / aux.thermo_variables.ρ * Y.ρq_sno)
+    CC.Spaces.weighted_dss!(S₁)
+    CC.Spaces.weighted_dss!(S₂)
+
+    @. dY.ρq_tot += S₁ + S₂
+    @. dY.ρq_rai += S₁
+    @. dY.ρq_sno += S₂
 
     return dY
 end
 @inline function advection_tendency!(::CO.Precipitation2M, dY, Y, aux, t)
     FT = eltype(Y.ρq_tot)
+    S = aux.scratch.tmp
 
     If = CC.Operators.InterpolateC2F()
     ∂ = CC.Operators.DivergenceF2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
@@ -169,7 +176,7 @@ end
                 CC.Geometry.WVector(If(aux.velocities.term_vel_N_rai) * FT(-1))
             ) * If(Y.N_rai),
         )
-    @. dY.ρq_rai +=
+    @. S =
         -∂(
             (
                 aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ) +
@@ -185,7 +192,7 @@ end
         ),
         Y.N_rai,
     )
-    @. dY.ρq_rai += fcc(
+    @. S += fcc(
         (
             aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ) +
             CC.Geometry.WVector(If(aux.velocities.term_vel_rai) * FT(-1))
@@ -193,12 +200,14 @@ end
         Y.ρq_rai,
     )
 
-
     hdiv = CC.Operators.WeakDivergence()
     @. dY.N_rai += -hdiv(aux.prescribed_velocity.ρu / aux.thermo_variables.ρ * Y.N_rai)
-    @. dY.ρq_rai += -hdiv(aux.prescribed_velocity.ρu / aux.thermo_variables.ρ * Y.ρq_rai)
-    CC.Spaces.weighted_dss!(dY.ρq_rai)
+    @. S += -hdiv(aux.prescribed_velocity.ρu / aux.thermo_variables.ρ * Y.ρq_rai)
     CC.Spaces.weighted_dss!(dY.N_rai)
+    CC.Spaces.weighted_dss!(S)
+
+    @. dY.ρq_tot += S
+    @. dY.ρq_rai += S
 
     return dY
 end

@@ -1,5 +1,5 @@
 import OrdinaryDiffEq as ODE
-using Plots
+import Plots
 
 import ClimaCore as CC
 import ClimaParams as CP
@@ -93,9 +93,9 @@ function run_box_simulation(::Type{FT}, opts) where {FT}
         q_rai = [q_rai; parent(u.ρq_rai) / (opts["rhod"] .+ parent(u.ρq_tot))]
     end
 
-    plot(time ./ 60, q_liq .* 1000, label = "qc", lw = 2)
-    plot!(time ./ 60, q_rai .* 1000, label = "qr", lw = 2)
-    p1 = plot!(
+    Plots.plot(time ./ 60, q_liq .* 1000, label = "qc", lw = 2)
+    Plots.plot!(time ./ 60, q_rai .* 1000, label = "qr", lw = 2)
+    p1 = Plots.plot!(
         xlabel = "time [m]",
         ylabel = "specific water content [g/kg]",
         legend = :right,
@@ -104,7 +104,7 @@ function run_box_simulation(::Type{FT}, opts) where {FT}
     )
 
     if opts["precipitation_choice"] == "Precipitation1M"
-        plot(p1, size = (400, 300))
+        Plots.plot(p1, size = (400, 300))
     elseif opts["precipitation_choice"] == "Precipitation2M"
         N_liq = []
         N_rai = []
@@ -112,13 +112,13 @@ function run_box_simulation(::Type{FT}, opts) where {FT}
             N_liq = [N_liq; parent(u.N_liq)]
             N_rai = [N_rai; parent(u.N_rai)]
         end
-        plot(time ./ 60, N_liq ./ 10^6, xlabel = "time [m]", ylabel = "Nc [1/cm^3]", label = "N_c", lw = 2)
-        plot!(twinx(), time ./ 60, N_rai ./ 10^6, ylabel = "Nr [1/cm^3]", label = "N_r", c = 2, lw = 2)
-        p2 = plot!(legend = false, right_margin = 3Plots.mm)
-        plot(p1, p2, size = (800, 300))
+        Plots.plot(time ./ 60, N_liq ./ 10^6, xlabel = "time [m]", ylabel = "Nc [1/cm^3]", label = "N_c", lw = 2)
+        Plots.plot!(Plots.twinx(), time ./ 60, N_rai ./ 10^6, ylabel = "Nr [1/cm^3]", label = "N_r", c = 2, lw = 2)
+        p2 = Plots.plot!(legend = false, right_margin = 3Plots.mm)
+        Plots.plot(p1, p2, size = (800, 300))
     end
 
-    savefig(path * "/result.pdf")
+    Plots.savefig(path * "/result.pdf")
 
     return solver
 end

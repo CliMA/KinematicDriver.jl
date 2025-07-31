@@ -39,9 +39,9 @@ end
     air_params,
     activation_params,
     q_tot,
-    q_liq,
-    q_ice,
-    N_liq,
+    q_liq,  # cloud liquid + rain
+    q_ice,  # cloud ice + snow
+    N_liq,  # cloud liquid + rain
     N_aer,
     T,
     p,
@@ -130,10 +130,10 @@ end
     aux,
     t,
 ) end
-@inline function precompute_aux_activation!(::CO.Precipitation2M, dY, Y, aux, t)
+@inline function precompute_aux_activation!(ps::Union{CO.Precipitation2M, CO.CloudyPrecip}, dY, Y, aux, t)
 
     (; thermo_params, activation_params, air_params, kid_params, common_params) = aux
-    (; q_tot, q_liq, q_ice, N_aer, N_liq) = aux.microph_variables
+    (; q_tot, q_liq, q_ice, q_rai, N_aer, N_liq, N_rai) = aux.microph_variables
     (; T, p, ρ) = aux.thermo_variables
     (; ρw) = aux.prescribed_velocity
     (; dt) = aux.TS
@@ -150,9 +150,9 @@ end
         air_params,
         activation_params,
         q_tot,
-        q_liq,
+        q_liq + q_rai,
         q_ice,
-        N_liq,
+        N_liq + N_rai,
         N_aer,
         T,
         p,
@@ -168,47 +168,12 @@ end
     end
 
     @. aux.activation_sources.N_aer = -1 * !common_params.open_system_activation * S_Nl
-    @. aux.activation_sources.N_liq = S_Nl
-end
-
-@inline function precompute_aux_activation!(::CO.CloudyPrecip, dY, Y, aux, t)
-
-    (; common_params, kid_params, thermo_params, air_params, activation_params, cloudy_params) = aux
-    (; q_tot, q_liq, q_ice, N_liq, N_aer) = aux.microph_variables
-    (; T, p, ρ) = aux.thermo_variables
-    (; ρw) = aux.prescribed_velocity
-    (; dt) = aux.TS
-    S_Nl = aux.scratch.tmp
-    cloud_base_S_Nl_and_z = aux.scratch.tmp_surface
-    FT = eltype(thermo_params)
-    f_interp = CC.Operators.InterpolateF2C()
-
-    @. N_aer = Y.N_aer
-    @. S_Nl = get_aerosol_activation_rate(
-        common_params,
-        kid_params,
-        thermo_params,
-        air_params,
-        activation_params,
-        q_tot,
-        q_liq,
-        q_ice,
-        N_liq,
-        N_aer,
-        T,
-        p,
-        ρ,
-        f_interp.(ρw.components.data.:1),
-        dt,
-    )
-    # Use the S_Nl tendnecy at cloud base
-    z = CC.Fields.coordinate_field(S_Nl).z # height
-    find_cloud_base!(S_Nl, z, cloud_base_S_Nl_and_z)
-    @. S_Nl = ifelse(z == last(cloud_base_S_Nl_and_z), S_Nl, FT(0))
-
-    @. aux.activation_sources.N_aer = -1 * !common_params.open_system_activation * S_Nl
-    @. aux.activation_sources.activation = get_activation_sources(S_Nl, cloudy_params)
-    @. aux.activation_sources.ρq_vap = -aux.activation_sources.activation.:2
+    if ps isa CO.Precipitation2M
+        @. aux.activation_sources.N_liq = S_Nl
+    elseif ps isa CO.CloudyPrecip
+        @. aux.activation_sources.activation = get_activation_sources(S_Nl, aux.cloudy_params)
+        @. aux.activation_sources.ρq_vap = -aux.activation_sources.activation.:2
+    end
 end
 
 """
@@ -322,6 +287,8 @@ end
 @inline function advection_tendency!(::Union{CO.NoPrecipitation, CO.Precipitation0M}, dY, Y, aux, t) end
 @inline function advection_tendency!(::CO.Precipitation1M, dY, Y, aux, t)
     FT = eltype(Y.ρq_tot)
+    S₁ = aux.scratch.tmp
+    S₂ = aux.scratch.tmp2
 
     If = CC.Operators.InterpolateC2F()
     ∂ = CC.Operators.DivergenceF2C(
@@ -329,14 +296,14 @@ end
         top = CC.Operators.SetValue(CC.Geometry.WVector(0.0)),
     )
 
-    @. dY.ρq_rai +=
+    @. S₁ =
         -∂(
             (
                 aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ) +
                 CC.Geometry.WVector(If(aux.velocities.term_vel_rai) * FT(-1))
             ) * If(Y.ρq_rai),
         )
-    @. dY.ρq_sno +=
+    @. S₂ =
         -∂(
             (
                 aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ) +
@@ -345,14 +312,14 @@ end
         )
 
     fcc = CC.Operators.FluxCorrectionC2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
-    @. dY.ρq_rai += fcc(
+    @. S₁ += fcc(
         (
             aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ) +
             CC.Geometry.WVector(If(aux.velocities.term_vel_rai) * FT(-1))
         ),
         Y.ρq_rai,
     )
-    @. dY.ρq_sno += fcc(
+    @. S₂ += fcc(
         (
             aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ) +
             CC.Geometry.WVector(If(aux.velocities.term_vel_sno) * FT(-1))
@@ -360,11 +327,15 @@ end
         Y.ρq_sno,
     )
 
+    @. dY.ρq_tot += S₁ + S₂
+    @. dY.ρq_rai += S₁
+    @. dY.ρq_sno += S₂
 
     return dY
 end
 @inline function advection_tendency!(::CO.Precipitation2M, dY, Y, aux, t)
     FT = eltype(Y.ρq_tot)
+    S = aux.scratch.tmp
 
     If = CC.Operators.InterpolateC2F()
     ∂ = CC.Operators.DivergenceF2C(
@@ -388,7 +359,7 @@ end
                 CC.Geometry.WVector(If(aux.velocities.term_vel_N_rai) * FT(-1))
             ) * If(Y.N_rai),
         )
-    @. dY.ρq_rai +=
+    @. S =
         -∂(
             (
                 aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ) +
@@ -407,13 +378,16 @@ end
         ),
         Y.N_rai,
     )
-    @. dY.ρq_rai += fcc(
+    @. S += fcc(
         (
             aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ) +
             CC.Geometry.WVector(If(aux.velocities.term_vel_rai) * FT(-1))
         ),
         Y.ρq_rai,
     )
+
+    @. dY.ρq_tot += S
+    @. dY.ρq_rai += S
 
     return dY
 end
@@ -427,7 +401,16 @@ end
         bottom = CC.Operators.Extrapolate(),
         top = CC.Operators.SetValue(CC.Geometry.WVector(FT(0))),
     )
+    # Aerosol flux at the bottom is ρw0 * N_d * (1-q_surf) / ρ_SDP 
+    surf_aero_flux::FT = aux.prescribed_velocity.ρw0 * aux.common_params.prescribed_Nd * (1 - aux.q_surf) / FT(1.225)
+    ∂ₐ = CC.Operators.DivergenceF2C(
+        bottom = CC.Operators.SetValue(CC.Geometry.WVector(surf_aero_flux)),
+        top = CC.Operators.Extrapolate(),
+    )
     fcc = CC.Operators.FluxCorrectionC2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
+
+    @. dY.N_aer += -∂ₐ((aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) * If(Y.N_aer))
+    @. dY.N_aer += fcc((aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)), Y.N_aer)
 
     for i in 1:Nmom
         @. dY.moments.:($$i) +=
