@@ -130,51 +130,10 @@ end
     aux,
     t,
 ) end
-@inline function precompute_aux_activation!(::CO.Precipitation2M, dY, Y, aux, t)
+@inline function precompute_aux_activation!(ps::Union{CO.Precipitation2M, CO.CloudyPrecip}, dY, Y, aux, t)
 
     (; thermo_params, activation_params, air_params, kid_params, common_params) = aux
-    (; q_tot, q_liq, q_ice, q_rai, q_sno, N_aer, N_liq, N_rai) = aux.microph_variables
-    (; T, p, ρ) = aux.thermo_variables
-    (; ρw) = aux.prescribed_velocity
-    (; dt) = aux.TS
-    S_Nl = aux.scratch.tmp
-    cloud_base_S_Nl_and_z = aux.scratch.tmp_surface
-    FT = eltype(thermo_params)
-    f_interp = CC.Operators.InterpolateF2C()
-
-    @. N_aer = Y.N_aer
-    @. S_Nl = get_aerosol_activation_rate(
-        common_params,
-        kid_params,
-        thermo_params,
-        air_params,
-        activation_params,
-        q_tot,
-        q_liq + q_rai,
-        q_ice + q_sno,
-        N_liq + N_rai,
-        N_aer,
-        T,
-        p,
-        ρ,
-        f_interp.(ρw.components.data.:1),
-        dt,
-    )
-    if !common_params.local_activation
-        # Use the S_Nl tendnecy at cloud base
-        z = CC.Fields.coordinate_field(S_Nl).z # height
-        find_cloud_base!(S_Nl, z, cloud_base_S_Nl_and_z)
-        @. S_Nl = ifelse(z == last(cloud_base_S_Nl_and_z), S_Nl, FT(0))
-    end
-
-    @. aux.activation_sources.N_aer = -1 * !common_params.open_system_activation * S_Nl
-    @. aux.activation_sources.N_liq = S_Nl
-end
-
-@inline function precompute_aux_activation!(::CO.CloudyPrecip, dY, Y, aux, t)
-
-    (; common_params, kid_params, thermo_params, air_params, activation_params, cloudy_params) = aux
-    (; q_tot, q_liq, q_ice, q_rai, N_liq, N_rai, N_aer) = aux.microph_variables
+    (; q_tot, q_liq, q_ice, q_rai, N_aer, N_liq, N_rai) = aux.microph_variables
     (; T, p, ρ) = aux.thermo_variables
     (; ρw) = aux.prescribed_velocity
     (; dt) = aux.TS
@@ -201,14 +160,20 @@ end
         f_interp.(ρw.components.data.:1),
         dt,
     )
-    # Use the S_Nl tendnecy at cloud base
-    z = CC.Fields.coordinate_field(S_Nl).z # height
-    find_cloud_base!(S_Nl, z, cloud_base_S_Nl_and_z)
-    @. S_Nl = ifelse(z == last(cloud_base_S_Nl_and_z), S_Nl, FT(0))
+    if !common_params.local_activation
+        # Use the S_Nl tendnecy at cloud base
+        z = CC.Fields.coordinate_field(S_Nl).z # height
+        find_cloud_base!(S_Nl, z, cloud_base_S_Nl_and_z)
+        @. S_Nl = ifelse(z == last(cloud_base_S_Nl_and_z), S_Nl, FT(0))
+    end
 
     @. aux.activation_sources.N_aer = -1 * !common_params.open_system_activation * S_Nl
-    @. aux.activation_sources.activation = get_activation_sources(S_Nl, cloudy_params)
-    @. aux.activation_sources.ρq_vap = -aux.activation_sources.activation.:2
+    if ps isa CO.Precipitation2M
+        @. aux.activation_sources.N_liq = S_Nl
+    elseif ps isa CO.CloudyPrecip
+        @. aux.activation_sources.activation = get_activation_sources(S_Nl, aux.cloudy_params)
+        @. aux.activation_sources.ρq_vap = -aux.activation_sources.activation.:2
+    end
 end
 
 """
@@ -436,7 +401,16 @@ end
         bottom = CC.Operators.Extrapolate(),
         top = CC.Operators.SetValue(CC.Geometry.WVector(FT(0))),
     )
+    # Aerosol flux at the bottom is ρw0 * N_d * (1-q_surf) / ρ_SDP 
+    surf_aero_flux::FT = aux.prescribed_velocity.ρw0 * aux.common_params.prescribed_Nd * (1 - aux.q_surf) / FT(1.225)
+    ∂ₐ = CC.Operators.DivergenceF2C(
+        bottom = CC.Operators.SetValue(CC.Geometry.WVector(surf_aero_flux)),
+        top = CC.Operators.Extrapolate(),
+    )
     fcc = CC.Operators.FluxCorrectionC2C(bottom = CC.Operators.Extrapolate(), top = CC.Operators.Extrapolate())
+
+    @. dY.N_aer += -∂ₐ((aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)) * If(Y.N_aer))
+    @. dY.N_aer += fcc((aux.prescribed_velocity.ρw / If(aux.thermo_variables.ρ)), Y.N_aer)
 
     for i in 1:Nmom
         @. dY.moments.:($$i) +=
