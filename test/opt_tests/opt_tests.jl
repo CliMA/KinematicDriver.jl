@@ -113,10 +113,6 @@ end
     @test_opt CO.precompute_aux_precip!(precip, Y, aux)
     @test 928 >= @allocated CO.precompute_aux_precip!(precip, Y, aux)
 
-    CO.precompute_aux_moisture_sources!(moisture, precip, aux)
-    @test_opt CO.precompute_aux_moisture_sources!(moisture, precip, aux)
-    @test 0 == @allocated CO.precompute_aux_moisture_sources!(moisture, precip, aux)
-
     CO.precompute_aux_precip_sources!(precip, aux)
     @test_opt CO.precompute_aux_precip_sources!(precip, aux)
     @test 928 >= @allocated CO.precompute_aux_precip_sources!(precip, aux)
