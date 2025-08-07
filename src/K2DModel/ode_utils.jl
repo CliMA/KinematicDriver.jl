@@ -39,11 +39,11 @@ function make_rhs_function(ms::CO.AbstractMoistureStyle, ps::CO.AbstractPrecipit
         CO.zero_tendencies!(dY)
 
         precompute_aux_prescribed_velocity!(aux, t)
-        CO.precompute_aux_thermo!(ms, Y, aux)
+        CO.precompute_aux_thermo!(ms, ps, Y, aux)
         K1D.precompute_aux_activation!(ps, dY, Y, aux, t)
         CO.precompute_aux_precip!(ps, Y, aux)
 
-        CO.cloud_sources_tendency!(ms, dY, Y, aux, t)
+        CO.cloud_sources_tendency!(ms, ps, dY, Y, aux, t)
         CO.precip_sources_tendency!(ms, ps, dY, Y, aux, t)
 
         for eq_style in [ms, ps]

@@ -195,26 +195,26 @@ function initial_condition_0d(
     # based on initial gamma distributions. This can lead to initial existence of rain; so here
     # we compute variables for any general initial gamma distributions, by assuming absolute
     # fixed radius threshold of 40 um between cloud droplets and raindrops.
-    # Ltr : total liquid plus rain content (no vapor; or assuming vapor is contained in dry air density)
-    L_tr::FT = ρ_dry * qt / (1 - qt)
+    # Lt : total liquid plus rain content (no vapor; or assuming vapor is contained in dry air density)
+    Lt::FT = ρ_dry * qt / (1 - qt)
 
     rhow = FT(1000)
     radius_th::FT = 40 * 1e-6
-    thrshld::FT = 4 / 3 * pi * (radius_th)^3 * rhow / (L_tr / Nd / k)
+    thrshld::FT = 4 / 3 * pi * (radius_th)^3 * rhow / (Lt / Nd / k)
 
     mass_ratio = SF.gamma_inc(thrshld, k + 1)[2]
-    ρq_liq::FT = mass_ratio * L_tr
-    ρq_rai::FT = L_tr - ρq_liq
-    ρq_tot::FT = ρq_liq
+    ρq_liq::FT = mass_ratio * Lt
+    ρq_rai::FT = Lt - ρq_liq
+    ρq_tot::FT = Lt
     ρq_ice::FT = FT(0)
     ρq_sno::FT = FT(0)
     ρq_vap::FT = FT(0)
 
-    ρ = ρ_dry + ρq_liq
+    ρ = ρ_dry + Lt
 
     q_liq::FT = ρq_liq / ρ
     q_rai::FT = ρq_rai / ρ
-    q_tot::FT = q_liq
+    q_tot::FT = qt
     q_ice::FT = FT(0)
     q_sno::FT = FT(0)
 
@@ -262,16 +262,16 @@ function cloudy_initial_condition(pdists, ip, k = 1)
     NM = sum(CL.ParticleDistributions.nparams.(pdists))
 
     FT = eltype(ip.ρq_liq)
-    L_tr::FT = ip.ρq_liq + ip.ρq_rai
+    Lt::FT = ip.ρq_liq + ip.ρq_rai
     Nd::FT = ip.N_liq + ip.N_rai
 
     moments::NTuple{NM, FT} = ntuple(NM) do j
         if j == 1
             Nd
         elseif j == 2
-            L_tr
+            Lt
         elseif j == 3 && CL.ParticleDistributions.nparams(pdists[1]) == 3
-            ifelse(Nd < eps(FT), FT(0), L_tr^2 / Nd * (k + 1) / k)
+            ifelse(Nd < eps(FT), FT(0), Lt^2 / Nd * (k + 1) / k)
         else
             FT(0)
         end

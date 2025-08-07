@@ -145,28 +145,25 @@ function get_single_obs_field(
 
     for (i, var) in enumerate(variables)
         if var == "qt"
-            _r_tot = _rv .+ _data_pysdm["qc"] .* 1e-3
+            _r_tot = _rv .+ (_data_pysdm["qc"] .+ _data_pysdm["qr"]) .* 1e-3
             _data = _r_tot ./ (1 .+ _r_tot)
         elseif var == "qv"
-            _r_tot = _rv .+ _data_pysdm["qc"] .* 1e-3
+            _r_tot = _rv .+ (_data_pysdm["qc"] .+ _data_pysdm["qr"]) .* 1e-3
             _data = _rv ./ (1 .+ _r_tot)
         elseif var == "ql"
-            _r_tot = _rv .+ _data_pysdm["qc"] .* 1e-3
+            _r_tot = _rv .+ (_data_pysdm["qc"] .+ _data_pysdm["qr"]) .* 1e-3
             _data = _data_pysdm["qc"] .* 1e-3 ./ (1 .+ _r_tot)
         elseif var == "qr"
-            _r_tot = _rv .+ _data_pysdm["qc"] .* 1e-3
+            _r_tot = _rv .+ (_data_pysdm["qc"] .+ _data_pysdm["qr"]) .* 1e-3
             _data = _data_pysdm["qr"] .* 1e-3 ./ (1 .+ _r_tot)
         elseif var == "qlr"
-            _r_tot = _rv .+ _data_pysdm["qc"] .* 1e-3
+            _r_tot = _rv .+ (_data_pysdm["qc"] .+ _data_pysdm["qr"]) .* 1e-3
             _data = (_data_pysdm["qc"] .+ _data_pysdm["qr"]) .* 1e-3 ./ (1 .+ _r_tot)
-        elseif var == "qtr"
-            _r_tot = _rv .+ _data_pysdm["qc"] .* 1e-3
-            _data = (_r_tot .+ _data_pysdm["qr"] .* 1e-3) ./ (1 .+ _r_tot)
         elseif var == "rho"
-            _r_tot = _rv .+ _data_pysdm["qc"] .* 1e-3
+            _r_tot = _rv .+ (_data_pysdm["qc"] .+ _data_pysdm["qr"]) .* 1e-3
             _data = _data_pysdm["rhod"] .* (1 .+ _r_tot)
         elseif var == "rt"
-            _data = _rv .+ _data_pysdm["qc"] .* 1e-3
+            _data = _rv .+ (_data_pysdm["qc"] .+ _data_pysdm["qr"]) .* 1e-3
         elseif var == "rv"
             _data = _rv
         elseif var == "rl"
@@ -175,8 +172,6 @@ function get_single_obs_field(
             _data = _data_pysdm["qr"] .* 1e-3
         elseif var == "rlr"
             _data = (_data_pysdm["qc"] .+ _data_pysdm["qr"]) .* 1e-3
-        elseif var == "rtr"
-            _data = _rv .+ (_data_pysdm["qc"] .+ _data_pysdm["qr"]) .* 1e-3
         elseif var == "Nl"
             _data = _data_pysdm["nc"]
         elseif var == "Nr"

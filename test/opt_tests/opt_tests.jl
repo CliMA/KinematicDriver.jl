@@ -78,9 +78,9 @@ end
 #     moisture, precip, Y, dY, aux = get_tendency_function_arguments(Float64, "NonEquilibriumMoisture", "Precipitation2M")
 
 #     # test
-#     @test_opt CO.precompute_aux_thermo!(moisture, Y, aux)
-#     CO.precompute_aux_thermo!(moisture, Y, aux)
-#     @test 64 >= @allocated CO.precompute_aux_thermo!(moisture, Y, aux)
+#     @test_opt CO.precompute_aux_thermo!(moisture, precip, Y, aux)
+#     CO.precompute_aux_thermo!(moisture, precip, Y, aux)
+#     @test 64 >= @allocated CO.precompute_aux_thermo!(moisture, precip, Y, aux)
 
 #     @test_opt CO.precompute_aux_precip!(precip, Y, aux)
 #     CO.precompute_aux_precip!(precip, Y, aux)
@@ -105,17 +105,13 @@ end
     moisture, precip, Y, dY, aux = get_tendency_function_arguments(Float64, "CloudyMoisture", "CloudyPrecip")
 
     # test
-    CO.precompute_aux_thermo!(moisture, Y, aux)
-    @test_opt CO.precompute_aux_thermo!(moisture, Y, aux)
-    @test 156624 >= @allocated CO.precompute_aux_thermo!(moisture, Y, aux)
+    CO.precompute_aux_thermo!(moisture, precip, Y, aux)
+    @test_opt CO.precompute_aux_thermo!(moisture, precip, Y, aux)
+    @test 156624 >= @allocated CO.precompute_aux_thermo!(moisture, precip, Y, aux)
 
     CO.precompute_aux_precip!(precip, Y, aux)
     @test_opt CO.precompute_aux_precip!(precip, Y, aux)
     @test 928 >= @allocated CO.precompute_aux_precip!(precip, Y, aux)
-
-    CO.precompute_aux_moisture_sources!(moisture, aux)
-    @test_opt CO.precompute_aux_moisture_sources!(moisture, aux)
-    @test 0 == @allocated CO.precompute_aux_moisture_sources!(moisture, aux)
 
     CO.precompute_aux_precip_sources!(precip, aux)
     @test_opt CO.precompute_aux_precip_sources!(precip, aux)

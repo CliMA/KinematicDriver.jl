@@ -13,7 +13,7 @@ function make_rhs_function(ms::CO.AbstractMoistureStyle, ps::CO.AbstractPrecipit
 
         CO.zero_tendencies!(dY)
 
-        CO.precompute_aux_thermo!(ms, Y, aux)
+        CO.precompute_aux_thermo!(ms, ps, Y, aux)
         CO.precompute_aux_precip!(ps, Y, aux)
 
         CO.precip_sources_tendency!(ms, ps, dY, Y, aux, t)
