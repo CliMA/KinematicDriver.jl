@@ -147,7 +147,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     )
 
     # Some basic plots
-    opts["plotting_flag"] == true && with_theme(theme_minimal()) do
+    opts["plotting_flag"] == true && with_theme(theme_minimal(), fontsize = 30) do
         @info "Plotting"
         output = joinpath(path, "figures")
 
@@ -157,7 +157,8 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
             plot_animation_p3(z_centers, solver, aux, moisture, precip, K1D, output)
             plot_timeheight_p3(output_nc, precip; output)
         else
-            plot_animation(output_nc; output)
+            get(opts, "make_animation", false) && plot_animation(output_nc; output)
+            plot_profiles_in_time(output_nc; output, n = 10)
             plot_timeheight(output_nc; output, mixed_phase = false)
         end
     end
