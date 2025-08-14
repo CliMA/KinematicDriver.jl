@@ -140,11 +140,13 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     # Solve the ODE operator
     problem = ODE.ODEProblem(ode_rhs!, Y, (FT(opts["t_ini"]), FT(opts["t_end"])), aux)
     @info "Solving"
-    solver = ODE.solve(
+    integrator = ODE.init(
         problem, ODE.SSPRK33();
         TS.dt, saveat = TS.dt_io, callback,
         progress = true, progress_message = (dt, u, p, t) -> t,
     )
+    ODE.solve!(integrator)
+    # ODE.step!(integrator)  # For debugging
 
     # Some basic plots
     opts["plotting_flag"] == true && with_theme(theme_minimal(), fontsize = 30) do
@@ -154,7 +156,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
         z_centers = vec(CC.Fields.coordinate_field(space))
         plot_final_aux_profiles(z_centers, aux, precip; output)
         if precip isa CO.PrecipitationP3
-            plot_animation_p3(z_centers, solver, aux, moisture, precip, K1D, output)
+            plot_animation_p3(z_centers, integrator, aux, moisture, precip, K1D, output)
             plot_timeheight_p3(output_nc, precip; output)
         else
             get(opts, "make_animation", false) && plot_animation(output_nc; output)
