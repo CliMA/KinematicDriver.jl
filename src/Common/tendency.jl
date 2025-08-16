@@ -338,7 +338,7 @@ end
 end
 @inline function precompute_aux_moisture_sources!(
     ne::NonEquilibriumMoisture,
-    ::Union{Precipitation1M, Precipitation2M},
+    ps::Union{Precipitation1M, Precipitation2M},
     aux,
 )
 
@@ -358,6 +358,13 @@ end
         PP(thermo_params, TD.PhaseEquil_ρTq(thermo_params, ρ, T, q_tot)).liq - q_rai,
         q_liq,
     )
+    if ps isa Precipitation2M
+        # Only allow mass production if there is sufficient number of liquid particles
+        (; N_liq, N_aer) = aux.microph_variables
+        FT = eltype(N_liq)
+        ratio_threshold = FT(1e-6)  # TODO: arbitrary threshold, revisit later
+        @. S_q_liq = ifelse(N_liq / N_aer > ratio_threshold, S_q_liq, FT(0))
+    end
     @. S_q_ice = CMNe.conv_q_vap_to_q_liq_ice(
         ne.ice,
         PP(thermo_params, TD.PhaseEquil_ρTq(thermo_params, ρ, T, q_tot)).ice - q_sno,
