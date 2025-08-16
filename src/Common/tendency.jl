@@ -30,7 +30,7 @@ end
      Precompute the auxiliary values
 """
 @inline function precompute_aux_thermo!(ms::AbstractMoistureStyle, ps::AbstractPrecipitationStyle, Y, aux)
-    error("precompute_aux not implemented for the given $ms and $ps")
+    error("precompute_aux not implemented for the given $(typeof(ms).name.name) and $(typeof(ps).name.name)")
 end
 @inline function precompute_aux_thermo!(::EquilibriumMoisture, ::Union{NoPrecipitation, Precipitation0M}, Y, aux)
 
@@ -304,7 +304,7 @@ end
 end
 
 @inline function precompute_aux_moisture_sources!(ms::AbstractMoistureStyle, ps::AbstractPrecipitationStyle, aux)
-    error("precompute_aux not implemented for the given $ms and $ps")
+    error("precompute_aux not implemented for the given $(typeof(ms).name.name) and $(typeof(ps).name.name)")
 end
 @inline function precompute_aux_moisture_sources!(
     ne::NonEquilibriumMoisture,
