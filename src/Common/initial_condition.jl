@@ -162,6 +162,7 @@ function initial_condition_1d(
         ρq_ice,
         ρq_rai,
         ρq_sno,
+        ρq_rim,
         ρq_vap,
         q_tot,
         q_liq,
@@ -175,6 +176,10 @@ function initial_condition_1d(
         N_rai,
         N_aer,
         zero,
+        # P3 variables
+        F_rim = FT(0),
+        ρ_rim = FT(0),
+        logλ = FT(0),
     )
 end
 
