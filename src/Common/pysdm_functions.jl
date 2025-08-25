@@ -23,7 +23,7 @@ function SDM_ρ_dry(thermo_params, p, q_vap, θ_std)
     FT = eltype(q_vap)
     r_vap::FT = q_vap / (1 - q_vap)
 
-    molmass_ratio::FT = TD.Parameters.molmass_ratio(thermo_params)
+    molmass_ratio::FT = TD.Parameters.Rv_over_Rd(thermo_params)
     R_d::FT = TD.Parameters.R_d(thermo_params)
     cp_d::FT = TD.Parameters.cp_d(thermo_params)
     p_0::FT = TD.Parameters.MSLP(thermo_params)
@@ -37,7 +37,7 @@ function SDM_θ_dry(thermo_params, θ, q_vap)
 
     R_d::FT = TD.Parameters.R_d(thermo_params)
     cp_d::FT = TD.Parameters.cp_d(thermo_params)
-    molmass_ratio::FT = TD.Parameters.molmass_ratio(thermo_params)
+    molmass_ratio::FT = TD.Parameters.Rv_over_Rd(thermo_params)
 
     return θ * (1 + r_vap * molmass_ratio)^(R_d / cp_d)
 end
