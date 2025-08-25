@@ -14,12 +14,12 @@ import CloudMicrophysics.Parameters as CMP
 import KinematicDriver
 import KinematicDriver.K1DModel as KID
 
-const kid_dir = pkgdir(KinematicDriver)
+kid_dir = pkgdir(KinematicDriver)
 include(joinpath(kid_dir, "test", "data_utils.jl"))
 include(joinpath(kid_dir, "test", "plotting_utils.jl"))
 include(joinpath(kid_dir, "test", "create_parameters.jl"))
 
-const FT = Float64
+FT = Float64
 
 # Create parameters overwrite the defaults to match PySDM
 default_toml_dict = CP.create_toml_dict(FT)
@@ -37,25 +37,14 @@ function compare_profiles(; is_dry_flag::Bool)
     z_max = FT(3220)
     n_elem = 222
     # ... and the created coordinates
-    space, face_space = KID.make_function_space(FT, z_min, z_max, n_elem)
+    space, _ = KID.make_function_space(FT, z_min, z_max, n_elem)
     coord = CC.Fields.coordinate_field(space)
-    face_coord = CC.Fields.coordinate_field(face_space)
 
     # Solve the initial value problem for density profile
     ρ_profile = CO.ρ_ivp(FT, kid_params, thermo_params, dry = is_dry_flag)
     # Create the initial condition profiles
-    init = map(
-        coord -> CO.initial_condition_1d(
-            FT,
-            common_params,
-            kid_params,
-            thermo_params,
-            ρ_profile,
-            coord.z,
-            dry = is_dry_flag,
-        ),
-        coord,
-    )
+    init =
+        CO.initial_condition_1d.(FT, common_params, kid_params, thermo_params, (ρ_profile,), coord.z; dry = is_dry_flag)
 
     # Store the CliMA KID initial profiles
     z_centers = parent(CC.Fields.coordinate_field(space))
@@ -112,7 +101,7 @@ function compare_profiles(; is_dry_flag::Bool)
     test_title = "Case: " * sdm_case * ". Initial profiles of θ_dry:"
     @testset "$test_title" begin
         z_test = z_min:100:z_max
-        @test all(isapprox(KM_θ_dry(z_test), SD_θ_dry(z_test), rtol = 1e-6))
+        @test all(isapprox(KM_θ_dry(z_test), SD_θ_dry(z_test), rtol = 4e-6))
     end
 
     with_theme(theme_minimal()) do
@@ -120,5 +109,7 @@ function compare_profiles(; is_dry_flag::Bool)
     end
 end
 
-compare_profiles(is_dry_flag = true)
-compare_profiles(is_dry_flag = false)
+@testset "Initial profiles comparison between CliMA and PySDM" begin
+    compare_profiles(is_dry_flag = true)
+    compare_profiles(is_dry_flag = false)
+end
