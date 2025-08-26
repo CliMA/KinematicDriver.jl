@@ -33,11 +33,11 @@ function override_toml_dict(
     override_file = Dict(
         "mean_sea_level_pressure" => Dict("value" => 100000.0, "type" => "float"),
         "gravitational_acceleration" => Dict("value" => 9.80665, "type" => "float"),
-        "gas_constant" => Dict("value" => 8.314462618, "type" => "float"),
+        "universal_gas_constant" => Dict("value" => 8.314462618, "type" => "float"),
         "adiabatic_exponent_dry_air" => Dict("value" => 0.2855747338575384, "type" => "float"),
         "isobaric_specific_heat_vapor" => Dict("value" => 1850.0, "type" => "float"),
-        "molar_mass_dry_air" => Dict("value" => 0.02896998, "type" => "float"),
-        "molar_mass_water" => Dict("value" => 0.018015, "type" => "float"),
+        "gas_constant_vapor" => Dict("value" => 461.52998157091315, "type" => "float"),
+        "gas_constant_dry_air" => Dict("value" => 287.0027047999343, "type" => "float"),
         "cloud_liquid_water_specific_humidity_autoconversion_threshold" =>
             Dict("value" => 0.0001, "type" => "float"),
         "prescribed_flow_w1" => Dict("value" => w1, "type" => "float"),

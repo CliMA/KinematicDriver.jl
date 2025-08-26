@@ -75,7 +75,7 @@ As a result, some CliMA constants were changed from their default values to bett
 |------------------|---------------------------------------------|---------------|--------------------|-----------------------|
 | MSLP             | Mean sea level pressure                     | ``Pa``        | ``101325 ``        | ``10^{5}``            |
 | grav             | Gravitational acceleration                  | ``m/s^2``     | ``9.81``           | ``9.80665``           |
-| gas_constant     | Universal gas constant                      | ``J/mol/K``   | ``8.3144598``      | ``8.314462618``       |
+| universal_gas_constant     | Universal gas constant                      | ``J/mol/K``   | ``8.3144598``      | ``8.314462618``       |
 | kappa_d          | Adiabatic exponent for dry air (2/7)        | ``-``         | ``0.28571428571``  | ``0.2855747338575384``|
 | cp_v             | Isobaric specific heat of water vapor       | ``J/kg/K``    | ``1859``           | ``1850``              |
 | molmass_dryair   | Molecular mass of dry air                   | ``kg/mol``    | ``0.02897``        | ``0.02896998``        |

@@ -182,7 +182,7 @@ function run_KiD_col_sed(u::Array{FT, 1}, u_names::Array{String, 1}, model_setti
 
     update_parameters!(model_settings, u, u_names)
     apply_param_dependency!(model_settings)
-    model_settings["toml_dict"]["SB2006_cloud_gamma_distribution_parameter"]["value"] = model_settings["k"]
+    model_settings["toml_dict"]["SB2006_cloud_gamma_distribution_coeff_nu"]["value"] = model_settings["k"]
     common_params = create_common_parameters(
         FT,
         precip_sources = model_settings["precip_sources"],
@@ -265,7 +265,7 @@ function run_box(u::Array{FT, 1}, u_names::Array{String, 1}, model_settings::Dic
 
     update_parameters!(model_settings, u, u_names)
     apply_param_dependency!(model_settings)
-    model_settings["toml_dict"]["SB2006_cloud_gamma_distribution_parameter"]["value"] = model_settings["k"]
+    model_settings["toml_dict"]["SB2006_cloud_gamma_distribution_coeff_nu"]["value"] = model_settings["k"]
     common_params = create_common_parameters(
         FT,
         precip_sources = model_settings["precip_sources"],
