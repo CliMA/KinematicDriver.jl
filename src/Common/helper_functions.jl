@@ -86,6 +86,15 @@ function get_precipitation_type(
         Chen2022 = CMP.Chen2022VelType(FT)
         sb2006 = CMP.SB2006(toml_dict)
         precip = PrecipitationP3(p3_params, Chen2022, sb2006, boundary)
+    elseif precipitation_choice == "Precipitation2M_P3"
+        @assert sedimentation_choice == "Chen2022"
+        @assert rain_formation_choice == "SB2006"
+        params = CMP.ParametersP3(toml_dict; slope_law = :constant)
+        liq_sedimentation = CMP.Chen2022VelTypeRain(toml_dict)
+        ice_sedimentation = CMP.Chen2022VelType(toml_dict)
+        liq_precip = Precipitation2M(CMP.SB2006(toml_dict), liq_sedimentation)
+        ice_precip = IcePrecipitationP3(params, ice_sedimentation)
+        precip = Precipitation2M_P3(liq_precip, ice_precip)
     else
         error("Invalid precipitation choice: $precipitation_choice")
     end
