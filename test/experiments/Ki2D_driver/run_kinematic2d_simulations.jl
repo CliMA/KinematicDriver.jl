@@ -88,10 +88,21 @@ function run_K2D_simulation(::Type{FT}, opts) where {FT}
     )
 
     # Solve the initial value problem for density profile
-    ρ_profile = CO.ρ_ivp(FT, kid_params, thermo_params)
+    ρ_profile = CO.ρ_ivp(FT, kid_params, thermo_params, "ShipwayHill2012")
     # Create the initial condition profiles
     init =
-        map(coord -> CO.initial_condition_1d(FT, common_params, kid_params, thermo_params, ρ_profile, coord.z), coords)
+        map(
+            coord -> CO.initial_condition_1d(
+                FT,
+                common_params,
+                kid_params,
+                thermo_params,
+                ρ_profile,
+                coord.z,
+                "ShipwayHill2012",
+            ),
+            coords,
+        )
 
     # Create state vector and apply initial condition
     Y = CO.initialise_state(moisture, precip, init)
@@ -113,6 +124,7 @@ function run_K2D_simulation(::Type{FT}, opts) where {FT}
         hv_face_space,
         moisture,
         precip,
+        "ShipwayHill2012",
     )
 
     # Output the initial condition
