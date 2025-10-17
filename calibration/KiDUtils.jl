@@ -142,7 +142,7 @@ function run_KiD(u::Array{FT, 1}, u_names::Array{String, 1}, model_settings::Dic
         moisture,
         precip,
     )
-    ode_rhs! = K1D.make_rhs_function(moisture, precip)
+    ode_rhs! = K1D.make_rhs_function(moisture, precip, velocity)
     problem = ODE.ODEProblem(ode_rhs!, Y, (model_settings["t_ini"], model_settings["t_end"]), aux)
     saveat = model_settings["filter"]["apply"] ? model_settings["filter"]["saveat_t"] : model_settings["t_calib"]
     solution = ODE.solve(problem, ODE.SSPRK33(), dt = model_settings["dt"], saveat = saveat)
@@ -315,7 +315,7 @@ function run_box(u::Array{FT, 1}, u_names::Array{String, 1}, model_settings::Dic
         moisture,
         precip,
     )
-    ode_rhs! = BX.make_rhs_function(moisture, precip)
+    ode_rhs! = BX.make_rhs_function(moisture, precip, velocity)
     problem = ODE.ODEProblem(ode_rhs!, Y, (model_settings["t_ini"], model_settings["t_end"]), aux)
     saveat = model_settings["filter"]["apply"] ? model_settings["filter"]["saveat_t"] : model_settings["t_calib"]
     solution = ODE.solve(problem, ODE.SSPRK33(), dt = model_settings["dt"], saveat = saveat)

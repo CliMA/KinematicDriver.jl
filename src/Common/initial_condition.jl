@@ -3,8 +3,6 @@
 """
 
 function read_Jouan_sounding(file)
-
-
     filepath = joinpath(@__DIR__, file)
     data = DF.readdlm(filepath, skipstart = 1)
 
