@@ -2,6 +2,57 @@
    Initial condition computation
 """
 
+function read_Jouan_sounding()
+
+    # TODO - fix me later
+    long_path = "/Users/climanna/clones/KinematicDriver.jl/src/Common/"
+    data = DF.readdlm(long_path*"Jouan_initial_condition.txt", skipstart=1)
+
+    input_T = reverse(data[:, 1])
+    #Td = reverse(data[:, 2])
+    input_qv = reverse(data[:, 3])
+    #Qsat = reverse(data[:, 4])
+    input_p = reverse(data[:, 5])
+    input_z = reverse(data[:, 10])
+
+    T = IT.linear_interpolation(input_z, input_T; extrapolation_bc = IT.Line())
+    qv = IT.linear_interpolation(input_z, input_qv; extrapolation_bc = IT.Line())
+    p = IT.linear_interpolation(input_z, input_p; extrapolation_bc = IT.Line())
+
+    return (T = T, qv = qv, p = p)
+end
+
+"""
+   Initial profiles and surface values as defined by Joauan et al
+   TODO - add doi to the paper
+"""
+function init_profile(::Type{FT}, thermo_params, z) where {FT}
+
+    # TODO - double check
+    z_0 = 0
+    z_2 = 1.5e3
+
+    sounding = read_Jouan_sounding()
+    qv = sounding.qv(z)
+
+    # TODO - dry vs moist pressure
+    # TODO - should we also provide the phase partition based on the sounding
+    θ_std = TD.dry_pottemp_given_pressure(thermo_params, sounding.T(z), sounding.p(z))
+
+    # density at the surface
+    p_0 = sounding.p(z_0)
+    qv_0 = sounding.qv(z_0)
+    θ_0 = TD.dry_pottemp_given_pressure(thermo_params, sounding.T(z_0), sounding.p(z_0))
+
+    SDM_θ_dry_0 = SDM_θ_dry(thermo_params, θ_0, qv_0)
+    SDM_ρ_dry_0 = SDM_ρ_dry(thermo_params, p_0, qv_0, θ_0)
+    SDM_T_0 = SDM_T(thermo_params, SDM_θ_dry_0, SDM_ρ_dry_0)
+    SDM_ρ_0 = SDM_ρ_of_ρ_dry(SDM_ρ_dry_0, qv_0)
+
+    # TODO - is it ok to assume z0=0?
+    return (qv = qv, θ_std = θ_std, ρ_0 = SDM_ρ_0, z_0 = 0, z_2 = z_2)
+end
+
 """
    Initial profiles and surface values as defined by KiD setup
 """
@@ -51,7 +102,10 @@ function dρ_dz!(ρ, ode_settings, z)
     (; dry, kid_params, thermo_params) = ode_settings
 
     # initial profiles
-    init = init_profile(FT, kid_params, thermo_params, z, dry = dry)
+    # TODO - make it a user option
+    #init = init_profile(FT, kid_params, thermo_params, z, dry = dry)
+    init = init_profile(FT, thermo_params, z)
+
     θ_std::FT = init.θ_std
     q_vap::FT = init.qv
 
