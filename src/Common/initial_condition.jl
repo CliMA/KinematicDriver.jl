@@ -23,8 +23,8 @@ function read_Jouan_sounding()
 end
 
 """
-   Initial profiles and surface values as defined by Joauan et al
-   TODO - add doi to the paper
+   Initial profiles and surface values as defined by Joauan et al. 2020
+   https://doi.org/10.1175/WAF-D-20-0111.1
 """
 function init_profile(::Type{FT}, thermo_params, z) where {FT}
 
