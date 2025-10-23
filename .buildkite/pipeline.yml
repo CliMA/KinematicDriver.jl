@@ -1,5 +1,5 @@
 agents:
-  queue: new-central
+  queue: central
   slurm_mem: 2G
   slurm_cpus_per_task: 1
   slurm_time: '00:15:00'
