@@ -161,6 +161,11 @@ function parse_commandline()
             _F_liq = Float64(0.2),
             _ρ_r_init = Float64(900),
         )
+        "--init_sounding"
+        help = "Exterior data used for KiD initial conditions"
+        arg_type = String
+        default = "ShipwayHill"
+
     end
 
     return AP.parse_args(s)
