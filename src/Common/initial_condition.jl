@@ -26,7 +26,7 @@ end
    Initial profiles and surface values as defined by Joauan et al
    TODO - add doi to the paper
 """
-function init_profile(::Type{FT}, thermo_params, z) where {FT}
+function init_profile(::Type{FT}, kid_params::Jouan2020, thermo_params, z; dry=false) where {FT}
 
     # TODO - double check
     z_0 = 0
@@ -56,7 +56,7 @@ end
 """
    Initial profiles and surface values as defined by KiD setup
 """
-function init_profile(::Type{FT}, kid_params, thermo_params, z; dry = false) where {FT}
+function init_profile(::Type{FT}, kid_params::ShipwayHill2012, thermo_params, z; dry = false) where {FT}
 
     z_0::FT = kid_params.z_0   # 0.0
     z_1::FT = kid_params.z_1   # 740.0
@@ -102,9 +102,7 @@ function dρ_dz!(ρ, ode_settings, z)
     (; dry, kid_params, thermo_params) = ode_settings
 
     # initial profiles
-    # TODO - make it a user option
-    #init = init_profile(FT, kid_params, thermo_params, z, dry = dry)
-    init = init_profile(FT, thermo_params, z)
+    init = init_profile(FT, kid_params, thermo_params, z, dry = dry)
 
     θ_std::FT = init.θ_std
     q_vap::FT = init.qv

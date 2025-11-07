@@ -21,7 +21,7 @@ function get_tendency_function_arguments(::Type{FT}, moisture_choice, precipitat
     default_toml_dict = CP.create_toml_dict(FT)
     toml_dict = override_toml_dict(default_toml_dict)
     common_params = create_common_parameters(toml_dict)
-    kid_params = create_kid_parameters(toml_dict)
+    kid_params = create_ShipwayHill2012_parameters(toml_dict)
     thermo_params = create_thermodynamics_parameters(toml_dict)
     air_params = CMP.AirProperties(toml_dict)
     activation_params = CMP.AerosolActivationParameters(toml_dict)

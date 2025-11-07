@@ -79,8 +79,17 @@ function create_common_parameters(toml_dict)
     return common_params
 end
 
-function create_kid_parameters(toml_dict)
-    kid_params = KID.Parameters.KinematicDriverParameters(toml_dict)
+function create_ShipwayHill2012_parameters(toml_dict)
+    kid_params = KID.Parameters.ShipwayHill2012Parameters(toml_dict)
+    if !isbits(kid_params)
+        print(kid_params)
+        @warn "The parameter set SHOULD be isbits in order to be stack-allocated."
+    end
+    return kid_params
+end
+
+function create_Jouan2020_parameters(toml_dict)
+    kid_params = KID.Parameters.Jouan2020Parameters(toml_dict)
     if !isbits(kid_params)
         print(kid_params)
         @warn "The parameter set SHOULD be isbits in order to be stack-allocated."
@@ -196,7 +205,7 @@ function create_cloudy_parameters(FT, dist_names::NTuple{ND, String} = ("gamma",
     coal_data::CL.Coalescence.CoalescenceData{ND, r + 1, FT, (r + 1)^2} =
         CL.Coalescence.CoalescenceData(matrix_of_kernels, NProgMoms, mass_thresholds, norms)
 
-    # Define terminal velocity coefficients, assuming vt = sum_i v_i[1] * x^(v_i[2]) 
+    # Define terminal velocity coefficients, assuming vt = sum_i v_i[1] * x^(v_i[2])
     # v1 is normalized by mass norm; v1 = v1 * norm[2] ^ v2
     vel = ((FT(30), FT(1.0 / 6)),) # 30 kg ^ (-1/6) * m / s
 

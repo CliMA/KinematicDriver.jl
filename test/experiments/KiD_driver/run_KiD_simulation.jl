@@ -70,7 +70,14 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     # Create Thermodynamics.jl and KinematicDriver model parameters
     # (some of the CloudMicrophysics.jl parameters structs are created later based on model choices)
     common_params = create_common_parameters(toml_dict)
-    kid_params = create_kid_parameters(toml_dict)
+    # TODO - add simulation choice to opts handling
+    if opts["simulation_choice"] == "ShipwayHill2012"
+        kid_params = create_ShipwayHill2012_parameters(toml_dict)
+    elseif opts["simulation_choice"] == "Jouan2020"
+        kid_params = create_Jouan2020_parameters(toml_dict)
+    else
+       error("Unrecognized simulation choice")
+    end
     thermo_params = create_thermodynamics_parameters(toml_dict)
     air_params = CMP.AirProperties(toml_dict)
     activation_params = CMP.AerosolActivationParameters(toml_dict)

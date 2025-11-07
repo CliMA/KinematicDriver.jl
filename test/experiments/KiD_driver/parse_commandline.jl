@@ -12,6 +12,9 @@ function parse_commandline()
         help = "Float type. Can be set to Float64 or Float32"
         arg_type = String
         default = "Float64"
+        "--simulation_choice"
+        help = "Simulation setup choice: ShipwayHill2012, Jouan2020"
+        default = "ShipwayHill2012"
         "--moisture_choice"
         help = "Mositure model choice: EquilibriumMoisture, NonEquilibriumMoisture, CloudyMoisture, MoistureP3"
         arg_type = String

@@ -24,6 +24,7 @@ const CMAA = CM.AerosolActivation
 const CMP3 = CM.P3Scheme
 
 include("parameters.jl")
+using .Parameters: Jouan2020, ShipwayHill2012
 include("equation_types.jl")
 include("helper_functions.jl")
 include("ode_utils.jl")

@@ -6,6 +6,8 @@ import Cloudy as CL
 
 abstract type AbstractCommonParameters end
 const ACP = AbstractCommonParameters
+abstract type Jouan2020 <: ACP end
+abstract type ShipwayHill2012 <: ACP end
 
 """
     CommonParameters{FT}
