@@ -101,7 +101,16 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     if precipitation_choice == "CloudyPrecip"
         pdist_types = determine_cloudy_disttypes(opts["num_moments"])
         cloudy_params, cloudy_pdists = create_cloudy_parameters(FT, pdist_types)
-        ic_1d = CO.initial_condition_1d.(FT, common_params, kid_params, thermo_params, (ρ_profile,), coord.z, opts["init_sounding"])
+        ic_1d =
+            CO.initial_condition_1d.(
+                FT,
+                common_params,
+                kid_params,
+                thermo_params,
+                (ρ_profile,),
+                coord.z,
+                opts["init_sounding"],
+            )
         init = CO.cloudy_initial_condition.((cloudy_pdists,), ic_1d)
     elseif precipitation_choice == "PrecipitationP3"
         cloudy_params = nothing
@@ -110,11 +119,20 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
             CO.p3_initial_condition.(
                 FT, kid_params, thermo_params, coord.z, opts["init_sounding"];
                 _q_init = _q_flux, _N_init = _N_flux, _F_rim = _F_rim, _F_liq = _F_liq,
-                _ρ_r = _ρ_r_init, z_top = FT(opts["z_max"]), ice_start = ice_start
+                _ρ_r = _ρ_r_init, z_top = FT(opts["z_max"]), ice_start = ice_start,
             )
     else
         cloudy_params = nothing
-        init = CO.initial_condition_1d.(FT, common_params, kid_params, thermo_params, (ρ_profile,), coord.z, opts["init_sounding"])
+        init =
+            CO.initial_condition_1d.(
+                FT,
+                common_params,
+                kid_params,
+                thermo_params,
+                (ρ_profile,),
+                coord.z,
+                opts["init_sounding"],
+            )
     end
 
     # Create aux vector and apply initial condition

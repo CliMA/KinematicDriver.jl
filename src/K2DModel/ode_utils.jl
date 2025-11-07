@@ -74,7 +74,7 @@ function initialise_aux(
     face_space,
     moisture,
     precip,
-    init_sounding
+    init_sounding,
 )
 
     q_surf = CO.init_profile(FT, kid_params, thermo_params, 0.0, init_sounding).qv

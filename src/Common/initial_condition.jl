@@ -3,10 +3,10 @@
 """
 
 function read_Jouan_sounding(file)
-    
-    
+
+
     filepath = joinpath(@__DIR__, file)
-    data = DF.readdlm(filepath, skipstart=1)
+    data = DF.readdlm(filepath, skipstart = 1)
 
     input_T = reverse(data[:, 1])
     #Td = reverse(data[:, 2])
@@ -96,7 +96,7 @@ function init_profile(::Type{FT}, kid_params, thermo_params, z, init_sounding; d
         return init_profile_jouan(FT, thermo_params, z)
     else
         return init_profile_shipwayhill(FT, kid_params, thermo_params, z, dry = dry)
-    end  
+    end
 end
 
 """
@@ -354,7 +354,7 @@ function p3_initial_condition(
     _ρ_r = FT(0),
     z_top,
     ice_start,
-    dry = false
+    dry = false,
 ) where {FT}
 
     # initialize water vapor profile
