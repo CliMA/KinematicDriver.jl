@@ -90,9 +90,10 @@ function initialise_aux(
     face_space,
     moisture,
     precip,
+    init_sounding,
     cloudy_params = nothing,
 )
-    q_surf = CO.init_profile(FT, kid_params, thermo_params, 0.0).qv
+    q_surf = CO.init_profile(FT, kid_params, thermo_params, 0, init_sounding).qv
 
     ρw = CC.Geometry.WVector.(zeros(FT, face_space))
     ρw0 = 0.0
