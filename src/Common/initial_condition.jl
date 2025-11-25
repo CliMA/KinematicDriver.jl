@@ -2,10 +2,60 @@
    Initial condition computation
 """
 
+function read_Jouan_sounding(file)
+
+
+    filepath = joinpath(@__DIR__, file)
+    data = DF.readdlm(filepath, skipstart = 1)
+
+    input_T = reverse(data[:, 1])
+    #Td = reverse(data[:, 2])
+    input_qv = reverse(data[:, 3])
+    #Qsat = reverse(data[:, 4])
+    input_p = reverse(data[:, 5])
+    input_z = reverse(data[:, 10])
+
+    T = IT.linear_interpolation(input_z, input_T; extrapolation_bc = IT.Line())
+    qv = IT.linear_interpolation(input_z, input_qv; extrapolation_bc = IT.Line())
+    p = IT.linear_interpolation(input_z, input_p; extrapolation_bc = IT.Line())
+    return (T = T, qv = qv, p = p)
+end
+
+"""
+   Initial profiles and surface values as defined by Joauan et al. 2020
+   [https://doi.org/10.1175/WAF-D-20-0111.1]
+"""
+function init_profile_jouan(::Type{FT}, thermo_params, z) where {FT}
+
+    # TODO - double check
+    z_0 = 0
+    z_2 = 1.5e3
+
+    sounding = read_Jouan_sounding("Jouan_initial_condition.txt")
+    qv = sounding.qv(z)
+
+    # TODO - dry vs moist pressure
+    # TODO - should we also provide the phase partition based on the sounding
+    θ_std = TD.dry_pottemp_given_pressure(thermo_params, sounding.T(z), sounding.p(z))
+
+    # density at the surface
+    p_0 = sounding.p(z_0)
+    qv_0 = sounding.qv(z_0)
+    θ_0 = TD.dry_pottemp_given_pressure(thermo_params, sounding.T(z_0), sounding.p(z_0))
+
+    SDM_θ_dry_0 = SDM_θ_dry(thermo_params, θ_0, qv_0)
+    SDM_ρ_dry_0 = SDM_ρ_dry(thermo_params, p_0, qv_0, θ_0)
+    SDM_T_0 = SDM_T(thermo_params, SDM_θ_dry_0, SDM_ρ_dry_0)
+    SDM_ρ_0 = SDM_ρ_of_ρ_dry(SDM_ρ_dry_0, qv_0)
+
+    # TODO - is it ok to assume z0=0?
+    return (qv = qv, θ_std = θ_std, ρ_0 = SDM_ρ_0, z_0 = 0, z_2 = z_2)
+end
+
 """
    Initial profiles and surface values as defined by KiD setup
 """
-function init_profile(::Type{FT}, kid_params, thermo_params, z; dry = false) where {FT}
+function init_profile_shipwayhill(::Type{FT}, kid_params, thermo_params, z; dry = false) where {FT}
 
     z_0::FT = kid_params.z_0   # 0.0
     z_1::FT = kid_params.z_1   # 740.0
@@ -41,6 +91,14 @@ function init_profile(::Type{FT}, kid_params, thermo_params, z; dry = false) whe
     return (qv = qv, θ_std = θ_std, ρ_0 = SDM_ρ_0, z_0 = z_0, z_2 = z_2)
 end
 
+function init_profile(::Type{FT}, kid_params, thermo_params, z, init_sounding; dry = false) where {FT}
+    if init_sounding == "Jouan"
+        return init_profile_jouan(FT, thermo_params, z)
+    else
+        return init_profile_shipwayhill(FT, kid_params, thermo_params, z, dry = dry)
+    end
+end
+
 """
     Density derivative as a function of height (assuming no cloud condensate)
     Needed to solve the initial value problem to create the density profile.
@@ -48,10 +106,11 @@ end
 function dρ_dz!(ρ, ode_settings, z)
 
     FT = eltype(ρ)
-    (; dry, kid_params, thermo_params) = ode_settings
+    (; dry, kid_params, thermo_params, init_sounding) = ode_settings
 
     # initial profiles
-    init = init_profile(FT, kid_params, thermo_params, z, dry = dry)
+    init = init_profile(FT, kid_params, thermo_params, z, init_sounding, dry = dry)
+
     θ_std::FT = init.θ_std
     q_vap::FT = init.qv
 
@@ -79,16 +138,15 @@ end
 """
     Solve the initial value problem for the density profile
 """
-function ρ_ivp(::Type{FT}, kid_params, thermo_params; dry = false) where {FT}
-
-    init_surface = init_profile(FT, kid_params, thermo_params, 0.0, dry = dry)
+function ρ_ivp(::Type{FT}, kid_params, thermo_params, init_sounding; dry = false) where {FT}
+    init_surface = init_profile(FT, kid_params, thermo_params, 0.0, init_sounding, dry = dry)
 
     ρ_0::FT = init_surface.ρ_0
     z_0::FT = init_surface.z_0
     z_max::FT = init_surface.z_2
     z_span = (z_0, z_max)
 
-    ode_settings = (; dry, kid_params, thermo_params)
+    ode_settings = (; dry, kid_params, thermo_params, init_sounding)
 
     prob = ODE.ODEProblem(dρ_dz!, ρ_0, z_span, ode_settings)
     sol = ODE.solve(prob, ODE.Tsit5(), reltol = 1e-10, abstol = 1e-10)
@@ -106,12 +164,13 @@ function initial_condition_1d(
     kid_params,
     thermo_params,
     ρ_profile,
-    z;
+    z,
+    init_sounding;
     dry = false,
 ) where {FT}
 
-    q_vap::FT = init_profile(FT, kid_params, thermo_params, z, dry = dry).qv
-    θ_std::FT = init_profile(FT, kid_params, thermo_params, z, dry = dry).θ_std
+    q_vap::FT = init_profile(FT, kid_params, thermo_params, z, init_sounding, dry = dry).qv
+    θ_std::FT = init_profile(FT, kid_params, thermo_params, z, init_sounding, dry = dry).θ_std
 
     ρ::FT = ρ_profile(z)
     ρ_dry::FT = SDM_ρ_dry_of_ρ(ρ, q_vap)
@@ -286,7 +345,8 @@ function p3_initial_condition(
     ::Type{FT},
     kid_params,
     thermo_params,
-    z;
+    z,
+    init_sounding;
     _q_init = FT(0),
     _N_init = FT(0),
     _F_rim = FT(0),
@@ -299,7 +359,7 @@ function p3_initial_condition(
 
     # initialize water vapor profile
     # using same setup as initial_condition_1d
-    q_vap::FT = init_profile(FT, kid_params, thermo_params, z, dry = dry).qv
+    q_vap::FT = init_profile(FT, kid_params, thermo_params, z, init_sounding, dry = dry).qv
 
     # if ice_start, start with small ice bump
     # otherwise, introduce particles solely through

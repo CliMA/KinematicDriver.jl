@@ -177,10 +177,33 @@ end
 end
 
 """
+    TODO: implement Jouan velocity profile and updraft/downdraft
     Prescribed momentum flux as a function of time
 """
+# @inline function ρw_helper(t, w1, t1)
+#     return t < t1 ? w1 * sin(pi * t / t1) : 0.0
+#     return 
+# end
+"""
+    Test function, uncomment above.
+"""
 @inline function ρw_helper(t, w1, t1)
-    return t < t1 ? w1 * sin(pi * t / t1) : 0.0
+    ω = π / 10800 # is this in minutes or seconds
+    return (t1 < t < (t1 + 21600)) ? sin(ω * t) : 0.0
+end
+
+@inline function interpolate_prescribed_velocity(file)
+
+    filepath = joinpath(@__DIR__, file)
+    data = DF.readdlm(filepath, ',', Float64)
+
+    vel = data[:, 1]
+    alt = data[:, 2]
+
+    z_interp = linear_interpolation(alt, vel; extrapolation_bc = Line()) # vel2
+    z_data = range(minimum(alt), maximum(alt), length = 1000)
+    z_interp = linear_interpolation(z_data, values_at_z)
+    return z_interp
 end
 
 @inline function precompute_aux_prescribed_velocity!(aux, t)

@@ -65,14 +65,32 @@ TT.@testset "Initialise aux" begin
     coord = CC.Fields.coordinate_field(space)
     ip = map(coord -> _ip, coord)
 
-    TT.@test_throws Exception K1D.initialise_aux(FT, ip, params..., 0.0, 0.0, face_space, no_precip)
-    TT.@test_throws Exception K1D.initialise_aux(FT, ip, params..., 0.0, 0.0, face_space, CO.EquilibriumMoisture())
-    TT.@test_throws Exception K1D.initialise_aux(FT, ip, params..., 0.0, 0.0, face_space, CO.NonEquilibriumMoisture())
+    TT.@test_throws Exception K1D.initialise_aux(FT, ip, params..., 0.0, 0.0, face_space, no_precip, "ShipwayHill")
+    TT.@test_throws Exception K1D.initialise_aux(
+        FT,
+        ip,
+        params...,
+        0.0,
+        0.0,
+        face_space,
+        CO.EquilibriumMoisture(),
+        "ShipwayHill",
+    )
+    TT.@test_throws Exception K1D.initialise_aux(
+        FT,
+        ip,
+        params...,
+        0.0,
+        0.0,
+        face_space,
+        CO.NonEquilibriumMoisture(),
+        "ShipwayHill",
+    )
 
     ms_styles = [equil_moist, nequil_moist]
     ps_styles = [no_precip, precip_1m, precip_2m, precip_2m]
     for (ms, ps) in zip(ms_styles, ps_styles)
-        aux = K1D.initialise_aux(FT, ip, params..., 0.0, 0.0, face_space, ms, ps)
+        aux = K1D.initialise_aux(FT, ip, params..., 0.0, 0.0, face_space, ms, ps, "ShipwayHill")
         TT.@test aux isa NamedTuple
         TT.@test LA.norm(aux.precip_sources) == 0
         if ms == nequil_moist
@@ -83,7 +101,7 @@ TT.@testset "Initialise aux" begin
     end
     ms = p3_moist
     ps = precip_p3
-    aux = K1D.initialise_aux(FT, ip, params..., 0.0, 0.0, face_space, ms, ps)
+    aux = K1D.initialise_aux(FT, ip, params..., 0.0, 0.0, face_space, ms, ps, "ShipwayHill")
     TT.@test aux isa NamedTuple
     TT.@test LA.norm(aux.precip_sources) == 0
 end
@@ -92,12 +110,12 @@ TT.@testset "advection_tendency" begin
 
     space, face_space = K1D.make_function_space(FT, 0, 100, 5)
     coord = CC.Fields.coordinate_field(space)
-    ρ_profile = CO.ρ_ivp(FT, kid_params, thermo_params)
-    init = CO.initial_condition_1d.(FT, common_params, kid_params, thermo_params, (ρ_profile,), coord.z)
+    ρ_profile = CO.ρ_ivp(FT, kid_params, thermo_params, "ShipwayHill")
+    init = CO.initial_condition_1d.(FT, common_params, kid_params, thermo_params, (ρ_profile,), coord.z, "ShipwayHill")
     t = 13.0
 
     # eq
-    aux = K1D.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, equil_moist, no_precip)
+    aux = K1D.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, equil_moist, no_precip, "ShipwayHill")
     Y = CO.initialise_state(equil_moist, no_precip, init)
     dY = Y ./ 10
     TT.@test_throws Exception K1D.advection_tendency!(CO.AbstractMoistureStyle(), dY, Y, aux, t)
@@ -106,7 +124,7 @@ TT.@testset "advection_tendency" begin
     ms_styles = [equil_moist, nequil_moist]
     ps_styles = [no_precip, precip_1m, precip_2m, precip_2m]
     for (ms, ps) in zip(ms_styles, ps_styles)
-        aux = K1D.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, ms, ps)
+        aux = K1D.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, ms, ps, "ShipwayHill")
         Y = CO.initialise_state(ms, ps, init)
         dY = Y ./ 10
         ρw = 0.0
@@ -131,13 +149,13 @@ TT.@testset "advection_tendency p3" begin
     _ρ_r_init = Float64(900)
     init =
         CO.p3_initial_condition.(
-            FT, kid_params, thermo_params, coord.z;
+            FT, kid_params, thermo_params, coord.z, "ShipwayHill";
             _q_init = _q_flux, _N_init = _N_flux, _F_rim, _F_liq, _ρ_r = _ρ_r_init, z_top = FT(3000), ice_start,
         )
     t = 13.0
 
     # eq
-    aux = K1D.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, p3_moist, precip_p3)
+    aux = K1D.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, p3_moist, precip_p3, "ShipwayHill")
     Y = CO.initialise_state(p3_moist, precip_p3, init)
     dY = Y ./ 10
     TT.@test_throws Exception K1D.advection_tendency!(CO.AbstractMoistureStyle(), dY, Y, aux, t)
@@ -145,7 +163,7 @@ TT.@testset "advection_tendency p3" begin
 
     ms = p3_moist
     ps = precip_p3
-    aux = K1D.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, ms, ps)
+    aux = K1D.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, ms, ps, "ShipwayHill")
     Y = CO.initialise_state(ms, ps, init)
     dY = Y ./ 10
     ρw = 0.0
@@ -166,13 +184,13 @@ TT.@testset "advection_tendency p3" begin
     _ρ_r_init = Float64(900)
     init =
         CO.p3_initial_condition.(
-            FT, kid_params, thermo_params, coord.z;
+            FT, kid_params, thermo_params, coord.z, "ShipwayHill";
             _q_init = _q_flux, _N_init = _N_flux, _F_rim, _F_liq, _ρ_r = _ρ_r_init, z_top = FT(3000), ice_start,
         )
     t = 13.0
 
     # eq
-    aux = K1D.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, p3_moist, precip_p3)
+    aux = K1D.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, p3_moist, precip_p3, "ShipwayHill")
     Y = CO.initialise_state(p3_moist, precip_p3, init)
     dY = Y ./ 10
     TT.@test_throws Exception K1D.advection_tendency!(CO.AbstractMoistureStyle(), dY, Y, aux, t)
@@ -180,7 +198,7 @@ TT.@testset "advection_tendency p3" begin
 
     ms = p3_moist
     ps = precip_p3
-    aux = K1D.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, ms, ps)
+    aux = K1D.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, ms, ps, "ShipwayHill")
     Y = CO.initialise_state(ms, ps, init)
     dY = Y ./ 10
     ρw = 0.0
@@ -248,6 +266,7 @@ TT.@testset "aerosol activation for 2M schemes" begin
         face_space,
         equil_moist,
         precip_2m,
+        "ShipwayHill",
     )
 
     K1D.precompute_aux_activation!(precip_2m, dY, Y, aux, 13)
