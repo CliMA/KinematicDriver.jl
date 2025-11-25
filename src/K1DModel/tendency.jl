@@ -9,7 +9,7 @@ Aerosol activation helper functions
         cloud_base_S_Nl_and_z,
     )
 
-Performs a vertical column-wise reduction to identify the first level (from bottom to top) where `S_Nl > 0`, 
+Performs a vertical column-wise reduction to identify the first level (from bottom to top) where `S_Nl > 0`,
 indicating the onset of cloud droplet activation (i.e., cloud base). The result is stored in `cloud_base_S_Nl_and_z`
 as a tuple `(S_Nl, z)` for each column.
 
@@ -182,7 +182,7 @@ end
 @inline function ρw_helper(t, w1, t1)
     return t < t1 ? w1 * sin(pi * t / t1) : 0.0
 end
-
+#=
 @inline function precompute_aux_prescribed_velocity!(aux, t)
 
     FT = eltype(aux.microph_variables.q_tot)
@@ -191,6 +191,27 @@ end
     @. aux.prescribed_velocity.ρw = CC.Geometry.WVector.(ρw)
     aux.prescribed_velocity.ρw0 = ρw
 
+end
+=#
+@inline function ρw_helper_J(t, w1, t1, z)
+    return t < t1 ? w1 * sin(pi * t / t1) * (1e3 - abs(z - 1e3)) / 1e3 : 0.0
+end
+
+@inline function precompute_aux_prescribed_velocity!(aux, t)
+
+    FT = eltype(aux.microph_variables.q_tot)
+
+    face_space = axes(aux.prescribed_velocity.ρw)
+    face_coord = CC.Fields.coordinate_field(face_space)
+
+    @. aux.prescribed_velocity.ρw = CC.Geometry.WVector(
+        FT(ρw_helper_J(t, aux.kid_params.w1, aux.kid_params.t1, face_coord.z))
+    )
+    @info(aux.prescribed_velocity.ρw)
+    aux.prescribed_velocity.ρw0 = FT(
+       ρw_helper_J(t, aux.kid_params.w1, aux.kid_params.t1, FT(0))
+    )
+    @info(aux.prescribed_velocity.ρw0)
 end
 
 """
@@ -374,7 +395,7 @@ end
         bottom = CC.Operators.Extrapolate(),
         top = CC.Operators.SetValue(CC.Geometry.WVector(FT(0))),
     )
-    # Aerosol flux at the bottom is ρw0 * N_d * (1-q_surf) / ρ_SDP 
+    # Aerosol flux at the bottom is ρw0 * N_d * (1-q_surf) / ρ_SDP
     surf_aero_flux::FT = aux.prescribed_velocity.ρw0 * aux.common_params.prescribed_Nd * (1 - aux.q_surf) / FT(1.225)
     ∂ₐ = CC.Operators.DivergenceF2C(
         bottom = CC.Operators.SetValue(CC.Geometry.WVector(surf_aero_flux)),
