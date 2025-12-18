@@ -323,12 +323,12 @@ end
     S_eltype = eltype(aux.cloud_sources)
     to_sources(args...) = S_eltype(tuple(args...))
 
-    @. S_q_liq = CMNe.conv_q_vap_to_q_liq_ice(
+    @. S_q_liq = CMNe.conv_q_vap_to_q_lcl_icl(
         ne.liquid,
         PP(thermo_params, TD.PhaseEquil_ρTq(thermo_params, ρ, T, q_tot)).liq,
         q_liq,
     )
-    @. S_q_ice = CMNe.conv_q_vap_to_q_liq_ice(
+    @. S_q_ice = CMNe.conv_q_vap_to_q_lcl_icl(
         ne.ice,
         PP(thermo_params, TD.PhaseEquil_ρTq(thermo_params, ρ, T, q_tot)).ice,
         q_ice,
@@ -353,7 +353,7 @@ end
     S_eltype = eltype(aux.cloud_sources)
     to_sources(args...) = S_eltype(tuple(args...))
 
-    @. S_q_liq = CMNe.conv_q_vap_to_q_liq_ice(
+    @. S_q_liq = CMNe.conv_q_vap_to_q_lcl_icl(
         ne.liquid,
         PP(thermo_params, TD.PhaseEquil_ρTq(thermo_params, ρ, T, q_tot)).liq - q_rai,
         q_liq,
@@ -365,7 +365,7 @@ end
         ratio_threshold = FT(1e-6)  # TODO: arbitrary threshold, revisit later
         @. S_q_liq = ifelse(N_liq / N_aer > ratio_threshold, S_q_liq, FT(0))
     end
-    @. S_q_ice = CMNe.conv_q_vap_to_q_liq_ice(
+    @. S_q_ice = CMNe.conv_q_vap_to_q_lcl_icl(
         ne.ice,
         PP(thermo_params, TD.PhaseEquil_ρTq(thermo_params, ρ, T, q_tot)).ice - q_sno,
         q_ice,
@@ -426,17 +426,17 @@ end
         rf = ps.rain_formation
         # autoconversion of liquid to rain
         if rf isa CMP.Acnv1M{FT}
-            @. S = -triangle_inequality_limiter(CM1.conv_q_liq_to_q_rai(rf, q_liq, true), limit(q_liq, dt))
+            @. S = -triangle_inequality_limiter(CM1.conv_q_lcl_to_q_rai(rf, q_liq, true), limit(q_liq, dt))
         elseif typeof(rf) in [CMP.LD2004{FT}, CMP.VarTimescaleAcnv{FT}]
             @. S =
                 -triangle_inequality_limiter(
-                    CM2.conv_q_liq_to_q_rai(rf, q_liq, ρ, common_params.prescribed_Nd),
+                    CM2.conv_q_lcl_to_q_rai(rf, q_liq, ρ, common_params.prescribed_Nd),
                     limit(q_liq, dt),
                 )
         elseif typeof(rf.acnv) in [CMP.AcnvKK2000{FT}, CMP.AcnvB1994{FT}, CMP.AcnvTC1980{FT}]
             @. S =
                 -triangle_inequality_limiter(
-                    CM2.conv_q_liq_to_q_rai(rf, q_liq, ρ, common_params.prescribed_Nd),
+                    CM2.conv_q_lcl_to_q_rai(rf, q_liq, ρ, common_params.prescribed_Nd),
                     limit(q_liq, dt),
                 )
         else
@@ -447,7 +447,7 @@ end
         # autoconversion of ice to snow
         @. S =
             -triangle_inequality_limiter(
-                CM1.conv_q_ice_to_q_sno(ps.ice, air_params, thermo_params, q_tot, q_liq, q_ice, q_rai, q_sno, ρ, T),
+                CM1.conv_q_icl_to_q_sno(ps.ice, air_params, thermo_params, q_tot, q_liq, q_ice, q_rai, q_sno, ρ, T),
                 limit(q_ice, dt),
             )
         @. aux.precip_sources += to_sources(0, 0, S, 0, -S)
@@ -606,7 +606,7 @@ end
         @. aux.precip_sources.N_rai += S₂
 
         # liquid self_collection
-        @. S₁ = -triangle(-CM2.liquid_self_collection(acnv, pdf_c, q_liq, ρ, -2S₂), N_liq)
+        @. S₁ = -triangle(-CM2.cloud_liquid_self_collection(acnv, pdf_c, q_liq, ρ, -2S₂), N_liq)
         @. aux.precip_sources.N_liq += S₁
         # rain self_collection
         @. S₁ = -triangle(-CM2.rain_self_collection(pdf_r, self, q_rai, ρ, N_rai), N_rai)
@@ -618,7 +618,7 @@ end
 
         # accretion cloud water + rain
         @. S₁ = triangle(CM2.accretion(sb2006, q_liq, q_rai, ρ, N_liq).dq_rai_dt, q_liq)
-        @. S₂ = -triangle(-CM2.accretion(sb2006, q_liq, q_rai, ρ, N_liq).dN_liq_dt, N_liq)
+        @. S₂ = -triangle(-CM2.accretion(sb2006, q_liq, q_rai, ρ, N_liq).dN_lcl_dt, N_liq)
         @. aux.precip_sources.q_liq += -S₁
         @. aux.precip_sources.q_rai += S₁
         @. aux.precip_sources.N_liq += S₂

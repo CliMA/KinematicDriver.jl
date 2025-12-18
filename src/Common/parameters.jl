@@ -28,7 +28,7 @@ Base.@kwdef struct CommonParameters{FT} <: ACP
     local_activation::Bool
 end
 
-function CommonParameters(td::CP.AbstractTOMLDict)
+function CommonParameters(td::CP.ParamDict{FT}) where {FT}
     name_map = (;
         :precipitation_sources_flag => :precip_sources,
         :precipitation_sinks_flag => :precip_sinks,
@@ -37,7 +37,6 @@ function CommonParameters(td::CP.AbstractTOMLDict)
         :local_activation => :local_activation,
     )
     parameters = CP.get_parameter_values(td, name_map, "Common")
-    FT = CP.float_type(td)
     return CommonParameters{FT}(; parameters...)
 end
 
