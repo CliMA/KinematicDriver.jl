@@ -21,6 +21,6 @@ Thermodynamics = "b60c26fb-14c3-4610-9d3e-2d17fe7ff00c"
 
 [compat]
 ClimaCorePlots = "0.2"
-Cloudy = "0.5.6"
+Cloudy = "0.5"
 NCDatasets = "0.14"
 Plots = "1.29"
