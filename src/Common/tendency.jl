@@ -131,6 +131,10 @@ end
     @. θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
     @. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
 end
+@inline function precompute_aux_thermo!(ms::NonEquilibriumMoisture, ps::Precipitation2M_P3, Y, aux)
+    precompute_aux_thermo!(ms, ps.liq_precip, Y, aux)
+    # precompute_aux_thermo!(ms, ps.ice_precip, Y, aux)  # no additional `IcePrecipitationP3` thermo state
+end
 function separate_liq_rai(FT, moments, pdists, cloudy_params, ρd)
     tmp = CL.ParticleDistributions.get_standard_N_q(pdists, cloudy_params.size_threshold / cloudy_params.norms[2])
     moments_like = ntuple(length(moments)) do k
@@ -190,7 +194,7 @@ end
     @. term_vel_rai = CM1.terminal_velocity(ps.rain, ps.sedimentation.rain, ρ, q_rai)
     @. term_vel_sno = CM1.terminal_velocity(ps.snow, ps.sedimentation.snow, ρ, q_sno)
 end
-@inline function precompute_aux_precip!(ps::Precipitation2M, Y, aux)
+@inline function precompute_aux_precip!(ps::Precipitation2M, Y, aux)  # called by `make_rhs_function`
 
     FT = eltype(Y.ρq_rai)
     sb2006 = ps.rain_formation
@@ -206,6 +210,42 @@ end
 
     @. term_vel_N_rai = getindex(CM2.rain_terminal_velocity(sb2006, vel_scheme, q_rai, ρ, N_rai), 1)
     @. term_vel_rai = getindex(CM2.rain_terminal_velocity(sb2006, vel_scheme, q_rai, ρ, N_rai), 2)
+end
+@inline function precompute_aux_precip!(ps::IcePrecipitationP3, Y, aux)
+    # State, `Y`, includes: ρq_ice, ρq_rim, N_ice, B_rim
+
+    # update state variables
+    (; sedimentation, params) = ps
+    (; ρq_ice, ρq_rim, N_ice, B_rim) = Y
+    (; ρ) = aux.thermo_variables
+    (; F_rim, ρ_rim, logλ) = aux.microph_variables
+    (; term_vel_N_ice, term_vel_q_ice) = aux.velocities
+
+    # Calculate derived rime quantities
+    # @. F_rim = ifelse(Y.ρq_ice < eps(FT), FT(0), Y.ρq_rim / Y.ρq_ice)
+    # @. ρ_rim = ifelse(Y.B_rim < eps(FT), FT(0), Y.ρq_rim / Y.B_rim)
+
+    @. F_rim = ifelse(isnan(ρq_rim / ρq_ice), zero(ρq_rim), ρq_rim / ρq_ice)
+    @. ρ_rim = ifelse(isnan(ρq_rim / B_rim), zero(ρq_rim), ρq_rim / B_rim)
+    # Calculate distribution parameters
+    @. logλ = CMP3.get_distribution_logλ(CMP3.P3State(params, ρq_ice, N_ice, F_rim, ρ_rim))
+
+    # Calculate terminal velocities
+    use_aspect_ratio = true
+    @. term_vel_N_ice = CMP3.ice_terminal_velocity_number_weighted(
+        sedimentation, ρ, CMP3.P3State(params, ρq_ice, N_ice, F_rim, ρ_rim), logλ; use_aspect_ratio,
+    )
+    @. term_vel_q_ice = CMP3.ice_terminal_velocity_mass_weighted(
+        sedimentation, ρ, CMP3.P3State(params, ρq_ice, N_ice, F_rim, ρ_rim), logλ; use_aspect_ratio,
+    )
+    # args = (ps.sedimentation, ρ, ps.params, ρq_ice, N_ice, F_rim, ρ_rim, logλ)
+    # @. term_vel_N_ice = CMP3.ice_terminal_velocity_number_weighted(args...; use_aspect_ratio)
+    # @. term_vel_q_ice = CMP3.ice_terminal_velocity_mass_weighted(args...; use_aspect_ratio)
+
+end
+function precompute_aux_precip!(ps::Precipitation2M_P3, Y, aux)
+    precompute_aux_precip!(ps.liq_precip, Y, aux)
+    precompute_aux_precip!(ps.ice_precip, Y, aux)
 end
 @inline function precompute_aux_precip!(ps::PrecipitationP3, Y, aux)
 
@@ -372,6 +412,10 @@ end
     )
 
     @. aux.cloud_sources = to_sources(S_q_liq, S_q_ice)
+end
+@inline function precompute_aux_moisture_sources!(ms::NonEquilibriumMoisture, ps::Precipitation2M_P3, aux)
+    precompute_aux_moisture_sources!(ms, ps.liq_precip, aux)
+    # precompute_aux_moisture_sources!(ms, ps.ice_precip, aux)  # no additional `IcePrecipitationP3` thermo state
 end
 
 @inline function precompute_aux_precip_sources!(ps::AbstractPrecipitationStyle, aux)
@@ -646,6 +690,13 @@ end
     end
 end
 
+@inline function precompute_aux_precip_sources!(ps::IcePrecipitationP3, Y, aux)
+
+    # TODO: So far, implemented directly in precip_sources_tendency!
+
+    return nothing
+end
+
 @inline function precompute_aux_precip_sources!(ps::PrecipitationP3, aux)
     # TODO [P3]
     return nothing
@@ -736,7 +787,7 @@ end
 @inline function cloud_sources_tendency!(::EquilibriumMoisture, ::AbstractPrecipitationStyle, dY, Y, aux, t) end
 @inline function cloud_sources_tendency!(ms::NonEquilibriumMoisture, ps::AbstractPrecipitationStyle, dY, Y, aux, t)
 
-    precompute_aux_moisture_sources!(ms, ps, aux)
+    precompute_aux_moisture_sources!(ms, ps, aux)  # defined in `Common/tendency.jl`
 
     @. dY.ρq_liq += aux.thermo_variables.ρ * aux.cloud_sources.q_liq
     @. dY.ρq_ice += aux.thermo_variables.ρ * aux.cloud_sources.q_ice
@@ -804,6 +855,32 @@ end
     return dY
 end
 @inline function precip_sources_tendency!(ms::MoistureP3, ps::PrecipitationP3, dY, Y, aux, t)
+    return dY
+end
+@inline function precip_sources_tendency!(ms::AbstractMoistureStyle, ps::Precipitation2M_P3, dY, Y, aux, t)
+    precip_sources_tendency!(ms, ps.liq_precip, dY, Y, aux, t)
+    (; ρ, ts) = aux.thermo_variables
+    (; ρq_liq, ρq_rai, ρq_ice, N_liq, N_rai, N_ice) = Y
+    (; air_params, thermo_params) = aux
+    (; logλ, F_rim, ρ_rim) = aux.microph_variables
+    (; pdf_c, pdf_r) = ps.liq_precip.rain_formation
+    (; ice_precip) = ps
+
+    coll_src = @. CMP3.bulk_liquid_ice_collision_sources(
+        ice_precip.params, logλ, ρq_ice, N_ice, F_rim, ρ_rim,
+        pdf_c, pdf_r, ρq_liq, N_liq, ρq_rai, N_rai,
+        air_params, thermo_params, (ice_precip.sedimentation,),
+        ρ, TD.air_temperature(thermo_params, ts),
+    )
+
+    @. dY.ρq_liq += ρ * coll_src.∂ₜq_c
+    @. dY.ρq_rai += ρ * coll_src.∂ₜq_r
+    @. dY.N_liq += coll_src.∂ₜN_c
+    @. dY.N_rai += coll_src.∂ₜN_r
+    @. dY.ρq_rim += coll_src.∂ₜL_rim
+    @. dY.ρq_ice += coll_src.∂ₜL_ice
+    @. dY.B_rim += coll_src.∂ₜB_rim
+
     return dY
 end
 @inline function precip_sources_tendency!(ms::CloudyMoisture, ps::CloudyPrecip, dY, Y, aux, t)
