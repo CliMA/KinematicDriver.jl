@@ -164,7 +164,8 @@ function parse_commandline()
         "--init_sounding"
         help = "Exterior data used for KiD initial conditions"
         arg_type = String
-        default = "ShipwayHill"
+        help = "Initial condition for KiD. Options are: `ShipwayHill2012` (default), `Jouan2020` "
+        default = "ShipwayHill2012"
 
     end
 

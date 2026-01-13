@@ -33,7 +33,7 @@ function get_tendency_function_arguments(::Type{FT}, moisture_choice, precipitat
     space, face_space = K1D.make_function_space(FT, FT(0), FT(3000), 64)
     coord = CC.Fields.coordinate_field(space)
 
-    ρ_profile = CO.ρ_ivp(FT, kid_params, thermo_params, "ShipwayHill")
+    ρ_profile = CO.ρ_ivp(FT, kid_params, thermo_params, "ShipwayHill2012")
     if precipitation_choice == "CloudyPrecip"
         cloudy_params, cloudy_pdists = create_cloudy_parameters(FT)
         init = map(
@@ -46,7 +46,7 @@ function get_tendency_function_arguments(::Type{FT}, moisture_choice, precipitat
                     thermo_params,
                     ρ_profile,
                     coord.z,
-                    "ShipwayHill",
+                    "ShipwayHill2012",
                 ),
             ),
             coord,
@@ -61,7 +61,7 @@ function get_tendency_function_arguments(::Type{FT}, moisture_choice, precipitat
                 thermo_params,
                 ρ_profile,
                 coord.z,
-                "ShipwayHill",
+                "ShipwayHill2012",
             ),
             coord,
         )
@@ -80,7 +80,7 @@ function get_tendency_function_arguments(::Type{FT}, moisture_choice, precipitat
         face_space,
         moisture,
         precip,
-        "ShipwayHill",
+        "ShipwayHill2012",
         cloudy_params,
     )
 

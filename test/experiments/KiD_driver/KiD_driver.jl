@@ -14,7 +14,6 @@ include(joinpath(kid_driver_path, "parse_commandline.jl"))
 if !(@isdefined config)
     config = parse_commandline()
 end
-# config["init_profile"] = "jouan"
 
 ft_choice = config["FLOAT_TYPE"]
 @assert ft_choice ∈ ("Float64", "Float32") "Invalid float type: $ft_choice"

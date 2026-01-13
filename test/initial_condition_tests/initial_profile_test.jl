@@ -41,7 +41,7 @@ function compare_profiles(; is_dry_flag::Bool)
     coord = CC.Fields.coordinate_field(space)
 
     # Solve the initial value problem for density profile
-    ρ_profile = CO.ρ_ivp(FT, kid_params, thermo_params, "ShipwayHill", dry = is_dry_flag)
+    ρ_profile = CO.ρ_ivp(FT, kid_params, thermo_params, "ShipwayHill2012", dry = is_dry_flag)
     # Create the initial condition profiles
     init =
         CO.initial_condition_1d.(
@@ -51,7 +51,7 @@ function compare_profiles(; is_dry_flag::Bool)
             thermo_params,
             (ρ_profile,),
             coord.z,
-            "ShipwayHill";
+            "ShipwayHill2012";
             dry = is_dry_flag,
         )
 

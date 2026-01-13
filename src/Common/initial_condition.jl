@@ -9,9 +9,7 @@ function read_Jouan_sounding(file)
     data = DF.readdlm(filepath, skipstart = 1)
 
     input_T = reverse(data[:, 1])
-    #Td = reverse(data[:, 2])
     input_qv = reverse(data[:, 3])
-    #Qsat = reverse(data[:, 4])
     input_p = reverse(data[:, 5])
     input_z = reverse(data[:, 10])
 
@@ -27,15 +25,12 @@ end
 """
 function init_profile_jouan(::Type{FT}, thermo_params, z) where {FT}
 
-    # TODO - double check
     z_0 = 0
     z_2 = 1.5e3
 
     sounding = read_Jouan_sounding("Jouan_initial_condition.txt")
     qv = sounding.qv(z)
 
-    # TODO - dry vs moist pressure
-    # TODO - should we also provide the phase partition based on the sounding
     θ_std = TD.dry_pottemp_given_pressure(thermo_params, sounding.T(z), sounding.p(z))
 
     # density at the surface
@@ -48,7 +43,6 @@ function init_profile_jouan(::Type{FT}, thermo_params, z) where {FT}
     SDM_T_0 = SDM_T(thermo_params, SDM_θ_dry_0, SDM_ρ_dry_0)
     SDM_ρ_0 = SDM_ρ_of_ρ_dry(SDM_ρ_dry_0, qv_0)
 
-    # TODO - is it ok to assume z0=0?
     return (qv = qv, θ_std = θ_std, ρ_0 = SDM_ρ_0, z_0 = 0, z_2 = z_2)
 end
 
@@ -92,10 +86,12 @@ function init_profile_shipwayhill(::Type{FT}, kid_params, thermo_params, z; dry 
 end
 
 function init_profile(::Type{FT}, kid_params, thermo_params, z, init_sounding; dry = false) where {FT}
-    if init_sounding == "Jouan"
+    if init_sounding == "Jouan2020"
         return init_profile_jouan(FT, thermo_params, z)
-    else
+    elseif init_sounding == "ShipwayHill2012"
         return init_profile_shipwayhill(FT, kid_params, thermo_params, z, dry = dry)
+    else
+        error("Unrecognized initial condition sounding option. Supported options are: Jouan2020 or ShipwayHill2012")
     end
 end
 
