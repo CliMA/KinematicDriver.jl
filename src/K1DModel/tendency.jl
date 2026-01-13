@@ -176,15 +176,68 @@ end
     end
 end
 
+@inline function interpolate_prescribed_velocity(file)
+
+    filepath = joinpath(@__DIR__, file)
+    data = DF.readdlm(filepath, ',', Float64)
+
+    vel = data[:, 1]
+    alt = data[:, 2]
+
+    z_interp = linear_interpolation(alt, vel; extrapolation_bc = Line())
+    z_data = range(minimum(alt), maximum(alt), length = 1000)
+    z_interp = linear_interpolation(z_data, values_at_z)
+    return z_interp
+end
+
+@inline function prescribed_velocity_helper(file)
+
+    filepath = joinpath(@__DIR__, file)
+    data = CO.DF.readdlm(filepath, ',', Float64)
+
+    vel = data[:, 1]
+    alt = data[:, 2]
+
+    z_interp = CO.IT.linear_interpolation(alt, vel; extrapolation_bc = CO.IT.Line())
+    return z_interp
+end
+
 """
     Prescribed momentum flux as a function of time
 """
 @inline function ρw_helper(t, w1, t1)
     return t < t1 ? w1 * sin(pi * t / t1) : 0.0
-    return
 end
 
-@inline function precompute_aux_prescribed_velocity!(aux, t)
+"""
+    Prescribed momentum flux as a function of time and altitude, set t1 equal
+    to 10800 (3h)
+"""
+@inline function ρw_helper_J(t, t1, z, file)
+    z_interp = prescribed_velocity_helper(file)
+    w = z_interp(z)
+    α = 0.036 # test
+    return 0 < t < (t1 * 2) ? (α * w * sin(π * t / t1)) : 0.0
+end
+
+@inline function precompute_aux_prescribed_velocity_J!(aux, t)
+
+    FT = eltype(aux.microph_variables.q_tot)
+
+    face_space = axes(aux.prescribed_velocity.ρw)
+    face_coord = CC.Fields.coordinate_field(face_space)
+
+    @. aux.prescribed_velocity.ρw = CC.Geometry.WVector(
+        FT(ρw_helper_J(t, aux.kid_params.t1, face_coord.z, "../Common/Jouan_velocity_profile.csv")),
+    )
+    @info(aux.prescribed_velocity.ρw)
+    aux.prescribed_velocity.ρw0 = FT(
+        ρw_helper_J(t, aux.kid_params.t1, FT(0), "../Common/Jouan_velocity_profile.csv"),
+    )
+    @info(aux.prescribed_velocity.ρw0)
+end
+
+@inline function precompute_aux_prescribed_velocity_S!(aux, t)
 
     FT = eltype(aux.microph_variables.q_tot)
     ρw = FT(ρw_helper(t, aux.kid_params.w1, aux.kid_params.t1))
@@ -192,6 +245,21 @@ end
     @. aux.prescribed_velocity.ρw = CC.Geometry.WVector.(ρw)
     aux.prescribed_velocity.ρw0 = ρw
 
+end
+
+"""
+    Based on choice of command line arguments, decides with prescribed velocity
+    to use
+"""
+@inline function precompute_aux_prescribed_velocity!(aux, t, velocity)
+    if (velocity == "Jouan2020")
+        return precompute_aux_prescribed_velocity_J!(aux, t)
+        return
+    elseif (velocity == "ShipwayHill2012")
+        return precompute_aux_prescribed_velocity_S!(aux, t)
+    else
+        error("Unrecognized velocity option. Supported options are: Jouan2020 or ShipwayHill2012")
+    end
 end
 
 """

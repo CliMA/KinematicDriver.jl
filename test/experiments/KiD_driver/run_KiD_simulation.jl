@@ -153,7 +153,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
 
     # Collect all the tendencies into rhs function for ODE solver
     # based on model choices for the solved equations
-    ode_rhs! = K1D.make_rhs_function(moisture, precip)
+    ode_rhs! = K1D.make_rhs_function(moisture, precip, opts["velocity"])
 
     # Solve the ODE operator
     problem = ODE.ODEProblem(ode_rhs!, Y, (FT(opts["t_ini"]), FT(opts["t_end"])), aux)

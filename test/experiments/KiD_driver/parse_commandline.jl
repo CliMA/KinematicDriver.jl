@@ -166,6 +166,11 @@ function parse_commandline()
         arg_type = String
         help = "Initial condition for KiD. Options are: `ShipwayHill2012` (default), `Jouan2020` "
         default = "ShipwayHill2012"
+        "--velocity"
+        help = "Exterior data used for KiD prescribed velocity field"
+        arg_type = String
+        help = "Wind profile for KiD. Options are: `ShipwayHill2012` (default), `Jouan2020` "
+        default = "ShipwayHill2012"
 
     end
 

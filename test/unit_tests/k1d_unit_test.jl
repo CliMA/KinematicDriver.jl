@@ -17,7 +17,7 @@ end
 
 TT.@testset "Make rhs function" begin
 
-    rhs = K1D.make_rhs_function(equil_moist, precip_1m)
+    rhs = K1D.make_rhs_function(equil_moist, precip_1m, "Jouan2020")
     TT.@test typeof(rhs) <: Function
 end
 
