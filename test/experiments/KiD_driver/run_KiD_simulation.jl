@@ -24,7 +24,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
 
     # Decide the output folder name based on options
     folder = "Output_$(moisture_choice)_$(precipitation_choice)"
-    if precipitation_choice in ["Precipitation1M", "Precipitation2M"]
+    if precipitation_choice in ["Precipitation1M", "Precipitation2M", "Precipitation2M_P3"]
         folder *= "_$(rain_formation_choice)"
         sedimentation_choice == "Chen2022" && (folder *= "_Chen2022")
     elseif precipitation_choice == "CloudyPrecip"
