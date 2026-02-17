@@ -31,12 +31,12 @@ function init_profile_jouan(::Type{FT}, thermo_params, z) where {FT}
     sounding = read_Jouan_sounding("Jouan_initial_condition.txt")
     qv = sounding.qv(z)
 
-    θ_std = TD.dry_pottemp_given_pressure(thermo_params, sounding.T(z), sounding.p(z))
+    θ_std = TD.potential_temperature_given_pressure(thermo_params, sounding.T(z), sounding.p(z))
 
     # density at the surface
     p_0 = sounding.p(z_0)
     qv_0 = sounding.qv(z_0)
-    θ_0 = TD.dry_pottemp_given_pressure(thermo_params, sounding.T(z_0), sounding.p(z_0))
+    θ_0 = TD.potential_temperature_given_pressure(thermo_params, sounding.T(z_0), sounding.p(z_0))
 
     SDM_θ_dry_0 = SDM_θ_dry(thermo_params, θ_0, qv_0)
     SDM_ρ_dry_0 = SDM_ρ_dry(thermo_params, p_0, qv_0, θ_0)
