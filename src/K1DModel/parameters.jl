@@ -49,7 +49,7 @@ Base.@kwdef struct KinematicDriverParameters{FT} <: AKP
     κ::FT
 end
 
-function KinematicDriverParameters(td::CP.AbstractTOMLDict)
+function KinematicDriverParameters(td::CP.ParamDict{FT}) where {FT}
     name_map = (;
         :prescribed_flow_w1 => :w1,
         :prescribed_flow_t1 => :t1,
@@ -69,7 +69,6 @@ function KinematicDriverParameters(td::CP.AbstractTOMLDict)
         :kappa => :κ,
     )
     parameters = CP.get_parameter_values(td, name_map, "KinematicDriver")
-    FT = CP.float_type(td)
     return KinematicDriverParameters{FT}(; parameters...)
 end
 

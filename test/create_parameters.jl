@@ -6,7 +6,7 @@ import Thermodynamics as TD
 import Cloudy as CL
 
 function override_toml_dict(
-    toml_dict::CP.AbstractTOMLDict;
+    toml_dict::CP.ParamDict{FT};
     w1 = 2.0,
     t1 = 600.0,
     p0 = 100700.0,
@@ -28,8 +28,7 @@ function override_toml_dict(
     r_dry = 0.04 * 1e-6,
     std_dry = 1.4,
     κ = 1.12,
-)
-    FT = CP.float_type(toml_dict)
+) where {FT}
     override_file = Dict(
         "mean_sea_level_pressure" => Dict("value" => 100000.0, "type" => "float"),
         "gravitational_acceleration" => Dict("value" => 9.80665, "type" => "float"),

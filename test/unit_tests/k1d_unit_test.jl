@@ -111,7 +111,8 @@ TT.@testset "advection_tendency" begin
     space, face_space = K1D.make_function_space(FT, 0, 100, 5)
     coord = CC.Fields.coordinate_field(space)
     ρ_profile = CO.ρ_ivp(FT, kid_params, thermo_params, "ShipwayHill2012")
-    init = CO.initial_condition_1d.(FT, common_params, kid_params, thermo_params, (ρ_profile,), coord.z, "ShipwayHill2012")
+    init =
+        CO.initial_condition_1d.(FT, common_params, kid_params, thermo_params, (ρ_profile,), coord.z, "ShipwayHill2012")
     t = 13.0
 
     # eq
@@ -534,4 +535,3 @@ TT.@testset "aerosol activation for 2M schemes" begin
     TT.@test all(isfinite, get_value(aux.activation_sources.N_liq))
     TT.@test get_value(aux.activation_sources.N_aer) == -get_value(aux.activation_sources.N_liq)
 end
-

@@ -138,7 +138,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     # Create aux vector and apply initial condition
     aux = K1D.initialise_aux(
         FT, init, common_params, kid_params, thermo_params, air_params, activation_params,
-        TS, Stats, face_space, moisture, precip, cloudy_params, opts["init_sounding"]
+        TS, Stats, face_space, moisture, precip, opts["init_sounding"], cloudy_params,
     )
 
     # Create state vector and apply initial condition

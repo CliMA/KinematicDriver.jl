@@ -16,10 +16,28 @@ TT.@testset "Initialise aux" begin
     coords = CC.Fields.coordinate_field(space)
     face_coords = CC.Fields.coordinate_field(face_space)
     ρ_profile = CO.ρ_ivp(FT, kid_params, thermo_params, "ShipwayHill2012")
-    init = CO.initial_condition_1d.(FT, common_params, kid_params, thermo_params, (ρ_profile,), coords.z, "ShipwayHill2012")
+    init =
+        CO.initial_condition_1d.(
+            FT,
+            common_params,
+            kid_params,
+            thermo_params,
+            (ρ_profile,),
+            coords.z,
+            "ShipwayHill2012",
+        )
     t = 1.1 * kid_params.t1
 
-    TT.@test_throws Exception K2D.initialise_aux(FT, init, params..., 0.0, 0.0, face_space, no_precip, "ShipwayHill2012")
+    TT.@test_throws Exception K2D.initialise_aux(
+        FT,
+        init,
+        params...,
+        0.0,
+        0.0,
+        face_space,
+        no_precip,
+        "ShipwayHill2012",
+    )
     TT.@test_throws Exception K2D.initialise_aux(
         FT,
         init,
@@ -61,7 +79,16 @@ TT.@testset "advection tendency" begin
     coords = CC.Fields.coordinate_field(space)
     face_coords = CC.Fields.coordinate_field(face_space)
     ρ_profile = CO.ρ_ivp(FT, kid_params, thermo_params, "ShipwayHill2012")
-    init = CO.initial_condition_1d.(FT, common_params, kid_params, thermo_params, (ρ_profile,), coords.z, "ShipwayHill2012")
+    init =
+        CO.initial_condition_1d.(
+            FT,
+            common_params,
+            kid_params,
+            thermo_params,
+            (ρ_profile,),
+            coords.z,
+            "ShipwayHill2012",
+        )
     t = 1.1 * kid_params.t1
 
     TT.@test_throws Exception K2D.advection_tendency!(K1D.AbstractMoistureStyle(), dY, Y, aux, t)
@@ -71,7 +98,20 @@ TT.@testset "advection tendency" begin
     ps_styles = [no_precip, precip_2m]
     for (ms, ps) in zip(ms_styles, ps_styles)
         aux =
-            K2D.initialise_aux(FT, init, params..., 3000.0, 3000.0, 0.0, 0.0, space, face_space, ms, ps, "ShipwayHill2012")
+            K2D.initialise_aux(
+                FT,
+                init,
+                params...,
+                3000.0,
+                3000.0,
+                0.0,
+                0.0,
+                space,
+                face_space,
+                ms,
+                ps,
+                "ShipwayHill2012",
+            )
         K2D.precompute_aux_prescribed_velocity!(aux, t)
         Y = CO.initialise_state(ms, ps, init)
         dY = Y ./ 10
