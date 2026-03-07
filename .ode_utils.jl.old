@@ -77,10 +77,16 @@ function initialise_aux(
     # Allocate the cloud_sources which is a field of containers (tuples)
     # for storing non-equilibrium cloud formation sources
     if moisture isa EquilibriumMoisture
+        ts = @. TD.PhaseEquil_ρθq(thermo_params, ip.ρ, ip.θ_liq_ice, ip.q_tot)
         cloud_sources = nothing
     elseif moisture isa NonEquilibriumMoisture || moisture isa MoistureP3
+        q = @. TD.PhasePartition(ip.q_tot, ip.q_liq, ip.q_ice)
+        ts = @. TD.PhaseNonEquil_ρθq(thermo_params, ip.ρ, ip.θ_liq_ice, q)
+
         cloud_sources = zero_nt(NamedTuple{(:q_liq, :q_ice)})
     elseif moisture isa CloudyMoisture
+        q = @. TD.PhasePartition(ip.q_tot, ip.q_liq, ip.q_ice)
+        ts = @. TD.PhaseNonEquil_ρTq(thermo_params, ip.ρ, ip.T, q)
         cloud_sources = nothing
     else
         error(
@@ -94,12 +100,9 @@ function initialise_aux(
         tmp_surface = similar(CC.Fields.level(ip.q_tot, 1), Tuple{FT, FT}),
     )
 
-    # Allocate a tuple of fields for storing precomputed thermodynamic variables.
-    # Note: Temperature (T) here is intentionally NOT saturation adjusted to be 
-    # consistent with liquid-ice potential temperature (θ_liq_ice) in equilibrium.
-    # This preserves the legacy model behavior where tendencies are driven by the 
-    # unadjusted initial profile temperature instead of an implicitly adjusted one.
-    thermo_variables = NamedTuple{(:ρ, :ρ_dry, :p, :T, :θ_liq_ice, :θ_dry)}.(ip)
+    # Allocate a tuple of fields for storing precomputed thermodynamic variables
+    thermo_ip = NamedTuple{(:ρ, :ρ_dry, :p, :T, :θ_liq_ice, :θ_dry)}.(ip)
+    thermo_variables = merge.(NamedTuple{(:ts,)}.(tuple.(ts)), thermo_ip)
 
     microph_variables = NamedTuple{(:q_tot, :q_liq, :q_ice)}.(ip)
     if precip isa Union{NoPrecipitation, Precipitation0M}

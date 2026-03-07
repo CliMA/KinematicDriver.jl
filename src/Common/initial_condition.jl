@@ -124,8 +124,7 @@ function initial_condition_1d(
     θ_dry::FT = SDM_θ_dry(thermo_params, θ_std, q_vap)
     T::FT = SDM_T(thermo_params, θ_dry, ρ_dry)
 
-    ts = TD.PhaseEquil_ρTq(thermo_params, ρ, T, q_tot)
-    p::FT = TD.air_pressure(thermo_params, ts)
+    p::FT = TD.air_pressure(thermo_params, T, ρ, q_tot)
 
     N_aer::FT = common_params.prescribed_Nd * ρ_dry / ρ_SDP
 
@@ -224,11 +223,9 @@ function initial_condition_0d(
     N_aer::FT = FT(0)
 
     T::FT = FT(300)
-    q = TD.PhasePartition(q_tot, q_liq, q_ice)
-    ts = TD.PhaseNonEquil_ρTq(thermo_params, ρ, T, q)
-    p = TD.air_pressure(thermo_params, ts)
-    θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
-    θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
+    p = TD.air_pressure(thermo_params, T, ρ, q_tot, q_liq, q_ice)
+    θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, T, ρ, q_tot, q_liq, q_ice)
+    θ_dry = TD.potential_temperature(thermo_params, T, ρ_dry)
 
     zero::FT = FT(0)
 
@@ -331,10 +328,8 @@ function p3_initial_condition(
     # (path in p3 fortran github repo)
     T::FT = -0.004 * (z - 500) + 273.15 # temperature
     p::FT = 990 - (0.1 * z) # pressure
-    _q = TD.PhasePartition(q_tot, q_liq, q_ice)
-    ρ::FT = TD.air_density(thermo_params, T, p, _q) # total density
+    ρ::FT = TD.air_density(thermo_params, T, p, q_tot, q_liq, q_ice) # total density
     ρ_dry::FT = TD.air_density(thermo_params, T, p)
-    ts = TD.PhaseNonEquil_ρTq(thermo_params, ρ, T, _q) # thermodynamic state
 
     # P3 scheme uses L (kg/m3) = ρ * q
     # so we compute ρq and pass that to P3
@@ -357,9 +352,9 @@ function p3_initial_condition(
     # unused quantities:
     q_sno::FT = FT(0)
     ρq_sno::FT = FT(0)
-    θ_liq_ice::FT = TD.liquid_ice_pottemp(thermo_params, ts)
+    θ_liq_ice::FT = TD.liquid_ice_pottemp(thermo_params, T, ρ, q_tot, q_liq, q_ice)
     N_aer::FT = FT(0)
-    θ_dry::FT = TD.dry_pottemp(thermo_params, T, ρ)
+    θ_dry::FT = TD.potential_temperature(thermo_params, T, ρ)
 
     # zero:
     zero::FT = FT(0)
