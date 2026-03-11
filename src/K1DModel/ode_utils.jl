@@ -28,19 +28,56 @@ end
 """
 function make_rhs_function(ms::CO.AbstractMoistureStyle, ps::CO.AbstractPrecipitationStyle)
     function rhs!(dY, Y, aux, t)
-
         CO.zero_tendencies!(dY)
 
+        # defined in `K1DModel/tendency.jl`
+        # calc: aux.prescribed_velocity.ρw
         precompute_aux_prescribed_velocity!(aux, t)
+        # defined in `Common/tendency.jl`
+        # For NonEquilibriumMoisture:
+        # calc: aux.thermo_variables.{ts, ρ, p, θ_dry, θ_liq_ice}
+        # calc: aux.microph_variables.{q_tot, q_liq, q_ice}
         CO.precompute_aux_thermo!(ms, ps, Y, aux)
-        CO.precompute_aux_precip!(ps, Y, aux)
+        # defined in `Common/tendency.jl`
+        # For Precipitation2M:
+        # calc: aux.microph_variables.{q_rai, q_sno, N_rai, N_liq}  <-- NOTE: You can assume `q_sno = ρq_sno = 0`
+        # calc: aux.velocities.{term_vel_rai, term_vel_N_rai}
+        # For IcePrecipitationP3:
+        # calc: aux.microph_variables.{ρq_ice, ρq_rim, N_ice, B_rim} <-- maybe not needed
+        # calc: aux.velocities.{term_vel_ice, term_vel_N_ice}
+        CO.precompute_aux_precip!(ps, Y, aux)  # <-- calls fn for Precipitation2M
 
-        precompute_aux_activation!(ps, dY, Y, aux, t)
+        # defined in `K1DModel/tendency.jl`
+        # calc: aux.activation_sources.{N_aer, N_liq}
+        precompute_aux_activation!(ps, dY, Y, aux, t)  # <-- calls fn for Precipitation2M
 
+        # defined in `Common/tendency.jl`
+        # calls: `precompute_aux_moisture_sources` (defined in `Common/tendency.jl`)
+        #   calc: aux.cloud_sources.{q_liq, q_ice}
+        # increments: dY.{ρq_liq, ρq_ice} += ρ * aux.cloud_sources.{q_...}
         CO.cloud_sources_tendency!(ms, ps, dY, Y, aux, t)
-        CO.precip_sources_tendency!(ms, ps, dY, Y, aux, t)
+        # defined in `Common/tendency.jl`
+        # For Precipitation2M:
+        # calls: `precompute_aux_precip_sources` (defined in `Common/tendency.jl`)
+        #   calc: aux.precip_sources.{q_tot, q_liq, q_rai, N_liq, N_rai, N_aer}
+        # increments: dY.{ρq_tot, ρq_rai, ρq_liq, N_liq, N_rai, N_aer}
+        #               += aux.precip_sources.{...} 
+        #        and/or += aux.activation_sources.{N_liq, N_aer}
+        # For Precipitation2M_P3:
+        # calls: `precompute_aux_precip_sources` (defined in `Common/tendency.jl`)
+        # TODO: write collisions
+        CO.precip_sources_tendency!(ms, ps, dY, Y, aux, t)  # <-- calls fn for Precipitation2M + write code
 
         for eq_style in [ms, ps]
+            # defined in  `K1DModel/tendency.jl`
+            # For Precipitation2M:
+            # increments: dY.{ρq_rai, N_liq, N_rai, N_aer} += ... * aux.velocities.{term_vel_N_rai, term_vel_rai}
+            # For NonEquilibriumMoisture:
+            # increments: dY.{ρq_tot, ρq_liq, ρq_ice} += {aux.prescribed_velocity} * {Y.ρq_...}
+            # For Precipitation2M_P3
+            # - delegates to `Precipitation2M` (see above) and `IcePrecipitationP3`
+            # For IcePrecipitationP3:
+            # increments: dY.{N_ice, B_rim, ρq_rim} += ... * aux.velocities.{term_vel_N_ice, term_vel_q_ice}
             advection_tendency!(eq_style, dY, Y, aux, t)
         end
 
