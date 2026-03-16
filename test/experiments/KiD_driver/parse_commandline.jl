@@ -161,6 +161,17 @@ function parse_commandline()
             _F_liq = Float64(0.2),
             _ρ_r_init = Float64(900),
         )
+        "--init_sounding"
+        help = "Exterior data used for KiD initial conditions"
+        arg_type = String
+        help = "Initial condition for KiD. Options are: `ShipwayHill2012` (default), `Jouan2020` "
+        default = "ShipwayHill2012"
+        "--velocity"
+        help = "Exterior data used for KiD prescribed velocity field"
+        arg_type = String
+        help = "Wind profile for KiD. Options are: `ShipwayHill2012` (default), `Jouan2020` "
+        default = "ShipwayHill2012"
+
     end
 
     return AP.parse_args(s)

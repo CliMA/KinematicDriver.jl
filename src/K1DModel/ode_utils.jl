@@ -26,12 +26,12 @@ end
    collision, sedimentation and evaporation processes. The rhs is
    assembled via dispatch based on the moisture and precipitation types.
 """
-function make_rhs_function(ms::CO.AbstractMoistureStyle, ps::CO.AbstractPrecipitationStyle)
+function make_rhs_function(ms::CO.AbstractMoistureStyle, ps::CO.AbstractPrecipitationStyle, velocity)
     function rhs!(dY, Y, aux, t)
 
         CO.zero_tendencies!(dY)
 
-        precompute_aux_prescribed_velocity!(aux, t)
+        precompute_aux_prescribed_velocity!(aux, t, velocity)
         CO.precompute_aux_thermo!(ms, ps, Y, aux)
         CO.precompute_aux_precip!(ps, Y, aux)
 
@@ -90,9 +90,10 @@ function initialise_aux(
     face_space,
     moisture,
     precip,
+    init_sounding,
     cloudy_params = nothing,
 )
-    q_surf = CO.init_profile(FT, kid_params, thermo_params, 0.0).qv
+    q_surf = CO.init_profile(FT, kid_params, thermo_params, FT(0), init_sounding).qv
 
     ρw = CC.Geometry.WVector.(zeros(FT, face_space))
     ρw0 = 0.0
