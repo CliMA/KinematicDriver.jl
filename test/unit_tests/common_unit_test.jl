@@ -269,21 +269,22 @@ TT.@testset "Tendency helper functions" begin
         Y = CO.initialise_state(ms, no_precip, ip)
         aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, ms, no_precip)
         CO.precompute_aux_thermo!(ms, no_precip, Y, aux)
-        (; ρ_dry, p, T, θ_dry, θ_liq_ice, ts, ρ, ρ_dry) = aux.thermo_variables
+        (; ρ_dry, p, T, θ_dry, θ_liq_ice, ρ) = aux.thermo_variables
         (; q_tot, q_liq, q_ice) = aux.microph_variables
         for (el,) in CC.Fields.field_iterator(aux.thermo_variables)
-            if el != aux.thermo_variables.ts
-                TT.@test all(isfinite, parent(el))
-            end
+            TT.@test all(isfinite, parent(el))
         end
         TT.@test all(≥(0), parent(q_tot))
         TT.@test all(≥(0), parent(q_liq))
         TT.@test all(≥(0), parent(q_ice))
 
         TT.@test ρ_dry == ρ .- Y.ρq_tot
-        TT.@test p == TD.air_pressure.(thermo_params, ts)
-        TT.@test T == TD.air_temperature.(thermo_params, ts)
-        TT.@test θ_dry == TD.dry_pottemp.(thermo_params, T, ρ_dry)
+        if ms isa CO.EquilibriumMoisture
+            TT.@test p == TD.air_pressure.(thermo_params, T, ρ, q_tot)
+        else
+            TT.@test p == TD.air_pressure.(thermo_params, T, ρ, q_tot, q_liq, q_ice)
+        end
+        TT.@test θ_dry == TD.potential_temperature.(thermo_params, T, ρ_dry)
         #TODO - check Thermodynamics?
         #TT.@test get_value(θ_liq_ice)[1] == TD.liquid_ice_pottemp(thermo_params, get_value(ts)[1])
     end
@@ -293,21 +294,18 @@ TT.@testset "Tendency helper functions" begin
     Y = CO.initialise_state(ms, precip_p3, ip)
     aux = CO.initialise_aux(FT, ip, params..., 0.0, 0.0, ms, precip_p3)
     CO.precompute_aux_thermo!(ms, precip_p3, Y, aux)
-    (; ρ_dry, p, T, θ_dry, θ_liq_ice, ts, ρ, ρ_dry) = aux.thermo_variables
+    (; ρ_dry, p, T, θ_dry, θ_liq_ice, ρ) = aux.thermo_variables
     (; q_tot, q_liq, q_ice) = aux.microph_variables
     for (el,) in CC.Fields.field_iterator(aux.thermo_variables)
-        if el != aux.thermo_variables.ts
-            TT.@test all(isfinite, parent(el))
-        end
+        TT.@test all(isfinite, parent(el))
     end
     TT.@test all(≥(0), parent(q_tot))
     TT.@test all(≥(0), parent(q_liq))
     TT.@test all(≥(0), parent(q_ice))
 
     TT.@test ρ_dry == ρ .- Y.ρq_tot
-    TT.@test p == TD.air_pressure.(thermo_params, ts)
-    TT.@test T == TD.air_temperature.(thermo_params, ts)
-    TT.@test θ_dry == TD.dry_pottemp.(thermo_params, T, ρ_dry)
+    TT.@test p == TD.air_pressure.(thermo_params, T, ρ, q_tot, q_liq .+ aux.microph_variables.q_rai, q_ice)
+    TT.@test θ_dry == TD.potential_temperature.(thermo_params, T, ρ_dry)
     #TODO - check Thermodynamics?
     #TT.@test get_value(θ_liq_ice)[1] == TD.liquid_ice_pottemp(thermo_params, get_value(ts)[1])
 

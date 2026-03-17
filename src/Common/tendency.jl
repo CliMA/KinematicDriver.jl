@@ -3,7 +3,6 @@
    depending on the moisture and precipitation types.
 """
 # some aliases to improve readability
-const PP = TD.PhasePartition
 const Lf = TD.latent_heat_fusion
 const q_vap = TD.vapor_specific_humidity
 
@@ -35,43 +34,49 @@ end
 @inline function precompute_aux_thermo!(::EquilibriumMoisture, ::Union{NoPrecipitation, Precipitation0M}, Y, aux)
 
     (; thermo_params) = aux
-    (; ts, ρ, ρ_dry, p, T, θ_dry, θ_liq_ice) = aux.thermo_variables
+    (; ρ, ρ_dry, p, T, θ_dry, θ_liq_ice) = aux.thermo_variables
     (; q_tot, q_liq, q_ice) = aux.microph_variables
 
     @. ρ = ρ_dry + Y.ρq_tot
-    @. ts = TD.PhaseEquil_ρTq(thermo_params, ρ, T, Y.ρq_tot / ρ)
-    @. p = TD.air_pressure(thermo_params, ts)
+    @. q_tot = q_(Y.ρq_tot, ρ)
+    @. p = TD.air_pressure(thermo_params, T, ρ, q_tot)
 
-    @. q_tot = TD.total_specific_humidity(thermo_params, ts)
-    @. q_liq = TD.liquid_specific_humidity(thermo_params, ts)
-    @. q_ice = TD.ice_specific_humidity(thermo_params, ts)
+    @. q_liq = first(TD.condensate_partition(thermo_params, T, ρ, q_tot))
+    @. q_ice = last(TD.condensate_partition(thermo_params, T, ρ, q_tot))
 
-    @. θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
-    @. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
+    @. θ_dry = TD.potential_temperature(thermo_params, T, ρ_dry)
+    @. θ_liq_ice = TD.liquid_ice_pottemp(
+        thermo_params, T, ρ, q_tot,
+        first(TD.condensate_partition(thermo_params, T, ρ, q_tot)),
+        last(TD.condensate_partition(thermo_params, T, ρ, q_tot)),
+    )
 end
 @inline function precompute_aux_thermo!(::EquilibriumMoisture, ::Union{Precipitation1M, Precipitation2M}, Y, aux)
 
     (; thermo_params) = aux
-    (; ts, ρ, ρ_dry, p, T, θ_dry, θ_liq_ice) = aux.thermo_variables
+    (; ρ, ρ_dry, p, T, θ_dry, θ_liq_ice) = aux.thermo_variables
     (; q_tot, q_liq, q_ice) = aux.microph_variables
 
     @. ρ = ρ_dry + Y.ρq_tot
-    @. ts = TD.PhaseEquil_ρTq(thermo_params, ρ, T, Y.ρq_tot / ρ)
-    @. p = TD.air_pressure(thermo_params, ts)
+    @. q_tot = q_(Y.ρq_tot, ρ)
+    @. p = TD.air_pressure(thermo_params, T, ρ, q_tot)
 
-    @. q_tot = TD.total_specific_humidity(thermo_params, ts)
-    @. q_liq = TD.liquid_specific_humidity(thermo_params, ts) - q_(Y.ρq_rai, ρ)
-    @. q_ice = TD.ice_specific_humidity(thermo_params, ts) - q_(Y.ρq_sno, ρ)
+    @. q_liq = first(TD.condensate_partition(thermo_params, T, ρ, q_tot)) - q_(Y.ρq_rai, ρ)
+    @. q_ice = last(TD.condensate_partition(thermo_params, T, ρ, q_tot)) - q_(Y.ρq_sno, ρ)
 
-    @. θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
-    @. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
+    @. θ_dry = TD.potential_temperature(thermo_params, T, ρ_dry)
+    @. θ_liq_ice = TD.liquid_ice_pottemp(
+        thermo_params, T, ρ, q_tot,
+        first(TD.condensate_partition(thermo_params, T, ρ, q_tot)),
+        last(TD.condensate_partition(thermo_params, T, ρ, q_tot)),
+    )
 end
 @inline function precompute_aux_thermo!(::MoistureP3, ::PrecipitationP3, Y, aux)
 
     FT = eltype(Y.ρq_liq)
 
     (; thermo_params) = aux
-    (; ts, ρ, ρ_dry, p, T, θ_dry, θ_liq_ice) = aux.thermo_variables
+    (; ρ, ρ_dry, p, T, θ_dry, θ_liq_ice) = aux.thermo_variables
     (; ρq_liq, ρq_ice, ρq_rim, ρq_liqonice, ρq_vap, ρq_rai, q_tot, q_liq, q_ice, q_rim, q_liqonice, q_vap, q_rai) =
         aux.microph_variables
 
@@ -91,16 +96,15 @@ end
     @. q_rai = q_(Y.ρq_rai, ρ)
     @. q_tot = q_liq + q_ice + q_rai + q_vap
 
-    @. ts = TD.PhaseNonEquil_ρTq(thermo_params, ρ, T, PP(q_tot, q_liq + q_rai, q_ice))
-    @. p = TD.air_pressure(thermo_params, ts)
-    @. θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
-    @. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
+    @. p = TD.air_pressure(thermo_params, T, ρ, q_tot, q_liq + q_rai, q_ice)
+    @. θ_dry = TD.potential_temperature(thermo_params, T, ρ_dry)
+    @. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, T, ρ, q_tot, q_liq + q_rai, q_ice)
 
 end
 @inline function precompute_aux_thermo!(::NonEquilibriumMoisture, ::Union{NoPrecipitation, Precipitation0M}, Y, aux)
 
     (; thermo_params) = aux
-    (; ts, ρ, ρ_dry, p, T, θ_dry, θ_liq_ice) = aux.thermo_variables
+    (; ρ, ρ_dry, p, T, θ_dry, θ_liq_ice) = aux.thermo_variables
     (; q_tot, q_liq, q_ice) = aux.microph_variables
 
     @. ρ = ρ_dry + Y.ρq_tot
@@ -109,15 +113,14 @@ end
     @. q_liq = q_(Y.ρq_liq, ρ)
     @. q_ice = q_(Y.ρq_ice, ρ)
 
-    @. ts = TD.PhaseNonEquil_ρTq(thermo_params, ρ, T, PP(q_tot, q_liq, q_ice))
-    @. p = TD.air_pressure(thermo_params, ts)
-    @. θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
-    @. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
+    @. p = TD.air_pressure(thermo_params, T, ρ, q_tot, q_liq, q_ice)
+    @. θ_dry = TD.potential_temperature(thermo_params, T, ρ_dry)
+    @. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, T, ρ, q_tot, q_liq, q_ice)
 end
 @inline function precompute_aux_thermo!(::NonEquilibriumMoisture, ::Union{Precipitation1M, Precipitation2M}, Y, aux)
 
     (; thermo_params) = aux
-    (; ts, ρ, ρ_dry, p, T, θ_dry, θ_liq_ice) = aux.thermo_variables
+    (; ρ, ρ_dry, p, T, θ_dry, θ_liq_ice) = aux.thermo_variables
     (; q_tot, q_liq, q_ice) = aux.microph_variables
 
     @. ρ = ρ_dry + Y.ρq_tot
@@ -126,10 +129,9 @@ end
     @. q_liq = q_(Y.ρq_liq, ρ)
     @. q_ice = q_(Y.ρq_ice, ρ)
 
-    @. ts = TD.PhaseNonEquil_ρTq(thermo_params, ρ, T, PP(q_tot, q_liq + q_(Y.ρq_rai, ρ), q_ice + q_(Y.ρq_sno, ρ)))
-    @. p = TD.air_pressure(thermo_params, ts)
-    @. θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
-    @. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
+    @. p = TD.air_pressure(thermo_params, T, ρ, q_tot, q_liq + q_(Y.ρq_rai, ρ), q_ice + q_(Y.ρq_sno, ρ))
+    @. θ_dry = TD.potential_temperature(thermo_params, T, ρ_dry)
+    @. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, T, ρ, q_tot, q_liq + q_(Y.ρq_rai, ρ), q_ice + q_(Y.ρq_sno, ρ))
 end
 function separate_liq_rai(FT, moments, pdists, cloudy_params, ρd)
     tmp = CL.ParticleDistributions.get_standard_N_q(pdists, cloudy_params.size_threshold / cloudy_params.norms[2])
@@ -153,7 +155,7 @@ end
     FT = eltype(Y.ρq_vap)
 
     (; thermo_params, cloudy_params) = aux
-    (; ts, ρ, ρ_dry, p, T, θ_dry, θ_liq_ice) = aux.thermo_variables
+    (; ρ, ρ_dry, p, T, θ_dry, θ_liq_ice) = aux.thermo_variables
     (; moments, pdists, q_rai, N_rai, N_liq, q_tot, q_liq, q_ice) = aux.microph_variables
     (; tmp_cloudy) = aux.scratch
 
@@ -169,10 +171,9 @@ end
     @. q_ice = FT(0)
     @. q_tot = q_(Y.ρq_vap, ρ) + q_liq + q_rai + q_ice
 
-    @. ts = TD.PhaseNonEquil_ρTq(thermo_params, ρ, T, PP(q_tot, q_liq + q_rai, q_ice))
-    @. p = TD.air_pressure(thermo_params, ts)
-    @. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, ts)
-    @. θ_dry = TD.dry_pottemp(thermo_params, T, ρ_dry)
+    @. p = TD.air_pressure(thermo_params, T, ρ, q_tot, q_liq + q_rai, q_ice)
+    @. θ_liq_ice = TD.liquid_ice_pottemp(thermo_params, T, ρ, q_tot, q_liq + q_rai, q_ice)
+    @. θ_dry = TD.potential_temperature(thermo_params, T, ρ_dry)
 end
 
 @inline function precompute_aux_precip!(::Union{NoPrecipitation, Precipitation0M}, Y, aux) end
@@ -325,12 +326,12 @@ end
 
     @. S_q_liq = CMNe.conv_q_vap_to_q_lcl_icl(
         ne.liquid,
-        PP(thermo_params, TD.PhaseEquil_ρTq(thermo_params, ρ, T, q_tot)).liq,
+        first(TD.condensate_partition(thermo_params, T, ρ, q_tot)),
         q_liq,
     )
     @. S_q_ice = CMNe.conv_q_vap_to_q_lcl_icl(
         ne.ice,
-        PP(thermo_params, TD.PhaseEquil_ρTq(thermo_params, ρ, T, q_tot)).ice,
+        last(TD.condensate_partition(thermo_params, T, ρ, q_tot)),
         q_ice,
     )
 
@@ -355,7 +356,7 @@ end
 
     @. S_q_liq = CMNe.conv_q_vap_to_q_lcl_icl(
         ne.liquid,
-        PP(thermo_params, TD.PhaseEquil_ρTq(thermo_params, ρ, T, q_tot)).liq - q_rai,
+        first(TD.condensate_partition(thermo_params, T, ρ, q_tot)) - q_rai,
         q_liq,
     )
     if ps isa Precipitation2M
@@ -367,7 +368,7 @@ end
     end
     @. S_q_ice = CMNe.conv_q_vap_to_q_lcl_icl(
         ne.ice,
-        PP(thermo_params, TD.PhaseEquil_ρTq(thermo_params, ρ, T, q_tot)).ice - q_sno,
+        last(TD.condensate_partition(thermo_params, T, ρ, q_tot)) - q_sno,
         q_ice,
     )
 
@@ -382,17 +383,17 @@ end
 
     (; thermo_params) = aux
     (; dt) = aux.TS
-    (; ts) = aux.thermo_variables
+    (; T, ρ) = aux.thermo_variables
     (; q_tot, q_liq, q_ice) = aux.microph_variables
 
     S_qt = aux.scratch.tmp
     λ = aux.scratch.tmp2
 
-    @. λ = TD.liquid_fraction(thermo_params, ts)
+    @. λ = TD.liquid_fraction(thermo_params, T, q_liq, q_ice)
 
     @. S_qt =
         -triangle_inequality_limiter(
-            -CM0.remove_precipitation(ps.params, PP(q_tot, q_liq, q_ice), TD.q_vap_saturation(thermo_params, ts)),
+            -CM0.remove_precipitation(ps.params, q_liq, q_ice, TD.q_vap_saturation(thermo_params, T, ρ)),
             limit(q_liq + q_ice, dt),
         )
 
@@ -406,7 +407,7 @@ end
     (; dt) = aux.TS
     (; thermo_params, common_params, air_params) = aux
     FT = eltype(thermo_params)
-    (; ts, ρ, T) = aux.thermo_variables
+    (; ρ, T) = aux.thermo_variables
     (; q_tot, q_liq, q_ice, q_rai, q_sno) = aux.microph_variables
 
     S = aux.scratch.tmp
@@ -480,7 +481,7 @@ end
                 CM1.accretion(ps.liquid, ps.snow, ps.sedimentation.snow, ps.ce, q_liq, q_sno, ρ),
                 limit(q_liq, dt),
             )
-        @. α = c_vl / Lf(thermo_params, ts) * (T - T_fr)
+        @. α = c_vl / Lf(thermo_params, T) * (T - T_fr)
         @. aux.precip_sources += ifelse(T < T_fr, to_sources(0, S, 0, 0, -S), to_sources(0, S, 0, -S * (1 + α), S * α))
 
         # sink of cloud ice via accretion cloud ice - rain
@@ -571,7 +572,7 @@ end
         )
         @. S = ifelse(
             S > 0,
-            triangle_inequality_limiter(S, limit(q_vap(thermo_params, ts), dt)),
+            triangle_inequality_limiter(S, limit(q_vap(q_tot, q_liq, q_ice), dt)),
             -triangle_inequality_limiter(-S, limit(q_sno, dt)),
         )
         @. aux.precip_sources += to_sources(0, 0, 0, 0, S)
@@ -678,11 +679,10 @@ end
     dt,
 )
     FT = eltype(pdists[1])
-    q = TD.PhasePartition(q_tot, q_liq, FT(0))
 
     ξ = CM.Common.G_func_liquid(air_params, thermo_params, T)
     ξ_normed = ξ / cloudy_params.norms[2]^(2 / 3)
-    s = TD.supersaturation(thermo_params, q, ρ, T, TD.Liquid())
+    s = TD.supersaturation(thermo_params, q_tot - q_liq, ρ, T, TD.Liquid())
     dY_ce_tmp = CL.Condensation.get_cond_evap(pdists, s, ξ_normed) .* cloudy_params.mom_norms
     S_cond_evap = ntuple(length(moments)) do j
         if (j == cloudy_params.NProgMoms[1] + 1 && moments[j + 1] / moments[j] < 1e-11) ||
