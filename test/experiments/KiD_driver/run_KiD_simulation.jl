@@ -96,31 +96,49 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
     Stats = CO.NetCDFIO_Stats(output_nc, 1.0, parent(face_coord), parent(coord))
 
     # Solve the initial value problem for density profile
-    ρ_profile = CO.ρ_ivp(FT, kid_params, thermo_params)
+    ρ_profile = CO.ρ_ivp(FT, kid_params, thermo_params, opts["init_sounding"])
     # Create the initial condition profiles
     if precipitation_choice == "CloudyPrecip"
         pdist_types = determine_cloudy_disttypes(opts["num_moments"])
         cloudy_params, cloudy_pdists = create_cloudy_parameters(FT, pdist_types)
-        ic_1d = CO.initial_condition_1d.(FT, common_params, kid_params, thermo_params, (ρ_profile,), coord.z)
+        ic_1d =
+            CO.initial_condition_1d.(
+                FT,
+                common_params,
+                kid_params,
+                thermo_params,
+                (ρ_profile,),
+                coord.z,
+                opts["init_sounding"],
+            )
         init = CO.cloudy_initial_condition.((cloudy_pdists,), ic_1d)
     elseif precipitation_choice == "PrecipitationP3"
         cloudy_params = nothing
         (; ice_start, _q_flux, _N_flux, _F_rim, _F_liq, _ρ_r_init) = precip.p3_boundary_condition
         init =
             CO.p3_initial_condition.(
-                FT, kid_params, thermo_params, coord.z;
+                FT, kid_params, thermo_params, coord.z, opts["init_sounding"];
                 _q_init = _q_flux, _N_init = _N_flux, _F_rim = _F_rim, _F_liq = _F_liq,
                 _ρ_r = _ρ_r_init, z_top = FT(opts["z_max"]), ice_start = ice_start,
             )
     else
         cloudy_params = nothing
-        init = CO.initial_condition_1d.(FT, common_params, kid_params, thermo_params, (ρ_profile,), coord.z)
+        init =
+            CO.initial_condition_1d.(
+                FT,
+                common_params,
+                kid_params,
+                thermo_params,
+                (ρ_profile,),
+                coord.z,
+                opts["init_sounding"],
+            )
     end
 
     # Create aux vector and apply initial condition
     aux = K1D.initialise_aux(
         FT, init, common_params, kid_params, thermo_params, air_params, activation_params,
-        TS, Stats, face_space, moisture, precip, cloudy_params,
+        TS, Stats, face_space, moisture, precip, opts["init_sounding"], cloudy_params,
     )
 
     # Create state vector and apply initial condition
@@ -135,7 +153,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
 
     # Collect all the tendencies into rhs function for ODE solver
     # based on model choices for the solved equations
-    ode_rhs! = K1D.make_rhs_function(moisture, precip)
+    ode_rhs! = K1D.make_rhs_function(moisture, precip, opts["velocity"])
 
     # Solve the ODE operator
     problem = ODE.ODEProblem(ode_rhs!, Y, (FT(opts["t_ini"]), FT(opts["t_end"])), aux)
