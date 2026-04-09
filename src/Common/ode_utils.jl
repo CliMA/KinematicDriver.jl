@@ -45,7 +45,9 @@ function initialise_state(::MoistureP3, ::PrecipitationP3, initial_profiles)
     return NamedTuple{(
         :ρq_tot, :ρq_liq, :ρq_rai, :ρq_ice, :ρq_rim, :ρq_liqonice, :B_rim,
         :N_liq, :N_rai, :N_ice, :N_aer, :q_vap, :ρq_vap, :q_rai,
-    )}.(initial_profiles)
+    )}.(
+        initial_profiles,
+    )
 end
 function initialise_state(::CloudyMoisture, ::CloudyPrecip, initial_profiles)
     return NamedTuple{(:ρq_vap, :N_aer, :moments)}.(initial_profiles)
@@ -124,7 +126,9 @@ function initialise_aux(
                 :ρq_tot, :ρq_liq, :ρq_rai, :ρq_ice, :ρq_rim, :ρq_liqonice,
                 :B_rim, :N_liq, :N_rai, :N_ice, :N_aer,
                 :q_vap, :ρq_vap,
-            )}.(ip)
+            )}.(
+                ip,
+            )
         velocities = zero_nt(NamedTuple{(:term_vel_rai, :term_vel_ice, :term_vel_N_rai, :term_vel_N_ice)})
         precip_sources = zero_nt(
             NamedTuple{(
