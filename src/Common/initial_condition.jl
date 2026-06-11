@@ -11,7 +11,8 @@ function read_Jouan_sounding(file)
     input_p = reverse(data[:, 5])
     input_z = reverse(data[:, 10])
 
-    T = IT.linear_interpolation(input_z, input_T; extrapolation_bc = IT.Line())
+    # changed line to flat
+    T = IT.linear_interpolation(input_z, input_T; extrapolation_bc = IT.Flat())
     qv = IT.linear_interpolation(input_z, input_qv; extrapolation_bc = IT.Line())
     p = IT.linear_interpolation(input_z, input_p; extrapolation_bc = IT.Line())
     return (T = T, qv = qv, p = p)
@@ -21,10 +22,10 @@ end
    Initial profiles and surface values as defined by Joauan et al. 2020
    [https://doi.org/10.1175/WAF-D-20-0111.1]
 """
-function init_profile_jouan(::Type{FT}, thermo_params, z) where {FT}
+function init_profile_jouan(::Type{FT}, kid_params, thermo_params, z) where {FT}
 
     z_0 = 0
-    z_2 = 1.5e3
+    z_2 = kid_params.z_2
 
     sounding = read_Jouan_sounding("Jouan_initial_condition.txt")
     qv = sounding.qv(z)
@@ -85,7 +86,7 @@ end
 
 function init_profile(::Type{FT}, kid_params, thermo_params, z, init_sounding; dry = false) where {FT}
     if init_sounding == "Jouan2020"
-        return init_profile_jouan(FT, thermo_params, z)
+        return init_profile_jouan(FT, kid_params, thermo_params, z)
     elseif init_sounding == "ShipwayHill2012"
         return init_profile_shipwayhill(FT, kid_params, thermo_params, z, dry = dry)
     else
