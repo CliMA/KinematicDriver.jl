@@ -143,7 +143,7 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
 
     # Create state vector and apply initial condition
     Y = CO.initialise_state(moisture, precip, init)
-
+    
     # Output the initial condition
     CO.simulation_output(aux, 0.0)
 
@@ -176,10 +176,12 @@ function run_KiD_simulation(::Type{FT}, opts) where {FT}
         if precip isa CO.PrecipitationP3
             plot_animation_p3(z_centers, integrator, aux, moisture, precip, K1D, output)
             plot_timeheight_p3(output_nc, precip; output)
+            plot_water_paths_and_precip(output_nc; output)
         else
             get(opts, "make_animation", false) && plot_animation(output_nc; output)
             plot_profiles_in_time(output_nc; output, n = 10)
             plot_timeheight(output_nc; output, mixed_phase = false)
+            plot_water_paths_and_precip(output_nc; output)
         end
     end
 

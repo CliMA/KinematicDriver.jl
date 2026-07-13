@@ -598,3 +598,59 @@ function plot_timeheight_no_ice_snow(nc_data_file; output = "output", pysdm = fa
     )
     Plots.png(p, joinpath(path, "timeheight.png"))
 end
+
+function plot_water_paths_and_precip(nc_data_file; output = "output")
+    path = joinpath(@__DIR__, output)
+    mkpath(path)
+
+    ds = NC.NCDataset(joinpath(@__DIR__, nc_data_file))
+    profs = ds.group["profiles"]
+    t_plt = Array(profs["t"]) ./ 60
+    z_plt = Array(profs["zc"]) ./ 1e3
+    q_liq = Array(profs["q_liq"])
+    q_ice = Array(profs["q_ice"])
+    q_rai = Array(profs["q_rai"])
+    ρ     = Array(profs["density"])
+    close(ds)
+
+    dz = (z_plt[2] - z_plt[1]) * 1e3
+    CWP = vec(sum(ρ .* q_liq, dims = 1)) .* dz
+    IWP = vec(sum(ρ .* q_ice, dims = 1)) .* dz
+    RWP = vec(sum(ρ .* q_rai, dims = 1)) .* dz
+
+    fig = Figure(size = (900, 500))
+
+    ax_contour = Axis(fig[1, 1];
+        xlabel = "time (min)",
+        ylabel = "Altitude (km)",
+        title = "Water Paths and Precipitations",
+        yticks = 0:2:14,
+    )
+
+    ax_wp = Axis(fig[1, 1];
+        yaxisposition = :right,
+        ylabel = "kg/m²",
+    )
+    hidespines!(ax_wp)
+    hidexdecorations!(ax_wp)
+
+    xlims!(ax_contour, t_plt[1], t_plt[end])
+    xlims!(ax_wp, t_plt[1], t_plt[end])
+
+    lines!(ax_wp, t_plt, CWP; color = :cyan,    linewidth = 2, label = "CWP")
+    lines!(ax_wp, t_plt, IWP; color = :magenta,  linewidth = 2, label = "IWP")
+    lines!(ax_wp, t_plt, RWP; color = :black,    linewidth = 2, label = "RWP")
+
+    Legend(fig[1, 1],
+        [LineElement(color = :cyan, linewidth = 2),
+         LineElement(color = :black, linewidth = 2),
+         LineElement(color = :magenta, linewidth = 2)],
+        ["CWP", "RWP", "IWP"],
+        tellwidth = false, tellheight = false,
+        halign = :left, valign = :top,
+        margin = (10, 10, 10, 10),
+    )
+
+    save(joinpath(path, "water_paths_and_precip.png"), fig)
+    return fig
+end

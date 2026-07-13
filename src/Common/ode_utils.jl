@@ -101,7 +101,7 @@ function initialise_aux(
     # consistent with liquid-ice potential temperature (θ_liq_ice) in equilibrium.
     # This preserves the legacy model behavior where tendencies are driven by the 
     # unadjusted initial profile temperature instead of an implicitly adjusted one.
-    thermo_variables = NamedTuple{(:ρ, :ρ_dry, :p, :T, :θ_liq_ice, :θ_dry)}.(ip)
+    thermo_variables = merge.(NamedTuple{(:ρ, :ρ_dry, :p, :T, :θ_liq_ice, :θ_dry)}.(ip), zero_nt(NamedTuple{(:w, :ρw)}))
 
     microph_variables = NamedTuple{(:q_tot, :q_liq, :q_ice)}.(ip)
     if precip isa Union{NoPrecipitation, Precipitation0M}

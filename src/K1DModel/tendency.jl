@@ -215,8 +215,10 @@ end
 """
 @inline function ρw_helper_J(t, t1, z, file)
     z_interp = prescribed_velocity_helper(file)
-    w = z_interp(z)
-    α = 0.036 # test
+    w = z_interp(z / 1000)
+    # α = 0.036 # test
+    α = 1
+    @info "time" t
     return 0 < t < (t1 * 2) ? (α * w * sin(π * t / t1)) : 0.0
 end
 
@@ -230,11 +232,15 @@ end
     @. aux.prescribed_velocity.ρw = CC.Geometry.WVector(
         FT(ρw_helper_J(t, aux.kid_params.t1, face_coord.z, "../Common/Jouan_velocity_profile.csv")),
     )
-    @info(aux.prescribed_velocity.ρw)
     aux.prescribed_velocity.ρw0 = FT(
         ρw_helper_J(t, aux.kid_params.t1, FT(0), "../Common/Jouan_velocity_profile.csv"),
     )
-    @info(aux.prescribed_velocity.ρw0)
+
+    f_interp = CC.Operators.InterpolateF2C()
+    ρw_center_field = f_interp.(aux.prescribed_velocity.ρw.components.data.:1)
+    parent(aux.thermo_variables.ρw) .= vec(ρw_center_field)
+    parent(aux.thermo_variables.w)  .= vec(ρw_center_field ./ aux.thermo_variables.ρ)
+
 end
 
 @inline function precompute_aux_prescribed_velocity_S!(aux, t)
@@ -244,7 +250,11 @@ end
 
     @. aux.prescribed_velocity.ρw = CC.Geometry.WVector.(ρw)
     aux.prescribed_velocity.ρw0 = ρw
-
+    
+    f_interp = CC.Operators.InterpolateF2C()
+    ρw_center_field = f_interp.(aux.prescribed_velocity.ρw.components.data.:1)
+    parent(aux.thermo_variables.ρw) .= vec(ρw_center_field)
+    parent(aux.thermo_variables.w)  .= vec(ρw_center_field ./ aux.thermo_variables.ρ)
 end
 
 """

@@ -40,6 +40,8 @@ function NetCDFIO_Stats(
         :ρq_liqonice => "ρq_liqonice",
         :ρq_vap => "ρq_vap",
         :ρq_rai => "ρq_rai",
+        :w => "w",
+        :ρw => "ρw"
     ),
     output_precip_sources = Dict(
         :q_liq => "Sq_liq_prc",
