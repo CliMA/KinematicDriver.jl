@@ -133,7 +133,7 @@ function write_fields(field, mapping, group, dim)
             if dim == 1
                 @inbounds ncdf_var[:, end] = vec(prop)
             elseif dim == 2
-                @inbounds ncdf_var[:, :, end] = parent(prop)[:, 1, 1, :]
+                @inbounds ncdf_var[:, :, end] = parent(prop)[:, 1, 1, 1, :]
             else
                 error("Invalid system dimension!")
             end

@@ -82,9 +82,9 @@ function run_K2D_simulation(::Type{FT}, opts) where {FT}
     Stats = CO.NetCDFIO_Stats(
         fname,
         1.0,
-        parent(face_coords.z)[:, 1, 1, 1],
-        parent(coords.z)[:, 1, 1, 1],
-        x = parent(coords.x)[1, 1, 1, :],
+        parent(face_coords.z)[:, 1, 1, 1, 1, 1],
+        parent(coords.z)[:, 1, 1, 1, 1, 1],
+        x = parent(coords.x)[1, 1, 1, 1, :],
     )
 
     # Solve the initial value problem for density profile
