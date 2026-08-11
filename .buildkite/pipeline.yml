@@ -1,8 +1,6 @@
 agents:
   queue: central
-  slurm_mem: 2G
-  slurm_cpus_per_task: 1
-  slurm_time: '00:15:00'
+  slurm_mem: 20GB
   modules: climacommon/2025_03_18
 
 env:
@@ -22,7 +20,6 @@ steps:
     agents:
       slurm_cpus_per_task: 8
       slurm_mem: 6G
-      slurm_time: '01:00:00'
     env:
       JULIA_NUM_PRECOMPILE_TASKS: 8
 
@@ -129,8 +126,6 @@ steps:
       - label: ":boxing_glove: 2M microphysics"
         command: "julia --color=yes --project=test test/experiments/box_driver/run_box_simulation.jl"
         artifact_paths: "test/experiments/box_driver/Output_Precipitation2M_SB2006/*"
-        agents:
-          slurm_time: '00:02:00'
 
   - group: ":cloud: 1D + Cloudy"
     steps:
@@ -157,8 +152,6 @@ steps:
       - label: ":genie: 1M microphysics"
         command: "julia --color=yes --project=test test/experiments/Ki2D_driver/run_kinematic2d_simulations.jl"
         artifact_paths: "test/experiments/Ki2D_driver/Output_NonEquilibriumMoisture_Precipitation1M_CliMA_1M/*"
-        agents:
-          slurm_time: '30:00:00'
 
       #- label: ":snowflake: Experiment: P3 Setup"
       #  command: "julia --color=yes --project=test test/experiments/KiD_driver/KiD_driver.jl --moisture_choice=MoistureP3 --precipitation_choice=PrecipitationP3 --n_elem=24 --z_max=3000 --t_end=75 --w1=0 --dt=0.5"
