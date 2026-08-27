@@ -162,7 +162,7 @@ function parse_commandline()
             _ρ_r_init = Float64(900),
         )
         "--init_sounding"
-        help = "Exterior data used for KiD initial conditions"
+        help = "Exterior data used for KiD initl conditions"
         arg_type = String
         help = "Initial condition for KiD. Options are: `ShipwayHill2012` (default), `Jouan2020` "
         default = "ShipwayHill2012"
