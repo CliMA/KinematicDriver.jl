@@ -1,7 +1,7 @@
 name = "KinematicDriver"
 uuid = "83200819-b45f-4027-aa6a-8223b29c73a7"
 authors = ["Climate Modeling Alliance"]
-version = "0.14.1"
+version = "0.14.2"
 
 [deps]
 ClimaCore = "d414da3d-4745-48bb-8d80-42e94e092884"
@@ -20,7 +20,7 @@ TerminalLoggers = "5d786b92-1e48-4d6f-9151-6b4477ca9bed"
 Thermodynamics = "b60c26fb-14c3-4610-9d3e-2d17fe7ff00c"
 
 [compat]
-ClimaCore = "0.15"
+ClimaCore = "0.15, 0.16"
 ClimaParams = "1.0"
 CloudMicrophysics = "0.29, 0.30, 0.31, 0.32"
 Cloudy = "0.5.6, 0.6"
